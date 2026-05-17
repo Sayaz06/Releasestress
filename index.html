@@ -1037,9 +1037,17 @@ body.dark-mode {
           * Kemajuan disimpan ke awan setiap 10 zikir.
         </div>
 
-<div id="tasbih-mode-bar" style="display:none; background:rgba(30,41,59,0.6); border:1px solid var(--border-soft); border-radius:10px; padding:8px 14px; text-align:center; flex-shrink:0; margin:4px 0;">
-          <div id="tasbih-mode-bar-text" style="font-size:0.88rem; color:var(--grad2); font-weight:700;"></div>
-          <div id="tasbih-mode-bar-sub" style="font-size:0.72rem; color:var(--subtext); margin-top:3px;"></div>
+<div id="tasbih-mode-bar" style="display:none; background:rgba(30,41,59,0.6); border:1px solid var(--border-soft); border-radius:10px; padding:10px 14px; flex-shrink:0; margin:4px 0;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <div style="flex:1;">
+              <div id="tasbih-mode-bar-text" style="font-size:0.88rem; color:var(--grad2); font-weight:700;"></div>
+              <div id="tasbih-mode-bar-sub" style="font-size:0.72rem; color:var(--subtext); margin-top:2px;"></div>
+            </div>
+            <div id="tasbih-mode-counter-area" style="display:none; flex-direction:column; align-items:flex-end; gap:4px;">
+              <div id="tasbih-mode-remaining" style="font-size:2rem; font-weight:700; color:var(--grad1); line-height:1;"></div>
+              <button id="btn-mode-history" class="btn btn-secondary btn-sm">📋 History</button>
+            </div>
+          </div>
         </div>
 <div id="fact-display-box">
           <button id="btn-speak" class="btn-speak" style="display: none;" aria-label="Bunyikan Suara">🔊</button>
@@ -1223,6 +1231,10 @@ body.dark-mode {
           <button id="btn-add-routine-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Zikir</button>
           <button id="btn-open-jana-pukal" class="btn btn-sm" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
         </div>
+<div style="display:flex; gap:6px; margin-top:8px;">
+          <input id="routine-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
+          <button id="btn-goto-empty-routine" class="btn btn-secondary btn-sm" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
+        </div>
         <div class="list mt-8" id="routine-drawers-list" style="padding: 10px;"></div>
       </section>
 
@@ -1248,7 +1260,12 @@ body.dark-mode {
 <div style="display:flex; gap:8px; margin-top:8px;">
           <button id="btn-add-quran-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Ayat</button>
           <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="quran" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
-        </div>        <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
+        </div>       
+<div style="display:flex; gap:6px; margin-top:8px;">
+          <input id="quran-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
+          <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="quran" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
+        </div>
+        <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
       </section>
 
       <!-- ══ DOA ══ -->
@@ -1273,6 +1290,10 @@ body.dark-mode {
       <div style="display:flex; gap:8px; margin-top:8px;">
           <button id="btn-add-doa-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Doa</button>
           <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="doa" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
+        </div>
+  <div style="display:flex; gap:6px; margin-top:8px;">
+          <input id="doa-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
+          <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="doa" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
         <div class="list mt-8" id="doa-drawers-list" style="padding:10px;"></div>
       </section>
@@ -1300,6 +1321,10 @@ body.dark-mode {
           <button id="btn-add-hadis-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Hadis</button>
           <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="hadis" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
         </div>
+  <div style="display:flex; gap:6px; margin-top:8px;">
+          <input id="hadis-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
+          <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="hadis" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
+        </div>
         <div class="list mt-8" id="hadis-drawers-list" style="padding:10px;"></div>
 </section>
 
@@ -1314,6 +1339,16 @@ body.dark-mode {
         <div class="list" id="history-list"></div>
       </section>
 
+<section id="section-mode-history" class="section">
+        <div class="topbar">
+          <button id="btn-back-from-mode-history" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" id="mode-history-title">History</div>
+            <div class="topbar-sub">Rekod zikir harian</div>
+          </div>
+        </div>
+        <div class="list" id="mode-history-list"></div>
+      </section>
       <section id="section-notes" class="section">
         <div class="topbar">
           <button id="btn-back-home-from-notes" class="btn btn-secondary btn-sm">← Menu</button>
@@ -1737,6 +1772,37 @@ btnSambungFasa2.addEventListener('click', () => {
     let allDoaTimes = [], allDoaDrawers = [], currentDoaTimeId = null, activeGlobalDoaId = 'default';
     let allHadisTimes = [], allHadisDrawers = [], currentHadisTimeId = null, activeGlobalHadisId = 'default';
 
+// ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
+    const MODE_DAILY_DEFAULTS = { quran: 1000, doa: 1000, hadis: 10 };
+    let currentQuranTasbihRef = null, currentQuranTasbihData = null;
+    let currentDoaTasbihRef = null, currentDoaTasbihData = null;
+    let currentHadisTasbihRef = null, currentHadisTasbihData = null;
+
+    function getActiveModeCountdown() {
+      if (routineModeSource === 'quran') return { data: currentQuranTasbihData, ref: currentQuranTasbihRef };
+      if (routineModeSource === 'doa')   return { data: currentDoaTasbihData,   ref: currentDoaTasbihRef   };
+      if (routineModeSource === 'hadis') return { data: currentHadisTasbihData, ref: currentHadisTasbihRef };
+      return { data: null, ref: null };
+    }
+
+    async function ensureTodayModeTasbih(mode) {
+      if (!currentUser) return;
+      const key = todayKey();
+      const refDoc = doc(db, "users", currentUser.uid, `${mode}_tasbih`, key);
+      const snap = await getDoc(refDoc);
+      if (!snap.exists()) {
+        await setDoc(refDoc, {
+          dateKey: key, createdAt: Date.now(),
+          remaining: MODE_DAILY_DEFAULTS[mode], done: false
+        });
+      }
+      const updated = await getDoc(refDoc);
+      const data = updated.data();
+      if (mode === 'quran') { currentQuranTasbihRef = refDoc; currentQuranTasbihData = data; }
+      else if (mode === 'doa')   { currentDoaTasbihRef = refDoc; currentDoaTasbihData = data; }
+      else if (mode === 'hadis') { currentHadisTasbihRef = refDoc; currentHadisTasbihData = data; }
+      updateTasbihUI();
+    }
     function getModeLabel(src) {
       return {rutin:'Rutin', quran:'📖 Quran', doa:'🤲 Doa', hadis:'📚 Hadis'}[src] || src;
     }
@@ -1764,7 +1830,7 @@ btnSambungFasa2.addEventListener('click', () => {
       btnToggleMode.style.display="none";
       btnToggleMainRestMax.style.display="none";
 
-      if (!wasActive) {
+if (!wasActive) {
         routineMode = true; routineModeSource = src;
         const b = document.getElementById(`btn-toggle-${src}`);
         if(b){b.textContent=`${getModeLabel(src)}: ON`; b.classList.add("btn-active");}
@@ -1773,6 +1839,8 @@ btnSambungFasa2.addEventListener('click', () => {
         learningMode=2; btnToggleMode.textContent="Mode: Rest";
         btnToggleMainRestMax.style.display="inline-flex";
         rebuildRoutines();
+        // Pastikan countdown harian wujud untuk mode baru
+        if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
       }
       updateTasbihUI();
     }
@@ -1906,7 +1974,7 @@ function showSection(section) {
       sectionMemanah.classList.remove("active"); 
       sectionPrompterEditor.classList.remove("active"); 
       if (sectionMyLaw) sectionMyLaw.classList.remove("active"); // KOD BARU: Hapus active dari My Law
-  ['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers'].forEach(id => {
+['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history'].forEach(id => {
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
       if (sectionAmtAk) sectionAmtAk.classList.remove("active");
@@ -2197,19 +2265,34 @@ function updateTasbihUI() {
       const modeBarText = document.getElementById('tasbih-mode-bar-text');
       const modeBarSub = document.getElementById('tasbih-mode-bar-sub');
 
-      if (hideCircle) {
+if (hideCircle) {
         tasbihCircle.style.display = 'none';
         tasbihMemanahContainer.style.display = 'none';
         if (modeBar) modeBar.style.display = 'block';
+
+        const counterArea = document.getElementById('tasbih-mode-counter-area');
+        const modeRemainingEl = document.getElementById('tasbih-mode-remaining');
 
         if (factMode) {
           modeBarText.textContent = '📚 Mode Fakta';
           modeBarSub.textContent = 'Mode Fakta tidak mengurangkan countdown tasbih harian';
           tasbihStatusChip.textContent = 'Mode: Fakta';
+          if (counterArea) counterArea.style.display = 'none';
         } else {
+          const mc = getActiveModeCountdown();
+          const mRem = mc.data ? mc.data.remaining : MODE_DAILY_DEFAULTS[routineModeSource];
+          const target = MODE_DAILY_DEFAULTS[routineModeSource];
+          const harian = mRem <= 0 ? target : (target - mRem);
+          const tambahan = mRem < 0 ? Math.abs(mRem) : 0;
+
           modeBarText.textContent = `${getModeLabel(routineModeSource)} Aktif`;
-          modeBarSub.textContent = `Baki harian: ${remaining.toLocaleString()} | Sapu/Enter untuk zikir`;
-          tasbihStatusChip.textContent = `Mode ${getModeLabel(routineModeSource)}`;
+          modeBarSub.textContent = tambahan > 0
+            ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
+            : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
+
+          if (counterArea) counterArea.style.display = 'flex';
+          if (modeRemainingEl) modeRemainingEl.textContent = mRem.toLocaleString();
+          tasbihStatusChip.textContent = `${getModeLabel(routineModeSource)}: ${mRem.toLocaleString()}`;
         }
         return;
       }
@@ -2291,10 +2374,46 @@ let justBecameDone = false;
             isSempadan = true;
             justBecameDone = true;
           }
-        } else if (!routineMode) {
-          remaining -= 1;
+        if (!factMode) {
+        const isNewMode = routineMode && ['quran','doa','hadis'].includes(routineModeSource);
+
+        if (isNewMode) {
+          // Countdown harian mode berasingan — JANGAN sentuh main tasbih
+          const mc = getActiveModeCountdown();
+          if (mc.data && mc.ref) {
+            let mRem = mc.data.remaining;
+            let mDone = !!mc.data.done;
+            if (!mDone && mRem > 0) {
+              mRem -= 1;
+              mDone = mRem <= 0;
+              if (mDone) showToast(`✅ ${getModeLabel(routineModeSource)} hari ini selesai! Sambung sebagai Tambahan.`);
+            } else {
+              mRem -= 1; // Tambahan
+            }
+            mc.data.remaining = mRem;
+            mc.data.done = mDone;
+            if (mRem % 5 === 0 || mDone) {
+              setDoc(mc.ref, { ...mc.data, updatedAt: Date.now() })
+                .catch(e => console.log("Gagal simpan mode tasbih:", e));
+            }
+          }
           didDecrement = true;
-          needFirebaseUpdate = true;
+        } else {
+          // Mode normal & rutin asal
+          if (!done && remaining > 0) {
+            remaining -= 1;
+            done = remaining <= 0;
+            didDecrement = true;
+            needFirebaseUpdate = true;
+            if (done) {
+              isSempadan = true;
+              justBecameDone = true;
+            }
+          } else if (!routineMode) {
+            remaining -= 1;
+            didDecrement = true;
+            needFirebaseUpdate = true;
+          }
         }
       } else {
         // Mode fakta: hanya cycle fakta, TIDAK sentuh remaining langsung
@@ -3270,17 +3389,29 @@ else if (learningMode === 2) { // Rest Mode
       document.getElementById("parent-routine-time-name").textContent = rtn && rtn.name ? `Waktu: ${rtn.name}` : "";
 
       routineDrawersList.innerHTML = "";
+const searchTerm = (document.getElementById('routine-drawer-search')?.value || '').toLowerCase().trim();
       const filteredDrawers = allRoutineDrawers.filter(d => d.timeId === currentRoutineTimeId);
-      const sortedDrawers = filteredDrawers.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
+      let sortedDrawers = filteredDrawers.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
+      if (searchTerm) sortedDrawers = sortedDrawers.filter(d => (d.title || '').toLowerCase().includes(searchTerm));
       
+      const emptyCount = filteredDrawers.filter(d => !d.zikir || d.zikir.trim() === '').length;
+      const btn = document.getElementById('btn-goto-empty-routine');
+      if (btn) btn.textContent = emptyCount > 0 ? `⚡ Kosong (${emptyCount})` : '✅ Penuh';
+
+      if (!sortedDrawers.length) { routineDrawersList.innerHTML = '<div class="empty-state">Tiada laci dijumpai.</div>'; return; }
+
       const arabicSymbols = ['ّ', 'ٰ', 'ٓ', 'ْ', 'ۚ', 'ۖ', 'ۗ', 'ۛ', '۞'];
 
       sortedDrawers.forEach(data => {
+const isEmpty = !data.zikir || data.zikir.trim() === '';
         const div = document.createElement("div");
         div.className = "drawer-card";
+        if (isEmpty) {
+          div.setAttribute('data-empty', 'true');
+          div.style.borderColor = 'rgba(245,158,11,0.4)';
+        }
         
         let symbolsHtml = arabicSymbols.map(sym => `<button class="arabic-btn">${sym}</button>`).join('');
-
         div.innerHTML = `
           <input class="drawer-title" value="${data.title || ''}" placeholder="Tajuk Laci Zikir (Cth: Istighfar)" style="width:100%; margin-bottom:12px; font-size:1.05rem;">
           
@@ -4606,14 +4737,26 @@ if (result.score > 0) {
       const list = document.getElementById(cfg.listId);
       list.innerHTML = "";
       const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
-      const filtered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
+const searchEl = document.getElementById(`${mode}-drawer-search`);
+      const searchTerm = (searchEl?.value || '').toLowerCase().trim();
+      const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
         .sort((a,b)=>(a.title||"").localeCompare(b.title||"",undefined,{numeric:true}));
+      const filtered = searchTerm ? allFiltered.filter(d=>(d.title||'').toLowerCase().includes(searchTerm)) : allFiltered;
 
-      if(!filtered.length){list.innerHTML='<div class="empty-state">Belum ada laci. Tekan Tambah.</div>';return;}
+      const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').length;
+      document.querySelectorAll(`.btn-goto-empty-generic[data-mode="${mode}"]`).forEach(b => {
+        b.textContent = emptyCount > 0 ? `⚡ Kosong (${emptyCount})` : '✅ Penuh';
+      });
 
+      if(!filtered.length){list.innerHTML='<div class="empty-state">Tiada laci dijumpai.</div>';return;}
       filtered.forEach(data => {
+const isEmpty = !data.zikir || data.zikir.trim() === '';
         const div = document.createElement("div");
         div.className = "drawer-card";
+        if (isEmpty) {
+          div.setAttribute('data-empty', 'true');
+          div.style.borderColor = 'rgba(245,158,11,0.4)';
+        }
         div.innerHTML = `
           <input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
@@ -4685,6 +4828,96 @@ if (result.score > 0) {
       isDarkMode = !isDarkMode;
       localStorage.setItem('darkMode', isDarkMode);
       applyDarkMode();
+    });
+
+// ── MODE HISTORY ──
+    const sectionModeHistory = document.getElementById('section-mode-history');
+    document.getElementById('btn-back-from-mode-history').addEventListener('click', () => showSection(sectionTasbih));
+
+    document.getElementById('btn-mode-history').addEventListener('click', () => {
+      showSection(sectionModeHistory);
+      renderModeHistory();
+    });
+
+    function renderModeHistory() {
+      const src = routineModeSource;
+      const target = MODE_DAILY_DEFAULTS[src] || 1000;
+      document.getElementById('mode-history-title').textContent = `${getModeLabel(src)} — History`;
+      const listEl = document.getElementById('mode-history-list');
+      listEl.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
+      const q = query(
+        collection(db, "users", currentUser.uid, `${src}_tasbih`),
+        orderBy("dateKey", "desc")
+      );
+      onSnapshot(q, (snap) => {
+        listEl.innerHTML = "";
+        if (snap.empty) {
+          listEl.innerHTML = '<div class="empty-state">Belum ada rekod.</div>';
+          return;
+        }
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          const key = data.dateKey || "";
+          const [y, m, d] = key.split("-");
+          const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+          const { label, day } = formatDateLabel(dateObj);
+          const mRem = data.remaining ?? target;
+          const done = !!data.done;
+          const harian = mRem <= 0 ? target : (target - mRem);
+          const tambahan = mRem < 0 ? Math.abs(mRem) : 0;
+          const badgeClass = done ? "badge-done" : "badge-false";
+
+          const tambahanHtml = tambahan > 0
+            ? `<div class="list-sub" style="color:#34d399;font-weight:600;">➕ Tambahan: ${tambahan.toLocaleString()} zikir</div>`
+            : '';
+
+          listEl.insertAdjacentHTML("beforeend", `
+            <div class="list-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                <div class="list-title">${day}</div>
+                <span class="badge-status ${badgeClass}">${done ? 'Done' : 'Belum'}</span>
+              </div>
+              <div class="list-sub">${label}</div>
+              <div class="list-sub">🎯 Harian: <strong style="color:${done?'#bbf7d0':'#fca5a5'}">${harian.toLocaleString()} / ${target.toLocaleString()}</strong></div>
+              ${tambahanHtml}
+            </div>
+          `);
+        });
+      });
+    }
+// ── SEARCH + GOTO EMPTY ──
+    function gotoFirstEmptyDrawer(listId) {
+      const list = document.getElementById(listId);
+      if (!list) return;
+      const empties = list.querySelectorAll('[data-empty="true"]');
+      if (empties.length === 0) { showToast('✅ Tiada laci kosong!'); return; }
+      empties[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      empties[0].style.outline = '2px solid #f59e0b';
+      empties[0].style.boxShadow = '0 0 12px rgba(245,158,11,0.5)';
+      setTimeout(() => { empties[0].style.outline = ''; empties[0].style.boxShadow = ''; }, 2500);
+      showToast(`⚡ ${empties.length} laci kosong — lompat ke yang pertama`);
+    }
+
+    // Routine search + goto empty
+    document.getElementById('routine-drawer-search').addEventListener('input', () => renderRoutineDrawers());
+    document.getElementById('btn-goto-empty-routine').addEventListener('click', () => {
+      document.getElementById('routine-drawer-search').value = '';
+      renderRoutineDrawers();
+      setTimeout(() => gotoFirstEmptyDrawer('routine-drawers-list'), 100);
+    });
+
+    // Generic (quran/doa/hadis) search + goto empty
+    ['quran','doa','hadis'].forEach(mode => {
+      document.getElementById(`${mode}-drawer-search`).addEventListener('input', () => renderGenericDrawers(mode));
+    });
+    document.querySelectorAll('.btn-goto-empty-generic').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-mode');
+        document.getElementById(`${mode}-drawer-search`).value = '';
+        renderGenericDrawers(mode);
+        setTimeout(() => gotoFirstEmptyDrawer(`${mode}-drawers-list`), 100);
+      });
     });
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
