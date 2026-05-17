@@ -1261,6 +1261,12 @@ body.dark-mode {
           <button id="btn-add-quran-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Ayat</button>
           <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="quran" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
         </div>       
+<div style="display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px;">
+          <span style="font-size:0.75rem; color:#34d399; flex:1;">📐 Saiz Huruf Arab:</span>
+          <button id="btn-quran-font-minus" class="btn btn-secondary btn-sm" style="width:32px; padding:4px;">−</button>
+          <span id="quran-font-display" style="font-size:0.8rem; color:white; min-width:48px; text-align:center; font-weight:bold;"></span>
+          <button id="btn-quran-font-plus" class="btn btn-secondary btn-sm" style="width:32px; padding:4px;">+</button>
+        </div>
 <div style="display:flex; gap:6px; margin-top:8px;">
           <input id="quran-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="quran" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
@@ -2856,8 +2862,8 @@ factHintEl.style.display = 'block';
       btnSpeak.style.display = 'flex';
       btnCopyFact.style.display = 'flex';
 if (routineMode && routineModeSource === 'quran') {
-        factContentEl.style.fontSize = '2.2rem';
-        factContentEl.style.lineHeight = '2.2';
+factContentEl.style.fontSize = `${quranFontSize}rem`;
+        factContentEl.style.lineHeight = '2.0';
         factContentEl.style.fontFamily = '"Traditional Arabic", "Scheherazade New", serif';
       } else {
         factContentEl.style.fontSize = '';
@@ -4732,8 +4738,8 @@ if (result.score > 0) {
       const list = document.getElementById(cfg.listId);
       list.innerHTML = "";
       const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
-const zikirFontSize = mode === 'quran' ? '2.3rem' : '1.15rem';
-      const zikirMinHeight = mode === 'quran' ? '140px' : '70px';
+const zikirFontSize = mode === 'quran' ? `${quranFontSize}rem` : '1.15rem';
+      const zikirMinHeight = mode === 'quran' ? `${Math.max(120, quranFontSize * 45)}px` : '70px';
 const searchEl = document.getElementById(`${mode}-drawer-search`);
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
       const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
@@ -4915,6 +4921,35 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
         setTimeout(() => gotoFirstEmptyDrawer(`${mode}-drawers-list`), 100);
       });
     });
+// ── SAIZ HURUF QURAN ──
+    let quranFontSize = parseFloat(localStorage.getItem('quranFontSize') || '3.5');
+
+    function updateQuranFontDisplay() {
+      const el = document.getElementById('quran-font-display');
+      if (el) el.textContent = quranFontSize.toFixed(1) + ' rem';
+    }
+
+    document.getElementById('btn-quran-font-minus').addEventListener('click', () => {
+      if (quranFontSize > 1.0) {
+        quranFontSize = Math.round((quranFontSize - 0.5) * 10) / 10;
+        localStorage.setItem('quranFontSize', quranFontSize);
+        updateQuranFontDisplay();
+        renderGenericDrawers('quran');
+        if (routineMode && routineModeSource === 'quran') renderCurrentFact();
+      }
+    });
+
+    document.getElementById('btn-quran-font-plus').addEventListener('click', () => {
+      if (quranFontSize < 7.0) {
+        quranFontSize = Math.round((quranFontSize + 0.5) * 10) / 10;
+        localStorage.setItem('quranFontSize', quranFontSize);
+        updateQuranFontDisplay();
+        renderGenericDrawers('quran');
+        if (routineMode && routineModeSource === 'quran') renderCurrentFact();
+      }
+    });
+
+    updateQuranFontDisplay();
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
