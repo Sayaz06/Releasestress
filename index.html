@@ -6,7 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#020617" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'UthmanicHafs';
+    src: url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2');
+    font-display: swap;
+  }
+</style>
   <style>
     :root {
       --bg: #020617;
@@ -2874,7 +2880,8 @@ factHintEl.style.display = 'block';
 if (routineMode && routineModeSource === 'quran') {
 factContentEl.style.fontSize = `${quranFontSize}rem`;
         factContentEl.style.lineHeight = '2.0';
-        factContentEl.style.fontFamily = '"Scheherazade New", "Traditional Arabic", serif';      } else {
+factContentEl.style.fontFamily = "'UthmanicHafs', 'Traditional Arabic', serif";
+} else {
         factContentEl.style.fontSize = '';
         factContentEl.style.lineHeight = '';
         factContentEl.style.fontFamily = '';
@@ -4754,7 +4761,7 @@ const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
         <div class="huruf-picker-grid" style="display:none;flex-wrap:wrap;gap:4px;margin-bottom:8px;background:rgba(15,23,42,0.8);border:1px solid var(--border-soft);border-radius:8px;padding:8px;">
           ${HURUF_TASYDID_KASRA.map(({char,label}) =>
             `<button class="huruf-pick-btn" data-char="${char}" style="background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);color:white;border-radius:6px;padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:44px;">
-              <span style="font-size:1.4rem;font-family:'Scheherazade New',serif;line-height:1.8;">${char}</span>
+          <span style="font-size:2rem;font-family:'UthmanicHafs','Traditional Arabic',serif;line-height:2.5;">${char}</span>
               <span style="font-size:0.55rem;color:var(--subtext);">${label}</span>
             </button>`
           ).join('')}
@@ -4786,8 +4793,9 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
 ${hurufPickerHtml}
           <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}</div>
-                    <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'Scheherazade New',serif" : 'inherit'};">${data.zikir||''}</textarea>          <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
-          <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
+                    <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};
+                    font-family:${mode === 'quran' ? "'UthmanicHafs','Traditional Arabic',serif" : 'inherit'}          
+                    <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
           <div style="text-align:right;margin-top:4px;">
             <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
