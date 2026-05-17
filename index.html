@@ -4759,8 +4759,8 @@ const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
           📖 Pilih Huruf Bertasydid (أ → ي)
         </button>
         <div class="huruf-picker-grid" style="display:none;flex-wrap:wrap;gap:4px;margin-bottom:8px;background:rgba(15,23,42,0.8);border:1px solid var(--border-soft);border-radius:8px;padding:8px;">
-          ${HURUF_TASYDID_KASRA.map(({char,label}) =>
-            `<button class="huruf-pick-btn" data-char="${char}" style="background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);color:white;border-radius:6px;padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:44px;">
+${HURUF_TASYDID_KASRA.map(({char,label}, idx) =>
+            `<button class="huruf-pick-btn" data-idx="${idx}" style="background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);color:white;border-radius:6px;padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:44px;">
           <span style="font-size:2rem;font-family:'UthmanicHafs','Traditional Arabic',serif;line-height:2.5;">${char}</span>
               <span style="font-size:0.55rem;color:var(--subtext);">${label}</span>
             </button>`
@@ -4819,9 +4819,10 @@ ${hurufPickerHtml}
             toggleHuruf.style.background = buka ? 'rgba(52,211,153,0.25)' : 'rgba(52,211,153,0.1)';
           });
         }
-        div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
+div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
           hBtn.addEventListener('click', () => {
-            const char = hBtn.getAttribute('data-char');
+            const idx = parseInt(hBtn.getAttribute('data-idx'));
+            const char = HURUF_TASYDID_KASRA[idx].char;
             const s = tz.selectionStart, e2 = tz.selectionEnd, v = tz.value;
             tz.value = v.substring(0,s) + char + v.substring(e2);
             tz.selectionStart = tz.selectionEnd = s + char.length;
