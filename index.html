@@ -2364,21 +2364,9 @@ function decrementTasbih() {
 let justBecameDone = false;
 
       if (!factMode) {
-        // Mode normal & rutin: kurangkan remaining seperti biasa
-        if (!done && remaining > 0) {
-          remaining -= 1;
-          done = remaining <= 0;
-          didDecrement = true;
-          needFirebaseUpdate = true;
-          if (done) {
-            isSempadan = true;
-            justBecameDone = true;
-          }
-        if (!factMode) {
         const isNewMode = routineMode && ['quran','doa','hadis'].includes(routineModeSource);
 
         if (isNewMode) {
-          // Countdown harian mode berasingan — JANGAN sentuh main tasbih
           const mc = getActiveModeCountdown();
           if (mc.data && mc.ref) {
             let mRem = mc.data.remaining;
@@ -2388,7 +2376,7 @@ let justBecameDone = false;
               mDone = mRem <= 0;
               if (mDone) showToast(`✅ ${getModeLabel(routineModeSource)} hari ini selesai! Sambung sebagai Tambahan.`);
             } else {
-              mRem -= 1; // Tambahan
+              mRem -= 1;
             }
             mc.data.remaining = mRem;
             mc.data.done = mDone;
@@ -2399,7 +2387,6 @@ let justBecameDone = false;
           }
           didDecrement = true;
         } else {
-          // Mode normal & rutin asal
           if (!done && remaining > 0) {
             remaining -= 1;
             done = remaining <= 0;
@@ -2416,7 +2403,6 @@ let justBecameDone = false;
           }
         }
       } else {
-        // Mode fakta: hanya cycle fakta, TIDAK sentuh remaining langsung
         didDecrement = true;
       }
 
