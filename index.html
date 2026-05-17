@@ -1037,6 +1037,10 @@ body.dark-mode {
           * Kemajuan disimpan ke awan setiap 10 zikir.
         </div>
 
+<div id="tasbih-mode-bar" style="display:none; background:rgba(30,41,59,0.6); border:1px solid var(--border-soft); border-radius:10px; padding:8px 14px; text-align:center; flex-shrink:0; margin:4px 0;">
+          <div id="tasbih-mode-bar-text" style="font-size:0.88rem; color:var(--grad2); font-weight:700;"></div>
+          <div id="tasbih-mode-bar-sub" style="font-size:0.72rem; color:var(--subtext); margin-top:3px;"></div>
+        </div>
 <div id="fact-display-box">
           <button id="btn-speak" class="btn-speak" style="display: none;" aria-label="Bunyikan Suara">🔊</button>
           <button id="btn-copy-fact" class="btn-speak" style="display: none; left: 8px; right: auto; top: 8px; transform: none;" aria-label="Salin Teks">📋</button>          <div id="fact-title" class="fact-title-label"></div>
@@ -2177,7 +2181,7 @@ function showSection(section) {
       updateTasbihUI();
     }
 
-    function updateTasbihUI() {
+function updateTasbihUI() {
       if (!currentTasbihData) return;
       const remaining = currentTasbihData.remaining ?? 10000;
       const done = !!currentTasbihData.done;
@@ -2186,7 +2190,35 @@ function showSection(section) {
       const { label } = formatDateLabel(now);
       tasbihDateLabel.textContent = label;
 
-if (routineMode && allRoutines.length > 0) {
+      // ── Tentukan sama ada perlu sembunyikan bulatan ──
+      const isNewMode = routineMode && ['quran','doa','hadis'].includes(routineModeSource);
+      const hideCircle = factMode || isNewMode;
+      const modeBar = document.getElementById('tasbih-mode-bar');
+      const modeBarText = document.getElementById('tasbih-mode-bar-text');
+      const modeBarSub = document.getElementById('tasbih-mode-bar-sub');
+
+      if (hideCircle) {
+        tasbihCircle.style.display = 'none';
+        tasbihMemanahContainer.style.display = 'none';
+        if (modeBar) modeBar.style.display = 'block';
+
+        if (factMode) {
+          modeBarText.textContent = '📚 Mode Fakta';
+          modeBarSub.textContent = 'Mode Fakta tidak mengurangkan countdown tasbih harian';
+          tasbihStatusChip.textContent = 'Mode: Fakta';
+        } else {
+          modeBarText.textContent = `${getModeLabel(routineModeSource)} Aktif`;
+          modeBarSub.textContent = `Baki harian: ${remaining.toLocaleString()} | Sapu/Enter untuk zikir`;
+          tasbihStatusChip.textContent = `Mode ${getModeLabel(routineModeSource)}`;
+        }
+        return;
+      }
+
+      // ── Mode biasa: tunjuk semula bulatan ──
+      if (modeBar) modeBar.style.display = 'none';
+      if (!isTasbihMemanahActive) tasbihCircle.style.display = 'flex';
+
+      if (routineMode && allRoutines.length > 0) {
         const curRtn = allRoutines[currentRoutineIndex];
         document.querySelector(".counter-label").textContent = curRtn.isTamat ? "Rutin Tamat" : "Target Mini Zikir";
         tasbihCountEl.textContent = currentRoutineTarget;
