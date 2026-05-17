@@ -4737,7 +4737,10 @@ if (result.score > 0) {
 
       const list = document.getElementById(cfg.listId);
       list.innerHTML = "";
-      const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
+const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
+      const fixBtn = mode === 'quran' 
+        ? `<button class="arabic-btn btn-fix-baris" style="background:rgba(52,211,153,0.15);border-color:#34d399;color:#34d399;font-size:0.7rem;">🔧 Fix Baris</button>` 
+        : '';      
 const zikirFontSize = mode === 'quran' ? `${quranFontSize}rem` : '1.15rem';
       const zikirMinHeight = mode === 'quran' ? `${Math.max(120, quranFontSize * 45)}px` : '70px';
 const searchEl = document.getElementById(`${mode}-drawer-search`);
@@ -4763,8 +4766,7 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
         div.innerHTML = `
           <input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
-          <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}</div>
-          <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'Scheherazade New',serif" : 'inherit'};">${data.zikir||''}</textarea>          <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
+          <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}${fixBtn}</div>          <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'Scheherazade New',serif" : 'inherit'};">${data.zikir||''}</textarea>          <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
           <div style="text-align:right;margin-top:4px;">
@@ -4780,6 +4782,15 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{target:e.target.value}));
         div.querySelector('.drawer-maksud').addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{maksud:e.target.value}));
+      const fixBarisBtn = div.querySelector('.btn-fix-baris');
+        if (fixBarisBtn) {
+          fixBarisBtn.addEventListener('click', () => {
+            const fixed = fixArabicDiacritics(tz.value);
+            tz.value = fixed;
+            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:fixed});
+            showToast('✅ Baris ditetapkan!');
+          });
+        }
         div.querySelectorAll('.arabic-btn').forEach(btn => btn.addEventListener("click", () => {
           const sym=btn.textContent, s=tz.selectionStart, e2=tz.selectionEnd, v=tz.value;
           tz.value=v.substring(0,s)+sym+v.substring(e2);
@@ -4949,6 +4960,13 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
     });
 
     updateQuranFontDisplay();
+// ── FIX URUTAN HARAKAT ARAB ──
+    function fixArabicDiacritics(text) {
+      // Swap vowel+sabdu → sabdu+vowel supaya font render betul
+      const vowels = '\u064B\u064C\u064D\u064E\u064F\u0650\u0652';
+      const shadda = '\u0651';
+      return text.replace(new RegExp(`([${vowels}])(${shadda})`, 'g'), '$2$1');
+    }
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
