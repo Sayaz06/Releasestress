@@ -2855,6 +2855,15 @@ function getRemainingInLaci() {
 factHintEl.style.display = 'block';
       btnSpeak.style.display = 'flex';
       btnCopyFact.style.display = 'flex';
+if (routineMode && routineModeSource === 'quran') {
+        factContentEl.style.fontSize = '2.2rem';
+        factContentEl.style.lineHeight = '2.2';
+        factContentEl.style.fontFamily = '"Traditional Arabic", "Scheherazade New", serif';
+      } else {
+        factContentEl.style.fontSize = '';
+        factContentEl.style.lineHeight = '';
+        factContentEl.style.fontFamily = '';
+      }
       
       // DITUKAR: Teks hint untuk 5 Mode Pembelajaran
       if (learningMode === 4) { // Super
@@ -4723,6 +4732,8 @@ if (result.score > 0) {
       const list = document.getElementById(cfg.listId);
       list.innerHTML = "";
       const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
+const zikirFontSize = mode === 'quran' ? '2.3rem' : '1.15rem';
+      const zikirMinHeight = mode === 'quran' ? '140px' : '70px';
 const searchEl = document.getElementById(`${mode}-drawer-search`);
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
       const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
@@ -4747,8 +4758,7 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
           <input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
           <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}</div>
-          <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:1.15rem;min-height:70px;resize:none;">${data.zikir||''}</textarea>
-          <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">2. Target Mini</div>
+          <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:2;">${data.zikir||''}</textarea>          <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">2. Target Mini</div>
           <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
