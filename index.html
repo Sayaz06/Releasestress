@@ -1781,6 +1781,15 @@ btnSambungFasa2.addEventListener('click', () => {
 
 // ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
     const MODE_DAILY_DEFAULTS = { quran: 1000, doa: 1000, hadis: 10 };
+   const HURUF_TASYDID_KASRA = [
+      ['أ','Alif'],['ب','Ba'],['ت','Ta'],['ث','Tha'],
+      ['ج','Jim'],['ح','Ha'],['خ','Kha'],['د','Dal'],
+      ['ذ','Thal'],['ر','Ra'],['ز','Zai'],['س','Sin'],
+      ['ش','Syin'],['ص','Sad'],['ض','Dad'],['ط','Taa'],
+      ['ظ','Zha'],['ع','Ain'],['غ','Ghain'],['ف','Fa'],
+      ['ق','Qaf'],['ك','Kaf'],['ل','Lam'],['م','Mim'],
+      ['ن','Nun'],['و','Wau'],['ه','Ha'],['ي','Ya']
+    ].map(([l,n]) => ({ char: l+'\u0651'+'\u0650', label: n }));
     let currentQuranTasbihRef = null, currentQuranTasbihData = null;
     let currentDoaTasbihRef = null, currentDoaTasbihData = null;
     let currentHadisTasbihRef = null, currentHadisTasbihData = null;
@@ -4737,9 +4746,21 @@ if (result.score > 0) {
 
       const list = document.getElementById(cfg.listId);
       list.innerHTML = "";
-      const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
+const arabicSymbols = ['ّ','ٰ','ٓ','ْ','ۚ','ۖ','ۗ','ۛ','۞'];
+      const hurufPickerHtml = mode === 'quran' ? `
+        <button class="btn-toggle-huruf-picker" style="width:100%;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:8px;color:#34d399;padding:6px;font-size:0.75rem;cursor:pointer;margin-bottom:4px;">
+          📖 Pilih Huruf Bertasydid (أ → ي)
+        </button>
+        <div class="huruf-picker-grid" style="display:none;flex-wrap:wrap;gap:4px;margin-bottom:8px;background:rgba(15,23,42,0.8);border:1px solid var(--border-soft);border-radius:8px;padding:8px;">
+          ${HURUF_TASYDID_KASRA.map(({char,label}) =>
+            `<button class="huruf-pick-btn" data-char="${char}" style="background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);color:white;border-radius:6px;padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:44px;">
+              <span style="font-size:1.4rem;font-family:'Scheherazade New',serif;line-height:1.8;">${char}</span>
+              <span style="font-size:0.55rem;color:var(--subtext);">${label}</span>
+            </button>`
+          ).join('')}
+        </div>` : '';
 const zikirFontSize = mode === 'quran' ? `${quranFontSize}rem` : '1.15rem';
-      const zikirMinHeight = mode === 'quran' ? `${Math.max(120, quranFontSize * 45)}px` : '70px';
+       const zikirMinHeight = mode === 'quran' ? `${Math.max(120, quranFontSize * 45)}px` : '70px';
 const searchEl = document.getElementById(`${mode}-drawer-search`);
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
       const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
@@ -4763,8 +4784,9 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
         div.innerHTML = `
           <input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
+${hurufPickerHtml}
           <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}</div>
-          <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'Scheherazade New',serif" : 'inherit'};">${data.zikir||''}</textarea>          <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
+                    <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'Scheherazade New',serif" : 'inherit'};">${data.zikir||''}</textarea>          <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
           <div style="text-align:right;margin-top:4px;">
@@ -4780,6 +4802,25 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{target:e.target.value}));
         div.querySelector('.drawer-maksud').addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{maksud:e.target.value}));
+    const toggleHuruf = div.querySelector('.btn-toggle-huruf-picker');
+        const hurufGrid = div.querySelector('.huruf-picker-grid');
+        if (toggleHuruf && hurufGrid) {
+          toggleHuruf.addEventListener('click', () => {
+            const buka = hurufGrid.style.display === 'none';
+            hurufGrid.style.display = buka ? 'flex' : 'none';
+            toggleHuruf.style.background = buka ? 'rgba(52,211,153,0.25)' : 'rgba(52,211,153,0.1)';
+          });
+        }
+        div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
+          hBtn.addEventListener('click', () => {
+            const char = hBtn.getAttribute('data-char');
+            const s = tz.selectionStart, e2 = tz.selectionEnd, v = tz.value;
+            tz.value = v.substring(0,s) + char + v.substring(e2);
+            tz.selectionStart = tz.selectionEnd = s + char.length;
+            tz.focus();
+            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:tz.value});
+          });
+        });
         div.querySelectorAll('.arabic-btn').forEach(btn => btn.addEventListener("click", () => {
           const sym=btn.textContent, s=tz.selectionStart, e2=tz.selectionEnd, v=tz.value;
           tz.value=v.substring(0,s)+sym+v.substring(e2);
