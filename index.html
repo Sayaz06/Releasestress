@@ -1344,6 +1344,11 @@ body.dark-mode {
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="hadis" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
         <div class="list mt-8" id="hadis-drawers-list" style="padding:10px;"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:8px;padding:8px 12px;">
+          <input type="checkbox" id="hadis-read-all-toggle" style="width:18px;height:18px;accent-color:#ec4899;cursor:pointer;">
+          <span style="font-size:0.78rem;color:#f9a8d4;font-weight:600;">📚 Baca Semua Hadis (Semua Kitab/Bab, ikut urutan)</span>
+          <span id="hadis-read-all-progress" style="font-size:0.7rem;color:var(--subtext);margin-left:auto;"></span>
+        </div>
 </section>
 
       <section id="section-history" class="section">
@@ -1791,6 +1796,8 @@ btnSambungFasa2.addEventListener('click', () => {
     let allHadisTimes = [], allHadisDrawers = [], currentHadisTimeId = null, activeGlobalHadisId = 'default';
 let doaReadAllMode = false;
     let doaReadAllIndex = 0;
+let hadisReadAllMode = false;
+    let hadisReadAllIndex = 0;
 // ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
     const MODE_DAILY_DEFAULTS = { quran: 1000, doa: 1000, hadis: 10 };
    const HURUF_TASYDID_KASRA = [
@@ -2922,6 +2929,11 @@ function syncIndexToFirestore(newIndex) {
         return;
       }
 
+  if (hadisReadAllMode && routineModeSource === 'hadis') {
+        syncHadisReadAllProgress(newIndex);
+        return;
+      }
+
       if (!routineMode && activeGlobalTopicId !== 'default') {
         updateDoc(doc(db, "users", currentUser.uid, "topics", activeGlobalTopicId), {
           lastIndex: newIndex
@@ -3506,6 +3518,40 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
 function rebuildRoutines() {
 allRoutines = [];
 
+// ── MOD BACA SEMUA HADIS ──
+      if (hadisReadAllMode && routineModeSource === 'hadis') {
+        const semuaHadis = [...allHadisDrawers]
+          .filter(d => d.zikir || d.target || d.maksud)
+          .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
+
+        semuaHadis.forEach(data => {
+          const zikirText = (data.zikir || "").trim() || "Kosong";
+          const targetVal = parseInt(data.target);
+          allRoutines.push({
+            title: data.title || "Tiada Tajuk",
+            text: zikirText,
+            target: isNaN(targetVal) ? 1 : targetVal,
+            translation: data.maksud ? data.maksud.trim() : null,
+            isTamat: false
+          });
+        });
+
+        if (allRoutines.length > 0) {
+          allRoutines.push({ title: "Tamat", text: "✅ Semua Hadis Selesai!", target: 0, isTamat: true });
+        }
+
+        if (hadisReadAllIndex >= allRoutines.length) hadisReadAllIndex = 0;
+        currentRoutineIndex = hadisReadAllIndex;
+        if (allRoutines.length > 0) currentRoutineTarget = allRoutines[currentRoutineIndex].target;
+
+        const total = allRoutines.filter(r => !r.isTamat).length;
+        const el = document.getElementById('hadis-read-all-progress');
+        if (el) el.textContent = total > 0 ? `${currentRoutineIndex + 1} / ${total}` : '';
+
+        if (routineMode) { updateTasbihUI(); renderCurrentFact(); }
+        return;
+      }
+  
       // ── MOD BACA SEMUA DOA ──
       if (doaReadAllMode && routineModeSource === 'doa') {
         const semuaDoa = [...allDoaDrawers]
@@ -4907,6 +4953,26 @@ div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
       }));
     }
 
+document.getElementById('hadis-read-all-toggle').addEventListener('change', async (e) => {
+      hadisReadAllMode = e.target.checked;
+      if (hadisReadAllMode && currentUser) {
+        const refProg = doc(db, "users", currentUser.uid, "settings", "hadisReadAll");
+        const snap = await getDoc(refProg);
+        hadisReadAllIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
+      }
+      if (routineMode && routineModeSource === 'hadis') rebuildRoutines();
+      showToast(hadisReadAllMode ? '📚 Mod Baca Semua Hadis: ON' : 'Mod Baca Semua Hadis: OFF');
+    });
+
+    async function syncHadisReadAllProgress(index) {
+      if (!currentUser) return;
+      hadisReadAllIndex = index;
+      const refProg = doc(db, "users", currentUser.uid, "settings", "hadisReadAll");
+      await setDoc(refProg, { lastIndex: index, updatedAt: Date.now() }, { merge: true });
+      const total = allRoutines.filter(r => !r.isTamat).length;
+      const el = document.getElementById('hadis-read-all-progress');
+      if (el) el.textContent = `${index + 1} / ${total}`;
+    }
 document.getElementById('doa-read-all-toggle').addEventListener('change', async (e) => {
       doaReadAllMode = e.target.checked;
       if (doaReadAllMode && currentUser) {
