@@ -3525,13 +3525,13 @@ allRoutines = [];
           .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
 
         semuaHadis.forEach(data => {
-          const zikirText = (data.zikir || "").trim() || "Kosong";
+const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Kosong";
           const targetVal = parseInt(data.target);
           allRoutines.push({
             title: data.title || "Tiada Tajuk",
             text: zikirText,
             target: isNaN(targetVal) ? 1 : targetVal,
-            translation: data.maksud ? data.maksud.trim() : null,
+            translation: data.zikir ? (data.maksud ? data.maksud.trim() : null) : null,
             isTamat: false
           });
         });
@@ -3559,13 +3559,13 @@ allRoutines = [];
           .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
 
         semuaDoa.forEach(data => {
-          const zikirText = (data.zikir || "").trim() || "Kosong";
+const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Kosong";
           const targetVal = parseInt(data.target);
           allRoutines.push({
             title: data.title || "Tiada Tajuk",
             text: zikirText,
             target: isNaN(targetVal) ? 1 : targetVal,
-            translation: data.maksud ? data.maksud.trim() : null,
+            translation: data.zikir ? (data.maksud ? data.maksud.trim() : null) : null,
             isTamat: false
           });
         });
@@ -3619,15 +3619,15 @@ allRoutines = [];
             }
           } 
           else if (data.zikir || data.target || data.maksud) {
-             const zikirText = data.zikir ? data.zikir.trim() : "Kosong";
+const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Kosong";
              const targetVal = parseInt(data.target);
-             const maksudText = data.maksud ? data.maksud.trim() : null;
+             const maksudText = data.zikir ? (data.maksud ? data.maksud.trim() : null) : null;
 
              allRoutines.push({ 
                   title: tajukLaci, 
                   text: zikirText, 
                   target: isNaN(targetVal) ? 1 : targetVal,
-                  translation: maksudText, 
+                  translation: maksudText,
                   isTamat: false 
              });
           }
