@@ -1308,6 +1308,11 @@ body.dark-mode {
           <input id="doa-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="doa" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:8px 12px;">
+          <input type="checkbox" id="doa-read-all-toggle" style="width:18px;height:18px;accent-color:#f59e0b;cursor:pointer;">
+          <span style="font-size:0.78rem;color:#fcd34d;font-weight:600;">🤲 Baca Semua Doa (Semua Kategori, ikut urutan)</span>
+          <span id="doa-read-all-progress" style="font-size:0.7rem;color:var(--subtext);margin-left:auto;"></span>
+        </div>
         <div class="list mt-8" id="doa-drawers-list" style="padding:10px;"></div>
       </section>
 
@@ -1784,7 +1789,8 @@ btnSambungFasa2.addEventListener('click', () => {
     let allQuranTimes = [], allQuranDrawers = [], currentQuranTimeId = null, activeGlobalQuranId = 'default';
     let allDoaTimes = [], allDoaDrawers = [], currentDoaTimeId = null, activeGlobalDoaId = 'default';
     let allHadisTimes = [], allHadisDrawers = [], currentHadisTimeId = null, activeGlobalHadisId = 'default';
-
+let doaReadAllMode = false;
+    let doaReadAllIndex = 0;
 // ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
     const MODE_DAILY_DEFAULTS = { quran: 1000, doa: 1000, hadis: 10 };
    const HURUF_TASYDID_KASRA = [
@@ -2908,8 +2914,14 @@ factContentEl.style.fontFamily = "'UthmanicHafs', 'Traditional Arabic', serif";
       }
     }
 
-    function syncIndexToFirestore(newIndex) {
+function syncIndexToFirestore(newIndex) {
       if (!currentUser) return;
+
+      if (doaReadAllMode && routineModeSource === 'doa') {
+        syncDoaReadAllProgress(newIndex);
+        return;
+      }
+
       if (!routineMode && activeGlobalTopicId !== 'default') {
         updateDoc(doc(db, "users", currentUser.uid, "topics", activeGlobalTopicId), {
           lastIndex: newIndex
@@ -3492,7 +3504,42 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
     }
 
 function rebuildRoutines() {
-      allRoutines = [];
+allRoutines = [];
+
+      // ── MOD BACA SEMUA DOA ──
+      if (doaReadAllMode && routineModeSource === 'doa') {
+        const semuaDoa = [...allDoaDrawers]
+          .filter(d => d.zikir || d.target || d.maksud)
+          .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
+
+        semuaDoa.forEach(data => {
+          const zikirText = (data.zikir || "").trim() || "Kosong";
+          const targetVal = parseInt(data.target);
+          allRoutines.push({
+            title: data.title || "Tiada Tajuk",
+            text: zikirText,
+            target: isNaN(targetVal) ? 1 : targetVal,
+            translation: data.maksud ? data.maksud.trim() : null,
+            isTamat: false
+          });
+        });
+
+        if (allRoutines.length > 0) {
+          allRoutines.push({ title: "Tamat", text: "✅ Semua Doa Selesai!", target: 0, isTamat: true });
+        }
+
+        if (doaReadAllIndex >= allRoutines.length) doaReadAllIndex = 0;
+        currentRoutineIndex = doaReadAllIndex;
+        if (allRoutines.length > 0) currentRoutineTarget = allRoutines[currentRoutineIndex].target;
+
+        const total = allRoutines.filter(r => !r.isTamat).length;
+        const el = document.getElementById('doa-read-all-progress');
+        if (el) el.textContent = total > 0 ? `${currentRoutineIndex + 1} / ${total}` : '';
+
+        if (routineMode) { updateTasbihUI(); renderCurrentFact(); }
+        return;
+      }
+
       const src = getRoutineSrc();
       const activeTime = src.times.find(t => t.isActive);
       
@@ -4860,6 +4907,26 @@ div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
       }));
     }
 
+document.getElementById('doa-read-all-toggle').addEventListener('change', async (e) => {
+      doaReadAllMode = e.target.checked;
+      if (doaReadAllMode && currentUser) {
+        const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
+        const snap = await getDoc(refProg);
+        doaReadAllIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
+      }
+      if (routineMode && routineModeSource === 'doa') rebuildRoutines();
+      showToast(doaReadAllMode ? '🤲 Mod Baca Semua Doa: ON' : 'Mod Baca Semua: OFF');
+    });
+
+    async function syncDoaReadAllProgress(index) {
+      if (!currentUser) return;
+      doaReadAllIndex = index;
+      const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
+      await setDoc(refProg, { lastIndex: index, updatedAt: Date.now() }, { merge: true });
+      const total = allRoutines.filter(r => !r.isTamat).length;
+      const el = document.getElementById('doa-read-all-progress');
+      if (el) el.textContent = `${index + 1} / ${total}`;
+    }
     function rebuildIfActive(mode) {
       if(routineMode && routineModeSource === mode) rebuildRoutines();
     }
