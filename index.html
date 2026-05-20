@@ -5113,6 +5113,22 @@ function etaStr(barrierAyat, speed) {
       return `${fmtDTQ(eta)}\n(${durasi})`;
     }
 
+function getSurahHariIni() {
+      const now  = new Date();
+      if (now < QURAN_KHATAM_START) return null;
+      const hari = Math.floor((now - QURAN_KHATAM_START) / 864e5);
+      const idx  = Math.min(Math.floor(hari / 3), 113);
+      return {
+        surahNum:        idx + 1,
+        surahName:       QURAN_SURAH_NAMES[idx],
+        hariDalamSurah: (hari % 3) + 1,
+        hariLepas:       hari,
+        status: idx > ((quranKhatamData?.currentSurah||1) - 1)
+          ? 'lewat' : idx === ((quranKhatamData?.currentSurah||1) - 1)
+          ? 'semasa' : 'awal'
+      };
+    }
+
     async function loadQuranKhatam() {
       if (!currentUser) return;
       const snap = await getDoc(doc(db,"users",currentUser.uid,"settings","quranKhatam"));
@@ -5121,6 +5137,16 @@ function etaStr(barrierAyat, speed) {
         lastUpdateTs: Date.now(), history:[], startedAt:Date.now()
       };
       renderQuranKhatamCard();
+// Toast peringatan surah hari ini
+      const s = getSurahHariIni();
+      if (s) {
+        setTimeout(() => {
+          if (s.status === 'lewat')
+            showToast(`⚠️ Penyalinan tertinggal! Surah semasa: ${s.surahName}`, 5000);
+          else if (s.status === 'semasa')
+            showToast(`📖 Hari ini: Surah ${s.surahNum}. ${s.surahName} — Hari ${s.hariDalamSurah}/3`, 4000);
+        }, 2000);
+      }
       if (quranSpeedInterval) clearInterval(quranSpeedInterval);
       quranSpeedInterval = setInterval(() => {
         const el = document.getElementById('quran-elapsed-live');
@@ -5202,6 +5228,25 @@ function etaStr(barrierAyat, speed) {
              style="display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.35);border-radius:8px;color:#34d399;font-size:0.82rem;font-weight:700;text-decoration:none;margin-bottom:10px;">
             🌐 Buka Quran.com
           </a>
+
+${(() => {
+            const s = getSurahHariIni();
+            if (!s) return '';
+            const warna = s.status === 'lewat' ? '#f87171' : s.status === 'semasa' ? '#34d399' : '#fcd34d';
+            const ikon  = s.status === 'lewat' ? '⚠️' : s.status === 'semasa' ? '✅' : '⏳';
+            const msg   = s.status === 'lewat'
+              ? `Anda tertinggal! Perlu kejar sehingga Surah ${s.surahName}`
+              : s.status === 'semasa'
+              ? `Sedang menyalin — Hari ${s.hariDalamSurah}/3`
+              : `Baru bermula — belum tiba hari ini`;
+            return `
+            <div style="background:rgba(0,0,0,0.2);border:1px solid ${warna}40;border-radius:8px;padding:10px;margin-bottom:10px;text-align:center;">
+              <div style="font-size:0.68rem;color:${warna};font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">${ikon} Surah Hari Ini</div>
+              <div style="font-size:1rem;font-weight:700;color:white;">Surah ${s.surahNum}. ${s.surahName}</div>
+              <div style="font-size:0.72rem;color:${warna};margin-top:2px;">${msg}</div>
+              <div style="font-size:0.68rem;color:var(--subtext);margin-top:4px;">Hari ke-${s.hariLepas + 1} fasa penyalinan</div>
+            </div>`;
+          })()}
 
           ${total > 0 ? `
           <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;margin-bottom:10px;font-size:0.75rem;line-height:1.9;">
