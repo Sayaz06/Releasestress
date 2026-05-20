@@ -5156,18 +5156,13 @@ function calcRekodTerbaik(history) {
       };
     }
 
-function calcKelajuanHarian(history) {
+function calcKelajuanHarian(history, totalAyatRead) {
+      if (!totalAyatRead || totalAyatRead <= 0) return 0;
       const now      = new Date();
       const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
       const minitBerlalu = (now - midnight) / 60000;
       if (minitBerlalu <= 0) return 0;
-
-      const todayKey = dateKeyQ(now.getTime());
-      const ayatHariIni = (history || [])
-        .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKey)
-        .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
-
-      return ayatHariIni / minitBerlalu;
+      return totalAyatRead / minitBerlalu;
     }
 
 function etaStr(barrierAyat, speed) {
