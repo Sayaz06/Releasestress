@@ -878,15 +878,70 @@ body.dark-mode {
   <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#34d399;margin-bottom:4px;">📖 Jana Pukal v2 — Format Ayat</div>
     <div style="font-size:.75rem;color:#9ca3af;margin-bottom:10px;">Tampal teks berformat untuk jana laci secara automatik</div>
-    <div style="font-size:.72rem;color:#34d399;margin-bottom:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px;line-height:2;font-family:monospace;">
-      surah : 2.Al-Baqarah<br>
-      ayat 1<br>
-      teks arab : بِسْمِ اللَّهِ<br>
-      penerangan : Dengan nama Allah<br><br>
-      ayat 2<br>
-      teks arab : ...<br>
-      penerangan : ...
+<button id="btn-toggle-panduan-v2"
+      style="width:100%;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:8px;color:#34d399;padding:8px;font-size:0.78rem;font-weight:600;cursor:pointer;margin-bottom:10px;text-align:left;">
+      📘 Lihat Buku Panduan ▾
+    </button>
+    <div id="panduan-v2-content" style="display:none;margin-bottom:10px;overflow-y:auto;max-height:280px;">
+
+      <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px;margin-bottom:8px;">
+        <div style="font-size:0.72rem;color:#34d399;font-weight:700;margin-bottom:6px;">📌 Format Wajib</div>
+        <div style="font-family:monospace;font-size:0.7rem;color:#e5e7eb;line-height:2;background:rgba(0,0,0,0.3);border-radius:6px;padding:8px;">
+          surah : [nombor].[nama surah]<br>
+          <br>
+          ayat [nombor]<br>
+          teks arab : [ayat dalam tulisan arab]<br>
+          penerangan : [maksud atau huraian]<br>
+          <br>
+          ayat [nombor seterusnya]<br>
+          teks arab : ...<br>
+          penerangan : ...
+        </div>
+      </div>
+
+      <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:12px;margin-bottom:8px;">
+        <div style="font-size:0.72rem;color:#a5b4fc;font-weight:700;margin-bottom:6px;">✅ Contoh Lengkap</div>
+        <div style="font-family:monospace;font-size:0.7rem;color:#e5e7eb;line-height:2;background:rgba(0,0,0,0.3);border-radius:6px;padding:8px;">
+          surah : 1.Al-Fatihah<br>
+          <br>
+          ayat 1<br>
+          teks arab : بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ<br>
+          penerangan : Dengan nama Allah Yang Maha Pengasih lagi Maha Penyayang<br>
+          <br>
+          ayat 2<br>
+          teks arab : ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ<br>
+          penerangan : Segala puji bagi Allah, Tuhan sekalian alam
+        </div>
+      </div>
+
+      <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:12px;margin-bottom:8px;">
+        <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:6px;">⚠️ Nota Penting</div>
+        <div style="font-size:0.7rem;color:#e5e7eb;line-height:2;">
+          • Gunakan tanda <strong style="color:#fcd34d;">titik dua ( : )</strong> selepas setiap kata kunci<br>
+          • Kata kunci: <strong style="color:white;">surah</strong>, <strong style="color:white;">ayat</strong>, <strong style="color:white;">teks arab</strong>, <strong style="color:white;">penerangan</strong><br>
+          • Besar kecil huruf tidak penting — "Surah" atau "SURAH" sama sahaja<br>
+          • Setiap ayat <strong style="color:#fcd34d;">mesti bermula dengan "ayat [nombor]"</strong> pada baris sendiri<br>
+          • Kosongkan "teks arab" atau "penerangan" jika tiada — masukkan sahaja kata kunci dengan nilai kosong<br>
+          • Boleh salin terus dari Google Docs atau Notepad<br>
+          • Satu paste boleh jana <strong style="color:#fcd34d;">sehingga 499 ayat</strong> sekaligus
+        </div>
+      </div>
+
+      <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:12px;">
+        <div style="font-size:0.72rem;color:#34d399;font-weight:700;margin-bottom:6px;">🔄 Cara Guna</div>
+        <div style="font-size:0.7rem;color:#e5e7eb;line-height:2;">
+          1️⃣ Buka Google Docs atau Notepad<br>
+          2️⃣ Taip ayat ikut format di atas<br>
+          3️⃣ Salin semua teks (Ctrl+A → Ctrl+C)<br>
+          4️⃣ Kembali ke app, tekan <strong style="color:#34d399;">📖 Jana Pukal v2</strong><br>
+          5️⃣ Tampal teks (Ctrl+V atau tekan lama → Tampal)<br>
+          6️⃣ Semak bilangan ayat dijumpai di bawah kotak<br>
+          7️⃣ Tekan <strong style="color:#34d399;">⚡ Jana Sekarang</strong>
+        </div>
+      </div>
+
     </div>
+
     <textarea id="bulk-v2-input" placeholder="Tampal teks berformat di sini..." style="flex:1;min-height:180px;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;margin-bottom:10px;"></textarea>
     <div id="bulk-v2-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:10px;font-style:italic;min-height:18px;"></div>
     <div style="display:flex;gap:8px;">
@@ -1819,6 +1874,8 @@ btnSambungFasa2.addEventListener('click', () => {
     let maxMemanahCount = 33;
     let memanahPhase = 1;
     let quranFontSize = parseFloat(localStorage.getItem('quranFontSize') || '3.5');
+    let isJoggingVideoRestON = true;
+    let isMemanahVideoRestON = true;
 // ── MODE TAMBAHAN (QURAN / DOA / HADIS) ──
     let routineModeSource = 'rutin'; // 'rutin' | 'quran' | 'doa' | 'hadis'
     let allQuranTimes = [], allQuranDrawers = [], currentQuranTimeId = null, activeGlobalQuranId = 'default';
@@ -2547,6 +2604,17 @@ if (didDecrement) {
     // ==========================================
     // LOGIK JOGGING MODE (MULTI INPUT) & AUTO SAVE
     // ==========================================
+document.getElementById('btn-video-jogging').addEventListener('click', () => {
+      isJoggingVideoRestON = !isJoggingVideoRestON;
+      document.getElementById('btn-video-jogging').textContent = `Video Rehat: ${isJoggingVideoRestON ? 'ON' : 'OFF'}`;
+      document.getElementById('btn-video-jogging').classList.toggle('btn-active', isJoggingVideoRestON);
+    });
+
+    document.getElementById('btn-video-memanah').addEventListener('click', () => {
+      isMemanahVideoRestON = !isMemanahVideoRestON;
+      document.getElementById('btn-video-memanah').textContent = `Video Rehat: ${isMemanahVideoRestON ? 'ON' : 'OFF'}`;
+      document.getElementById('btn-video-memanah').classList.toggle('btn-active', isMemanahVideoRestON);
+    });
     btnToggleJoggingMax.addEventListener("click", () => {
         maxJoggingCount = maxJoggingCount === 33 ? 17 : 33;
         btnToggleJoggingMax.textContent = `Target: ${maxJoggingCount}`;
@@ -5426,6 +5494,14 @@ ${(() => {
 
     document.getElementById('btn-bulk-v2-cancel').addEventListener('click', () => {
       document.getElementById('jana-pukal-v2-modal').style.display = 'none';
+    });
+document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () => {
+      const content = document.getElementById('panduan-v2-content');
+      const btn = document.getElementById('btn-toggle-panduan-v2');
+      const isOpen = content.style.display !== 'none';
+      content.style.display = isOpen ? 'none' : 'block';
+      btn.textContent = isOpen ? '📘 Lihat Buku Panduan ▾' : '📘 Sembunyikan Panduan ▴';
+      btn.style.background = isOpen ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.18)';
     });
 
     document.getElementById('bulk-v2-input').addEventListener('input', () => {
