@@ -5156,7 +5156,8 @@ function calcRekodTerbaik(history) {
       };
     }
 
-function calcKelajuanHarian(history, totalAyatRead) {
+function calcKelajuanHarian(history, totalAyatRead, ayatHariIni) {
+      if (!ayatHariIni || ayatHariIni < 5) return 0;
       if (!totalAyatRead || totalAyatRead <= 0) return 0;
       const now      = new Date();
       const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -5265,7 +5266,11 @@ function getSurahHariIni() {
       const rekod = calcRekodTerbaik(d.history||[]);
       const kSesi   = lastH ? (lastH.kelajuanSesi||0) : 0;
       // Purata kelajuan harian
-      const kHarian = calcKelajuanHarian(d.history||[], total);
+const todayKeyNow = dateKeyQ(Date.now());
+      const ayatHariIni = (d.history||[])
+        .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
+        .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
+      const kHarian = calcKelajuanHarian(d.history||[], total, ayatHariIni);
       // Masa berlalu sejak kemaskini
       const minLalu = (Date.now() - (d.lastUpdateTs||Date.now())) / 60000;
       const minLaluStr = minLalu < 60
