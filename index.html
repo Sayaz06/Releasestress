@@ -872,6 +872,29 @@ body.dark-mode {
     </div>
   </div>
 </div>
+
+<!-- MODAL JANA PUKAL V2 -->
+<div id="jana-pukal-v2-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#34d399;margin-bottom:4px;">📖 Jana Pukal v2 — Format Ayat</div>
+    <div style="font-size:.75rem;color:#9ca3af;margin-bottom:10px;">Tampal teks berformat untuk jana laci secara automatik</div>
+    <div style="font-size:.72rem;color:#34d399;margin-bottom:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px;line-height:2;font-family:monospace;">
+      surah : 2.Al-Baqarah<br>
+      ayat 1<br>
+      teks arab : بِسْمِ اللَّهِ<br>
+      penerangan : Dengan nama Allah<br><br>
+      ayat 2<br>
+      teks arab : ...<br>
+      penerangan : ...
+    </div>
+    <textarea id="bulk-v2-input" placeholder="Tampal teks berformat di sini..." style="flex:1;min-height:180px;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;margin-bottom:10px;"></textarea>
+    <div id="bulk-v2-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:10px;font-style:italic;min-height:18px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-bulk-v2-generate" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
+      <button id="btn-bulk-v2-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
+    </div>
+  </div>
+</div>
   <div class="app-shell">
     <div class="card">
 
@@ -1267,10 +1290,12 @@ body.dark-mode {
             <div class="topbar-sub" id="parent-quran-time-name" style="color:var(--grad2);font-weight:bold;"></div>
           </div>
         </div>
+
 <div style="display:flex; gap:8px; margin-top:8px;">
           <button id="btn-add-quran-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Ayat</button>
           <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="quran" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
         </div>       
+        
 <div style="display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px;">
           <span style="font-size:0.75rem; color:#34d399; flex:1;">📐 Saiz Huruf Arab:</span>
           <button id="btn-quran-font-minus" class="btn btn-secondary btn-sm" style="width:32px; padding:4px;">−</button>
@@ -5316,6 +5341,93 @@ function etaStr(barrierAyat, speed) {
       });
       showToast(`⏸ Sesi kosong direkodkan (${jamStr}) — kelajuan = 0`);
     }
+// ── JANA PUKAL V2 ──
+    function parseBulkV2Format(text) {
+      const lines = text.split('\n').map(l => l.trim());
+      let surahName = '', ayats = [], cur = null;
+
+      for (const line of lines) {
+        if (!line) continue;
+
+        const mSurah = line.match(/^surah\s*:\s*(.+)/i);
+        if (mSurah) { surahName = mSurah[1].trim(); continue; }
+
+        const mAyat = line.match(/^ayat\s+(\d+)/i);
+        if (mAyat) {
+          if (cur) ayats.push(cur);
+          cur = { num: mAyat[1], arab: '', penerangan: '' };
+          continue;
+        }
+
+        const mArab = line.match(/^teks arab\s*:\s*(.*)/i);
+        if (mArab && cur) { cur.arab = mArab[1].trim(); continue; }
+
+        const mPener = line.match(/^penerangan\s*:\s*(.*)/i);
+        if (mPener && cur) { cur.penerangan = mPener[1].trim(); continue; }
+      }
+      if (cur) ayats.push(cur);
+      return { surahName, ayats };
+    }
+
+    document.getElementById('btn-open-jana-pukal-v2').addEventListener('click', () => {
+      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
+      document.getElementById('bulk-v2-input').value = '';
+      document.getElementById('bulk-v2-preview').textContent = '';
+      document.getElementById('jana-pukal-v2-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('bulk-v2-input').focus(), 80);
+    });
+
+    document.getElementById('btn-bulk-v2-cancel').addEventListener('click', () => {
+      document.getElementById('jana-pukal-v2-modal').style.display = 'none';
+    });
+
+    document.getElementById('bulk-v2-input').addEventListener('input', () => {
+      const r = parseBulkV2Format(document.getElementById('bulk-v2-input').value);
+      const prev = document.getElementById('bulk-v2-preview');
+      if (r.ayats.length > 0) {
+        prev.style.color = '#34d399';
+        prev.textContent = `✅ Surah: "${r.surahName}" | ${r.ayats.length} ayat dijumpai`;
+      } else {
+        prev.textContent = '';
+      }
+    });
+
+    document.getElementById('btn-bulk-v2-generate').addEventListener('click', async () => {
+      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
+      const r = parseBulkV2Format(document.getElementById('bulk-v2-input').value);
+      if (!r.surahName) { showToast('⚠️ Tiada "surah :" dijumpai dalam teks.'); return; }
+      if (!r.ayats.length) { showToast('⚠️ Tiada ayat dijumpai. Semak format.'); return; }
+
+      document.getElementById('jana-pukal-v2-modal').style.display = 'none';
+      showToast(`⏳ Menjana ${r.ayats.length} laci...`, 0);
+
+      try {
+        const CHUNK = 499;
+        let i = 0;
+        while (i < r.ayats.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + CHUNK, r.ayats.length);
+          for (let j = i; j < end; j++) {
+            const a = r.ayats[j];
+            const ref = doc(collection(db,"users",currentUser.uid,"quran_drawers"));
+            batch.set(ref, {
+              title:   `${r.surahName} ayat ${a.num}`,
+              zikir:   a.arab,
+              target:  "",
+              maksud:  a.penerangan,
+              timeId:  currentQuranTimeId,
+              createdAt: Date.now() + j
+            });
+          }
+          await batch.commit();
+          i = end;
+        }
+        showToast(`✅ ${r.ayats.length} laci berjaya dijana!`);
+      } catch(e) {
+        showToast('❌ Gagal: ' + e.message);
+      }
+    });
+                          
     function rebuildIfActive(mode) {
       if(routineMode && routineModeSource === mode) rebuildRoutines();
     }
