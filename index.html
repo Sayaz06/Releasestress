@@ -5033,6 +5033,32 @@ function fmtDTQ(dt) {
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
+function calcRekodTerbaik(history) {
+      if (!history || !history.length) return { sesi: 0, hariAyat: 0, hariDate: '' };
+
+      // Rekod sesi terbaik — min 5 ayat untuk elak noise
+      const sesiLayak = history.filter(h => (h.ayatSesi||0) >= 5 && !h.takBaca);
+      const sesiTerbaik = sesiLayak.length
+        ? Math.max(...sesiLayak.map(h => h.kelajuanSesi || 0))
+        : 0;
+
+      // Hari terbaik — hari dengan jumlah ayat terbanyak
+      const byDay = {};
+      history.forEach(h => {
+        const k = h.dateKey || dateKeyQ(h.ts);
+        if (!byDay[k]) byDay[k] = { ayat: 0, date: k };
+        byDay[k].ayat += h.ayatSesi || 0;
+      });
+      const hariTerbaik = Object.values(byDay)
+        .reduce((best, d) => d.ayat > best.ayat ? d : best, { ayat: 0, date: '' });
+
+      return {
+        sesi:      sesiTerbaik,
+        hariAyat:  hariTerbaik.ayat,
+        hariDate:  hariTerbaik.date
+      };
+    }
+
 function calcKelajuanHarian(history) {
       const now      = new Date();
       const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -5118,6 +5144,7 @@ function etaStr(barrierAyat, speed) {
 
       // Kelajuan sesi semasa = kelajuan rekod terakhir
       const lastH = (d.history||[]).slice(-1)[0];
+      const rekod = calcRekodTerbaik(d.history||[]);
       const kSesi   = lastH ? (lastH.kelajuanSesi||0) : 0;
       // Purata kelajuan harian
       const kHarian = calcKelajuanHarian(d.history||[]);
@@ -5164,6 +5191,21 @@ function etaStr(barrierAyat, speed) {
             <div style="font-size:0.75rem;color:var(--subtext);margin-top:6px;">Kelajuan purata harian: <strong style="color:white;">${kHarian.toFixed(2)} ayat/minit</strong></div>
           </div>
 
+<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px;margin-bottom:8px;">
+            <div style="font-size:0.68rem;color:#fcd34d;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">🏆 Rekod Terbaik Sepanjang Fasa Penyalinan</div>
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-size:0.65rem;color:#fcd34d;margin-bottom:4px;">Kelajuan Sesi</div>
+                <div style="font-size:1.4rem;font-weight:700;color:white;line-height:1.2;">${rekod.sesi.toFixed(2)}</div>
+                <div style="font-size:0.65rem;color:var(--subtext);">ayat/minit</div>
+              </div>
+              <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-size:0.65rem;color:#fcd34d;margin-bottom:4px;">Hari Terbaik</div>
+                <div style="font-size:1.4rem;font-weight:700;color:white;line-height:1.2;">${rekod.hariAyat}</div>
+                <div style="font-size:0.65rem;color:var(--subtext);">ayat${rekod.hariDate ? ' · '+rekod.hariDate.split('-').reverse().join('/') : ''}</div>
+              </div>
+            </div>
+          </div>
           <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;padding:12px;margin-bottom:8px;text-align:center;">
             <div style="font-size:0.68rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Anggaran Khatam (Sesi Semasa)</div>
 <div style="font-size:1.05rem;font-weight:700;color:white;white-space:pre-line;">${etaStr(barKhatam, kSesi)}</div>
