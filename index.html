@@ -5184,7 +5184,7 @@ function etaStr(barrierAyat, speed) {
 
 function getSurahHariIni() {
       const now  = new Date();
-      if (now < QURAN_KHATAM_START) return null;
+      if (now < new Date('2026-05-20T00:00:00')) return null;
       const hari = Math.floor((now - QURAN_KHATAM_START) / 864e5);
       const idx  = Math.min(Math.floor(hari / 3), 113);
       return {
