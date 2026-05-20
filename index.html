@@ -1252,6 +1252,7 @@ body.dark-mode {
           <div class="topbar-title" style="color:#34d399;">📖 Surah / Juzuk</div>
         </div>
         <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
+        <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
         <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
         <div class="list mt-8" id="quran-times-list" style="padding:10px;"></div>
       </section>
@@ -1809,6 +1810,13 @@ let hadisReadAllMode = false;
       ['ق','Qaf'],['ك','Kaf'],['ل','Lam'],['م','Mim'],
       ['ن','Nun'],['و','Wau'],['ه','Ha'],['ي','Ya']
     ].map(([l,n]) => ({ char: l+'\u0651'+'\u0650', label: n }));
+const QURAN_SURAH_AYAT = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,40,46,42,29,19,36,25,22,17,19,26,30,20,15,21,11,8,8,19,5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6];
+    const QURAN_SURAH_NAMES = ['Al-Fatihah','Al-Baqarah','Ali-Imran','An-Nisa','Al-Maidah','Al-Anam','Al-Araf','Al-Anfal','At-Tawbah','Yunus','Hud','Yusuf','Ar-Rad','Ibrahim','Al-Hijr','An-Nahl','Al-Isra','Al-Kahf','Maryam','Taha','Al-Anbiya','Al-Hajj','Al-Muminun','An-Nur','Al-Furqan','Ash-Shuara','An-Naml','Al-Qasas','Al-Ankabut','Ar-Rum','Luqman','As-Sajdah','Al-Ahzab','Saba','Fatir','Yasin','As-Saffat','Sad','Az-Zumar','Ghafir','Fussilat','Ash-Shura','Az-Zukhruf','Ad-Dukhan','Al-Jathiyah','Al-Ahqaf','Muhammad','Al-Fath','Al-Hujurat','Qaf','Az-Zariyat','At-Tur','An-Najm','Al-Qamar','Ar-Rahman','Al-Waqiah','Al-Hadid','Al-Mujadila','Al-Hashr','Al-Mumtahanah','As-Saf','Al-Jumuah','Al-Munafiqun','At-Taghabun','At-Talaq','At-Tahrim','Al-Mulk','Al-Qalam','Al-Haqqah','Al-Maarij','Nuh','Al-Jinn','Al-Muzzammil','Al-Muddaththir','Al-Qiyamah','Al-Insan','Al-Mursalat','An-Naba','An-Naziat','Abasa','At-Takwir','Al-Infitar','Al-Mutaffifin','Al-Inshiqaq','Al-Buruj','At-Tariq','Al-Ala','Al-Ghashiyah','Al-Fajr','Al-Balad','Ash-Shams','Al-Layl','Ad-Duha','Ash-Sharh','At-Tin','Al-Alaq','Al-Qadr','Al-Bayyinah','Az-Zalzalah','Al-Adiyat','Al-Qariah','At-Takathur','Al-Asr','Al-Humazah','Al-Fil','Quraysh','Al-Maun','Al-Kawthar','Al-Kafirun','An-Nasr','Al-Masad','Al-Ikhlas','Al-Falaq','An-Nas'];
+    const TOTAL_AYAT_QURAN = 6236;
+    const QURAN_KHATAM_START = new Date('2026-05-21T00:00:00');
+    const QURAN_KHATAM_END   = new Date(QURAN_KHATAM_START.getTime() + 342 * 864e5);
+    let quranKhatamData    = null;
+    let quranSpeedInterval = null;
     let currentQuranTasbihRef = null, currentQuranTasbihData = null;
     let currentDoaTasbihRef = null, currentDoaTasbihData = null;
     let currentHadisTasbihRef = null, currentHadisTasbihData = null;
@@ -3708,6 +3716,7 @@ showSection(secToShow);
         subscribeMyLaw(); // KOD BARU: Subscribe My Law dari Firestore
         subscribeToVideoRehat(); // KOD BARU: Subscribe video rehat (dah ada fungsi, tapi belum dipanggil)
         subscribeNewModes();
+        loadQuranKhatam();
       } else {
         homeUserEmail.textContent = "";
         if (notesUnsub) notesUnsub();
@@ -4992,6 +5001,245 @@ document.getElementById('doa-read-all-toggle').addEventListener('change', async 
       const total = allRoutines.filter(r => !r.isTamat).length;
       const el = document.getElementById('doa-read-all-progress');
       if (el) el.textContent = `${index + 1} / ${total}`;
+    }
+// ══════════════════════════════════════════
+    // QURAN KHATAM TRACKER
+    // ══════════════════════════════════════════
+    function fmtDQ(dt) {
+      return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+    }
+    function fmtDTQ(dt) {
+      return `${fmtDQ(dt)} jam ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    }
+    function dateKeyQ(ts) {
+      const d = new Date(ts);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function calcKelajuanHarian(history) {
+      if (!history || !history.length) return 0;
+      const byDay = {};
+      history.forEach(h => {
+        const k = h.dateKey || dateKeyQ(h.ts);
+        if (!byDay[k]) byDay[k] = { ayat:0, minit:0 };
+        byDay[k].ayat  += h.ayatSesi  || 0;
+        byDay[k].minit += h.minitSesi || 0;
+      });
+      const speeds = Object.values(byDay)
+        .filter(d => d.minit > 0)
+        .map(d => d.ayat / d.minit);
+      return speeds.length ? speeds.reduce((a,b) => a+b, 0) / speeds.length : 0;
+    }
+
+    function etaStr(barrierAyat, speed) {
+      if (speed <= 0) return '∞ (kelajuan = 0)';
+      const eta = new Date(Date.now() + (barrierAyat / speed) * 60000);
+      return fmtDTQ(eta);
+    }
+
+    async function loadQuranKhatam() {
+      if (!currentUser) return;
+      const snap = await getDoc(doc(db,"users",currentUser.uid,"settings","quranKhatam"));
+      quranKhatamData = snap.exists() ? snap.data() : {
+        currentSurah:1, currentAyat:0, totalAyatRead:0,
+        lastUpdateTs: Date.now(), history:[], startedAt:Date.now()
+      };
+      renderQuranKhatamCard();
+      if (quranSpeedInterval) clearInterval(quranSpeedInterval);
+      quranSpeedInterval = setInterval(() => {
+        const el = document.getElementById('quran-elapsed-live');
+        if (!el || !quranKhatamData) return;
+        const min = (Date.now() - (quranKhatamData.lastUpdateTs || Date.now())) / 60000;
+        el.textContent = `⏱ Masa berlalu sejak kemaskini terakhir: ${min < 60 ? Math.round(min)+' minit' : (min/60).toFixed(1)+' jam'}`;
+      }, 10000);
+    }
+
+    async function simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca }) {
+      if (!currentUser || !quranKhatamData) return;
+      const kelajuanSesi = minitSesi > 0 ? ayatSesi / minitSesi : 0;
+      const newData = {
+        ...quranKhatamData,
+        currentSurah:  newSurah,
+        currentAyat:   isHabis ? 0 : newAyat,
+        totalAyatRead: totalRead,
+        lastUpdateTs:  Date.now(),
+        history: [...(quranKhatamData.history||[]).slice(-29), {
+          ts: Date.now(), surah: newSurah, ayat: newAyat,
+          totalRead, ayatSesi, minitSesi, kelajuanSesi,
+          takBaca: isTakBaca||false, dateKey: dateKeyQ(Date.now())
+        }],
+        lastUpdated: Date.now()
+      };
+      quranKhatamData = newData;
+      await setDoc(doc(db,"users",currentUser.uid,"settings","quranKhatam"), newData, {merge:true});
+      renderQuranKhatamCard();
+    }
+
+    function renderQuranKhatamCard() {
+      const card = document.getElementById('quran-khatam-card');
+      if (!card) return;
+      const now    = new Date();
+      const ended  = now > QURAN_KHATAM_END;
+      const active = now >= QURAN_KHATAM_START && !ended;
+      const daysLeft = Math.max(0, Math.ceil((QURAN_KHATAM_END - now) / 864e5));
+      const d = quranKhatamData || {};
+      const curS  = d.currentSurah  || 1;
+      const curA  = d.currentAyat   || 0;
+      const total = d.totalAyatRead || 0;
+      const sName = QURAN_SURAH_NAMES[curS-1];
+      const sMax  = QURAN_SURAH_AYAT[curS-1];
+      const barSurah  = sMax - curA;
+      const barKhatam = TOTAL_AYAT_QURAN - total;
+      const surahsLeft = 114 - (curS-1);
+      const startStr = fmtDQ(QURAN_KHATAM_START);
+      const endStr   = fmtDQ(QURAN_KHATAM_END);
+
+      // Kelajuan sesi semasa = kelajuan rekod terakhir
+      const lastH = (d.history||[]).filter(h=>!h.takBaca).slice(-1)[0];
+      const kSesi   = lastH ? (lastH.kelajuanSesi||0) : 0;
+      // Purata kelajuan harian
+      const kHarian = calcKelajuanHarian(d.history||[]);
+
+      // Masa berlalu sejak kemaskini
+      const minLalu = (Date.now() - (d.lastUpdateTs||Date.now())) / 60000;
+      const minLaluStr = minLalu < 60
+        ? `${Math.round(minLalu)} minit`
+        : `${(minLalu/60).toFixed(1)} jam`;
+
+      if (ended) {
+        card.innerHTML = `
+          <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:1.4rem;margin-bottom:4px;">🕌</div>
+            <div style="font-size:0.85rem;color:#34d399;font-weight:700;">Kenangan — Fasa Penyalinan Al-Quran</div>
+            <div style="font-size:0.72rem;color:var(--subtext);margin-top:2px;">${startStr} — ${endStr}</div>
+            <div style="font-size:0.72rem;color:var(--subtext);margin-top:4px;">Dibaca: ${total.toLocaleString()} / ${TOTAL_AYAT_QURAN.toLocaleString()} ayat</div>
+            <button disabled style="margin-top:10px;width:100%;padding:8px;border-radius:999px;background:rgba(52,211,153,0.08);border:1px dashed rgba(52,211,153,0.2);color:rgba(52,211,153,0.3);font-size:0.78rem;cursor:not-allowed;">✅ Fasa Penyalinan Selesai</button>
+          </div>`;
+        return;
+      }
+
+      card.innerHTML = `
+        <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px;">
+
+          <a href="https://quran.com/ms" target="_blank"
+             style="display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.35);border-radius:8px;color:#34d399;font-size:0.82rem;font-weight:700;text-decoration:none;margin-bottom:10px;">
+            🌐 Buka Quran.com
+          </a>
+
+          ${total > 0 ? `
+          <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;margin-bottom:10px;font-size:0.75rem;line-height:1.9;">
+            <div style="color:#fcd34d;font-weight:700;margin-bottom:4px;">📊 Kemajuan</div>
+            <div>📖 Semasa: Surah ${curS}. ${sName} — Ayat ${curA}/${sMax}</div>
+            <div style="color:var(--subtext);">✅ Dibaca: <strong style="color:white;">${total.toLocaleString()} ayat</strong></div>
+            <div style="color:var(--subtext);">📋 Baki surah ini: <strong style="color:#fcd34d;">${barSurah} ayat</strong></div>
+            <div style="color:var(--subtext);">📚 Baki khatam: <strong style="color:#f9a8d4;">${barKhatam.toLocaleString()} ayat</strong></div>
+          </div>
+
+          <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px;margin-bottom:8px;text-align:center;">
+            <div style="font-size:0.7rem;color:#34d399;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Kelajuan Sesi Semasa</div>
+            <div style="font-size:2rem;font-weight:700;color:white;line-height:1.2;">${kSesi.toFixed(2)}</div>
+            <div style="font-size:0.72rem;color:#34d399;">ayat / minit</div>
+            <div style="font-size:0.75rem;color:var(--subtext);margin-top:6px;">Kelajuan purata harian: <strong style="color:white;">${kHarian.toFixed(2)} ayat/minit</strong></div>
+          </div>
+
+          <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;padding:12px;margin-bottom:8px;text-align:center;">
+            <div style="font-size:0.68rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Anggaran Khatam (Sesi Semasa)</div>
+            <div style="font-size:1.05rem;font-weight:700;color:white;">${etaStr(barKhatam, kSesi)}</div>
+            <div style="font-size:0.72rem;color:var(--subtext);margin-top:6px;">Mengikut purata harian: <span style="color:#c4b5fd;">${etaStr(barKhatam, kHarian)}</span></div>
+          </div>` : `
+          <div style="text-align:center;padding:10px;font-size:0.8rem;color:var(--subtext);">Tekan kemaskini untuk mula rekod kelajuan bacaan anda</div>`}
+
+          <button id="btn-quran-khatam-update"
+            style="width:100%;padding:10px;border-radius:999px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;margin-bottom:6px;">
+            📖 Kemaskini Bacaan Quran
+          </button>
+          <button id="btn-quran-tak-baca"
+            style="width:100%;padding:8px;border-radius:999px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;font-size:0.78rem;cursor:pointer;margin-bottom:8px;">
+            ⏸ Tak Baca Al-Quran Langsung (Sesi Ini = 0)
+          </button>
+
+          <div id="quran-elapsed-live" style="text-align:center;font-size:0.68rem;color:rgba(52,211,153,0.5);margin-bottom:4px;">
+            ⏱ Masa berlalu sejak kemaskini terakhir: ${minLaluStr}
+          </div>
+          <div style="text-align:center;font-size:0.7rem;color:var(--subtext);">
+            ${active ? `⏳ <strong style="color:#34d399;">${daysLeft} hari lagi</strong> | ${surahsLeft} surah lagi (1 surah = 3 hari)` : `Bermula ${startStr}`}
+          </div>
+          <div style="text-align:center;font-size:0.62rem;color:rgba(52,211,153,0.3);margin-top:4px;">
+            Countdown tasbih tidak berfungsi ${startStr} – ${endStr} (fasa penyalinan)
+          </div>
+        </div>`;
+
+      document.getElementById('btn-quran-khatam-update')
+        ?.addEventListener('click', handleQuranKhatamUpdate);
+      document.getElementById('btn-quran-tak-baca')
+        ?.addEventListener('click', handleQuranTakBaca);
+    }
+
+    async function handleQuranKhatamUpdate() {
+      if (!currentUser || !quranKhatamData) return;
+      const d     = quranKhatamData;
+      const curS  = d.currentSurah || 1;
+      const sName = QURAN_SURAH_NAMES[curS-1];
+      const sMax  = QURAN_SURAH_AYAT[curS-1];
+      const prevTotal = d.totalAyatRead || 0;
+
+      const input = prompt(
+        `Surah ${curS}. ${sName} (${sMax} ayat)\n\nSkrg ayat ke berapa?\n• Taip nombor 1–${sMax}\n• Taip "habis" jika surah selesai`
+      );
+      if (input === null) return;
+
+      const trimmed = input.trim().toLowerCase();
+      let newSurah = curS, newAyat, isHabis = false;
+
+      if (trimmed === 'habis') {
+        isHabis  = true;
+        newAyat  = sMax;
+        newSurah = curS < 114 ? curS + 1 : 114;
+      } else {
+        const num = parseInt(trimmed);
+        if (isNaN(num) || num < 1 || num > sMax) {
+          showToast(`⚠️ Masukkan nombor 1–${sMax} atau "habis"`); return;
+        }
+        newAyat = num;
+      }
+
+      let totalRead = 0;
+      for (let i = 0; i < curS-1; i++) totalRead += QURAN_SURAH_AYAT[i];
+      totalRead += newAyat;
+
+      const ayatSesi  = Math.max(0, totalRead - prevTotal);
+      const minitSesi = Math.max(0.5, (Date.now() - (d.lastUpdateTs||Date.now())) / 60000);
+
+      await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca:false });
+
+      const kel = ayatSesi > 0 ? ` — ${(ayatSesi/minitSesi).toFixed(2)} ayat/minit` : '';
+      showToast(isHabis
+        ? `✅ ${sName} selesai! Seterusnya: ${QURAN_SURAH_NAMES[newSurah-1]}`
+        : `✅ Disimpan — ${sName} ayat ${newAyat}${kel}`
+      );
+    }
+
+    async function handleQuranTakBaca() {
+      if (!currentUser || !quranKhatamData) return;
+      const d = quranKhatamData;
+      const minitSesi = Math.max(0.5, (Date.now() - (d.lastUpdateTs||Date.now())) / 60000);
+      const jamStr = minitSesi < 60
+        ? `${Math.round(minitSesi)} minit`
+        : `${(minitSesi/60).toFixed(1)} jam`;
+
+      if (!confirm(`Anda tidak membaca Al-Quran selama ${jamStr}?\n\nKelajuan sesi ini = 0 ayat/minit.`)) return;
+
+      const curS = d.currentSurah || 1;
+      const curA = d.currentAyat  || 0;
+      let totalRead = 0;
+      for (let i = 0; i < curS-1; i++) totalRead += QURAN_SURAH_AYAT[i];
+      totalRead += curA;
+
+      await simpanSesiQuran({
+        ayatSesi:0, minitSesi, newSurah:curS, newAyat:curA,
+        totalRead, isHabis:false, isTakBaca:true
+      });
+      showToast(`⏸ Sesi kosong direkodkan (${jamStr}) — kelajuan = 0`);
     }
     function rebuildIfActive(mode) {
       if(routineMode && routineModeSource === mode) rebuildRoutines();
