@@ -5167,7 +5167,7 @@ function calcKelajuanHarian(history, totalAyatRead, ayatHariIni) {
     }
 
 function etaStr(barrierAyat, speed) {
-      if (speed <= 0) return '∞ (kelajuan = 0)';
+      if (speed <= 0) return '';
       const minitLeft = barrierAyat / speed;
       const eta = new Date(Date.now() + minitLeft * 60000);
       const hariLeft = Math.floor(minitLeft / 1440);
@@ -5349,7 +5349,7 @@ ${(() => {
           </div>
 <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;padding:12px;margin-bottom:8px;text-align:center;">
             <div style="font-size:0.68rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">📅 Anggaran Khatam (Purata Harian)</div>
-            <div style="font-size:1.05rem;font-weight:700;color:white;white-space:pre-line;">${etaStr(barKhatam, kHarian)}</div>
+            <div style="font-size:1.05rem;font-weight:700;color:white;white-space:pre-line;">${kHarian <= 0 ? '∞' : etaStr(barKhatam, kHarian)}</div>
             <div style="font-size:0.72rem;color:var(--subtext);margin-top:6px;white-space:pre-line;">Jika ikut kelajuan sesi: <span style="color:#c4b5fd;">${etaStr(barKhatam, kSesi)}</span></div>
           </div>
 ` : `
