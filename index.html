@@ -5270,7 +5270,7 @@ function getSurahHariIni() {
       const rekod = calcRekodTerbaik(d.history||[]);
       const kSesi   = lastH ? (lastH.kelajuanSesi||0) : 0;
       // Purata kelajuan harian
-      const kHarian = calcKelajuanHarian(d.history||[], total, d.startedAt);
+      const kHarian = calcKelajuanHarian(d.history||[], total);
       // Masa berlalu sejak kemaskini
       const minLalu = (Date.now() - (d.lastUpdateTs||Date.now())) / 60000;
       const minLaluStr = minLalu < 60
