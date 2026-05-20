@@ -1817,6 +1817,7 @@ btnSambungFasa2.addEventListener('click', () => {
 
     let maxMemanahCount = 33;
     let memanahPhase = 1;
+    let quranFontSize = parseFloat(localStorage.getItem('quranFontSize') || '3.5');
 // ── MODE TAMBAHAN (QURAN / DOA / HADIS) ──
     let routineModeSource = 'rutin'; // 'rutin' | 'quran' | 'doa' | 'hadis'
     let allQuranTimes = [], allQuranDrawers = [], currentQuranTimeId = null, activeGlobalQuranId = 'default';
@@ -5540,7 +5541,6 @@ function etaStr(barrierAyat, speed) {
       });
     });
 // ── SAIZ HURUF QURAN ──
-    let quranFontSize = parseFloat(localStorage.getItem('quranFontSize') || '3.5');
 
     function updateQuranFontDisplay() {
       const el = document.getElementById('quran-font-display');
