@@ -5033,19 +5033,18 @@ function fmtDTQ(dt) {
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
-    function calcKelajuanHarian(history) {
-      if (!history || !history.length) return 0;
-      const byDay = {};
-      history.forEach(h => {
-        const k = h.dateKey || dateKeyQ(h.ts);
-        if (!byDay[k]) byDay[k] = { ayat:0, minit:0 };
-        byDay[k].ayat  += h.ayatSesi  || 0;
-        byDay[k].minit += h.minitSesi || 0;
-      });
-      const speeds = Object.values(byDay)
-        .filter(d => d.minit > 0)
-        .map(d => d.ayat / d.minit);
-      return speeds.length ? speeds.reduce((a,b) => a+b, 0) / speeds.length : 0;
+function calcKelajuanHarian(history) {
+      const now      = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const minitBerlalu = (now - midnight) / 60000;
+      if (minitBerlalu <= 0) return 0;
+
+      const todayKey = dateKeyQ(now.getTime());
+      const ayatHariIni = (history || [])
+        .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKey)
+        .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
+
+      return ayatHariIni / minitBerlalu;
     }
 
     function etaStr(barrierAyat, speed) {
@@ -5112,7 +5111,7 @@ function fmtDTQ(dt) {
       const endStr   = fmtDQ(QURAN_KHATAM_END);
 
       // Kelajuan sesi semasa = kelajuan rekod terakhir
-      const lastH = (d.history||[]).filter(h=>!h.takBaca).slice(-1)[0];
+      const lastH = (d.history||[]).slice(-1)[0];
       const kSesi   = lastH ? (lastH.kelajuanSesi||0) : 0;
       // Purata kelajuan harian
       const kHarian = calcKelajuanHarian(d.history||[]);
