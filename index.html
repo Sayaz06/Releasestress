@@ -5188,8 +5188,7 @@ function etaStr(barrierAyat, speed) {
             <div style="font-size:0.7rem;color:#34d399;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Kelajuan Sesi Semasa</div>
             <div style="font-size:2rem;font-weight:700;color:white;line-height:1.2;">${kSesi.toFixed(2)}</div>
             <div style="font-size:0.72rem;color:#34d399;">ayat / minit</div>
-            <div style="font-size:0.75rem;color:var(--subtext);margin-top:6px;">Kelajuan purata harian: <strong style="color:white;">${kHarian.toFixed(2)} ayat/minit</strong></div>
-          </div>
+            <div style="font-size:0.7rem;color:var(--subtext);margin-top:4px;">Purata harian hari ini: <strong style="color:#fcd34d;">${kHarian.toFixed(2)} ayat/minit</strong> — ubah kekerapan untuk tingkatkan ini</div>          </div>
 
 <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px;margin-bottom:8px;">
             <div style="font-size:0.68rem;color:#fcd34d;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">🏆 Rekod Terbaik Sepanjang Fasa Penyalinan</div>
@@ -5206,11 +5205,12 @@ function etaStr(barrierAyat, speed) {
               </div>
             </div>
           </div>
-          <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;padding:12px;margin-bottom:8px;text-align:center;">
-            <div style="font-size:0.68rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Anggaran Khatam (Sesi Semasa)</div>
-<div style="font-size:1.05rem;font-weight:700;color:white;white-space:pre-line;">${etaStr(barKhatam, kSesi)}</div>
-            <div style="font-size:0.72rem;color:var(--subtext);margin-top:6px;white-space:pre-line;">Mengikut purata harian: <span style="color:#c4b5fd;">${etaStr(barKhatam, kHarian)}</span></div>
-          </div>` : `
+<div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;padding:12px;margin-bottom:8px;text-align:center;">
+            <div style="font-size:0.68rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">📅 Anggaran Khatam (Purata Harian)</div>
+            <div style="font-size:1.05rem;font-weight:700;color:white;white-space:pre-line;">${etaStr(barKhatam, kHarian)}</div>
+            <div style="font-size:0.72rem;color:var(--subtext);margin-top:6px;white-space:pre-line;">Jika ikut kelajuan sesi: <span style="color:#c4b5fd;">${etaStr(barKhatam, kSesi)}</span></div>
+          </div>
+` : `
           <div style="text-align:center;padding:10px;font-size:0.8rem;color:var(--subtext);">Tekan kemaskini untuk mula rekod kelajuan bacaan anda</div>`}
 
           <button id="btn-quran-khatam-update"
