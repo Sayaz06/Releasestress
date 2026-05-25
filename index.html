@@ -1351,6 +1351,13 @@ body.dark-mode {
           <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="quran" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
         </div>       
 <button id="btn-open-jana-pukal-v2" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;box-shadow:0 6px 18px rgba(16,185,129,.3);">📖 Jana Pukal v2 — Tampal Format Ayat</button>
+
+<button id="btn-quran-toggle-select" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#a78bfa;">☐ Mod Pilih &amp; Alih</button>
+        <div id="quran-select-toolbar" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
+          <button id="btn-quran-select-all" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">☑ Pilih Semua</button>
+          <button id="btn-quran-move-selected" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#a78bfa;">📦 Alih ke Laci Lain</button>
+          <span id="quran-selected-count" style="font-size:0.75rem;color:var(--subtext);">0 dipilih</span>
+        </div>
         
 <div style="display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px;">
           <span style="font-size:0.75rem; color:#34d399; flex:1;">📐 Saiz Huruf Arab:</span>
@@ -4998,9 +5005,12 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
           div.setAttribute('data-empty', 'true');
           div.style.borderColor = 'rgba(245,158,11,0.4)';
         }
-        div.innerHTML = `
+div.innerHTML = `
+          ${mode === 'quran' && quranSelectMode ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 8px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:8px;"><input type="checkbox" class="quran-select-cb" data-id="${data.id}" ${quranSelectedIds.has(data.id)?'checked':''} style="width:20px;height:20px;accent-color:#a78bfa;cursor:pointer;flex-shrink:0;"><span style="font-size:0.78rem;color:#a78bfa;font-weight:600;">Pilih untuk dialihkan</span></div>` : ''}
           <input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
+
+        
 ${hurufPickerHtml}
           <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}</div>
 <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'UthmanicHafs','Traditional Arabic',serif" : 'inherit'};">${data.zikir||''}</textarea>
@@ -5047,9 +5057,18 @@ div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
           tz.selectionStart=tz.selectionEnd=s+sym.length; tz.focus();
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:tz.value});
         }));
-        div.querySelector('.btn-del').addEventListener("click", () => {
+
+div.querySelector('.btn-del').addEventListener("click", () => {
           if(confirm("Padam laci ini?")) deleteDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id));
         });
+        if (mode === 'quran' && quranSelectMode) {
+          const cb = div.querySelector('.quran-select-cb');
+          if (cb) cb.addEventListener('change', () => {
+            if (cb.checked) quranSelectedIds.add(data.id);
+            else quranSelectedIds.delete(data.id);
+            document.getElementById('quran-selected-count').textContent = `${quranSelectedIds.size} dipilih`;
+          });
+        }
         list.appendChild(div);
       });
     }
@@ -5358,7 +5377,7 @@ ${(() => {
           <button id="btn-quran-khatam-update"
             style="width:100%;padding:10px;border-radius:999px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;margin-bottom:6px;">
             📖 Kemaskini Bacaan Quran
-          </button>
+          </button><button id="btn-open-jana-pukal-v2" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;box-shadow:0 6px 18px rgba(16,185,129,.3);">📖 Jana Pukal v2 — Tampal Format Ayat</button>
 <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px;margin-bottom:8px;font-size:0.75rem;line-height:1.9;color:var(--subtext);">
             <div style="color:#a5b4fc;font-weight:700;margin-bottom:4px;">📘 Panduan Memahami Kelajuan</div>
             <div><strong style="color:white;">Kelajuan Sesi</strong> = seberapa laju anda baca dalam satu duduk</div>
@@ -5692,6 +5711,63 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
     });
 
     updateQuranFontDisplay();
+// ── QURAN SELECT & MOVE ──
+    let quranSelectMode = false;
+    let quranSelectedIds = new Set();
+
+    document.getElementById('btn-quran-toggle-select').addEventListener('click', () => {
+      quranSelectMode = !quranSelectMode;
+      quranSelectedIds.clear();
+      document.getElementById('quran-select-toolbar').style.display = quranSelectMode ? 'flex' : 'none';
+      const btn = document.getElementById('btn-quran-toggle-select');
+      btn.textContent = quranSelectMode ? '✕ Batal Mod Pilih' : '☐ Mod Pilih & Alih';
+      btn.style.borderColor = quranSelectMode ? '#f87171' : '#a78bfa';
+      btn.style.color = quranSelectMode ? '#f87171' : '#a78bfa';
+      document.getElementById('quran-selected-count').textContent = '0 dipilih';
+      renderGenericDrawers('quran');
+    });
+
+    document.getElementById('btn-quran-select-all').addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll('#quran-drawers-list .quran-select-cb');
+      const semuaDipilih = [...checkboxes].every(cb => cb.checked);
+      checkboxes.forEach(cb => {
+        cb.checked = !semuaDipilih;
+        if (!semuaDipilih) quranSelectedIds.add(cb.dataset.id);
+        else quranSelectedIds.delete(cb.dataset.id);
+      });
+      document.getElementById('quran-selected-count').textContent = `${quranSelectedIds.size} dipilih`;
+      document.getElementById('btn-quran-select-all').textContent = semuaDipilih ? '☑ Pilih Semua' : '☐ Nyahpilih Semua';
+    });
+
+    document.getElementById('btn-quran-move-selected').addEventListener('click', async () => {
+      if (quranSelectedIds.size === 0) { showToast('Tiada laci dipilih.'); return; }
+      const lainnya = allQuranTimes.filter(t => t.id !== currentQuranTimeId);
+      if (!lainnya.length) { showToast('Tiada kategori lain untuk dipindahkan.'); return; }
+      const pilihan = lainnya.map((t, i) => `${i+1}. ${t.name||'Tanpa Nama'}`).join('\n');
+      const input = prompt(`Pindah ${quranSelectedIds.size} laci ke kategori mana?\n\n${pilihan}\n\nTaip nombor:`);
+      if (input === null) return;
+      const idx = parseInt(input.trim()) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= lainnya.length) { showToast('Nombor tidak sah.'); return; }
+      const destId = lainnya[idx].id;
+      const destNama = lainnya[idx].name || 'Tanpa Nama';
+      showToast(`⏳ Memindahkan ${quranSelectedIds.size} laci...`, 0);
+      try {
+        const ids = [...quranSelectedIds];
+        let i = 0;
+        while (i < ids.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + 499, ids.length);
+          for (let j = i; j < end; j++)
+            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",ids[j]), { timeId: destId });
+          await batch.commit();
+          i = end;
+        }
+        showToast(`✅ ${quranSelectedIds.size} laci berjaya dipindah ke "${destNama}"!`);
+        quranSelectedIds.clear();
+        document.getElementById('quran-selected-count').textContent = '0 dipilih';
+        renderGenericDrawers('quran');
+      } catch(e) { showToast('❌ Gagal pindah: ' + e.message); }
+    });
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
