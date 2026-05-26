@@ -950,6 +950,31 @@ body.dark-mode {
     </div>
   </div>
 </div>
+<div id="edit-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">✏️ Edit Nama Pukal</div>
+    <div style="font-size:.75rem;color:#9ca3af;margin-bottom:16px;">Tukar nama awalan laci secara pukal — nombor dikekalkan</div>
+    <div style="font-size:.75rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">Nama Lama (Awalan)</div>
+    <input id="edit-pukal-lama" placeholder="Cth: Alkafirun Ayat" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;margin-bottom:12px;"/>
+    <div style="font-size:.75rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">Nama Baru (Awalan)</div>
+    <input id="edit-pukal-baru" placeholder="Cth: Al-Baqarah Ayat" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;margin-bottom:12px;"/>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;">
+        <div style="font-size:.75rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">Nombor Mula (Pilihan)</div>
+        <input id="edit-pukal-start" type="number" min="1" placeholder="Cth: 1" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;"/>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:.75rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">Nombor Tamat (Pilihan)</div>
+        <input id="edit-pukal-end" type="number" min="1" placeholder="Cth: 99" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;"/>
+      </div>
+    </div>
+    <div id="edit-pukal-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:14px;min-height:18px;font-style:italic;"></div>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-edit-pukal-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">✏️ Tukar Sekarang</button>
+      <button id="btn-edit-pukal-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
+    </div>
+  </div>
+</div>
   <div class="app-shell">
     <div class="card">
 
@@ -1358,7 +1383,7 @@ body.dark-mode {
           <button id="btn-quran-move-selected" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#a78bfa;">📦 Alih ke Laci Lain</button>
           <span id="quran-selected-count" style="font-size:0.75rem;color:var(--subtext);">0 dipilih</span>
         </div>
-        
+<button id="btn-open-edit-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#a78bfa;">✏️ Edit Nama Pukal</button>
 <div style="display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px;">
           <span style="font-size:0.75rem; color:#34d399; flex:1;">📐 Saiz Huruf Arab:</span>
           <button id="btn-quran-font-minus" class="btn btn-secondary btn-sm" style="width:32px; padding:4px;">−</button>
@@ -5767,6 +5792,88 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
         document.getElementById('quran-selected-count').textContent = '0 dipilih';
         renderGenericDrawers('quran');
       } catch(e) { showToast('❌ Gagal pindah: ' + e.message); }
+    });
+// ── EDIT NAMA PUKAL ──
+    document.getElementById('btn-open-edit-pukal').addEventListener('click', () => {
+      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
+      document.getElementById('edit-pukal-lama').value = '';
+      document.getElementById('edit-pukal-baru').value = '';
+      document.getElementById('edit-pukal-start').value = '';
+      document.getElementById('edit-pukal-end').value = '';
+      document.getElementById('edit-pukal-preview').textContent = '';
+      document.getElementById('edit-pukal-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('edit-pukal-lama').focus(), 80);
+    });
+
+    document.getElementById('btn-edit-pukal-cancel').addEventListener('click', () => {
+      document.getElementById('edit-pukal-modal').style.display = 'none';
+    });
+
+    function updateEditPukalPreview() {
+      const lama  = document.getElementById('edit-pukal-lama').value.trim();
+      const baru  = document.getElementById('edit-pukal-baru').value.trim();
+      const start = parseInt(document.getElementById('edit-pukal-start').value);
+      const end   = parseInt(document.getElementById('edit-pukal-end').value);
+      const prev  = document.getElementById('edit-pukal-preview');
+      if (!lama || !baru) { prev.textContent = ''; return; }
+      const calon = allQuranDrawers.filter(d => {
+        if (d.timeId !== currentQuranTimeId) return false;
+        if (!d.title || !d.title.startsWith(lama)) return false;
+        if (!isNaN(start) && !isNaN(end)) {
+          const num = parseInt(d.title.slice(lama.length).trim());
+          if (isNaN(num) || num < start || num > end) return false;
+        }
+        return true;
+      });
+      if (!calon.length) {
+        prev.style.color = '#f87171';
+        prev.textContent = '⚠️ Tiada laci dijumpai dengan awalan tersebut.';
+        return;
+      }
+      const suffix0 = calon[0].title.slice(lama.length);
+      prev.style.color = '#34d399';
+      prev.textContent = `✅ ${calon.length} laci dijumpai. Contoh: "${calon[0].title}" → "${baru}${suffix0}"`;
+    }
+
+    ['edit-pukal-lama','edit-pukal-baru','edit-pukal-start','edit-pukal-end'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateEditPukalPreview);
+    });
+
+    document.getElementById('btn-edit-pukal-execute').addEventListener('click', async () => {
+      const lama  = document.getElementById('edit-pukal-lama').value.trim();
+      const baru  = document.getElementById('edit-pukal-baru').value.trim();
+      const start = parseInt(document.getElementById('edit-pukal-start').value);
+      const end   = parseInt(document.getElementById('edit-pukal-end').value);
+      if (!lama) { showToast('⚠️ Sila masukkan nama lama.'); return; }
+      if (!baru) { showToast('⚠️ Sila masukkan nama baru.'); return; }
+      const calon = allQuranDrawers.filter(d => {
+        if (d.timeId !== currentQuranTimeId) return false;
+        if (!d.title || !d.title.startsWith(lama)) return false;
+        if (!isNaN(start) && !isNaN(end)) {
+          const num = parseInt(d.title.slice(lama.length).trim());
+          if (isNaN(num) || num < start || num > end) return false;
+        }
+        return true;
+      });
+      if (!calon.length) { showToast('⚠️ Tiada laci dijumpai.'); return; }
+      document.getElementById('edit-pukal-modal').style.display = 'none';
+      showToast(`⏳ Mengemas kini ${calon.length} laci...`, 0);
+      try {
+        let i = 0;
+        while (i < calon.length) {
+          const batch = writeBatch(db);
+          const endIdx = Math.min(i + 499, calon.length);
+          for (let j = i; j < endIdx; j++) {
+            const suffix   = calon[j].title.slice(lama.length);
+            const tajukBaru = baru + suffix;
+            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",calon[j].id), { title: tajukBaru });
+          }
+          await batch.commit();
+          i = endIdx;
+        }
+        showToast(`✅ ${calon.length} laci berjaya dikemas kini!`);
+        renderGenericDrawers('quran');
+      } catch(e) { showToast('❌ Gagal: ' + e.message); }
     });
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
