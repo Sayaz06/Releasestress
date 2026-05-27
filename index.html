@@ -988,6 +988,15 @@ body.dark-mode {
             <button id="btn-login-google" class="btn">
               <span>Login dengan Google</span>
             </button>
+<button id="btn-login-admin-pin" class="btn btn-secondary" style="border-color:#f59e0b; color:#fcd34d;">
+              🔐 Login sebagai Admin
+            </button>
+            <div id="admin-pin-box" style="display:none; flex-direction:column; gap:10px;">
+              <input id="admin-pin-input" type="password" inputmode="numeric" maxlength="6" placeholder="Masukkan PIN (4-6 digit)" style="width:100%; background:rgba(15,23,42,0.9); border:1px solid #f59e0b; border-radius:10px; color:#fff; padding:12px; font-size:1.2rem; text-align:center; outline:none; letter-spacing:0.3em;">
+              <button id="btn-confirm-admin-pin" class="btn" style="background:linear-gradient(135deg,#d97706,#b45309); border:none;">
+                Masuk
+              </button>
+            </div>
             <div class="tagline" style="text-align: center; font-size: 0.8rem; color: var(--subtext);">
               Satu akaun, simpanan awan Firestore, boleh buka di mana-mana.
             </div>
@@ -1021,6 +1030,9 @@ body.dark-mode {
           </button>
 <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
+          </button>
+<button id="btn-setup-admin-pin" class="btn btn-secondary" style="border-color:#f59e0b; color:#fcd34d; display:none;">
+            🔐 Setup / Tukar PIN Admin
           </button>
         </div>
         <div class="footer mt-16">
@@ -1536,14 +1548,18 @@ body.dark-mode {
   <script type="module">
     // Firebase v9 modular
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-    import {
+import {
       getAuth,
       GoogleAuthProvider,
       signInWithPopup,
       signOut,
       onAuthStateChanged,
       setPersistence,
-      browserLocalPersistence
+      browserLocalPersistence,
+      EmailAuthProvider,
+      linkWithCredential,
+      signInWithEmailAndPassword,
+      updatePassword
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import {
       getFirestore,
@@ -3850,6 +3866,7 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
         
 showSection(secToShow); 
         await ensureTodayTasbih();
+        checkShowAdminPinBtn();
         subscribeHistory();
         subscribeNotes();
         subscribeAllHierarchyData();
@@ -5874,6 +5891,75 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
         showToast(`✅ ${calon.length} laci berjaya dikemas kini!`);
         renderGenericDrawers('quran');
       } catch(e) { showToast('❌ Gagal: ' + e.message); }
+    });
+// ── ADMIN PIN LOGIN ──
+    const ADMIN_EMAIL = 'adha86614@gmail.com';
+
+    // Tunjuk butang Setup PIN hanya kepada admin
+    function checkShowAdminPinBtn() {
+      const btn = document.getElementById('btn-setup-admin-pin');
+      if (btn) btn.style.display = (currentUser && currentUser.email === ADMIN_EMAIL) ? 'inline-flex' : 'none';
+    }
+
+    // Butang toggle PIN input box
+    document.getElementById('btn-login-admin-pin').addEventListener('click', () => {
+      const box = document.getElementById('admin-pin-box');
+      const isOpen = box.style.display === 'flex';
+      box.style.display = isOpen ? 'none' : 'flex';
+      if (!isOpen) setTimeout(() => document.getElementById('admin-pin-input').focus(), 80);
+    });
+
+    // Login dengan PIN
+    async function cubaLoginPin() {
+      const pin = document.getElementById('admin-pin-input').value.trim();
+      if (!pin || !/^\d{4,6}$/.test(pin)) {
+        showToast("PIN mesti 4-6 digit angka sahaja."); return;
+      }
+      try {
+        document.getElementById('btn-confirm-admin-pin').textContent = "Mengesahkan...";
+        await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pin);
+        document.getElementById('admin-pin-input').value = '';
+        document.getElementById('admin-pin-box').style.display = 'none';
+      } catch(e) {
+        document.getElementById('btn-confirm-admin-pin').textContent = "Masuk";
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+          showToast("❌ PIN salah. Cuba lagi.");
+        } else if (e.code === 'auth/user-not-found') {
+          showToast("❌ PIN belum ditetapkan. Login Google dulu, kemudian Setup PIN.");
+        } else {
+          showToast("❌ " + e.message);
+        }
+      }
+    }
+
+    document.getElementById('btn-confirm-admin-pin').addEventListener('click', cubaLoginPin);
+    document.getElementById('admin-pin-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') cubaLoginPin();
+    });
+
+    // Setup / Tukar PIN (admin mesti login Google dulu)
+    document.getElementById('btn-setup-admin-pin').addEventListener('click', async () => {
+      if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        showToast("Hanya admin boleh setup PIN."); return;
+      }
+      const pin = prompt("Tetapkan PIN Admin baru (4-6 digit angka):");
+      if (!pin || !/^\d{4,6}$/.test(pin)) {
+        showToast("PIN mesti 4-6 digit angka sahaja."); return;
+      }
+      try {
+        const credential = EmailAuthProvider.credential(ADMIN_EMAIL, pin);
+        try {
+          await linkWithCredential(currentUser, credential);
+          showToast("✅ PIN Admin berjaya ditetapkan! Boleh login guna PIN sekarang.");
+        } catch(linkErr) {
+          if (linkErr.code === 'auth/provider-already-linked' || linkErr.code === 'auth/email-already-in-use') {
+            await updatePassword(currentUser, pin);
+            showToast("✅ PIN Admin berjaya dikemas kini!");
+          } else throw linkErr;
+        }
+      } catch(e) {
+        showToast("❌ Gagal: " + e.message);
+      }
     });
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
