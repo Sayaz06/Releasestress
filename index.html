@@ -950,6 +950,17 @@ body.dark-mode {
     </div>
   </div>
 </div>
+<div id="qr-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #34d399;border-radius:18px;padding:24px;width:100%;max-width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#34d399;margin-bottom:4px;">📱 QR Code App</div>
+    <div style="font-size:.75rem;color:#9ca3af;margin-bottom:16px;">Scan untuk buka app di HP lain</div>
+    <div style="background:white;border-radius:12px;padding:12px;display:inline-block;margin-bottom:16px;">
+      <img id="qr-image" src="" alt="QR Code" style="width:200px;height:200px;display:block;">
+    </div>
+    <div id="qr-url-text" style="font-size:0.65rem;color:#9ca3af;word-break:break-all;margin-bottom:16px;"></div>
+    <button id="btn-close-qr" style="width:100%;padding:12px;border-radius:999px;background:rgba(52,211,153,0.15);border:1px solid #34d399;color:#34d399;font-weight:700;font-size:.9rem;cursor:pointer;">Tutup</button>
+  </div>
+</div>
 <div id="edit-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">✏️ Edit Nama Pukal</div>
@@ -1033,6 +1044,9 @@ body.dark-mode {
           </button>
 <button id="btn-setup-admin-pin" class="btn btn-secondary" style="border-color:#f59e0b; color:#fcd34d; display:none;">
             🔐 Setup / Tukar PIN Admin
+          </button>
+<button id="btn-show-qr" class="btn btn-secondary" style="border-color:#34d399; color:#34d399;">
+            📱 QR Code App
           </button>
         </div>
         <div class="footer mt-16">
@@ -5960,6 +5974,18 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
       } catch(e) {
         showToast("❌ Gagal: " + e.message);
       }
+    });
+// ── QR CODE ──
+    document.getElementById('btn-show-qr').addEventListener('click', () => {
+      const url = window.location.href;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+      document.getElementById('qr-image').src = qrUrl;
+      document.getElementById('qr-url-text').textContent = url;
+      document.getElementById('qr-modal').style.display = 'flex';
+    });
+
+    document.getElementById('btn-close-qr').addEventListener('click', () => {
+      document.getElementById('qr-modal').style.display = 'none';
     });
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
