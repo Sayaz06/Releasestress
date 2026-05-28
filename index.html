@@ -2633,14 +2633,14 @@ let justBecameDone = false;
       } else {
         didDecrement = true;
       }
-
 if (didDecrement) {
         if (isSempadan) {
+          const isQuranSempadan = routineMode && routineModeSource === 'quran';
           if (learningMode !== 2) {
-              triggerVibration([200, 100, 200, 100, 2000]); 
+            triggerVibration(isQuranSempadan ? [100, 50, 100, 50, 1000] : [200, 100, 200, 100, 2000]);
           }
           isBlocked = true;
-          setTimeout(() => { isBlocked = false; }, 2600);
+          setTimeout(() => { isBlocked = false; }, isQuranSempadan ? 1300 : 2600);
         } else if (!factMode && !routineMode && remaining % 50 === 0) {
           // Getaran panjang bila capai gandaan 50 (9950, 9900... 50, 0, -50, -100...)
           triggerVibration([200, 100, 200, 100, 2000]);
