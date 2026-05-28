@@ -1187,6 +1187,10 @@ body.dark-mode {
         </div>
 <div id="fact-display-box">
           <button id="btn-speak" class="btn-speak" style="display: none;" aria-label="Bunyikan Suara">🔊</button>
+<div id="quran-nav-buttons" style="display:none; gap:8px; margin-top:8px; flex-shrink:0;">
+          <button id="btn-quran-terjemahan" class="btn btn-secondary" style="flex:1; border-color:#34d399; color:#34d399; font-size:0.85rem;">🔄 Terjemahan</button>
+          <button id="btn-quran-seterusnya" class="btn btn-secondary" style="flex:1; border-color:#a78bfa; color:#a78bfa; font-size:0.85rem;">→ Seterusnya</button>
+        </div>
           <button id="btn-copy-fact" class="btn-speak" style="display: none; left: 8px; right: auto; top: 8px; transform: none;" aria-label="Salin Teks">📋</button>          <div id="fact-title" class="fact-title-label"></div>
           <div id="fact-content" class="fact-content-text">Sedia untuk mula...</div>
           <div id="fact-hint" class="fact-hint">(Tekan/Klik kotak ini untuk terjemahan)</div>
@@ -2548,35 +2552,15 @@ function decrementTasbih() {
       let needFirebaseUpdate = false;
 
       let routineAutoNext = false;
-if (routineMode && allRoutines.length > 0) {
-        didDecrement = true;
-        const isQuran = routineModeSource === 'quran';
-
-        if (isQuran && learningMode === 0) {
-          // Quran Normal: terus ke laci seterusnya
-          isSempadan = true;
+      
+      if (routineMode && allRoutines.length > 0) {
+        didDecrement = true; 
+        if (currentRoutineTarget > 0) {
+          currentRoutineTarget -= 1;
+        }
+        if (currentRoutineTarget <= 0) {
+          isSempadan = true; 
           routineAutoNext = true;
-        } else if (isQuran && learningMode === 3) {
-          // Quran Combo: flip dulu → ketuk lagi → laci seterusnya
-          if (comboStep === 0) {
-            isFlipped = true;
-            comboStep = 1;
-            triggerFlipAnimation(renderCurrentFact);
-          } else {
-            isFlipped = false;
-            comboStep = 0;
-            isSempadan = true;
-            routineAutoNext = true;
-          }
-        } else {
-          // Mode lain: kira target seperti biasa
-          if (currentRoutineTarget > 0) {
-            currentRoutineTarget -= 1;
-          }
-          if (currentRoutineTarget <= 0) {
-            isSempadan = true;
-            routineAutoNext = true;
-          }
         }
       } else if (factMode && !routineMode && learningMode === 1 && allFacts.length > 0) {
         if (!allFacts[currentFactIndex].isTamat && currentRepeatCount === 1) {
@@ -2630,19 +2614,24 @@ let justBecameDone = false;
       }
 
 if (didDecrement) {
-        if (isSempadan) {
-          if (learningMode !== 2) {
-              triggerVibration([200, 100, 200, 100, 2000]); 
+        const isQuranMode = routineMode && routineModeSource === 'quran';
+        if (!isQuranMode) {
+          if (isSempadan) {
+            if (learningMode !== 2) {
+              triggerVibration([200, 100, 200, 100, 2000]);
+            }
+            isBlocked = true;
+            setTimeout(() => { isBlocked = false; }, 2600);
+          } else if (!factMode && !routineMode && remaining % 50 === 0) {
+            triggerVibration([200, 100, 200, 100, 2000]);
+            isBlocked = true;
+            setTimeout(() => { isBlocked = false; }, 2600);
+          } else {
+            triggerVibration([120, 60, 120]);
           }
+        } else if (isSempadan) {
           isBlocked = true;
-          setTimeout(() => { isBlocked = false; }, 2600);
-        } else if (!factMode && !routineMode && remaining % 50 === 0) {
-          // Getaran panjang bila capai gandaan 50 (9950, 9900... 50, 0, -50, -100...)
-          triggerVibration([200, 100, 200, 100, 2000]);
-          isBlocked = true;
-          setTimeout(() => { isBlocked = false; }, 2600);
-        } else {
-          triggerVibration([120, 60, 120]); 
+          setTimeout(() => { isBlocked = false; }, 500);
         }
       }
 
@@ -2666,10 +2655,9 @@ if (didDecrement) {
           
           syncIndexToFirestore(currentRoutineIndex);
           
-isFlipped = false;
+          isFlipped = false;
           comboStep = 0;
-          currentRoutineTarget = allRoutines[currentRoutineIndex].target;
-          triggerFadeAnimation(renderCurrentFact);
+          triggerFadeAnimation(renderCurrentFact); 
         }
       } else {
         if (didDecrement) {
@@ -6027,6 +6015,47 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
         showToast("✅ Kembali ke laci pertama!");
       } else {
         showToast("✅ Reset berjaya! Aktifkan Quran untuk mula dari awal.");
+      }
+    });
+// ── NAVIGASI LACI QURAN ──
+    function updateQuranNavButtons() {
+      const nav = document.getElementById('quran-nav-buttons');
+      if (!nav) return;
+      const aktif = routineMode && routineModeSource === 'quran';
+      nav.style.display = aktif ? 'flex' : 'none';
+      if (!aktif) {
+        document.getElementById('btn-quran-terjemahan').textContent = '🔄 Terjemahan';
+      }
+    }
+
+    document.getElementById('btn-quran-seterusnya').addEventListener('click', () => {
+      if (!routineMode || routineModeSource !== 'quran' || allRoutines.length === 0) return;
+      isFlipped = false;
+      comboStep = 0;
+      document.getElementById('btn-quran-terjemahan').textContent = '🔄 Terjemahan';
+      currentRoutineIndex = (currentRoutineIndex + 1) % allRoutines.length;
+      currentRoutineTarget = allRoutines[currentRoutineIndex].target;
+      syncIndexToFirestore(currentRoutineIndex);
+      triggerFadeAnimation(renderCurrentFact);
+      updateTasbihUI();
+    });
+
+    document.getElementById('btn-quran-terjemahan').addEventListener('click', () => {
+      if (!routineMode || routineModeSource !== 'quran' || allRoutines.length === 0) return;
+      const cur = allRoutines[currentRoutineIndex];
+      if (cur.isTamat) return;
+      if (!isFlipped) {
+        isFlipped = true;
+        document.getElementById('btn-quran-terjemahan').textContent = '→ Seterusnya';
+        triggerFlipAnimation(renderCurrentFact);
+      } else {
+        isFlipped = false;
+        document.getElementById('btn-quran-terjemahan').textContent = '🔄 Terjemahan';
+        currentRoutineIndex = (currentRoutineIndex + 1) % allRoutines.length;
+        currentRoutineTarget = allRoutines[currentRoutineIndex].target;
+        syncIndexToFirestore(currentRoutineIndex);
+        triggerFadeAnimation(renderCurrentFact);
+        updateTasbihUI();
       }
     });
     if ("serviceWorker" in navigator) {
