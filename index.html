@@ -2026,10 +2026,15 @@ if (!wasActive) {
         routineMode = true; routineModeSource = src;
         const b = document.getElementById(`btn-toggle-${src}`);
         if(b){b.textContent=`${getModeLabel(src)}: ON`; b.classList.add("btn-active");}
-        factDisplayBox.classList.add("show");
+factDisplayBox.classList.add("show");
         btnToggleMode.style.display="inline-flex";
-        learningMode=2; btnToggleMode.textContent="Mode: Rest";
-        btnToggleMainRestMax.style.display="inline-flex";
+        if (src === 'quran') {
+          learningMode=3; btnToggleMode.textContent="Mode: Combo";
+          btnToggleMainRestMax.style.display="none";
+        } else {
+          learningMode=2; btnToggleMode.textContent="Mode: Rest";
+          btnToggleMainRestMax.style.display="inline-flex";
+        }
         rebuildRoutines();
         // Pastikan countdown harian wujud untuk mode baru
         if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
