@@ -1379,6 +1379,7 @@ body.dark-mode {
         <div class="topbar">
           <button id="btn-back-tasbih-quran" class="btn btn-secondary btn-sm">← Tasbih</button>
           <div class="topbar-title" style="color:#34d399;">📖 Surah / Juzuk</div>
+       <button id="btn-reset-quran-index" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#f87171;color:#f87171;">🔄 Kembali ke Laci Pertama</button>
         </div>
         <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
           <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
@@ -2530,9 +2531,9 @@ function decrementTasbih() {
       if (routineMode && routineModeSource === 'quran') {
         const now = new Date();
         const fasaMula  = new Date('2026-05-20T00:00:00');
-        const fasaTamat = new Date('2027-04-28T23:59:59');
+        const fasaTamat = new Date('2026-05-27T23:59:59');
         if (now >= fasaMula && now <= fasaTamat) {
-          showToast('Countdown tasbih tidak berfungsi 21/05/2026 – 28/04/2027 (fasa penyalinan)');
+          showToast('Countdown tasbih tidak berfungsi 21/05/2026 – 27/05/2026 (fasa penyalinan)');
           return;
         }
       }
@@ -5986,6 +5987,20 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
 
     document.getElementById('btn-close-qr').addEventListener('click', () => {
       document.getElementById('qr-modal').style.display = 'none';
+    });
+// ── RESET LACI PERTAMA QURAN ──
+    document.getElementById('btn-reset-quran-index').addEventListener('click', async () => {
+      if (!confirm("Reset ke laci pertama Al-Quran?")) return;
+      const activeTime = allQuranTimes.find(t => t.isActive);
+      if (!activeTime) { showToast("Tiada kategori Quran aktif."); return; }
+      await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
+      currentRoutineIndex = 0;
+      if (routineMode && routineModeSource === 'quran') {
+        rebuildRoutines();
+        showToast("✅ Kembali ke laci pertama!");
+      } else {
+        showToast("✅ Reset berjaya! Aktifkan Quran untuk mula dari awal.");
+      }
     });
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
