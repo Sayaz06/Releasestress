@@ -2548,15 +2548,35 @@ function decrementTasbih() {
       let needFirebaseUpdate = false;
 
       let routineAutoNext = false;
-      
-      if (routineMode && allRoutines.length > 0) {
-        didDecrement = true; 
-        if (currentRoutineTarget > 0) {
-          currentRoutineTarget -= 1;
-        }
-        if (currentRoutineTarget <= 0) {
-          isSempadan = true; 
+if (routineMode && allRoutines.length > 0) {
+        didDecrement = true;
+        const isQuran = routineModeSource === 'quran';
+
+        if (isQuran && learningMode === 0) {
+          // Quran Normal: terus ke laci seterusnya
+          isSempadan = true;
           routineAutoNext = true;
+        } else if (isQuran && learningMode === 3) {
+          // Quran Combo: flip dulu → ketuk lagi → laci seterusnya
+          if (comboStep === 0) {
+            isFlipped = true;
+            comboStep = 1;
+            triggerFlipAnimation(renderCurrentFact);
+          } else {
+            isFlipped = false;
+            comboStep = 0;
+            isSempadan = true;
+            routineAutoNext = true;
+          }
+        } else {
+          // Mode lain: kira target seperti biasa
+          if (currentRoutineTarget > 0) {
+            currentRoutineTarget -= 1;
+          }
+          if (currentRoutineTarget <= 0) {
+            isSempadan = true;
+            routineAutoNext = true;
+          }
         }
       } else if (factMode && !routineMode && learningMode === 1 && allFacts.length > 0) {
         if (!allFacts[currentFactIndex].isTamat && currentRepeatCount === 1) {
@@ -2646,9 +2666,10 @@ if (didDecrement) {
           
           syncIndexToFirestore(currentRoutineIndex);
           
-          isFlipped = false;
+isFlipped = false;
           comboStep = 0;
-          triggerFadeAnimation(renderCurrentFact); 
+          currentRoutineTarget = allRoutines[currentRoutineIndex].target;
+          triggerFadeAnimation(renderCurrentFact);
         }
       } else {
         if (didDecrement) {
