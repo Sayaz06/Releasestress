@@ -3070,15 +3070,21 @@ factHintEl.style.display = 'block';
       btnSpeak.style.display = 'flex';
       btnCopyFact.style.display = 'flex';
 if (routineMode && routineModeSource === 'quran') {
-factContentEl.style.fontSize = `${quranFontSize}rem`;
-        factContentEl.style.lineHeight = '2.0';
-factContentEl.style.fontFamily = "'UthmanicHafs', 'Traditional Arabic', serif";
+  if (isFlipped) {
+    factContentEl.style.fontSize = '';
+    factContentEl.style.lineHeight = '';
+    factContentEl.style.fontFamily = '';
+  } else {
+    factContentEl.style.fontSize = `${quranFontSize}rem`;
+    factContentEl.style.lineHeight = '2.0';
+    factContentEl.style.fontFamily = "'UthmanicHafs', 'Traditional Arabic', serif";
+  }
 } else {
         factContentEl.style.fontSize = '';
         factContentEl.style.lineHeight = '';
         factContentEl.style.fontFamily = '';
       }
-      
+    
       // DITUKAR: Teks hint untuk 5 Mode Pembelajaran
       if (learningMode === 4) { // Super
         factHintEl.textContent = routineMode ? "(Super Combo: Sapu/Enter audio & maksud)" : "(Super Combo: Sapu/Enter untuk Audio & Maksud)";
