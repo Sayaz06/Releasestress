@@ -1949,8 +1949,8 @@ let doaReadAllMode = false;
 let hadisReadAllMode = false;
     let hadisReadAllIndex = 0;
 // ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
-    const MODE_DAILY_DEFAULTS = { quran: 1000, doa: 1000, hadis: 10 };
-   const HURUF_TASYDID_KASRA = [
+const MODE_DAILY_DEFAULTS = { quran: 6236, doa: 1000, hadis: 10 };
+       const HURUF_TASYDID_KASRA = [
       ['أ','Alif'],['ب','Ba'],['ت','Ta'],['ث','Tha'],
       ['ج','Jim'],['ح','Ha'],['خ','Kha'],['د','Dal'],
       ['ذ','Thal'],['ر','Ra'],['ز','Zai'],['س','Sin'],
@@ -2482,10 +2482,13 @@ if (hideCircle) {
           const harian = mRem <= 0 ? target : (target - mRem);
           const tambahan = mRem < 0 ? Math.abs(mRem) : 0;
 
-          modeBarText.textContent = `${getModeLabel(routineModeSource)} Aktif`;
-          modeBarSub.textContent = tambahan > 0
+modeBarText.textContent = `${getModeLabel(routineModeSource)} Aktif`;
+          const progressText = tambahan > 0
             ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
             : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
+          modeBarSub.textContent = routineModeSource === 'quran'
+            ? `${progressText} — Target 6,236 = jumlah ayat Al-Quran. Surah gantian tetap dikira.`
+            : progressText;
 
           if (counterArea) counterArea.style.display = 'flex';
           if (modeRemainingEl) modeRemainingEl.textContent = mRem.toLocaleString();
