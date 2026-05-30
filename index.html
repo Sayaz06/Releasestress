@@ -1381,6 +1381,7 @@ body.dark-mode {
           <div class="topbar-title" style="color:#34d399;">📖 Surah / Juzuk</div>
        <button id="btn-reset-quran-index" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#f87171;color:#f87171;">🔄 Kembali ke Laci Pertama</button>
        <button id="btn-reset-quran-full" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#dc2626;color:#fca5a5;">⚠️ Reset Penuh — Purata & Surah Pertama</button>
+       <button id="btn-quran-khatam-reset" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#fbbf24;color:#fbbf24;">🕌 Khatam Reset — Mula Semula (Sejarah Kekal)</button>
         </div>
         <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
           <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
@@ -1982,9 +1983,9 @@ const QURAN_SURAH_AYAT = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,
       return { data: null, ref: null };
     }
 
-    async function ensureTodayModeTasbih(mode) {
+async function ensureTodayModeTasbih(mode) {
       if (!currentUser) return;
-      const key = todayKey();
+      const key = mode === 'quran' ? 'main' : todayKey();
       const refDoc = doc(db, "users", currentUser.uid, `${mode}_tasbih`, key);
       const snap = await getDoc(refDoc);
       if (!snap.exists()) {
@@ -2565,18 +2566,21 @@ if (routineMode && allRoutines.length > 0) {
         didDecrement = true;
         const isQuran = routineModeSource === 'quran';
 
-        if (isQuran) {
-          const now = Date.now();
-          if (!quranSessionStartTime) quranSessionStartTime = now;
-          quranSessionTapCount++;
-          quranSessionLastTapTime = now;
-          clearTimeout(quranSessionTimer);
-          quranSessionTimer = setTimeout(async () => {
-            if (quranSessionTapCount >= 5) await saveQuranSession();
-            quranSessionTapCount = 0;
-            quranSessionStartTime = null;
-            quranSessionLastTapTime = null;
-          }, 5000);
+if (isQuran) {
+          const isFlipTap = learningMode === 3 && comboStep === 0;
+          if (!isFlipTap) {
+            const now = Date.now();
+            if (!quranSessionStartTime) quranSessionStartTime = now;
+            quranSessionTapCount++;
+            quranSessionLastTapTime = now;
+            clearTimeout(quranSessionTimer);
+            quranSessionTimer = setTimeout(async () => {
+              if (quranSessionTapCount >= 5) await saveQuranSession();
+              quranSessionTapCount = 0;
+              quranSessionStartTime = null;
+              quranSessionLastTapTime = null;
+            }, 5000);
+          }
         }
 
         if (isQuran && learningMode === 0) {
@@ -2618,14 +2622,26 @@ let justBecameDone = false;
 
         if (isNewMode) {
           const mc = getActiveModeCountdown();
-          if (mc.data && mc.ref) {
+const isQuranComboFlip = routineModeSource === 'quran' && learningMode === 3 && comboStep === 1;
+          if (mc.data && mc.ref && !isQuranComboFlip) {
             let mRem = mc.data.remaining;
             let mDone = !!mc.data.done;
+            if (routineModeSource === 'quran' && mDone) {          
+              showToast('🕌 Al-Quran telah KHATAM! Tekan "Khatam Reset" untuk mula semula.');
+              return;
+            }
             if (!mDone && mRem > 0) {
               mRem -= 1;
               mDone = mRem <= 0;
-              if (mDone) showToast(`✅ ${getModeLabel(routineModeSource)} hari ini selesai! Sambung sebagai Tambahan.`);
-            } else {
+              if (mDone) {
+                if (routineModeSource === 'quran') {
+                  showToast('🕌 Tahniah! Al-Quran KHATAM! الحمد لله 🎉', 6000);
+                  markQuranKhatamDay();
+                } else {
+                  showToast(`✅ ${getModeLabel(routineModeSource)} hari ini selesai! Sambung sebagai Tambahan.`);
+                }
+              }
+            } else if (routineModeSource !== 'quran') {
               mRem -= 1;
             }
             mc.data.remaining = mRem;
@@ -5714,17 +5730,45 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
       renderModeHistory();
     });
 
-    function renderModeHistory() {
+function renderModeHistory() {
       const src = routineModeSource;
-      const target = MODE_DAILY_DEFAULTS[src] || 1000;
       document.getElementById('mode-history-title').textContent = `${getModeLabel(src)} — History`;
       const listEl = document.getElementById('mode-history-list');
       listEl.innerHTML = '<div class="empty-state">Memuatkan...</div>';
 
+      if (src === 'quran') {
+        onSnapshot(query(collection(db, "users", currentUser.uid, "quran_daily_taps"), orderBy("dateKey", "desc")), (snap) => {
+          listEl.innerHTML = "";
+          if (snap.empty) { listEl.innerHTML = '<div class="empty-state">Belum ada rekod. Mula countdown untuk rekod pertama.</div>'; return; }
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const key = data.dateKey || "";
+            const [y, m, d] = key.split("-");
+            const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+            const { label, day } = formatDateLabel(dateObj);
+            const tapped = data.tapped || 0;
+            listEl.insertAdjacentHTML("beforeend", `
+              <div class="list-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                  <div class="list-title">${day}</div>
+                  <span class="badge-status badge-done">${tapped.toLocaleString()} ayat</span>
+                </div>
+                <div class="list-sub">${label}</div>
+<div class="list-sub">📖 <strong style="color:#34d399;">${tapped.toLocaleString()} ayat</strong> dikira hari ini (00:00 – 00:00)</div>
+                ${data.khatam ? `<div style="margin-top:4px;padding:6px 10px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.5);border-radius:8px;color:#fbbf24;font-weight:700;font-size:0.8rem;text-align:center;">🕌 AL-QURAN KHATAM — الحمد لله</div>` : ''} 
+              </div>
+            `);
+          });
+        });
+        return;
+      }
+
+      const target = MODE_DAILY_DEFAULTS[src] || 1000;
       const q = query(
         collection(db, "users", currentUser.uid, `${src}_tasbih`),
         orderBy("dateKey", "desc")
       );
+    
       onSnapshot(q, (snap) => {
         listEl.innerHTML = "";
         if (snap.empty) {
@@ -6107,9 +6151,56 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
 
       quranKhatamData = newData;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
-      renderQuranKhatamCard();
+
+renderQuranKhatamCard();
+
+      // Simpan rekod harian
+      const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
+      const dailySnap = await getDoc(dailyRef);
+      const prevTapped = dailySnap.exists() ? (dailySnap.data().tapped || 0) : 0;
+      await setDoc(dailyRef, {
+        tapped: prevTapped + ayatSesi,
+        dateKey: dateKeyQ(Date.now()),
+        updatedAt: Date.now()
+      }, { merge: true });
+
       showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
     }
+// ── KHATAM QURAN ──
+    async function markQuranKhatamDay() {
+      if (!currentUser) return;
+      const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
+      await setDoc(dailyRef, { khatam: true, khatamAt: Date.now() }, { merge: true });
+    }
+
+    document.getElementById('btn-quran-khatam-reset').addEventListener('click', async () => {
+      if (!confirm("🕌 Mula semula dari Surah 1?\n\nSejarah khatam akan DIKEKALKAN.\nHanya kedudukan & kiraan yang di-reset.")) return;
+
+      const newData = {
+        ...quranKhatamData,
+        currentSurah: 1, currentAyat: 0, totalAyatRead: 0,
+        lastUpdateTs: Date.now(), startedAt: Date.now()
+      };
+      quranKhatamData = newData;
+      await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
+
+      const mainRef = doc(db, "users", currentUser.uid, "quran_tasbih", "main");
+      await setDoc(mainRef, { remaining: 6236, done: false, dateKey: 'main', createdAt: Date.now() });
+      currentQuranTasbihData = { remaining: 6236, done: false, dateKey: 'main' };
+      currentQuranTasbihRef = mainRef;
+
+      const activeTime = allQuranTimes.find(t => t.isActive);
+      if (activeTime) {
+        await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
+      }
+      currentRoutineIndex = 0;
+
+      if (routineMode && routineModeSource === 'quran') rebuildRoutines();
+      renderQuranKhatamCard();
+      updateTasbihUI();
+      showToast("✅ Mula semula dari Surah 1! Sejarah khatam dikekalkan. 🕌", 4000);
+    });
+
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
