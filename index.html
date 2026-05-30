@@ -2574,12 +2574,15 @@ if (isQuran) {
             quranSessionTapCount++;
             quranSessionLastTapTime = now;
             clearTimeout(quranSessionTimer);
-            quranSessionTimer = setTimeout(async () => {
-              if (quranSessionTapCount >= 5) await saveQuranSession();
+quranSessionTimer = setTimeout(async () => {
+            if (quranSessionTapCount >= 5) {
+              await saveQuranSession();
               quranSessionTapCount = 0;
               quranSessionStartTime = null;
               quranSessionLastTapTime = null;
-            }, 5000);
+            }
+            // Kurang 5 tap: biarkan terkumpul, jangan reset
+          }, 5000);
           }
         }
 
