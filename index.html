@@ -5153,8 +5153,8 @@ ${hurufPickerHtml}
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
 <div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
-            ${mode === 'quran' ? `<button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang ٰ</button>` : ''}
-            <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
+${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang</button>' : ''}
+                        <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
 
         div.querySelector('.drawer-title').addEventListener("change", e =>
