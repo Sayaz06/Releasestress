@@ -1449,6 +1449,7 @@ body.dark-mode {
         </div>
 <button id="btn-open-edit-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#a78bfa;">✏️ Edit Nama Pukal</button>
 <button id="btn-open-kosong-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#f87171;color:#f87171;">🗑️ Kosong Pukal</button>
+<button id="btn-cari-laci-terakhir" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#60a5fa;color:#93c5fd;">🔍 Cari Laci Terakhir</button>
 <div style="display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px;">
           <span style="font-size:0.75rem; color:#34d399; flex:1;">📐 Saiz Huruf Arab:</span>
           <button id="btn-quran-font-minus" class="btn btn-secondary btn-sm" style="width:32px; padding:4px;">−</button>
@@ -6467,6 +6468,41 @@ const targetCard = zikir.closest('.drawer-card');
         showToast(`✅ ${calon.length} laci berjaya dikosongkan!`);
         renderGenericDrawers('quran');
       } catch(e) { showToast('❌ Gagal: ' + e.message); }
+    });
+// ── CARI LACI TERAKHIR ──
+    document.getElementById('btn-cari-laci-terakhir').addEventListener('click', () => {
+      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
+
+      const carian = prompt('Masukkan teks atau simbol untuk dicari dalam teks Arab:\n(Cth: ٰ untuk cari superscript alif)');
+      if (carian === null || carian.trim() === '') return;
+
+      const calon = allQuranDrawers
+        .filter(d => d.timeId === currentQuranTimeId && d.zikir && d.zikir.includes(carian))
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+      if (!calon.length) {
+        showToast('⚠️ Tiada laci dijumpai yang mengandungi teks tersebut.');
+        return;
+      }
+
+      const terakhir = calon[calon.length - 1];
+      showToast(`📌 Laci terakhir: "${terakhir.title}"`, 5000);
+
+      // Scroll dan highlight laci tu
+      const semua = document.querySelectorAll('#quran-drawers-list .drawer-title');
+      for (let input of semua) {
+        if (input.value === terakhir.title) {
+          const card = input.closest('.drawer-card');
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.style.outline = '2px solid #60a5fa';
+          card.style.boxShadow = '0 0 14px rgba(96,165,250,0.5)';
+          setTimeout(() => {
+            card.style.outline = '';
+            card.style.boxShadow = '';
+          }, 3000);
+          break;
+        }
+      }
     });
     
     if ("serviceWorker" in navigator) {
