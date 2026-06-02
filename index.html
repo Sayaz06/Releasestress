@@ -5152,15 +5152,28 @@ ${hurufPickerHtml}
           <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
-          <div style="text-align:right;margin-top:4px;">
+<div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
+            ${mode === 'quran' ? `<button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang ٰ</button>` : ''}
             <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
-          </div>`;
+          </div>
 
         div.querySelector('.drawer-title').addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{title:e.target.value}));
-        const tz = div.querySelector('.drawer-zikir');
+const tz = div.querySelector('.drawer-zikir');
         tz.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:e.target.value}));
+        if (mode === 'quran') {
+          tz.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const bersih = paste.replace(/\u0670/g, '');
+            const s = tz.selectionStart, en = tz.selectionEnd, v = tz.value;
+            tz.value = v.substring(0, s) + bersih + v.substring(en);
+            tz.selectionStart = tz.selectionEnd = s + bersih.length;
+            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id), { zikir: tz.value });
+          });
+        }
+        
         div.querySelector('.drawer-target').addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{target:e.target.value}));
         div.querySelector('.drawer-maksud').addEventListener("change", e =>
@@ -5191,6 +5204,17 @@ div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
           tz.selectionStart=tz.selectionEnd=s+sym.length; tz.focus();
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:tz.value});
         }));
+if (mode === 'quran') {
+          const btnBuang = div.querySelector('.btn-buang-alif');
+          if (btnBuang) btnBuang.addEventListener('click', () => {
+            const teks = tz.value;
+            const bersih = teks.replace(/\u0670/g, '');
+            if (teks === bersih) { showToast('Tiada simbol ٰ dijumpai.'); return; }
+            tz.value = bersih;
+            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id), { zikir: bersih });
+            showToast('✅ Superscript Alif berjaya dibuang!');
+          });
+        }
 
 div.querySelector('.btn-del').addEventListener("click", () => {
           if(confirm("Padam laci ini?")) deleteDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id));
