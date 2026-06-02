@@ -5156,7 +5156,7 @@ ${hurufPickerHtml}
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
 <div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
-${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang</button>' : ''}
+${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-detect-simbol" style="color:#a5b4fc;border-color:#6366f1;">🔍 Detect Simbol</button><button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang</button>' : ''}
                         <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
 </div>`;
 
@@ -5208,6 +5208,54 @@ div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
           tz.selectionStart=tz.selectionEnd=s+sym.length; tz.focus();
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:tz.value});
         }));
+if (mode === 'quran') {
+          const btnDetect = div.querySelector('.btn-detect-simbol');
+          if (btnDetect) btnDetect.addEventListener('click', () => {
+            const teks = tz.value;
+            if (!teks.trim()) { showToast('Teks kosong.'); return; }
+
+            const namaSimbol = {
+              0x0670: 'Superscript Alif',
+              0x064B: 'Tanwin Fathah',
+              0x064C: 'Tanwin Dhammah',
+              0x064D: 'Tanwin Kasrah',
+              0x064E: 'Fathah',
+              0x064F: 'Dhammah',
+              0x0650: 'Kasrah',
+              0x0651: 'Tasydid',
+              0x0652: 'Sukun',
+              0x0653: 'Maddah',
+              0x0654: 'Hamzah Atas',
+              0x0655: 'Hamzah Bawah',
+              0x06D6: 'Tanda Waqf',
+              0x06D7: 'Tanda Waqf 2',
+              0x06D8: 'Tanda Waqf 3',
+              0x0600: 'Tanda Awal',
+              0x200C: 'Zero Width Non-Joiner',
+              0x200D: 'Zero Width Joiner',
+              0xFEFF: 'BOM / Zero Width No-Break Space',
+            };
+
+            const found = new Map();
+            for (const char of teks) {
+              const code = char.codePointAt(0);
+              if (!found.has(code)) found.set(code, { char, count: 0 });
+              found.get(code).count++;
+            }
+
+            const result = [...found.entries()]
+              .sort((a, b) => a[0] - b[0])
+              .map(([code, { char, count }]) => {
+                const hex = 'U+' + code.toString(16).toUpperCase().padStart(4, '0');
+                const nama = namaSimbol[code] || (code < 0x0600 ? 'Huruf/Ruang' : 'Arab lain');
+                return `${hex} "${char}" — ${nama} (${count}x)`;
+              })
+              .join('\n');
+
+            alert(`Simbol dalam teks ini:\n\n${result}`);
+          });
+        }
+        
 if (mode === 'quran') {
           const btnBuang = div.querySelector('.btn-buang-alif');
           if (btnBuang) btnBuang.addEventListener('click', () => {
