@@ -964,6 +964,40 @@ body.dark-mode {
     <button id="btn-close-qr" style="width:100%;padding:12px;border-radius:999px;background:rgba(52,211,153,0.15);border:1px solid #34d399;color:#34d399;font-weight:700;font-size:.9rem;cursor:pointer;">Tutup</button>
   </div>
 </div>
+<div id="kosong-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#f87171;margin-bottom:4px;">🗑️ Kosong Pukal</div>
+    <div style="font-size:.75rem;color:#9ca3af;margin-bottom:16px;">Kosongkan kandungan laci mengikut nama awalan dan julat nombor</div>
+    <div style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:4px;">Nama Awalan</div>
+    <input id="kosong-pukal-prefix" placeholder="Cth: An-Nisa Ayat" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;margin-bottom:12px;"/>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;">
+        <div style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:4px;">Nombor Mula (Pilihan)</div>
+        <input id="kosong-pukal-start" type="number" min="1" placeholder="Cth: 50" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;"/>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:4px;">Nombor Tamat (Pilihan)</div>
+        <input id="kosong-pukal-end" type="number" min="1" placeholder="Cth: 100" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;"/>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="kosong-zikir-check" checked style="width:18px;height:18px;accent-color:#f87171;">
+        <span style="font-size:.85rem;color:#e5e7eb;">Kosongkan Teks Arab (Zikir)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="kosong-maksud-check" checked style="width:18px;height:18px;accent-color:#f87171;">
+        <span style="font-size:.85rem;color:#e5e7eb;">Kosongkan Terjemahan (Maksud)</span>
+      </label>
+    </div>
+    <div id="kosong-pukal-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:14px;min-height:18px;font-style:italic;"></div>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-kosong-pukal-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">🗑️ Kosong Sekarang</button>
+      <button id="btn-kosong-pukal-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
+    </div>
+  </div>
+</div>
+
 <div id="edit-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">✏️ Edit Nama Pukal</div>
@@ -1416,6 +1450,7 @@ body.dark-mode {
           <span id="quran-selected-count" style="font-size:0.75rem;color:var(--subtext);">0 dipilih</span>
         </div>
 <button id="btn-open-edit-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#a78bfa;">✏️ Edit Nama Pukal</button>
+<button id="btn-open-kosong-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#f87171;color:#f87171;">🗑️ Kosong Pukal</button>
 <div style="display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px;">
           <span style="font-size:0.75rem; color:#34d399; flex:1;">📐 Saiz Huruf Arab:</span>
           <button id="btn-quran-font-minus" class="btn btn-secondary btn-sm" style="width:32px; padding:4px;">−</button>
@@ -6352,6 +6387,88 @@ const targetCard = zikir.closest('.drawer-card');
 
         showToast('✅ Tiada lagi laci kosong!');
       }, 100);
+    });
+// ── KOSONG PUKAL ──
+    document.getElementById('btn-open-kosong-pukal').addEventListener('click', () => {
+      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
+      document.getElementById('kosong-pukal-prefix').value = '';
+      document.getElementById('kosong-pukal-start').value = '';
+      document.getElementById('kosong-pukal-end').value = '';
+      document.getElementById('kosong-pukal-preview').textContent = '';
+      document.getElementById('kosong-pukal-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('kosong-pukal-prefix').focus(), 80);
+    });
+
+    document.getElementById('btn-kosong-pukal-cancel').addEventListener('click', () => {
+      document.getElementById('kosong-pukal-modal').style.display = 'none';
+    });
+
+    function updateKosongPukalPreview() {
+      const prefix = document.getElementById('kosong-pukal-prefix').value.trim();
+      const start  = parseInt(document.getElementById('kosong-pukal-start').value);
+      const end    = parseInt(document.getElementById('kosong-pukal-end').value);
+      const prev   = document.getElementById('kosong-pukal-preview');
+      if (!prefix) { prev.textContent = ''; return; }
+      const calon = allQuranDrawers.filter(d => {
+        if (d.timeId !== currentQuranTimeId) return false;
+        if (!d.title || !d.title.startsWith(prefix)) return false;
+        if (!isNaN(start) && !isNaN(end)) {
+          const num = parseInt(d.title.slice(prefix.length).trim());
+          if (isNaN(num) || num < start || num > end) return false;
+        }
+        return true;
+      });
+      if (!calon.length) {
+        prev.style.color = '#f87171';
+        prev.textContent = '⚠️ Tiada laci dijumpai.';
+        return;
+      }
+      prev.style.color = '#34d399';
+      prev.textContent = `✅ ${calon.length} laci dijumpai. Contoh: "${calon[0].title}"`;
+    }
+
+    ['kosong-pukal-prefix','kosong-pukal-start','kosong-pukal-end'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateKosongPukalPreview);
+    });
+
+    document.getElementById('btn-kosong-pukal-execute').addEventListener('click', async () => {
+      const prefix    = document.getElementById('kosong-pukal-prefix').value.trim();
+      const start     = parseInt(document.getElementById('kosong-pukal-start').value);
+      const end       = parseInt(document.getElementById('kosong-pukal-end').value);
+      const kosongZikir  = document.getElementById('kosong-zikir-check').checked;
+      const kosongMaksud = document.getElementById('kosong-maksud-check').checked;
+      if (!prefix) { showToast('⚠️ Sila masukkan nama awalan.'); return; }
+      if (!kosongZikir && !kosongMaksud) { showToast('⚠️ Pilih sekurang-kurangnya satu medan untuk dikosongkan.'); return; }
+      const calon = allQuranDrawers.filter(d => {
+        if (d.timeId !== currentQuranTimeId) return false;
+        if (!d.title || !d.title.startsWith(prefix)) return false;
+        if (!isNaN(start) && !isNaN(end)) {
+          const num = parseInt(d.title.slice(prefix.length).trim());
+          if (isNaN(num) || num < start || num > end) return false;
+        }
+        return true;
+      });
+      if (!calon.length) { showToast('⚠️ Tiada laci dijumpai.'); return; }
+      if (!confirm(`Kosongkan ${calon.length} laci?\n${kosongZikir ? '• Teks Arab\n' : ''}${kosongMaksud ? '• Terjemahan\n' : ''}Tindakan ini tidak boleh diundur!`)) return;
+      document.getElementById('kosong-pukal-modal').style.display = 'none';
+      showToast(`⏳ Mengosongkan ${calon.length} laci...`, 0);
+      try {
+        let i = 0;
+        while (i < calon.length) {
+          const batch = writeBatch(db);
+          const endIdx = Math.min(i + 499, calon.length);
+          for (let j = i; j < endIdx; j++) {
+            const update = {};
+            if (kosongZikir)  update.zikir  = '';
+            if (kosongMaksud) update.maksud = '';
+            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",calon[j].id), update);
+          }
+          await batch.commit();
+          i = endIdx;
+        }
+        showToast(`✅ ${calon.length} laci berjaya dikosongkan!`);
+        renderGenericDrawers('quran');
+      } catch(e) { showToast('❌ Gagal: ' + e.message); }
     });
     
     if ("serviceWorker" in navigator) {
