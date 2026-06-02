@@ -1423,6 +1423,7 @@ body.dark-mode {
           <input id="quran-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="quran" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
+        <button id="btn-quran-auto-jump" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#6366f1;color:#a5b4fc;">⚡ Auto Lompat Kosong: OFF</button>
         <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
       </section>
 
@@ -6204,6 +6205,40 @@ renderQuranKhatamCard();
       showToast("✅ Mula semula dari Surah 1! Sejarah khatam dikekalkan. 🕌", 4000);
     });
 
+// ── QURAN AUTO LOMPAT KOSONG ──
+    let quranAutoJumpEmpty = false;
+
+    document.getElementById('btn-quran-auto-jump').addEventListener('click', () => {
+      quranAutoJumpEmpty = !quranAutoJumpEmpty;
+      const btn = document.getElementById('btn-quran-auto-jump');
+      btn.textContent = `⚡ Auto Lompat Kosong: ${quranAutoJumpEmpty ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('btn-active', quranAutoJumpEmpty);
+      btn.style.color = quranAutoJumpEmpty ? 'white' : '#a5b4fc';
+      showToast(quranAutoJumpEmpty
+        ? '⚡ ON — isi laci dan ketuk luar textarea untuk lompat ke kosong seterusnya.'
+        : 'Auto Lompat Kosong: OFF');
+    });
+
+    document.getElementById('quran-drawers-list').addEventListener('focusout', (e) => {
+      if (!quranAutoJumpEmpty) return;
+      if (!e.target.classList.contains('drawer-zikir')) return;
+      if (!e.target.value.trim()) return;
+
+      const allZikirs = document.querySelectorAll('#quran-drawers-list .drawer-zikir');
+      let foundCurrent = false;
+
+      for (let zikir of allZikirs) {
+        if (foundCurrent && !zikir.value.trim()) {
+          zikir.closest('.drawer-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => zikir.focus(), 400);
+          return;
+        }
+        if (zikir === e.target) foundCurrent = true;
+      }
+
+      showToast('✅ Tiada lagi laci kosong!');
+    });
+    
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
