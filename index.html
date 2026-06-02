@@ -5246,9 +5246,10 @@ const targetCard = semuaZikir[i].closest('.drawer-card');
             }
           });
         }
-        
-        div.querySelector('.drawer-target').addEventListener("change", e =>
-          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{target:e.target.value}));
+
+const targetEl = div.querySelector('.drawer-target');
+        if (targetEl) targetEl.addEventListener("change", e =>
+          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{target:e.target.value}));        
         div.querySelector('.drawer-maksud').addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{maksud:e.target.value}));
     const toggleHuruf = div.querySelector('.btn-toggle-huruf-picker');
