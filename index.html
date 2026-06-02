@@ -6298,24 +6298,29 @@ renderQuranKhatamCard();
         : 'Auto Lompat Kosong: OFF');
     });
 
-    document.getElementById('quran-drawers-list').addEventListener('focusout', (e) => {
+document.getElementById('quran-drawers-list').addEventListener('focusout', (e) => {
       if (!quranAutoJumpEmpty) return;
       if (!e.target.classList.contains('drawer-zikir')) return;
       if (!e.target.value.trim()) return;
 
-      const allZikirs = document.querySelectorAll('#quran-drawers-list .drawer-zikir');
-      let foundCurrent = false;
+      setTimeout(() => {
+        // Elak lompat bila textarea dibuang dari DOM sebab re-render Firestore
+        if (!document.body.contains(e.target)) return;
 
-      for (let zikir of allZikirs) {
-        if (foundCurrent && !zikir.value.trim()) {
-          zikir.closest('.drawer-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => zikir.focus(), 400);
-          return;
+        const allZikirs = document.querySelectorAll('#quran-drawers-list .drawer-zikir');
+        let foundCurrent = false;
+
+        for (let zikir of allZikirs) {
+          if (foundCurrent && !zikir.value.trim()) {
+            zikir.closest('.drawer-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => zikir.focus(), 400);
+            return;
+          }
+          if (zikir === e.target) foundCurrent = true;
         }
-        if (zikir === e.target) foundCurrent = true;
-      }
 
-      showToast('✅ Tiada lagi laci kosong!');
+        showToast('✅ Tiada lagi laci kosong!');
+      }, 100);
     });
     
     if ("serviceWorker" in navigator) {
