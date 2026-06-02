@@ -5170,7 +5170,7 @@ const tz = div.querySelector('.drawer-zikir');
           tz.addEventListener('paste', (e) => {
             e.preventDefault();
             const paste = (e.clipboardData || window.clipboardData).getData('text');
-            const bersih = paste.replace(/\u0670/g, '');
+            const bersih = paste.replace(/\u0670/g, '').replace(/\u06DF/g, '\u0652');
             const s = tz.selectionStart, en = tz.selectionEnd, v = tz.value;
             tz.value = v.substring(0, s) + bersih + v.substring(en);
             tz.selectionStart = tz.selectionEnd = s + bersih.length;
@@ -5260,11 +5260,11 @@ if (mode === 'quran') {
           const btnBuang = div.querySelector('.btn-buang-alif');
           if (btnBuang) btnBuang.addEventListener('click', () => {
             const teks = tz.value;
-            const bersih = teks.replace(/\u0670/g, '');
-            if (teks === bersih) { showToast('Tiada simbol ٰ dijumpai.'); return; }
+            const bersih = teks.replace(/\u0670/g, '').replace(/\u06DF/g, '\u0652');
+            if (teks === bersih) { showToast('Tiada simbol dijumpai.'); return; }
             tz.value = bersih;
             updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id), { zikir: bersih });
-            showToast('✅ Superscript Alif berjaya dibuang!');
+            showToast('✅ Simbol berjaya dibuang!');
           });
         }
 
