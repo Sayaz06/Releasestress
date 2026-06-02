@@ -5166,7 +5166,7 @@ ${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-detect-simbol"
 const tz = div.querySelector('.drawer-zikir');
         tz.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:e.target.value}));
-        if (mode === 'quran') {
+if (mode === 'quran') {
           tz.addEventListener('paste', (e) => {
             e.preventDefault();
             const paste = (e.clipboardData || window.clipboardData).getData('text');
@@ -5175,6 +5175,25 @@ const tz = div.querySelector('.drawer-zikir');
             tz.value = v.substring(0, s) + bersih + v.substring(en);
             tz.selectionStart = tz.selectionEnd = s + bersih.length;
             updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id), { zikir: tz.value });
+
+            // Auto lompat selepas paste (tunggu re-render Firestore)
+            if (quranAutoJumpEmpty && tz.value.trim()) {
+              const tajukSemasa = data.title;
+              setTimeout(() => {
+                const semuaTajuk = [...document.querySelectorAll('#quran-drawers-list .drawer-title')];
+                const semuaZikir = [...document.querySelectorAll('#quran-drawers-list .drawer-zikir')];
+                let jumpa = false;
+                for (let i = 0; i < semuaZikir.length; i++) {
+                  if (jumpa && !semuaZikir[i].value.trim()) {
+                    semuaZikir[i].closest('.drawer-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => semuaZikir[i].focus(), 300);
+                    return;
+                  }
+                  if (semuaTajuk[i] && semuaTajuk[i].value === tajukSemasa) jumpa = true;
+                }
+                if (jumpa) showToast('✅ Tiada lagi laci kosong!');
+              }, 800);
+            }
           });
         }
         
