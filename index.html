@@ -5185,8 +5185,14 @@ if (mode === 'quran') {
                 let jumpa = false;
                 for (let i = 0; i < semuaZikir.length; i++) {
                   if (jumpa && !semuaZikir[i].value.trim()) {
-                    semuaZikir[i].closest('.drawer-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setTimeout(() => semuaZikir[i].focus(), 300);
+const targetCard = semuaZikir[i].closest('.drawer-card');
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetCard.style.outline = '2px solid #34d399';
+                    targetCard.style.boxShadow = '0 0 14px rgba(52,211,153,0.5)';
+                    setTimeout(() => {
+                      targetCard.style.outline = '';
+                      targetCard.style.boxShadow = '';
+                    }, 2500);
                     return;
                   }
                   if (semuaTajuk[i] && semuaTajuk[i].value === tajukSemasa) jumpa = true;
@@ -6331,9 +6337,15 @@ document.getElementById('quran-drawers-list').addEventListener('focusout', (e) =
 
         for (let zikir of allZikirs) {
           if (foundCurrent && !zikir.value.trim()) {
-            zikir.closest('.drawer-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => zikir.focus(), 400);
-            return;
+const targetCard = zikir.closest('.drawer-card');
+          targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          targetCard.style.outline = '2px solid #34d399';
+          targetCard.style.boxShadow = '0 0 14px rgba(52,211,153,0.5)';
+          setTimeout(() => {
+            targetCard.style.outline = '';
+            targetCard.style.boxShadow = '';
+          }, 2500);
+          return;
           }
           if (zikir === e.target) foundCurrent = true;
         }
