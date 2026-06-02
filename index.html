@@ -5139,8 +5139,11 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
           div.setAttribute('data-empty', 'true');
           div.style.borderColor = 'rgba(245,158,11,0.4)';
         }
-div.innerHTML = `
-          ${mode === 'quran' && quranSelectMode ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 8px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:8px;"><input type="checkbox" class="quran-select-cb" data-id="${data.id}" ${quranSelectedIds.has(data.id)?'checked':''} style="width:20px;height:20px;accent-color:#a78bfa;cursor:pointer;flex-shrink:0;"><span style="font-size:0.78rem;color:#a78bfa;font-weight:600;">Pilih untuk dialihkan</span></div>` : ''}
+const selectCbHtml = (mode === 'quran' && quranSelectMode)
+          ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 8px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:8px;"><input type="checkbox" class="quran-select-cb" data-id="${data.id}" ${quranSelectedIds.has(data.id)?'checked':''} style="width:20px;height:20px;accent-color:#a78bfa;cursor:pointer;flex-shrink:0;"><span style="font-size:0.78rem;color:#a78bfa;font-weight:600;">Pilih untuk dialihkan</span></div>`
+          : '';
+        div.innerHTML = `
+          ${selectCbHtml}
           <input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
 
