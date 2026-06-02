@@ -5158,9 +5158,10 @@ ${hurufPickerHtml}
 <div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
 ${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang</button>' : ''}
                         <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
-          </div>
+</div>`;
 
         div.querySelector('.drawer-title').addEventListener("change", e =>
+
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{title:e.target.value}));
 const tz = div.querySelector('.drawer-zikir');
         tz.addEventListener("change", e =>
