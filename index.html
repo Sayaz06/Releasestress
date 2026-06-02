@@ -5201,10 +5201,20 @@ const tz = div.querySelector('.drawer-zikir');
         tz.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:e.target.value}));
 if (mode === 'quran') {
-          tz.addEventListener('paste', (e) => {
+tz.addEventListener('paste', (e) => {
             e.preventDefault();
             const paste = (e.clipboardData || window.clipboardData).getData('text');
-            const bersih = paste.replace(/\u06DF/g, '\u0652');
+// Buang abjad, digit Western, dan tanda baca yang disenaraikan
+            const tanpaRumi = paste
+              .replace(/[()A-Za-z:"\u201C\u201D\-;,\u2014\/\.0-9]/g, '');
+            // Buang baris yang jadi kosong selepas pembersihan
+            const bersih = tanpaRumi
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.length > 0)
+              .join('\n')
+              .replace(/\u06DF/g, '\u0652')
+              .trim();
                         const s = tz.selectionStart, en = tz.selectionEnd, v = tz.value;
             tz.value = v.substring(0, s) + bersih + v.substring(en);
             tz.selectionStart = tz.selectionEnd = s + bersih.length;
