@@ -5185,8 +5185,8 @@ const selectCbHtml = (mode === 'quran' && quranSelectMode)
 ${hurufPickerHtml}
           <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}</div>
 <textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'UthmanicHafs','Traditional Arabic',serif" : 'inherit'};">${data.zikir||''}</textarea>
-          <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">2. Target Mini</div>
-          <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">
+${mode !== 'quran' ? `<div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">2. Target Mini</div>
+          <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">` : ''}
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
 <div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
