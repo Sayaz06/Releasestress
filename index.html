@@ -5217,9 +5217,10 @@ tz.addEventListener('paste', (e) => {
               .replace(/\u06DF/g, '\u0652')
               .trim();
                         const s = tz.selectionStart, en = tz.selectionEnd, v = tz.value;
-            tz.value = v.substring(0, s) + bersih + v.substring(en);
+tz.value = v.substring(0, s) + bersih + v.substring(en);
             tz.selectionStart = tz.selectionEnd = s + bersih.length;
             updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id), { zikir: tz.value });
+            if (quranScrollDefault === 'bawah') tz.scrollTop = tz.scrollHeight;
 
             // Auto lompat selepas paste (tunggu re-render Firestore)
             if (quranAutoJumpEmpty && tz.value.trim()) {
