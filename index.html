@@ -1461,6 +1461,7 @@ body.dark-mode {
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="quran" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
         <button id="btn-quran-auto-jump" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#6366f1;color:#a5b4fc;">⚡ Auto Lompat Kosong: OFF</button>
+        <button id="btn-quran-scroll-default" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#94a3b8;color:#cbd5e1;">📜 Default Skrol Textarea: Atas</button>
         <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
       </section>
 
@@ -5349,11 +5350,13 @@ div.querySelector('.btn-del').addEventListener("click", () => {
             document.getElementById('quran-selected-count').textContent = `${quranSelectedIds.size} dipilih`;
           });
         }
-        list.appendChild(div);
+list.appendChild(div);
       });
+
+      if (mode === 'quran') applyQuranScrollDefault();
     }
 
-    // ── SUBSCRIBE COLLECTIONS BARU ──
+    // ── SUBSCRIBE COLLECTIONS BARU ── 
     function subscribeNewModes() {
       if(!currentUser) return;
       const modes = [
@@ -6515,6 +6518,35 @@ const targetCard = zikir.closest('.drawer-card');
         }
       }
     });
+
+// ── QURAN SCROLL DEFAULT ──
+    let quranScrollDefault = localStorage.getItem('quranScrollDefault') || 'atas';
+
+    function applyQuranScrollDefault() {
+      if (quranScrollDefault !== 'bawah') return;
+      setTimeout(() => {
+        document.querySelectorAll('#quran-drawers-list .drawer-zikir').forEach(tz => {
+          tz.scrollTop = tz.scrollHeight;
+        });
+      }, 80);
+    }
+
+    document.getElementById('btn-quran-scroll-default').addEventListener('click', () => {
+      quranScrollDefault = quranScrollDefault === 'atas' ? 'bawah' : 'atas';
+      localStorage.setItem('quranScrollDefault', quranScrollDefault);
+      const btn = document.getElementById('btn-quran-scroll-default');
+      btn.textContent = `📜 Default Skrol Textarea: ${quranScrollDefault === 'bawah' ? 'Bawah' : 'Atas'}`;
+      btn.classList.toggle('btn-active', quranScrollDefault === 'bawah');
+      applyQuranScrollDefault();
+      showToast(`📜 Default skrol ditukar kepada: ${quranScrollDefault === 'bawah' ? 'Bawah' : 'Atas'}`);
+    });
+
+    // Apply semasa load
+    if (quranScrollDefault === 'bawah') {
+      const btn = document.getElementById('btn-quran-scroll-default');
+      btn.textContent = '📜 Default Skrol Textarea: Bawah';
+      btn.classList.add('btn-active');
+    }
     
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
