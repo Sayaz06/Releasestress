@@ -6157,7 +6157,9 @@ function renderModeHistory() {
 
     document.getElementById('btn-quran-move-selected').addEventListener('click', async () => {
       if (quranSelectedIds.size === 0) { showToast('Tiada laci dipilih.'); return; }
-      const lainnya = allQuranTimes.filter(t => t.id !== currentQuranTimeId);
+const lainnya = allQuranTimes
+        .filter(t => t.id !== currentQuranTimeId)
+        .sort((a, b) => (a.name||'').localeCompare(b.name||'', undefined, {numeric: true}));
       if (!lainnya.length) { showToast('Tiada kategori lain untuk dipindahkan.'); return; }
       const pilihan = lainnya.map((t, i) => `${i+1}. ${t.name||'Tanpa Nama'}`).join('\n');
       const input = prompt(`Pindah ${quranSelectedIds.size} laci ke kategori mana?\n\n${pilihan}\n\nTaip nombor:`);
