@@ -964,6 +964,23 @@ body.dark-mode {
     <button id="btn-close-qr" style="width:100%;padding:12px;border-radius:999px;background:rgba(52,211,153,0.15);border:1px solid #34d399;color:#34d399;font-weight:700;font-size:.9rem;cursor:pointer;">Tutup</button>
   </div>
 </div>
+<div id="arab-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📖 Tampal Arab Pukal</div>
+    <div style="font-size:.75rem;color:#9ca3af;margin-bottom:12px;">App detect nombor Arab ١٢٣ dan letak teks ke laci yang betul</div>
+    <div style="font-size:.75rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">Nama Awalan Laci</div>
+    <input id="arab-pukal-prefix" placeholder="Cth: Ad-Dukhan atau Al-Baqarah" style="width:100%;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.9rem;outline:none;margin-bottom:12px;"/>
+    <div style="font-size:.75rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">Tampal Teks Arab</div>
+    <textarea id="arab-pukal-input" placeholder="حمٓ ١ وَٱلْكِتَـٰبِ ٱلْمُبِينِ ٢ إِنَّآ أَنزَلْنَـٰهُ ٣" dir="rtl" style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #4b5563;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:1rem;outline:none;resize:none;margin-bottom:10px;text-align:right;font-family:'UthmanicHafs','Traditional Arabic',serif;"></textarea>
+    <div id="arab-pukal-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:12px;min-height:18px;font-style:italic;"></div>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-arab-pukal-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">📖 Letak Sekarang</button>
+      <button id="btn-arab-pukal-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
+    </div>
+  </div>
+</div>
+
+  
 <div id="maksud-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#34d399;margin-bottom:4px;">📝 Tampal Maksud Pukal</div>
@@ -1466,6 +1483,7 @@ body.dark-mode {
 <button id="btn-open-edit-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#a78bfa;">✏️ Edit Nama Pukal</button>
 <button id="btn-open-kosong-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#f87171;color:#f87171;">🗑️ Kosong Pukal</button>
 <button id="btn-open-maksud-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#34d399;color:#34d399;">📝 Tampal Maksud Pukal</button>
+<button id="btn-open-arab-pukal" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#a78bfa;">📖 Tampal Arab Pukal</button>
 <button id="btn-cari-laci-terakhir" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#60a5fa;color:#93c5fd;">🔍 Cari Laci Terakhir</button>
 <div style="display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px;">
           <span style="font-size:0.75rem; color:#34d399; flex:1;">📐 Saiz Huruf Arab:</span>
@@ -6637,7 +6655,84 @@ const targetCard = zikir.closest('.drawer-card');
         renderGenericDrawers('quran');
       } catch(e) { showToast('❌ Gagal: ' + e.message); }
     });
-    
+
+// ── TAMPAL ARAB PUKAL ──
+    function parseArabPukal(text) {
+      function arabToInt(s) {
+        return parseInt(s.replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660)));
+      }
+      const hasil = [];
+      const re = /[\u0660-\u0669]+/g;
+      let match, prevEnd = 0;
+      while ((match = re.exec(text)) !== null) {
+        const num = arabToInt(match[0]);
+        const ayatText = text.slice(prevEnd, match.index).trim();
+        if (ayatText && !isNaN(num) && num > 0) {
+          hasil.push({ number: num, zikir: ayatText.replace(/\u06DF/g, '\u0652') });
+        }
+        prevEnd = match.index + match[0].length;
+      }
+      return hasil;
+    }
+
+    document.getElementById('btn-open-arab-pukal').addEventListener('click', () => {
+      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
+      document.getElementById('arab-pukal-prefix').value = '';
+      document.getElementById('arab-pukal-input').value = '';
+      document.getElementById('arab-pukal-preview').textContent = '';
+      document.getElementById('arab-pukal-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('arab-pukal-prefix').focus(), 80);
+    });
+
+    document.getElementById('btn-arab-pukal-cancel').addEventListener('click', () => {
+      document.getElementById('arab-pukal-modal').style.display = 'none';
+    });
+
+    function updateArabPukalPreview() {
+      const prefix = document.getElementById('arab-pukal-prefix').value.trim();
+      const teks   = document.getElementById('arab-pukal-input').value;
+      const prev   = document.getElementById('arab-pukal-preview');
+      if (!prefix || !teks.trim()) { prev.textContent = ''; return; }
+      const parsed = parseArabPukal(teks);
+      if (!parsed.length) { prev.style.color='#f87171'; prev.textContent='⚠️ Tiada ayat bernombor Arab dijumpai.'; return; }
+      const calon = parsed.filter(p =>
+        allQuranDrawers.some(d => d.timeId === currentQuranTimeId && d.title === `${prefix} Ayat ${p.number}`)
+      );
+      prev.style.color = '#a78bfa';
+      prev.textContent = `✅ ${parsed.length} ayat dikesan. ${calon.length} laci sepadan. Contoh: "${prefix} Ayat ${parsed[0].number}" → "${parsed[0].zikir.substring(0,20)}..."`;
+    }
+
+    document.getElementById('arab-pukal-prefix').addEventListener('input', updateArabPukalPreview);
+    document.getElementById('arab-pukal-input').addEventListener('input', updateArabPukalPreview);
+
+    document.getElementById('btn-arab-pukal-execute').addEventListener('click', async () => {
+      const prefix = document.getElementById('arab-pukal-prefix').value.trim();
+      const teks   = document.getElementById('arab-pukal-input').value;
+      if (!prefix) { showToast('⚠️ Sila masukkan nama awalan laci.'); return; }
+      const parsed = parseArabPukal(teks);
+      if (!parsed.length) { showToast('⚠️ Tiada ayat bernombor Arab dijumpai.'); return; }
+      const calon = parsed.map(p => {
+        const laci = allQuranDrawers.find(d => d.timeId === currentQuranTimeId && d.title === `${prefix} Ayat ${p.number}`);
+        return laci ? { id: laci.id, zikir: p.zikir } : null;
+      }).filter(Boolean);
+      if (!calon.length) { showToast('⚠️ Tiada laci sepadan. Semak nama awalan.'); return; }
+      document.getElementById('arab-pukal-modal').style.display = 'none';
+      showToast(`⏳ Mengemas kini ${calon.length} laci...`, 0);
+      try {
+        let i = 0;
+        while (i < calon.length) {
+          const batch = writeBatch(db);
+          const endIdx = Math.min(i + 499, calon.length);
+          for (let j = i; j < endIdx; j++)
+            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",calon[j].id), { zikir: calon[j].zikir });
+          await batch.commit();
+          i = endIdx;
+        }
+        showToast(`✅ ${calon.length} teks Arab berjaya dimasukkan!`);
+        renderGenericDrawers('quran');
+      } catch(e) { showToast('❌ Gagal: ' + e.message); }
+    });          
+          
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
