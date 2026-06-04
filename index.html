@@ -964,6 +964,18 @@ body.dark-mode {
     <button id="btn-close-qr" style="width:100%;padding:12px;border-radius:999px;background:rgba(52,211,153,0.15);border:1px solid #34d399;color:#34d399;font-weight:700;font-size:.9rem;cursor:pointer;">Tutup</button>
   </div>
 </div>
+
+<div id="tong-sampah-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:1.1rem;font-weight:700;color:#9ca3af;">🗑️ Tong Sampah</div>
+      <button id="btn-tong-sampah-close" style="background:rgba(255,255,255,.08);border:1px solid #4b5563;border-radius:999px;color:#e5e7eb;padding:4px 12px;font-size:.8rem;cursor:pointer;">Tutup</button>
+    </div>
+    <div style="font-size:.72rem;color:#6b7280;margin-bottom:12px;">Item dipadam kekal selepas 1 tahun. Tekan Pulihkan untuk kembalikan ke koleksi asal.</div>
+    <div id="tong-sampah-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:100px;"></div>
+  </div>
+</div>
+  
 <div id="arab-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📖 Tampal Arab Pukal</div>
@@ -1110,6 +1122,13 @@ body.dark-mode {
 <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
           </button>
+<button id="btn-pembersih" class="btn btn-secondary" style="border-color:#f59e0b;color:#fcd34d;">
+            🧹 Pembersih Data Yatim
+          </button>
+          <button id="btn-tong-sampah" class="btn btn-secondary" style="border-color:#6b7280;color:#9ca3af;">
+            🗑️ Tong Sampah
+          </button>
+  
 <button id="btn-setup-admin-pin" class="btn btn-secondary" style="border-color:#f59e0b; color:#fcd34d; display:none;">
             🔐 Setup / Tukar PIN Admin
           </button>
@@ -1653,10 +1672,11 @@ import {
       updatePassword
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import {
-      getFirestore,
+getFirestore,
       doc,
       setDoc,
       getDoc,
+      getDocs,
       collection,
       addDoc,
       updateDoc,
@@ -6782,7 +6802,166 @@ const targetCard = zikir.closest('.drawer-card');
         renderGenericDrawers('quran');
       } catch(e) { showToast('❌ Gagal: ' + e.message); }
     });          
-          
+
+// ── TONG SAMPAH & PEMBERSIH ──
+    const SATU_TAHUN = 365 * 24 * 60 * 60 * 1000;
+
+    const COLL_LABEL = {
+      drawer: 'Laci Fakta', topics: 'Topik',
+      routine_drawers: 'Laci Rutin', quran_drawers: 'Laci Quran',
+      doa_drawers: 'Laci Doa', hadis_drawers: 'Laci Hadis'
+    };
+
+    function cariYatim() {
+      const yatim = [];
+      const topicIds  = new Set(allTopics.map(t => t.id));
+      const subjectIds = new Set(allSubjects.map(s => s.id));
+      const routineIds = new Set(allRoutineTimes.map(t => t.id));
+      const quranIds   = new Set(allQuranTimes.map(t => t.id));
+      const doaIds     = new Set(allDoaTimes.map(t => t.id));
+      const hadisIds   = new Set(allHadisTimes.map(t => t.id));
+
+      allDrawers.forEach(d => {
+        if (!topicIds.has(d.topicId))
+          yatim.push({ coll:'drawer', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+      });
+      allTopics.forEach(t => {
+        if (!subjectIds.has(t.subjectId))
+          yatim.push({ coll:'topics', id:t.id, data:t, label:t.name||'Tiada Nama' });
+      });
+      allRoutineDrawers.forEach(d => {
+        if (!routineIds.has(d.timeId))
+          yatim.push({ coll:'routine_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+      });
+      allQuranDrawers.forEach(d => {
+        if (!quranIds.has(d.timeId))
+          yatim.push({ coll:'quran_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+      });
+      allDoaDrawers.forEach(d => {
+        if (!doaIds.has(d.timeId))
+          yatim.push({ coll:'doa_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+      });
+      allHadisDrawers.forEach(d => {
+        if (!hadisIds.has(d.timeId))
+          yatim.push({ coll:'hadis_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+      });
+      return yatim;
+    }
+
+    document.getElementById('btn-pembersih').addEventListener('click', async () => {
+      if (!currentUser) { showToast('Sila login dahulu.'); return; }
+      const yatim = cariYatim();
+      if (!yatim.length) { showToast('✅ Tiada data yatim dijumpai! Firestore bersih.'); return; }
+      if (!confirm(`Dijumpai ${yatim.length} data yatim (tiada parent).\n\nData ini akan dimasukkan ke Tong Sampah.\nBoleh dipulihkan dalam masa 1 tahun.\n\nTeruskan?`)) return;
+
+      showToast(`⏳ Memindahkan ${yatim.length} item ke tong sampah...`, 0);
+      try {
+        let i = 0;
+        while (i < yatim.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + 249, yatim.length);
+          for (let j = i; j < end; j++) {
+            const o = yatim[j];
+            const trashRef = doc(collection(db,"users",currentUser.uid,"trash"));
+            batch.set(trashRef, {
+              originalColl: o.coll, originalId: o.id,
+              originalData: o.data, label: o.label,
+              deletedAt: Date.now(), reason: 'orphan'
+            });
+            batch.delete(doc(db,"users",currentUser.uid,o.coll,o.id));
+          }
+          await batch.commit();
+          i = end;
+        }
+        showToast(`✅ ${yatim.length} item dipindah ke Tong Sampah!`);
+      } catch(e) { showToast('❌ Gagal: ' + e.message); }
+    });
+
+    document.getElementById('btn-tong-sampah').addEventListener('click', () => {
+      if (!currentUser) { showToast('Sila login dahulu.'); return; }
+      document.getElementById('tong-sampah-modal').style.display = 'flex';
+      muatTongSampah();
+    });
+
+    document.getElementById('btn-tong-sampah-close').addEventListener('click', () => {
+      document.getElementById('tong-sampah-modal').style.display = 'none';
+    });
+
+    async function muatTongSampah() {
+      const list = document.getElementById('tong-sampah-list');
+      list.innerHTML = '<div style="color:#6b7280;font-size:.8rem;text-align:center;padding:20px;">Memuatkan...</div>';
+
+      const q = query(collection(db,"users",currentUser.uid,"trash"), orderBy("deletedAt","desc"));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        list.innerHTML = '<div style="color:#6b7280;font-size:.8rem;text-align:center;padding:20px;">🧹 Tong sampah kosong</div>';
+        return;
+      }
+
+      // Auto-padam yang dah > 1 tahun
+      const expired = snap.docs.filter(d => (Date.now() - (d.data().deletedAt||0)) > SATU_TAHUN);
+      if (expired.length) {
+        let i = 0;
+        const expArr = expired;
+        while (i < expArr.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + 499, expArr.length);
+          for (let j = i; j < end; j++)
+            batch.delete(doc(db,"users",currentUser.uid,"trash",expArr[j].id));
+          await batch.commit(); i = end;
+        }
+        showToast(`🗑️ ${expired.length} item padam kekal (dah > 1 tahun)`);
+      }
+
+      list.innerHTML = '';
+      snap.docs.forEach(docSnap => {
+        if ((Date.now() - (docSnap.data().deletedAt||0)) > SATU_TAHUN) return;
+        const item = docSnap.data();
+        const tarikhPadam = new Date(item.deletedAt);
+        const tarikhLuput = new Date(item.deletedAt + SATU_TAHUN);
+        const tLabel = COLL_LABEL[item.originalColl] || item.originalColl;
+        const card = document.createElement('div');
+        card.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid #374151;border-radius:10px;padding:10px 12px;';
+        card.innerHTML = `
+          <div style="font-size:.85rem;font-weight:600;color:#e5e7eb;margin-bottom:2px;">${item.label}</div>
+          <div style="font-size:.7rem;color:#6b7280;margin-bottom:6px;">${tLabel} · Dipadam: ${tarikhPadam.toLocaleDateString('ms-MY')} · Luput: ${tarikhLuput.toLocaleDateString('ms-MY')}</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-pulihkan" data-id="${docSnap.id}" style="flex:1;padding:6px;border-radius:999px;background:rgba(52,211,153,.15);border:1px solid #10b981;color:#34d399;font-size:.78rem;cursor:pointer;">↩ Pulihkan</button>
+            <button class="btn-padam-kekal" data-id="${docSnap.id}" style="padding:6px 12px;border-radius:999px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:#f87171;font-size:.78rem;cursor:pointer;">Padam Kekal</button>
+          </div>`;
+        list.appendChild(card);
+      });
+
+      list.querySelectorAll('.btn-pulihkan').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const trashId = btn.getAttribute('data-id');
+          const trashSnap = await getDoc(doc(db,"users",currentUser.uid,"trash",trashId));
+          if (!trashSnap.exists()) return;
+          const item = trashSnap.data();
+          try {
+            const batch = writeBatch(db);
+            const newRef = doc(collection(db,"users",currentUser.uid,item.originalColl));
+            batch.set(newRef, item.originalData);
+            batch.delete(doc(db,"users",currentUser.uid,"trash",trashId));
+            await batch.commit();
+            showToast(`✅ "${item.label}" berjaya dipulihkan!`);
+            muatTongSampah();
+          } catch(e) { showToast('❌ Gagal pulihkan: ' + e.message); }
+        });
+      });
+
+      list.querySelectorAll('.btn-padam-kekal').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const trashId = btn.getAttribute('data-id');
+          if (!confirm('Padam kekal? Tidak boleh dipulihkan lagi.')) return;
+          await deleteDoc(doc(db,"users",currentUser.uid,"trash",trashId));
+          showToast('🗑️ Dipadam kekal.');
+          muatTongSampah();
+        });
+      });
+    }
+    
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
