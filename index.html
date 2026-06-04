@@ -6738,7 +6738,7 @@ const targetCard = zikir.closest('.drawer-card');
         const num = arabToInt(match[0]);
         const ayatText = text.slice(prevEnd, match.index).trim();
         if (ayatText && !isNaN(num) && num > 0) {
-          hasil.push({ number: num, zikir: ayatText.replace(/\u06DF/g, '\u0652') });
+hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u06DF/g, '\u0652') });
         }
         prevEnd = match.index + match[0].length;
       }
