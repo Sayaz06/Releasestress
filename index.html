@@ -6676,12 +6676,12 @@ const targetCard = zikir.closest('.drawer-card');
         const match = line.match(/^(\d+)[\.\)]\s*(.+)/);
 
 if (match) {
-          results.push({
+          hasil.push({
             number: parseInt(match[1]),
             maksud: `${match[1]}. ${match[2].trim()}`
           });
         }
-        
+      }
       return hasil;
     }
 
