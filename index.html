@@ -6674,8 +6674,14 @@ const targetCard = zikir.closest('.drawer-card');
       const hasil = [];
       for (const line of lines) {
         const match = line.match(/^(\d+)[\.\)]\s*(.+)/);
-        if (match) hasil.push({ number: parseInt(match[1]), maksud: match[2].trim() });
-      }
+
+if (match) {
+          results.push({
+            number: parseInt(match[1]),
+            maksud: `${match[1]}. ${match[2].trim()}`
+          });
+        }
+        
       return hasil;
     }
 
