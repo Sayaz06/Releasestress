@@ -2119,9 +2119,16 @@ async function ensureTodayModeTasbih(mode) {
       return {rutin:'Rutin', quran:'📖 Quran', doa:'🤲 Doa', hadis:'📚 Hadis'}[src] || src;
     }
 
-    function getRoutineSrc() {
+function getRoutineSrc() {
       switch(routineModeSource) {
-        case 'quran': return {times:allQuranTimes, drawers:allQuranDrawers, globalId:activeGlobalQuranId, coll:'quran'};
+        case 'quran': {
+          // Bila Al-Quran Penuh ON, pastikan kategori betul diaktifkan
+          if (isAlQuranPenuh) {
+            const timeId = getAlQuranPenuhActiveTimeId();
+            if (timeId) activeGlobalQuranId = timeId;
+          }
+          return {times:allQuranTimes, drawers:allQuranDrawers, globalId:activeGlobalQuranId, coll:'quran'};
+        }
         case 'doa':   return {times:allDoaTimes, drawers:allDoaDrawers, globalId:activeGlobalDoaId, coll:'doa'};
         case 'hadis': return {times:allHadisTimes, drawers:allHadisDrawers, globalId:activeGlobalHadisId, coll:'hadis'};
         default:      return {times:allRoutineTimes, drawers:allRoutineDrawers, globalId:activeGlobalRoutineId, coll:'routine'};
@@ -2820,7 +2827,15 @@ if (didDecrement) {
       }
 
       if (routineMode && allRoutines.length > 0) {
-        if (routineAutoNext) {
+if (routineAutoNext) {
+          const wasAtTamat = allRoutines[currentRoutineIndex]?.isTamat;
+          
+          // Bila Al-Quran Penuh ON dan baru habis surah (dari laci Tamat)
+          if (isAlQuranPenuh && routineModeSource === 'quran' && wasAtTamat) {
+            alQuranPenuhNextSurah();
+            return;
+          }
+
           currentRoutineIndex = (currentRoutineIndex + 1) % allRoutines.length;
           const nextRtn = allRoutines[currentRoutineIndex];
           currentRoutineTarget = nextRtn.target;
@@ -4031,13 +4046,11 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
           }
         });
 
-        if (allRoutines.length > 0) {
-          allRoutines.push({ 
-             title: "Tamat", 
-             text: "✅ Rutin Selesai. Kembali ke Mula.", 
-             target: 0,
-             isTamat: true 
-          });
+if (allRoutines.length > 0) {
+          const tamatText = isAlQuranPenuh
+            ? `✅ Surah ${alQuranPenuhSurahIdx}. ${QURAN_SURAH_NAMES[alQuranPenuhSurahIdx-1]} selesai! Auto ke surah seterusnya...`
+            : "✅ Rutin Selesai. Kembali ke Mula.";
+          allRoutines.push({ title: "Tamat", text: tamatText, target: 0, isTamat: true });
         }
       } else {
         activeGlobalRoutineId = 'default';
@@ -4108,6 +4121,8 @@ showSection(secToShow);
         subscribeToVideoRehat(); // KOD BARU: Subscribe video rehat (dah ada fungsi, tapi belum dipanggil)
         subscribeNewModes();
         loadQuranKhatam();
+        loadQuranSusunan();
+        
       } else {
         homeUserEmail.textContent = "";
         if (notesUnsub) notesUnsub();
@@ -6092,7 +6107,8 @@ function renderModeHistory() {
     // ── SUSUN AL-QURAN ──
     const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
     let quranSusunan = {}; // { "1": timeId, "2": timeId, ... }
-    let isAlQuranPenuh = false;
+let isAlQuranPenuh = false;
+    let alQuranPenuhSurahIdx = 1; // Surah semasa (1-114)
 
     async function loadQuranSusunan() {
       if (!currentUser) return;
@@ -6104,6 +6120,60 @@ function renderModeHistory() {
       if (!currentUser) return;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranSusunan"),
         { surah: quranSusunan, updatedAt: Date.now() }, { merge: true });
+    }
+
+function getAlQuranPenuhActiveTimeId() {
+      // Cari timeId untuk surah semasa dalam susunan
+      for (let i = alQuranPenuhSurahIdx; i <= 114; i++) {
+        const timeId = quranSusunan[String(i)];
+        if (timeId && allQuranTimes.find(t => t.id === timeId)) {
+          alQuranPenuhSurahIdx = i;
+          return timeId;
+        }
+      }
+      return null; // Semua surah habis
+    }
+
+    async function alQuranPenuhNextSurah() {
+      // Cari surah seterusnya yang ada timeId
+      for (let i = alQuranPenuhSurahIdx + 1; i <= 114; i++) {
+        const timeId = quranSusunan[String(i)];
+        if (timeId && allQuranTimes.find(t => t.id === timeId)) {
+          alQuranPenuhSurahIdx = i;
+          // Aktifkan kategori baru
+          await activateQuranPenuhSurah(timeId);
+          return true;
+        }
+      }
+      // Habis semua 114 surah
+      showToast('🕌 Tahniah! Al-Quran Penuh selesai! الحمد لله 🎉', 6000);
+      isAlQuranPenuh = false;
+      const btn = document.getElementById('btn-toggle-alquran-penuh');
+      if (btn) {
+        btn.textContent = '🔁 Al-Quran Penuh: OFF';
+        btn.classList.remove('btn-active');
+        btn.style.color = '#a5b4fc';
+      }
+      return false;
+    }
+
+    async function activateQuranPenuhSurah(timeId) {
+      if (!currentUser) return;
+      // Nyahaktif semua, aktifkan timeId baru
+      for (const t of allQuranTimes) {
+        if (t.isActive && t.id !== timeId) {
+          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", t.id), { isActive: false, lastIndex: 0 });
+        }
+      }
+      await updateDoc(doc(db, "users", currentUser.uid, "quran_times", timeId), { isActive: true, lastIndex: 0 });
+      activeGlobalQuranId = timeId;
+      currentRoutineIndex = 0;
+      
+      const nama = allQuranTimes.find(t => t.id === timeId)?.name || '';
+      const surahName = QURAN_SURAH_NAMES[alQuranPenuhSurahIdx - 1];
+      showToast(`📖 Surah ${alQuranPenuhSurahIdx}. ${surahName} — ${nama}`, 4000);
+      
+      rebuildRoutines();
     }
 
     function renderSusunAlQuran() {
