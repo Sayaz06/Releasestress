@@ -1473,6 +1473,7 @@ body.dark-mode {
         <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
           <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
           <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
+          <button id="btn-susun-alquran" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;box-shadow:0 6px 18px rgba(99,102,241,.3);">📖 Susun Al-Quran</button>
           <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
           <button id="btn-pecah-surah" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">✂️ Pecahkan Surah Besar kepada Surah Berasingan</button>
           <div id="quran-times-list" style="padding:10px;margin-top:8px;min-height:120px;"></div>
@@ -1519,6 +1520,24 @@ body.dark-mode {
         <button id="btn-quran-scroll-default" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#94a3b8;color:#cbd5e1;">📜 Default Skrol Textarea: Atas</button>
         <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
       </section>
+
+<section id="section-susun-alquran" class="section">
+  <div class="topbar">
+    <button id="btn-back-susun-alquran" class="btn btn-secondary btn-sm">← Surah/Juzuk</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#a5b4fc;">📖 Susun Al-Quran</div>
+      <div class="topbar-sub">Tetapkan kategori untuk setiap surah</div>
+    </div>
+  </div>
+  <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;flex-shrink:0;">
+    Tekan mana-mana surah untuk tetapkan kategori laci.
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-shrink:0;">
+    <button id="btn-toggle-alquran-penuh" class="btn btn-secondary btn-sm" style="flex:1;border-color:#6366f1;color:#a5b4fc;">🔁 Al-Quran Penuh: OFF</button>
+    <span id="susun-progress-chip" class="chip" style="border-color:#6366f1;color:#a5b4fc;">0 / 114</span>
+  </div>
+  <div class="list" id="susun-alquran-list" style="padding:8px;"></div>
+</section>
 
       <!-- ══ DOA ══ -->
       <section id="section-doa-times" class="section">
@@ -2275,8 +2294,9 @@ function showSection(section) {
 ['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history'].forEach(id => {
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
-      if (sectionAmtAk) sectionAmtAk.classList.remove("active");
-      section.classList.add("active");      
+if (sectionAmtAk) sectionAmtAk.classList.remove("active");
+      if (sectionSusunAlQuran) sectionSusunAlQuran.classList.remove("active");  
+        section.classList.add("active");      
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
               tm_canvas.width = tm_canvas.parentElement.clientWidth;
@@ -6067,6 +6087,117 @@ function renderModeHistory() {
         });
       });
     }
+
+
+    // ── SUSUN AL-QURAN ──
+    const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
+    let quranSusunan = {}; // { "1": timeId, "2": timeId, ... }
+    let isAlQuranPenuh = false;
+
+    async function loadQuranSusunan() {
+      if (!currentUser) return;
+      const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "quranSusunan"));
+      quranSusunan = snap.exists() ? (snap.data().surah || {}) : {};
+    }
+
+    async function saveQuranSusunan() {
+      if (!currentUser) return;
+      await setDoc(doc(db, "users", currentUser.uid, "settings", "quranSusunan"),
+        { surah: quranSusunan, updatedAt: Date.now() }, { merge: true });
+    }
+
+    function renderSusunAlQuran() {
+      const list = document.getElementById('susun-alquran-list');
+      list.innerHTML = '';
+      let tetapCount = 0;
+
+      QURAN_SURAH_NAMES.forEach((name, idx) => {
+        const num = idx + 1;
+        const timeId = quranSusunan[String(num)];
+        const category = timeId ? allQuranTimes.find(t => t.id === timeId) : null;
+        const isTetap = !!category;
+        if (isTetap) tetapCount++;
+
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.style.cursor = 'pointer';
+        div.innerHTML = `
+          <div class="list-main">
+            <div class="list-title" style="font-size:0.85rem;">
+              <span style="color:var(--subtext);margin-right:6px;">${num}.</span>${name}
+            </div>
+            <div class="list-sub" style="color:${isTetap ? '#34d399' : 'var(--subtext)'};">
+              ${isTetap ? '✅ ' + category.name : '⬜ Belum ditetapkan'}
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:0.72rem;${isTetap ? 'border-color:#34d399;color:#34d399;' : ''}">
+            ${isTetap ? 'Tukar' : 'Tetap'}
+          </button>`;
+
+        div.querySelector('button').addEventListener('click', () => tetapkanSurah(num));
+        list.appendChild(div);
+      });
+
+      const chip = document.getElementById('susun-progress-chip');
+      if (chip) chip.textContent = `${tetapCount} / 114`;
+    }
+
+    function tetapkanSurah(surahNum) {
+      if (!allQuranTimes.length) { showToast('Tiada kategori Quran. Tambah dahulu.'); return; }
+
+      const sorted = [...allQuranTimes].sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+      const pilihan = sorted.map((t, i) => `${i + 1}. ${t.name || 'Tanpa Nama'}`).join('\n');
+      const current = quranSusunan[String(surahNum)];
+      const currentName = current ? (allQuranTimes.find(t => t.id === current)?.name || '') : '';
+      const hint = currentName ? `\n\nSemasa: ${currentName}` : '';
+
+      const input = prompt(
+        `Surah ${surahNum}. ${QURAN_SURAH_NAMES[surahNum - 1]}\nPilih kategori laci:${hint}\n\n${pilihan}\n\nTaip nombor (atau kosong untuk nyah-tetap):`
+      );
+      if (input === null) return;
+
+      const trimmed = input.trim();
+      if (trimmed === '') {
+        delete quranSusunan[String(surahNum)];
+        saveQuranSusunan();
+        renderSusunAlQuran();
+        showToast(`Surah ${surahNum} dinyah-tetap.`);
+        return;
+      }
+
+      const idx = parseInt(trimmed) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= sorted.length) { showToast('Nombor tidak sah.'); return; }
+
+      quranSusunan[String(surahNum)] = sorted[idx].id;
+      saveQuranSusunan();
+      renderSusunAlQuran();
+      showToast(`✅ Surah ${surahNum} → "${sorted[idx].name}"`);
+    }
+
+    document.getElementById('btn-susun-alquran').addEventListener('click', async () => {
+      await loadQuranSusunan();
+      renderSusunAlQuran();
+      showSection(sectionSusunAlQuran);
+    });
+
+    document.getElementById('btn-back-susun-alquran').addEventListener('click', () => {
+      showSection(document.getElementById('section-quran-times'));
+      renderGenericTimes('quran');
+    });
+
+    document.getElementById('btn-toggle-alquran-penuh').addEventListener('click', () => {
+      isAlQuranPenuh = !isAlQuranPenuh;
+      const btn = document.getElementById('btn-toggle-alquran-penuh');
+      btn.textContent = `🔁 Al-Quran Penuh: ${isAlQuranPenuh ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('btn-active', isAlQuranPenuh);
+      btn.style.color = isAlQuranPenuh ? 'white' : '#a5b4fc';
+      showToast(isAlQuranPenuh
+        ? '✅ Mode Al-Quran Penuh ON — surah berturutan aktif.'
+        : 'Mode Al-Quran Penuh OFF.');
+    });
+
 // ── SEARCH + GOTO EMPTY ──
     function gotoFirstEmptyDrawer(listId) {
       const list = document.getElementById(listId);
