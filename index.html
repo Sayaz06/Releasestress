@@ -2636,7 +2636,11 @@ if (kHarian > 0) {
                 const minitLeft = baki / kHarian;
                 const eta = new Date(Date.now() + minitLeft * 60000);
                 const { label } = formatDateLabel(eta);
-                etaLine = ` │ 🏁 ${label}`;
+                const h = eta.getHours();
+                const m = String(eta.getMinutes()).padStart(2, '0');
+                const ampm = h >= 12 ? 'pm' : 'am';
+                const h12 = h % 12 || 12;
+                etaLine = ` │ 🏁 ${label.split(',')[0]}, ${h12}:${m}${ampm}, ${label.split(',')[1].trim()}`;
               }
               metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
             }
