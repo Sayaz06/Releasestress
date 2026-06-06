@@ -2614,9 +2614,36 @@ modeBarText.textContent = `${getModeLabel(routineModeSource)} Aktif`;
           const progressText = tambahan > 0
             ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
             : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
-          modeBarSub.textContent = routineModeSource === 'quran'
-            ? `${progressText} — Target 6,236 = jumlah ayat Al-Quran. Surah gantian tetap dikira.`
-            : progressText;
+if (routineModeSource === 'quran') {
+            const qd = quranKhatamData;
+            let metaStr = `${progressText} — Target 6,236 = jumlah ayat Al-Quran.`;
+            if (qd && qd.totalAyatRead > 0) {
+              const totalRead = qd.totalAyatRead || 0;
+              const baki = Math.max(0, 6236 - totalRead);
+              const now = new Date();
+              const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+              const minitBerlalu = (now - midnight) / 60000;
+              const todayKeyNow = dateKeyQ(Date.now());
+              const ayatHariIni = (qd.history || [])
+                .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
+                .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
+              const kHarian = ayatHariIni >= 5 && minitBerlalu > 0
+                ? ayatHariIni / minitBerlalu : 0;
+              const curS = qd.currentSurah || 1;
+              const curSName = QURAN_SURAH_NAMES[curS - 1] || '';
+              let etaLine = '';
+if (kHarian > 0) {
+                const minitLeft = baki / kHarian;
+                const eta = new Date(Date.now() + minitLeft * 60000);
+                const { label } = formatDateLabel(eta);
+                etaLine = ` │ 🏁 ${label}`;
+              }
+              metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
+            }
+            modeBarSub.textContent = metaStr;
+          } else {
+            modeBarSub.textContent = progressText;
+          }
 
           if (counterArea) counterArea.style.display = 'flex';
           if (modeRemainingEl) modeRemainingEl.textContent = mRem.toLocaleString();
