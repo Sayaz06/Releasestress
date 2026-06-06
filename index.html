@@ -2062,8 +2062,6 @@ const QURAN_SURAH_AYAT = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,
     const QURAN_KHATAM_START = new Date('2026-05-21T00:00:00');
     const QURAN_KHATAM_END   = new Date(QURAN_KHATAM_START.getTime() + 342 * 864e5);
     let quranKhatamData    = null;
-    let quranCurrentSurah = null;
-    let quranAutoSurah = false;
     let quranSpeedInterval = null;
     let currentQuranTasbihRef = null, currentQuranTasbihData = null;
     let quranSessionTapCount = 0;
@@ -2802,19 +2800,14 @@ if (didDecrement) {
       }
 
       if (routineMode && allRoutines.length > 0) {
-if (routineAutoNext) {
+        if (routineAutoNext) {
           currentRoutineIndex = (currentRoutineIndex + 1) % allRoutines.length;
           const nextRtn = allRoutines[currentRoutineIndex];
           currentRoutineTarget = nextRtn.target;
-
-          if (quranAutoSurah && routineModeSource === 'quran' && currentRoutineIndex === 0) {
-            advanceQuranSurah(1);
-            return;
-          }
-
+          
           syncIndexToFirestore(currentRoutineIndex);
-
-          isFlipped = false;
+          
+isFlipped = false;
           comboStep = 0;
           currentRoutineTarget = allRoutines[currentRoutineIndex].target;
           triggerFadeAnimation(renderCurrentFact);
@@ -3979,21 +3972,9 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
         else if(routineModeSource==='doa') activeGlobalDoaId = activeTime.id;
         else if(routineModeSource==='hadis') activeGlobalHadisId = activeTime.id;
         else activeGlobalRoutineId = activeTime.id;
-let activeDrawers = src.drawers.filter(d => d.timeId === activeTime.id).sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
-
-        if (routineModeSource === 'quran' && quranCurrentSurah) {
-          const surahKeys = extractSurahKeys(activeTime.id);
-          if (surahKeys.length > 1) {
-            const regexS = /^(\d+)\.\s+(.+?)\s+Ayat\s+\d+/i;
-            activeDrawers = activeDrawers.filter(d => {
-              const m = d.title?.match(regexS);
-              return m && `${m[1]}. ${m[2].trim()}` === quranCurrentSurah;
-            });
-          }
-        }
-
-        activeDrawers.forEach(data => {
+        const activeDrawers = src.drawers.filter(d => d.timeId === activeTime.id).sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
         
+        activeDrawers.forEach(data => {
           const tajukLaci = data.title || "Tiada Tajuk";
           
           if(data.notes && !data.zikir) {
@@ -5290,31 +5271,6 @@ const zikirMinHeight = mode === 'quran' ? `calc(${quranFontSize * 3}rem + 16px)`
         b.textContent = emptyCount > 0 ? `⚡ Kosong (${emptyCount})` : '✅ Penuh';
       });
 
-// ── Navigasi Surah (Quran sahaja) ──
-      if (mode === 'quran' && !searchTerm) {
-        const surahKeys = extractSurahKeys(cfg.timeId());
-        if (surahKeys.length > 1) {
-          if (!quranCurrentSurah || !surahKeys.includes(quranCurrentSurah))
-            quranCurrentSurah = surahKeys[0];
-          const idx = surahKeys.indexOf(quranCurrentSurah);
-          const navEl = document.createElement('div');
-          navEl.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:8px 10px;';
-          navEl.innerHTML = `
-            <button id="btn-surah-prev" style="padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-size:.8rem;cursor:pointer;">◀</button>
-            <div style="flex:1;text-align:center;font-size:.82rem;font-weight:700;color:#34d399;">${quranCurrentSurah}</div>
-            <div style="font-size:.7rem;color:#6b7280;">${idx+1}/${surahKeys.length}</div>
-            <button id="btn-surah-next" style="padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-size:.8rem;cursor:pointer;">▶</button>`;
-          list.appendChild(navEl);
-          navEl.querySelector('#btn-surah-prev').addEventListener('click', () => advanceQuranSurah(-1));
-          navEl.querySelector('#btn-surah-next').addEventListener('click', () => advanceQuranSurah(1));
-          filtered = filtered.filter(d => {
-            const regex = /^(\d+)\.\s+(.+?)\s+Ayat\s+\d+/i;
-            const match = d.title?.match(regex);
-            return match && `${match[1]}. ${match[2].trim()}` === quranCurrentSurah;
-          });
-        }
-      }
-      
       if(!filtered.length){list.innerHTML='<div class="empty-state">Tiada laci dijumpai.</div>';return;}
       filtered.forEach(data => {
 const isEmpty = !data.zikir || data.zikir.trim() === '';
@@ -7095,46 +7051,6 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       showToast(`✅ ${surahKeys.length} surah berjaya dipisahkan! Kategori asal masih ada — boleh padam bila bersedia.`, 6000);
     });
 
-// ── AUTO SURAH ──
-    function extractSurahKeys(timeId) {
-      const regex = /^(\d+)\.\s+(.+?)\s+Ayat\s+\d+/i;
-      const keys = new Set();
-      allQuranDrawers.filter(d => d.timeId === timeId).forEach(d => {
-        const match = d.title?.match(regex);
-        if (match) keys.add(`${match[1]}. ${match[2].trim()}`);
-      });
-      return [...keys].sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
-    }
-
-    function advanceQuranSurah(direction) {
-      const timeId = currentQuranTimeId || activeGlobalQuranId;
-      const keys = extractSurahKeys(timeId);
-      if (!keys.length) return;
-      const idx = keys.indexOf(quranCurrentSurah);
-      const newIdx = idx + direction;
-      if (newIdx < 0 || newIdx >= keys.length) {
-        if (direction > 0) showToast('🕌 Tahniah! Semua surah selesai!', 5000);
-        return;
-      }
-      quranCurrentSurah = keys[newIdx];
-      showToast(`📖 ${quranCurrentSurah}`, 2000);
-      if (routineMode && routineModeSource === 'quran') rebuildRoutines();
-      if (document.getElementById('section-quran-drawers')?.classList.contains('active'))
-        renderGenericDrawers('quran');
-    }
-
-    const btnAutoSurah = document.createElement('button');
-    btnAutoSurah.id = 'btn-auto-surah';
-    btnAutoSurah.className = 'btn btn-secondary btn-sm';
-    btnAutoSurah.style.cssText = 'border-color:#10b981;color:#34d399;';
-    btnAutoSurah.textContent = '🔄 Auto Surah: OFF';
-    btnAutoSurah.addEventListener('click', () => {
-      quranAutoSurah = !quranAutoSurah;
-      btnAutoSurah.textContent = `🔄 Auto Surah: ${quranAutoSurah ? 'ON' : 'OFF'}`;
-      btnAutoSurah.classList.toggle('btn-active', quranAutoSurah);
-      showToast(`Auto Surah: ${quranAutoSurah ? 'ON' : 'OFF'}`);
-    });
-    document.getElementById('btn-go-quran-times')?.parentElement?.appendChild(btnAutoSurah);
           
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
