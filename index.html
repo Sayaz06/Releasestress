@@ -1474,6 +1474,7 @@ body.dark-mode {
           <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
           <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
           <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
+          <button id="btn-pecah-surah" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">✂️ Pecahkan Surah Besar kepada Surah Berasingan</button>
           <div id="quran-times-list" style="padding:10px;margin-top:8px;min-height:120px;"></div>
         </div>
       </section>
@@ -6969,7 +6970,88 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
         });
       });
     }
-    
+
+// ── PECAHKAN SURAH BESAR ──
+    document.getElementById('btn-pecah-surah').addEventListener('click', async () => {
+      if (!currentUser) return;
+
+      // Kenal pasti kategori besar (> 200 laci)
+      const besarList = allQuranTimes.filter(t => 
+        allQuranDrawers.filter(d => d.timeId === t.id).length > 200
+      );
+
+      if (!besarList.length) { showToast('Tiada kategori besar dijumpai (> 200 laci).'); return; }
+
+      const pilihan = besarList.map((t, i) => `${i+1}. ${t.name||'Tanpa Nama'} (${allQuranDrawers.filter(d=>d.timeId===t.id).length} laci)`).join('\n');
+      const input = prompt(`Pilih kategori untuk dipecahkan:\n\n${pilihan}\n\nTaip nombor:`);
+      if (!input) return;
+
+      const idx = parseInt(input.trim()) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= besarList.length) { showToast('Nombor tidak sah.'); return; }
+
+      const bigTime = besarList[idx];
+      const bigDrawers = allQuranDrawers.filter(d => d.timeId === bigTime.id);
+
+      if (!confirm(`Pecahkan "${bigTime.name}" (${bigDrawers.length} laci) kepada surah berasingan?\n\nKategori asal TIDAK dipadam — awak boleh padam sendiri selepas selesai.`)) return;
+
+      showToast('⏳ Sedang memisahkan surah... Jangan tutup app.', 0);
+
+      // Kumpulkan ikut surah
+      const regex = /^(\d+)\.\s+(.+?)\s+Ayat\s+\d+/i;
+      const surahGroups = {};
+
+      bigDrawers.forEach(d => {
+        const match = d.title?.match(regex);
+        if (match) {
+          const key = `${match[1]}. ${match[2].trim()}`;
+          if (!surahGroups[key]) surahGroups[key] = [];
+          surahGroups[key].push(d);
+        }
+      });
+
+      const surahKeys = Object.keys(surahGroups).sort((a, b) => 
+        a.localeCompare(b, undefined, {numeric: true})
+      );
+
+      if (!surahKeys.length) { showToast('⚠️ Tiada corak surah dijumpai. Semak format nama laci.'); return; }
+
+      let surahSelesai = 0;
+
+      for (const key of surahKeys) {
+        // Cipta kategori baru untuk surah ini
+        const newTimeRef = doc(collection(db,"users",currentUser.uid,"quran_times"));
+        await setDoc(newTimeRef, {
+          name: key,
+          isActive: false,
+          createdAt: Date.now()
+        });
+
+        // Alihkan semua laci ke kategori baru
+        const drawers = surahGroups[key];
+        let i = 0;
+        while (i < drawers.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + 499, drawers.length);
+          for (let j = i; j < end; j++) {
+            batch.update(
+              doc(db,"users",currentUser.uid,"quran_drawers",drawers[j].id),
+              { timeId: newTimeRef.id }
+            );
+          }
+          await batch.commit();
+          i = end;
+        }
+
+        surahSelesai++;
+        if (surahSelesai % 10 === 0) {
+          showToast(`⏳ ${surahSelesai}/${surahKeys.length} surah selesai...`, 0);
+        }
+      }
+
+      showToast(`✅ ${surahKeys.length} surah berjaya dipisahkan! Kategori asal masih ada — boleh padam bila bersedia.`, 6000);
+    });
+
+          
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
