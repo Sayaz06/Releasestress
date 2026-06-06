@@ -2828,10 +2828,11 @@ if (didDecrement) {
 
       if (routineMode && allRoutines.length > 0) {
 if (routineAutoNext) {
-          const wasAtTamat = allRoutines[currentRoutineIndex]?.isTamat;
-          
-          // Bila Al-Quran Penuh ON dan baru habis surah (dari laci Tamat)
-          if (isAlQuranPenuh && routineModeSource === 'quran' && wasAtTamat) {
+          const nextIndex = (currentRoutineIndex + 1) % allRoutines.length;
+          const nextIsOrWasTamat = allRoutines[nextIndex]?.isTamat || allRoutines[currentRoutineIndex]?.isTamat;
+
+          // Bila Al-Quran Penuh ON dan akan/baru hit laci Tamat
+          if (isAlQuranPenuh && routineModeSource === 'quran' && nextIsOrWasTamat) {
             alQuranPenuhNextSurah();
             return;
           }
