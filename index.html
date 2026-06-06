@@ -6553,7 +6553,7 @@ const lainnya = allQuranTimes
       document.getElementById('qr-modal').style.display = 'none';
     });
 // ── RESET PENUH QURAN ──
-    document.getElementById('btn-reset-quran-full').addEventListener('click', async () => {
+document.getElementById('btn-reset-quran-full').addEventListener('click', async () => {
       if (!confirm("⚠️ Reset PENUH?\n\nIni akan:\n• Padam semua sejarah bacaan\n• Reset purata kelajuan ke 0\n• Kembali ke Surah 1\n\nData tidak boleh dipulihkan!")) return;
 
       const freshData = {
@@ -6563,9 +6563,18 @@ const lainnya = allQuranTimes
       quranKhatamData = freshData;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), freshData);
 
-      const activeTime = allQuranTimes.find(t => t.isActive);
-      if (activeTime) {
-        await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
+      // Bila Al-Quran Penuh ON — reset ke surah pertama dalam susunan
+      if (isAlQuranPenuh) {
+        alQuranPenuhSurahIdx = 1;
+        const firstTimeId = getAlQuranPenuhActiveTimeId();
+        if (firstTimeId) {
+          await activateQuranPenuhSurah(firstTimeId);
+        }
+      } else {
+        const activeTime = allQuranTimes.find(t => t.isActive);
+        if (activeTime) {
+          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
+        }
       }
       currentRoutineIndex = 0;
 
@@ -6573,6 +6582,7 @@ const lainnya = allQuranTimes
       renderQuranKhatamCard();
       showToast("✅ Reset penuh berjaya! Bermula semula dari Surah 1.");
     });
+    
 // ── RESET LACI PERTAMA QURAN ──
     document.getElementById('btn-reset-quran-index').addEventListener('click', async () => {
       if (!confirm("Reset ke laci pertama Al-Quran?")) return;
