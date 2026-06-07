@@ -6685,8 +6685,10 @@ function renderSusunAlQuran() {
       const list = document.getElementById('susun-alquran-list');
       list.innerHTML = '';
       let tetapCount = 0;
-      let tidakSerasiCount = 0;
+let tidakSerasiCount = 0;
+      let formatSalahCount = 0;
       let tidakSerasiIndeks = [];
+  
 
       QURAN_SURAH_NAMES.forEach((name, idx) => {
         const num = idx + 1;
@@ -6695,20 +6697,27 @@ function renderSusunAlQuran() {
         const isTetap = !!category;
         if (isTetap) tetapCount++;
 
-// Semak nama serasi
+// Semak nama serasi dan format laci
         let isSerasi = true;
+        let adaFormatSalah = false;
         if (isTetap && category) {
           const drawersDalamKategori = allQuranDrawers.filter(d => d.timeId === timeId);
           if (drawersDalamKategori.length > 0) {
             const namaSurahBetul = QURAN_SURAH_NAMES[idx];
-            isSerasi = drawersDalamKategori.every(d => {
-              if (!d.title) return true;
+            drawersDalamKategori.forEach(d => {
+              if (!d.title) return;
               const parsed = parseLaciQuran(d.title);
-              if (!parsed) return true;
-              return parsed.surahName.trim() === namaSurahBetul.trim();
+              if (!parsed) {
+                // Format salah — tidak ikut "X. NamaSurah Ayat Y"
+                adaFormatSalah = true;
+              } else if (parsed.surahName.trim() !== namaSurahBetul.trim()) {
+                // Nama surah tidak serasi
+                isSerasi = false;
+              }
             });
-            if (!isSerasi) {
-              tidakSerasiCount++;
+            if (!isSerasi || adaFormatSalah) {
+              if (!isSerasi) tidakSerasiCount++;
+              if (adaFormatSalah) formatSalahCount++;
               tidakSerasiIndeks.push(num);
             }
           }
@@ -6722,10 +6731,11 @@ function renderSusunAlQuran() {
           <div class="list-main">
             <div class="list-title" style="font-size:0.85rem;">
               <span style="color:var(--subtext);margin-right:6px;">${num}.</span>${name}
-              ${!isSerasi ? '<span style="font-size:0.65rem;color:#f87171;margin-left:6px;">⚠️ Nama tak serasi</span>' : ''}
+${!isSerasi ? '<span style="font-size:0.65rem;color:#f87171;margin-left:6px;">⚠️ Nama tak serasi</span>' : ''}
+              ${adaFormatSalah ? '<span style="font-size:0.65rem;color:#fcd34d;margin-left:6px;">⚠️ Format laci salah</span>' : ''}
             </div>
-            <div class="list-sub" style="color:${isTetap ? (isSerasi ? '#34d399' : '#f87171') : 'var(--subtext)'};">
-              ${isTetap ? (isSerasi ? '✅ ' : '⚠️ ') + category.name : '⬜ Belum ditetapkan'}
+            <div class="list-sub" style="color:${isTetap ? (!isSerasi || adaFormatSalah ? '#f87171' : '#34d399') : 'var(--subtext)'};">
+              ${isTetap ? ((!isSerasi || adaFormatSalah) ? '⚠️ ' : '✅ ') + category.name : '⬜ Belum ditetapkan'}
             </div>
           </div>
           <button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:0.72rem;${isTetap ? (isSerasi ? 'border-color:#34d399;color:#34d399;' : 'border-color:#f87171;color:#f87171;') : ''}">
@@ -6743,13 +6753,17 @@ const chip = document.getElementById('susun-progress-chip');
       const statusEl = document.getElementById('susun-serasi-status');
       const btnLompat = document.getElementById('btn-lompat-tidak-serasi');
 
-      if (statusEl) {
-        if (tidakSerasiCount > 0) {
-          statusEl.textContent = `⚠️ ${tidakSerasiCount} surah dengan nama tidak serasi`;
+if (statusEl) {
+        const adaMasalah = tidakSerasiCount > 0 || formatSalahCount > 0;
+        if (adaMasalah) {
+          let mesej = [];
+          if (tidakSerasiCount > 0) mesej.push(`⚠️ ${tidakSerasiCount} surah nama tak serasi`);
+          if (formatSalahCount > 0) mesej.push(`⚠️ ${formatSalahCount} surah format laci salah`);
+          statusEl.textContent = mesej.join(' | ');
           statusEl.style.color = '#f87171';
           if (btnLompat) btnLompat.style.display = 'flex';
         } else {
-          statusEl.textContent = `✅ Semua nama surah serasi`;
+          statusEl.textContent = `✅ Semua nama dan format serasi`;
           statusEl.style.color = '#34d399';
           if (btnLompat) btnLompat.style.display = 'none';
         }
