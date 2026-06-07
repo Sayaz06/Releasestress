@@ -5994,6 +5994,21 @@ ${(() => {
             📖 Kemaskini Bacaan Quran
           </button>
 
+${(() => {
+            if (!allRoutines.length) return '';
+            const laciSemasa = allRoutines[currentRoutineIndex];
+            const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
+            if (!parsed) return '';
+            const kemajuanSurah = d.currentSurah || 1;
+            const kemajuanAyat = d.currentAyat || 0;
+            if (parsed.surahNum === kemajuanSurah && parsed.ayatNum === kemajuanAyat) return '';
+            return `
+            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="font-size:0.72rem;color:#fcd34d;line-height:1.4;">⚠️ Laci countdown tidak selari dengan kemajuan bacaan anda. Tekan Selaraskan untuk kemaskini.</div>
+              <button id="btn-sync-laci-quran" style="flex-shrink:0;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,0.2);border:1px solid #f59e0b;color:#fcd34d;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 Selaraskan</button>
+            </div>`;
+          })()}
+
 <button id="btn-open-jana-pukal-v2" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;box-shadow:0 6px 18px rgba(16,185,129,.3);">📖 Jana Pukal v2 — Tampal Format Ayat</button>
 <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px;margin-bottom:8px;font-size:0.75rem;line-height:1.9;color:var(--subtext);">
             <div style="color:#a5b4fc;font-weight:700;margin-bottom:4px;">📘 Panduan Memahami Kelajuan</div>
@@ -6017,15 +6032,58 @@ document.getElementById('btn-quran-khatam-update')
         ?.addEventListener('click', handleQuranKhatamUpdate);
       document.getElementById('btn-quran-tak-baca')
         ?.addEventListener('click', handleQuranTakBaca);
+      document.getElementById('btn-sync-laci-quran')
+        ?.addEventListener('click', () => {
+          if (!routineMode || routineModeSource !== 'quran' || !allRoutines.length) return;
+          const d = quranKhatamData;
+          if (!d) return;
+          const curS = d.currentSurah || 1;
+          const curA = d.currentAyat || 0;
+          const targetTitle = `${curS}. ${QURAN_SURAH_NAMES[curS-1]} Ayat ${curA || 1}`;
+          const targetIdx = allRoutines.findIndex(r =>
+            r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
+          );
+          if (targetIdx !== -1) {
+            currentRoutineIndex = targetIdx;
+            comboStep = 0;
+            isFlipped = false;
+            currentRoutineTarget = allRoutines[targetIdx].target;
+            syncIndexToFirestore(targetIdx);
+            triggerFadeAnimation(renderCurrentFact);
+            showToast(`✅ Laci diselaraskan ke: ${targetTitle}`);
+            renderQuranKhatamCard();
+          } else {
+            showToast(`⚠️ Laci "${targetTitle}" tidak dijumpai dalam countdown.`);
+          }
+        });
+      document.getElementById('btn-sync-laci-quran')
+        ?.addEventListener('click', () => {
+          if (!routineMode || routineModeSource !== 'quran' || !allRoutines.length) return;
+          const d = quranKhatamData;
+          if (!d) return;
+          const curS = d.currentSurah || 1;
+          const curA = d.currentAyat || 0;
+          const targetTitle = `${curS}. ${QURAN_SURAH_NAMES[curS-1]} Ayat ${curA || 1}`;
+          const targetIdx = allRoutines.findIndex(r =>
+            r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
+          );
+          if (targetIdx !== -1) {
+            currentRoutineIndex = targetIdx;
+            comboStep = 0;
+            isFlipped = false;
+            currentRoutineTarget = allRoutines[targetIdx].target;
+            syncIndexToFirestore(targetIdx);
+            triggerFadeAnimation(renderCurrentFact);
+            showToast(`✅ Laci diselaraskan ke: ${targetTitle}`);
+            renderQuranKhatamCard();
+          } else {
+            showToast(`⚠️ Laci "${targetTitle}" tidak dijumpai dalam countdown.`);
+          }
+        });
     }
 
 async function handleQuranKhatamUpdate() {
       if (!currentUser || !quranKhatamData) return;
-      if (!routineMode || routineModeSource !== 'quran') {
-        showToast('⚠️ Sila ON Quran di page countdown untuk menggunakan ciri ini.');
-        return;
-      }
-
       const d     = quranKhatamData;
       const curS  = d.currentSurah || 1;
       const sName = QURAN_SURAH_NAMES[curS-1];
