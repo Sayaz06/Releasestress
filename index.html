@@ -5910,9 +5910,11 @@ if (input === null) return;
         console.log('TARGET:', targetTitle);
         console.log('LACI PERTAMA:', allRoutines[0]?.title);
         console.log('LACI KEDUA:', allRoutines[1]?.title);
-        const targetIdx = allRoutines.findIndex(r => 
-          r.title && r.title.toLowerCase() === targetTitle.toLowerCase()
+const targetIdx = allRoutines.findIndex(r => 
+          r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
         );
+        console.log('CARI:', targetTitle, '| JUMPA IDX:', targetIdx);
+        
         if (targetIdx !== -1) {
           currentRoutineIndex = targetIdx;
           comboStep = 0;
