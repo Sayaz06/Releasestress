@@ -6037,9 +6037,12 @@ document.getElementById('btn-quran-khatam-update')
           if (!routineMode || routineModeSource !== 'quran' || !allRoutines.length) return;
           const d = quranKhatamData;
           if (!d) return;
-          const curS = d.currentSurah || 1;
+const curS = d.currentSurah || 1;
           const curA = d.currentAyat || 0;
-          const targetTitle = `${curS}. ${QURAN_SURAH_NAMES[curS-1]} Ayat ${curA || 1}`;
+          // Kalau ayat 0 (baru masuk surah), guna ayat 1
+          // Kalau ada ayat, tambah 1 sebab kiraTotalAyatDibaca guna -1
+          const ayatCari = curA === 0 ? 1 : curA + 1;
+          const targetTitle = `${curS}. ${QURAN_SURAH_NAMES[curS-1]} Ayat ${ayatCari}`;
           const targetIdx = allRoutines.findIndex(r =>
             r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
           );
