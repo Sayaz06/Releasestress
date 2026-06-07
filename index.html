@@ -1515,12 +1515,52 @@ body.dark-mode {
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="quran" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
         <button id="btn-quran-auto-jump" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#6366f1;color:#a5b4fc;">⚡ Auto Lompat Kosong: OFF</button>
-        <button id="btn-quran-scroll-default" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#94a3b8;color:#cbd5e1;">📜 Default Skrol Textarea: Atas</button>
-        <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
+<button id="btn-quran-scroll-default" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#94a3b8;color:#cbd5e1;">📜 Default Skrol Textarea: Atas</button>
+<button id="btn-buka-countdown-mini" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">📖 Countdown Mini Surah</button>
+                <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
       </section>
 
-<section id="section-susun-alquran" class="section">
+<section id="section-countdown-mini" class="section">
   <div class="topbar">
+    <button id="btn-back-countdown-mini" class="btn btn-secondary btn-sm">← Laci Ayat</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#f59e0b;">📖 Countdown Mini</div>
+      <div class="topbar-sub" id="countdown-mini-surah-name"></div>
+    </div>
+  </div>
+
+  <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div id="cm-ayat-label" style="font-size:0.85rem;color:#fcd34d;font-weight:700;">Ayat 1</div>
+      <div id="cm-progress" style="font-size:0.8rem;color:var(--subtext);">0 / 0</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:0.75rem;color:var(--subtext);">Baki: <span id="cm-baki" style="color:#fcd34d;font-weight:700;">0</span> ayat</div>
+      <div style="font-size:0.75rem;color:var(--subtext);">Dibaca sesi: <span id="cm-dibaca" style="color:#34d399;font-weight:700;">0</span> ayat</div>
+    </div>
+  </div>
+
+  <div id="cm-display-box" style="background:rgba(30,41,59,0.8);border:1px solid rgba(245,158,11,0.4);border-radius:14px;padding:16px;margin-bottom:10px;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+    <div id="cm-title" style="font-size:0.75rem;color:#f59e0b;font-weight:700;text-transform:uppercase;margin-bottom:8px;"></div>
+    <div id="cm-content" style="font-size:2rem;font-weight:600;line-height:2;text-align:right;width:100%;font-family:'UthmanicHafs','Traditional Arabic',serif;direction:rtl;overflow-y:auto;max-height:200px;"></div>
+    <div id="cm-hint" style="font-size:0.65rem;color:#f59e0b;margin-top:8px;font-weight:600;">(Tap untuk papar maksud)</div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-shrink:0;margin-bottom:10px;">
+    <button id="cm-btn-prev" class="btn btn-secondary btn-sm" style="flex:1;">← Sebelum</button>
+    <button id="cm-btn-tap" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;">Tap</button>
+    <button id="cm-btn-next" class="btn btn-secondary btn-sm" style="flex:1;">Seterusnya →</button>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;min-height:0;">
+    <div style="font-size:0.75rem;color:#fcd34d;font-weight:700;margin-bottom:6px;">📋 History Khatam</div>
+    <div id="cm-history-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+</section>
+
+<section id="section-susun-alquran" class="section">
+      
+        <div class="topbar">
     <button id="btn-back-susun-alquran" class="btn btn-secondary btn-sm">← Surah/Juzuk</button>
     <div style="text-align:right;">
       <div class="topbar-title" style="color:#a5b4fc;">📖 Susun Al-Quran</div>
@@ -2297,8 +2337,10 @@ function showSection(section) {
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
 if (sectionAmtAk) sectionAmtAk.classList.remove("active");
-      if (sectionSusunAlQuran) sectionSusunAlQuran.classList.remove("active");  
-        section.classList.add("active");      
+if (sectionSusunAlQuran) sectionSusunAlQuran.classList.remove("active");
+      const cmSection = document.getElementById('section-countdown-mini');
+      if (cmSection) cmSection.classList.remove("active");
+          section.classList.add("active");      
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
               tm_canvas.width = tm_canvas.parentElement.clientWidth;
@@ -6237,9 +6279,207 @@ function renderModeHistory() {
       });
     }
 
+// ── COUNTDOWN MINI ──
+    let cmDrawers = [];
+    let cmIndex = 0;
+    let cmFlipped = false;
+    let cmSesiDibaca = 0;
+    let cmMulaTs = null;
+    let cmTimeId = null;
+    let cmSurahName = '';
+
+    const sectionCountdownMini = document.getElementById('section-countdown-mini');
+
+    document.getElementById('btn-buka-countdown-mini').addEventListener('click', async () => {
+      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
+      await bukaCountdownMini(currentQuranTimeId);
+    });
+
+    document.getElementById('btn-back-countdown-mini').addEventListener('click', () => {
+      showSection(document.getElementById('section-quran-drawers'));
+    });
+
+    async function bukaCountdownMini(timeId) {
+      cmTimeId = timeId;
+      const cat = allQuranTimes.find(t => t.id === timeId);
+      cmSurahName = cat ? cat.name : '';
+      document.getElementById('countdown-mini-surah-name').textContent = cmSurahName;
+
+      // Ambil semua laci dalam kategori ini, sort ikut tajuk
+      cmDrawers = allQuranDrawers
+        .filter(d => d.timeId === timeId && d.zikir && d.zikir.trim())
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+      if (!cmDrawers.length) {
+        showToast('Tiada laci dengan teks Arab dalam kategori ini.');
+        return;
+      }
+
+      // Load progress dari Firestore
+      const refProg = doc(db, "users", currentUser.uid, "countdown_mini", timeId);
+      const snap = await getDoc(refProg);
+      cmIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
+      if (cmIndex >= cmDrawers.length) cmIndex = 0;
+
+      cmFlipped = false;
+      cmSesiDibaca = 0;
+      cmMulaTs = null;
+
+      await loadCmHistory();
+      renderCm();
+      showSection(sectionCountdownMini);
+    }
+
+    function renderCm() {
+      if (!cmDrawers.length) return;
+      const data = cmDrawers[cmIndex];
+      const total = cmDrawers.length;
+      const baki = total - cmIndex;
+
+      document.getElementById('cm-ayat-label').textContent = data.title || `Ayat ${cmIndex + 1}`;
+      document.getElementById('cm-progress').textContent = `${cmIndex + 1} / ${total}`;
+      document.getElementById('cm-baki').textContent = baki;
+      document.getElementById('cm-dibaca').textContent = cmSesiDibaca;
+
+      const titleEl = document.getElementById('cm-title');
+      const contentEl = document.getElementById('cm-content');
+      const hintEl = document.getElementById('cm-hint');
+
+      if (!cmFlipped) {
+        titleEl.textContent = `[ ${data.title} ]`;
+        contentEl.style.fontSize = `${quranFontSize}rem`;
+        contentEl.style.fontFamily = "'UthmanicHafs','Traditional Arabic',serif";
+        contentEl.style.direction = 'rtl';
+        contentEl.style.textAlign = 'right';
+        contentEl.textContent = data.zikir || '';
+        hintEl.textContent = '(Tap untuk papar maksud)';
+      } else {
+        titleEl.textContent = `[ ${data.title} ] (Maksud)`;
+        contentEl.style.fontSize = '1rem';
+        contentEl.style.fontFamily = 'inherit';
+        contentEl.style.direction = 'ltr';
+        contentEl.style.textAlign = 'left';
+        contentEl.textContent = data.maksud || 'Tiada maksud diisi.';
+        hintEl.textContent = '(Tap lagi untuk ayat seterusnya)';
+      }
+    }
+
+    async function cmTap() {
+      if (!cmDrawers.length) return;
+
+      if (!cmFlipped) {
+        // Tap 1: tunjuk maksud
+        cmFlipped = true;
+        renderCm();
+      } else {
+        // Tap 2: kira sebagai 1 ayat selesai, ke ayat seterusnya
+        cmFlipped = false;
+        cmSesiDibaca++;
+
+        if (!cmMulaTs) cmMulaTs = Date.now();
+
+        cmIndex++;
+
+        if (cmIndex >= cmDrawers.length) {
+          // Habis semua ayat — khatam!
+          const minitDiambil = cmMulaTs ? Math.round((Date.now() - cmMulaTs) / 60000) : 0;
+          await simpanCmKhatam(minitDiambil);
+          cmIndex = 0;
+          cmMulaTs = null;
+          showToast(`🕌 Tahniah! ${cmSurahName} selesai! الحمد لله`, 5000);
+        }
+
+        await setDoc(doc(db, "users", currentUser.uid, "countdown_mini", cmTimeId), {
+          lastIndex: cmIndex,
+          updatedAt: Date.now()
+        }, { merge: true });
+
+        renderCm();
+      }
+    }
+
+    async function simpanCmKhatam(minitDiambil) {
+      if (!currentUser || !cmTimeId) return;
+      const refHistory = collection(db, "users", currentUser.uid, "countdown_mini_history");
+      await addDoc(refHistory, {
+        timeId: cmTimeId,
+        surahName: cmSurahName,
+        khatamAt: Date.now(),
+        minitDiambil,
+        totalAyat: cmDrawers.length,
+        dateKey: dateKeyQ(Date.now())
+      });
+      await loadCmHistory();
+    }
+
+    async function loadCmHistory() {
+      if (!currentUser || !cmTimeId) return;
+      const q = query(
+        collection(db, "users", currentUser.uid, "countdown_mini_history"),
+        orderBy("khatamAt", "desc")
+      );
+      const snap = await getDocs(q);
+      const list = document.getElementById('cm-history-list');
+      list.innerHTML = '';
+
+      const filtered = snap.docs.filter(d => d.data().timeId === cmTimeId);
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada rekod khatam.</div>';
+        return;
+      }
+
+      filtered.forEach(docSnap => {
+        const data = docSnap.data();
+        const tarikh = new Date(data.khatamAt);
+        const { label } = formatDateLabel(tarikh);
+        const h = tarikh.getHours();
+        const m = String(tarikh.getMinutes()).padStart(2, '0');
+        const ampm = h >= 12 ? 'pm' : 'am';
+        const h12 = h % 12 || 12;
+        const masa = data.minitDiambil < 60
+          ? `${data.minitDiambil} minit`
+          : `${(data.minitDiambil / 60).toFixed(1)} jam`;
+
+        const div = document.createElement('div');
+        div.style.cssText = 'background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:10px 12px;';
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.82rem;font-weight:700;color:#fcd34d;">🕌 Khatam</div>
+            <div style="font-size:0.7rem;color:var(--subtext);">${label} ${h12}:${m}${ampm}</div>
+          </div>
+          <div style="font-size:0.75rem;color:var(--subtext);margin-top:4px;">⏱ Masa diambil: <strong style="color:white;">${masa}</strong> | 📖 ${data.totalAyat} ayat</div>`;
+        list.appendChild(div);
+      });
+    }
+
+    // Event listeners countdown mini
+    document.getElementById('cm-btn-tap').addEventListener('click', cmTap);
+    document.getElementById('cm-display-box').addEventListener('click', cmTap);
+
+    document.getElementById('cm-btn-prev').addEventListener('click', async () => {
+      if (cmIndex > 0) {
+        cmIndex--;
+        cmFlipped = false;
+        await setDoc(doc(db, "users", currentUser.uid, "countdown_mini", cmTimeId), {
+          lastIndex: cmIndex, updatedAt: Date.now()
+        }, { merge: true });
+        renderCm();
+      }
+    });
+
+    document.getElementById('cm-btn-next').addEventListener('click', async () => {
+      if (cmIndex < cmDrawers.length - 1) {
+        cmIndex++;
+        cmFlipped = false;
+        await setDoc(doc(db, "users", currentUser.uid, "countdown_mini", cmTimeId), {
+          lastIndex: cmIndex, updatedAt: Date.now()
+        }, { merge: true });
+        renderCm();
+      }
+    });
 
     // ── SUSUN AL-QURAN ──
-    const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
+                const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
     let quranSusunan = {}; // { "1": timeId, "2": timeId, ... }
     let alQuranPenuhSurahIdx = 1;
 
