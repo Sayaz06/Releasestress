@@ -6850,8 +6850,7 @@ const chip = document.getElementById('susun-progress-chip');
       const btnLompat = document.getElementById('btn-lompat-tidak-serasi');
 
 if (statusEl) {
-        const adaMasalah = tidakSerasiCount > 0 || formatSalahCount > 0;
-const adaMasalah = tidakSerasiCount > 0 || formatSalahCount > 0 || kurangAyatCount > 0;
+        const adaMasalah = tidakSerasiCount > 0 || formatSalahCount > 0 || kurangAyatCount > 0;
         if (adaMasalah) {
           let mesej = [];
           if (tidakSerasiCount > 0) mesej.push(`⚠️ ${tidakSerasiCount} nama tak serasi`);
