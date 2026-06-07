@@ -5978,12 +5978,19 @@ const targetTitle = `${newSurah}. ${QURAN_SURAH_NAMES[newSurah-1]} Ayat ${newAya
         }
       }
 
+// Bila habis, kira berdasarkan surah ASAL (curS) bukan newSurah
 let totalRead = 0;
-      for (let i = 0; i < newSurah - 1; i++) totalRead += QURAN_SURAH_AYAT[i];
-      totalRead += newAyat;
+      if (isHabis) {
+        // Kira hingga surah asal habis
+        for (let i = 0; i < curS - 1; i++) totalRead += QURAN_SURAH_AYAT[i];
+        totalRead += sMax;
+      } else {
+        for (let i = 0; i < newSurah - 1; i++) totalRead += QURAN_SURAH_AYAT[i];
+        totalRead += newAyat;
+      }
 
       const minitSesi = Math.max(0.5, (Date.now() - (d.lastUpdateTs || Date.now())) / 60000);
-      const prevTotalRead = kiraTotalAyatDibaca(curS, d.currentAyat || 0);
+      const prevTotalRead = d.totalAyatRead || 0;
       const ayatSesi = Math.max(0, totalRead - prevTotalRead);
 
       await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca: false });
