@@ -6126,21 +6126,23 @@ function parseLaciQuran(title) {
       };
 
       quranKhatamData = newData;
-
-      // Simpan setiap 5 ayat untuk kurangkan writes
+// Simpan setiap 5 ayat untuk kurangkan writes
       if (ayatSesi % 5 === 0) {
         await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
         renderQuranKhatamCard();
 
+        // Kira ayat tambahan dari countdown sahaja (bukan dari totalRead)
         const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
         const dailySnap = await getDoc(dailyRef);
         const prevTapped = dailySnap.exists() ? (dailySnap.data().tapped || 0) : 0;
+        const tambahCountdown = 5; // Setiap kali simpan = 5 ayat countdown
         await setDoc(dailyRef, {
-          tapped: prevTapped + ayatSesi,
+          tapped: prevTapped + tambahCountdown,
           dateKey: dateKeyQ(Date.now()),
           updatedAt: Date.now()
         }, { merge: true });
       }
+
     }
 
     function rebuildIfActive(mode) {
