@@ -2081,6 +2081,7 @@ const QURAN_SURAH_AYAT = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,
     const QURAN_KHATAM_START = new Date('2026-05-21T00:00:00');
     const QURAN_KHATAM_END   = new Date(QURAN_KHATAM_START.getTime() + 342 * 864e5);
     let quranKhatamData    = null;
+    let quranEtaLabel = ''; // Simpan anggaran khatam dari renderQuranKhatamCard
     let quranSpeedInterval = null;
     let currentQuranTasbihRef = null, currentQuranTasbihData = null;
     let quranSessionTapCount = 0;
@@ -2615,40 +2616,18 @@ modeBarText.textContent = `${getModeLabel(routineModeSource)} Aktif`;
             ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
             : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
 if (routineModeSource === 'quran') {
-            const qd = quranKhatamData;
-            let metaStr = `${progressText} — Target 6,236 = jumlah ayat Al-Quran.`;
+const qd = quranKhatamData;
+            let metaStr = progressText;
             if (qd && qd.totalAyatRead > 0) {
               const totalRead = qd.totalAyatRead || 0;
               const baki = Math.max(0, 6236 - totalRead);
-              const now = new Date();
-              const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-              const minitBerlalu = (now - midnight) / 60000;
-              const todayKeyNow = dateKeyQ(Date.now());
-              const ayatHariIni = (qd.history || [])
-                .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
-                .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
-const lastH = (qd.history || []).slice(-1)[0];
-              const kSesi = lastH ? (lastH.kelajuanSesi || 0) : 0;
-              const kHarian = ayatHariIni >= 5 && minitBerlalu > 0
-                ? ayatHariIni / minitBerlalu : 0;
-              const kGuna = kHarian > 0 ? kHarian : kSesi;
-        
               const curS = qd.currentSurah || 1;
               const curSName = QURAN_SURAH_NAMES[curS - 1] || '';
-              let etaLine = '';
-if (kGuna > 0) {
-                const minitLeft = baki / kGuna;
-                const eta = new Date(Date.now() + minitLeft * 60000);
-                const { label } = formatDateLabel(eta);
-                const h = eta.getHours();
-                const m = String(eta.getMinutes()).padStart(2, '0');
-                const ampm = h >= 12 ? 'pm' : 'am';
-                const h12 = h % 12 || 12;
-                etaLine = ` │ 🏁 ${label.split(',')[0]}, ${h12}:${m}${ampm}, ${label.split(',')[1].trim()}`;
-              }
+              const etaLine = quranEtaLabel ? ` │ 🏁 ${quranEtaLabel}` : '';
               metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
             }
             modeBarSub.textContent = metaStr;
+  
           } else {
             modeBarSub.textContent = progressText;
           }
@@ -5749,8 +5728,21 @@ const todayKeyNow = dateKeyQ(Date.now());
       const ayatHariIni = (d.history||[])
         .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
         .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
-      const kHarian = calcKelajuanHarian(d.history||[], total, ayatHariIni);
-      // Masa berlalu sejak kemaskini
+const kHarian = calcKelajuanHarian(d.history||[], total, ayatHariIni);
+      if (kHarian > 0) {
+        const baki = Math.max(0, 6236 - total);
+        const minitLeft = baki / kHarian;
+        const eta = new Date(Date.now() + minitLeft * 60000);
+        const { label } = formatDateLabel(eta);
+        const h = eta.getHours();
+        const m = String(eta.getMinutes()).padStart(2, '0');
+        const ampm = h >= 12 ? 'pm' : 'am';
+        const h12 = h % 12 || 12;
+        quranEtaLabel = `${label.split(',')[0]}, ${h12}:${m}${ampm}, ${label.split(',')[1].trim()}`;
+      } else {
+        quranEtaLabel = '';
+      }
+            // Masa berlalu sejak kemaskini
       const minLalu = (Date.now() - (d.lastUpdateTs||Date.now())) / 60000;
       const minLaluStr = minLalu < 60
         ? `${Math.round(minLalu)} minit`
