@@ -5760,9 +5760,21 @@ function getSurahHariIni() {
         }],
         lastUpdated: Date.now()
       };
-      quranKhatamData = newData;
+quranKhatamData = newData;
       await setDoc(doc(db,"users",currentUser.uid,"settings","quranKhatam"), newData, {merge:true});
       renderQuranKhatamCard();
+
+      // Simpan ke rekod harian jika ada ayat dibaca
+      if (ayatSesi > 0 && !isTakBaca) {
+        const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
+        const dailySnap = await getDoc(dailyRef);
+        const prevTapped = dailySnap.exists() ? (dailySnap.data().tapped || 0) : 0;
+        await setDoc(dailyRef, {
+          tapped: prevTapped + ayatSesi,
+          dateKey: dateKeyQ(Date.now()),
+          updatedAt: Date.now()
+        }, { merge: true });
+      }
     }
 
     function renderQuranKhatamCard() {
@@ -5976,8 +5988,8 @@ let totalRead = 0;
 
       await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca: false });
 
-      if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
-        const surahTarget = isHabis ? newSurah : curS;
+if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
+        const surahTarget = isHabis ? newSurah : newSurah;
         const ayatTarget = isHabis ? 1 : newAyat;
         const targetTitle2 = `${surahTarget}. ${QURAN_SURAH_NAMES[surahTarget - 1]} Ayat ${ayatTarget}`;
         const targetIdx2 = allRoutines.findIndex(r =>
@@ -5990,6 +6002,9 @@ let totalRead = 0;
           currentRoutineTarget = allRoutines[targetIdx2].target;
           syncIndexToFirestore(targetIdx2);
           triggerFadeAnimation(renderCurrentFact);
+          showToast(`📖 Laci dikemaskini ke: ${targetTitle2}`);
+        } else {
+          showToast(`⚠️ Laci "${targetTitle2}" tidak dijumpai dalam countdown.`);
         }
       }
 
