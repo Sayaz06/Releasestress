@@ -5392,16 +5392,77 @@ const zikirMinHeight = mode === 'quran' ? `calc(${quranFontSize * 3}rem + 16px)`
         .sort((a,b)=>(a.title||"").localeCompare(b.title||"",undefined,{numeric:true}));
       const filtered = searchTerm ? allFiltered.filter(d=>(d.title||'').toLowerCase().includes(searchTerm)) : allFiltered;
 
-      const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').length;
+const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').length;
       document.querySelectorAll(`.btn-goto-empty-generic[data-mode="${mode}"]`).forEach(b => {
         b.textContent = emptyCount > 0 ? `⚡ Kosong (${emptyCount})` : '✅ Penuh';
       });
 
-      if(!filtered.length){list.innerHTML='<div class="empty-state">Tiada laci dijumpai.</div>';return;}
+      // Semak format dan nama laci untuk mode quran
+      if (mode === 'quran') {
+        const kategoriSemasa = allQuranTimes.find(t => t.id === cfg.timeId());
+        const namaSurahBetul = kategoriSemasa ? QURAN_SURAH_NAMES.find((n, idx) => 
+          quranSusunan[String(idx + 1)] === cfg.timeId()
+        ) : null;
+
+        const laciFormatSalah = [];
+        const laciNamaSalah = [];
+
+        allFiltered.forEach(d => {
+          if (!d.title) return;
+          const parsed = parseLaciQuran(d.title);
+          if (!parsed) {
+            laciFormatSalah.push(d.id);
+          } else if (namaSurahBetul && parsed.surahName.trim() !== namaSurahBetul.trim()) {
+            laciNamaSalah.push(d.id);
+          }
+        });
+
+        const semuaSalah = [...new Set([...laciFormatSalah, ...laciNamaSalah])];
+        const statusBarEl = document.getElementById('quran-drawer-masalah-status');
+        const btnLompatLaci = document.getElementById('btn-lompat-laci-masalah');
+
+        if (statusBarEl) {
+          if (semuaSalah.length > 0) {
+            let mesej = [];
+            if (laciFormatSalah.length > 0) mesej.push(`${laciFormatSalah.length} format salah`);
+            if (laciNamaSalah.length > 0) mesej.push(`${laciNamaSalah.length} nama tak serasi`);
+            statusBarEl.textContent = `⚠️ ${mesej.join(' | ')}`;
+            statusBarEl.style.color = '#f87171';
+            if (btnLompatLaci) {
+              btnLompatLaci.style.display = 'flex';
+              let lompatIdx = 0;
+              btnLompatLaci.onclick = () => {
+                const targetId = semuaSalah[lompatIdx % semuaSalah.length];
+                const targetCard = document.querySelector(`#quran-drawers-list [data-id-laci="${targetId}"]`);
+                if (targetCard) {
+                  targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  targetCard.style.outline = '2px solid #f87171';
+                  targetCard.style.boxShadow = '0 0 14px rgba(248,113,113,0.5)';
+                  setTimeout(() => {
+                    targetCard.style.outline = '';
+                    targetCard.style.boxShadow = '';
+                  }, 2500);
+                }
+                lompatIdx++;
+                const next = semuaSalah[lompatIdx % semuaSalah.length];
+                btnLompatLaci.textContent = `⚡ ${lompatIdx + 1}/${semuaSalah.length} →`;
+              };
+              btnLompatLaci.textContent = `⚡ 1/${semuaSalah.length} →`;
+            }
+          } else {
+            statusBarEl.textContent = `✅ Semua format dan nama serasi`;
+            statusBarEl.style.color = '#34d399';
+            if (btnLompatLaci) btnLompatLaci.style.display = 'none';
+          }
+        }
+      }
+
+if(!filtered.length){list.innerHTML='<div class="empty-state">Tiada laci dijumpai.</div>';return;}
       filtered.forEach(data => {
 const isEmpty = !data.zikir || data.zikir.trim() === '';
         const div = document.createElement("div");
         div.className = "drawer-card";
+        div.setAttribute('data-id-laci', data.id);
         if (isEmpty) {
           div.setAttribute('data-empty', 'true');
           div.style.borderColor = 'rgba(245,158,11,0.4)';
