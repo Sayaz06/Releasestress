@@ -1531,7 +1531,6 @@ body.dark-mode {
     Tekan mana-mana surah untuk tetapkan kategori laci.
   </div>
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-shrink:0;">
-    <button id="btn-toggle-alquran-penuh" class="btn btn-secondary btn-sm" style="flex:1;border-color:#6366f1;color:#a5b4fc;">🔁 Al-Quran Penuh: OFF</button>
     <span id="susun-progress-chip" class="chip" style="border-color:#6366f1;color:#a5b4fc;">0 / 114</span>
   </div>
   <div class="list" id="susun-alquran-list" style="padding:8px;"></div>
@@ -2120,12 +2119,9 @@ async function ensureTodayModeTasbih(mode) {
 
 function getRoutineSrc() {
       switch(routineModeSource) {
-        case 'quran': {
-          // Bila Al-Quran Penuh ON, pastikan kategori betul diaktifkan
-          if (isAlQuranPenuh) {
-            const timeId = getAlQuranPenuhActiveTimeId();
-            if (timeId) activeGlobalQuranId = timeId;
-          }
+case 'quran': {
+          const timeId = getAlQuranPenuhActiveTimeId();
+          if (timeId) activeGlobalQuranId = timeId;
           return {times:allQuranTimes, drawers:allQuranDrawers, globalId:activeGlobalQuranId, coll:'quran'};
         }
         case 'doa':   return {times:allDoaTimes, drawers:allDoaDrawers, globalId:activeGlobalDoaId, coll:'doa'};
@@ -2872,7 +2868,7 @@ if (routineAutoNext) {
           const nextIsOrWasTamat = allRoutines[nextIndex]?.isTamat || allRoutines[currentRoutineIndex]?.isTamat;
 
           // Bila Al-Quran Penuh ON dan akan/baru hit laci Tamat
-          if (isAlQuranPenuh && routineModeSource === 'quran' && nextIsOrWasTamat) {
+if (routineModeSource === 'quran' && nextIsOrWasTamat) {
             alQuranPenuhNextSurah();
             return;
           }
@@ -4088,10 +4084,11 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
         });
 
 if (allRoutines.length > 0) {
-          const tamatText = isAlQuranPenuh
-            ? `✅ Surah ${alQuranPenuhSurahIdx}. ${QURAN_SURAH_NAMES[alQuranPenuhSurahIdx-1]} selesai! Auto ke surah seterusnya...`
-            : "✅ Rutin Selesai. Kembali ke Mula.";
-          allRoutines.push({ title: "Tamat", text: tamatText, target: 0, isTamat: true });
+allRoutines.push({ 
+            title: "Tamat", 
+            text: `✅ Surah ${alQuranPenuhSurahIdx}. ${QURAN_SURAH_NAMES[alQuranPenuhSurahIdx-1]} selesai! Auto ke surah seterusnya...`, 
+            target: 0, isTamat: true 
+          });
         }
       } else {
         activeGlobalRoutineId = 'default';
@@ -6244,8 +6241,7 @@ function renderModeHistory() {
     // ── SUSUN AL-QURAN ──
     const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
     let quranSusunan = {}; // { "1": timeId, "2": timeId, ... }
-let isAlQuranPenuh = false;
-    let alQuranPenuhSurahIdx = 1; // Surah semasa (1-114)
+    let alQuranPenuhSurahIdx = 1;
 
     async function loadQuranSusunan() {
       if (!currentUser) return;
@@ -6284,13 +6280,7 @@ function getAlQuranPenuhActiveTimeId() {
       }
       // Habis semua 114 surah
       showToast('🕌 Tahniah! Al-Quran Penuh selesai! الحمد لله 🎉', 6000);
-      isAlQuranPenuh = false;
-      const btn = document.getElementById('btn-toggle-alquran-penuh');
-      if (btn) {
-        btn.textContent = '🔁 Al-Quran Penuh: OFF';
-        btn.classList.remove('btn-active');
-        btn.style.color = '#a5b4fc';
-      }
+
       return false;
     }
 
@@ -6392,17 +6382,6 @@ function getAlQuranPenuhActiveTimeId() {
     document.getElementById('btn-back-susun-alquran').addEventListener('click', () => {
       showSection(document.getElementById('section-quran-times'));
       renderGenericTimes('quran');
-    });
-
-    document.getElementById('btn-toggle-alquran-penuh').addEventListener('click', () => {
-      isAlQuranPenuh = !isAlQuranPenuh;
-      const btn = document.getElementById('btn-toggle-alquran-penuh');
-      btn.textContent = `🔁 Al-Quran Penuh: ${isAlQuranPenuh ? 'ON' : 'OFF'}`;
-      btn.classList.toggle('btn-active', isAlQuranPenuh);
-      btn.style.color = isAlQuranPenuh ? 'white' : '#a5b4fc';
-      showToast(isAlQuranPenuh
-        ? '✅ Mode Al-Quran Penuh ON — surah berturutan aktif.'
-        : 'Mode Al-Quran Penuh OFF.');
     });
 
 // ── SEARCH + GOTO EMPTY ──
@@ -6699,18 +6678,10 @@ document.getElementById('btn-reset-quran-full').addEventListener('click', async 
       quranKhatamData = freshData;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), freshData);
 
-      // Bila Al-Quran Penuh ON — reset ke surah pertama dalam susunan
-      if (isAlQuranPenuh) {
-        alQuranPenuhSurahIdx = 1;
-        const firstTimeId = getAlQuranPenuhActiveTimeId();
-        if (firstTimeId) {
-          await activateQuranPenuhSurah(firstTimeId);
-        }
-      } else {
-        const activeTime = allQuranTimes.find(t => t.isActive);
-        if (activeTime) {
-          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
-        }
+alQuranPenuhSurahIdx = 1;
+      const firstTimeId = getAlQuranPenuhActiveTimeId();
+      if (firstTimeId) {
+        await activateQuranPenuhSurah(firstTimeId);
       }
       currentRoutineIndex = 0;
 
