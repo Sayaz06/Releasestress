@@ -5981,12 +5981,12 @@ const targetTitle = `${newSurah}. ${QURAN_SURAH_NAMES[newSurah-1]} Ayat ${newAya
 // Bila habis, kira berdasarkan surah ASAL (curS) bukan newSurah
 let totalRead = 0;
       if (isHabis) {
-        // Kira hingga surah asal habis
+        // Habis — kira PENUH semua ayat surah asal (tanpa -1)
         for (let i = 0; i < curS - 1; i++) totalRead += QURAN_SURAH_AYAT[i];
         totalRead += sMax;
       } else {
-        for (let i = 0; i < newSurah - 1; i++) totalRead += QURAN_SURAH_AYAT[i];
-        totalRead += newAyat;
+        // Kemaskini manual — guna kiraTotalAyatDibaca (dengan -1)
+        totalRead = kiraTotalAyatDibaca(newSurah, newAyat);
       }
 
       const minitSesi = Math.max(0.5, (Date.now() - (d.lastUpdateTs || Date.now())) / 60000);
