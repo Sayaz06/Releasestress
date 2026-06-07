@@ -7656,12 +7656,11 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       showToast(`✅ ${surahKeys.length} surah berjaya dipisahkan! Kategori asal masih ada — boleh padam bila bersedia.`, 6000);
     });
 
-          
-    if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
       });
     }
-  </script>
+  </script>          
 </body>
 </html>
