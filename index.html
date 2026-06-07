@@ -2786,14 +2786,8 @@ quranSessionTimer = setTimeout(async () => {
         }
 
 if (isQuran && learningMode === 0) {
-          // Quran Normal: terus ke laci seterusnya
           isSempadan = true;
           routineAutoNext = true;
-          // Link countdown dengan kemaskini bacaan
-          const curLaci = allRoutines[currentRoutineIndex];
-          if (curLaci && !curLaci.isTamat) {
-            updateQuranKhatamDariLaci(curLaci.title);
-          }
   
 } else if (isQuran && learningMode === 3) {
           // Quran Combo: flip dulu → ketuk lagi → laci seterusnya
@@ -2801,16 +2795,11 @@ if (isQuran && learningMode === 0) {
             isFlipped = true;
             comboStep = 1;
             triggerFlipAnimation(renderCurrentFact);
-          } else {
+} else {
             isFlipped = false;
             comboStep = 0;
             isSempadan = true;
             routineAutoNext = true;
-            // Link countdown dengan kemaskini bacaan
-            const curLaci = allRoutines[currentRoutineIndex];
-            if (curLaci && !curLaci.isTamat) {
-              updateQuranKhatamDariLaci(curLaci.title);
-            }
           }
           
         } else {
@@ -5335,6 +5324,7 @@ const isQuranMode = mode === 'quran';
           div.querySelectorAll('input')[0].addEventListener("change", e =>
             updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{name:e.target.value}));
         }
+        
         div.querySelectorAll('button')[0].addEventListener("click", () => {
           cfg.setCurrent(data.id);
           document.getElementById(cfg.parentEl).textContent = data.name||'';
@@ -5976,21 +5966,42 @@ const targetTitle = `${newSurah}. ${QURAN_SURAH_NAMES[newSurah-1]} Ayat ${newAya
         }
       }
 
-      let totalRead = 0;
-      for (let i = 0; i < curS-1; i++) totalRead += QURAN_SURAH_AYAT[i];
+let totalRead = 0;
+      for (let i = 0; i < newSurah - 1; i++) totalRead += QURAN_SURAH_AYAT[i];
       totalRead += newAyat;
 
-      const ayatSesi  = Math.max(0, totalRead - prevTotal);
-      const minitSesi = Math.max(0.5, (Date.now() - (d.lastUpdateTs||Date.now())) / 60000);
+      const minitSesi = Math.max(0.5, (Date.now() - (d.lastUpdateTs || Date.now())) / 60000);
+      const prevTotalRead = kiraTotalAyatDibaca(curS, d.currentAyat || 0);
+      const ayatSesi = Math.max(0, totalRead - prevTotalRead);
 
-      await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca:false });
+      await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca: false });
 
-      const kel = ayatSesi > 0 ? ` — ${(ayatSesi/minitSesi).toFixed(2)} ayat/minit` : '';
+      if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
+        const surahTarget = isHabis ? newSurah : curS;
+        const ayatTarget = isHabis ? 1 : newAyat;
+        const targetTitle2 = `${surahTarget}. ${QURAN_SURAH_NAMES[surahTarget - 1]} Ayat ${ayatTarget}`;
+        const targetIdx2 = allRoutines.findIndex(r =>
+          r.title && r.title.trim().toLowerCase() === targetTitle2.trim().toLowerCase()
+        );
+        if (targetIdx2 !== -1) {
+          currentRoutineIndex = targetIdx2;
+          comboStep = 0;
+          isFlipped = false;
+          currentRoutineTarget = allRoutines[targetIdx2].target;
+          syncIndexToFirestore(targetIdx2);
+          triggerFadeAnimation(renderCurrentFact);
+        }
+      }
+
+      quranSessionTapCount = 0;
+      quranSessionStartTime = null;
+      quranSessionLastTapTime = null;
+
+      const kel = ayatSesi > 0 ? ` — ${(ayatSesi / minitSesi).toFixed(2)} ayat/minit` : '';
       showToast(isHabis
-        ? `✅ ${sName} selesai! Seterusnya: ${QURAN_SURAH_NAMES[newSurah-1]}`
+        ? `✅ ${sName} selesai! Seterusnya: ${QURAN_SURAH_NAMES[newSurah - 1]}`
         : `✅ Disimpan — ${sName} ayat ${newAyat}${kel}`
       );
-    }
 
     async function handleQuranTakBaca() {
       if (!currentUser || !quranKhatamData) return;
@@ -6932,40 +6943,62 @@ document.getElementById('btn-reset-quran-full').addEventListener('click', async 
         currentSurah: 1, currentAyat: 0, totalAyatRead: 0,
         lastUpdateTs: Date.now(), history: [], startedAt: Date.now()
       };
-      quranKhatamData = freshData;
+quranKhatamData = freshData;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), freshData);
 
-alQuranPenuhSurahIdx = 1;
+      // Reset history harian hari ini
+      const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
+      await setDoc(dailyRef, { tapped: 0, dateKey: dateKeyQ(Date.now()), updatedAt: Date.now() });
+
+      // Reset sesi tap
+      quranSessionTapCount = 0;
+      quranSessionStartTime = null;
+      quranSessionLastTapTime = null;
+
+      alQuranPenuhSurahIdx = 1;
       const firstTimeId = getAlQuranPenuhActiveTimeId();
       if (firstTimeId) {
         await activateQuranPenuhSurah(firstTimeId);
+      } else {
+        const activeTime = allQuranTimes.find(t => t.isActive);
+        if (activeTime) {
+          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
+        }
       }
       currentRoutineIndex = 0;
 
       if (routineMode && routineModeSource === 'quran') rebuildRoutines();
       renderQuranKhatamCard();
+      updateTasbihUI();
       showToast("✅ Reset penuh berjaya! Bermula semula dari Surah 1.");
     });
     
 
 // ── AUTO SIMPAN SESI QURAN DARI COUNTDOWN ──
-    async function saveQuranSession() {
+async function saveQuranSession() {
       if (!currentUser || !quranKhatamData) return;
       if (quranSessionTapCount < 5) return;
 
       const minitSesi = Math.max(0.1, (quranSessionLastTapTime - quranSessionStartTime) / 60000);
       const ayatSesi = quranSessionTapCount;
       const kelajuanSesi = ayatSesi / minitSesi;
-      const newTotal = (quranKhatamData.totalAyatRead || 0) + ayatSesi;
+
+      const laciSemasa = allRoutines[currentRoutineIndex];
+      const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
+      const curSurah = parsed ? parsed.surahNum : (quranKhatamData.currentSurah || 1);
+      const curAyat = parsed ? parsed.ayatNum : (quranKhatamData.currentAyat || 0);
+      const newTotal = kiraTotalAyatDibaca(curSurah, curAyat);
 
       const newData = {
         ...quranKhatamData,
+        currentSurah: curSurah,
+        currentAyat: curAyat,
         totalAyatRead: newTotal,
         lastUpdateTs: Date.now(),
         history: [...(quranKhatamData.history || []).slice(-29), {
           ts: Date.now(),
-          surah: quranKhatamData.currentSurah || 1,
-          ayat: quranKhatamData.currentAyat || 0,
+          surah: curSurah,
+          ayat: curAyat,
           totalRead: newTotal,
           ayatSesi,
           minitSesi,
@@ -6978,10 +7011,8 @@ alQuranPenuhSurahIdx = 1;
 
       quranKhatamData = newData;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
+      renderQuranKhatamCard();
 
-renderQuranKhatamCard();
-
-      // Simpan rekod harian
       const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
       const dailySnap = await getDoc(dailyRef);
       const prevTapped = dailySnap.exists() ? (dailySnap.data().tapped || 0) : 0;
@@ -6993,6 +7024,7 @@ renderQuranKhatamCard();
 
       showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
     }
+  
 // ── KHATAM QURAN ──
     async function markQuranKhatamDay() {
       if (!currentUser) return;
@@ -7000,7 +7032,7 @@ renderQuranKhatamCard();
       await setDoc(dailyRef, { khatam: true, khatamAt: Date.now() }, { merge: true });
     }
 
-    document.getElementById('btn-quran-khatam-reset').addEventListener('click', async () => {
+document.getElementById('btn-quran-khatam-reset').addEventListener('click', async () => {
       if (!confirm("🕌 Mula semula dari Surah 1?\n\nSejarah khatam akan DIKEKALKAN.\nHanya kedudukan & kiraan yang di-reset.")) return;
 
       const newData = {
@@ -7016,16 +7048,26 @@ renderQuranKhatamCard();
       currentQuranTasbihData = { remaining: 6236, done: false, dateKey: 'main' };
       currentQuranTasbihRef = mainRef;
 
-      const activeTime = allQuranTimes.find(t => t.isActive);
-      if (activeTime) {
-        await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
+      quranSessionTapCount = 0;
+      quranSessionStartTime = null;
+      quranSessionLastTapTime = null;
+
+      alQuranPenuhSurahIdx = 1;
+      const firstTimeId = getAlQuranPenuhActiveTimeId();
+      if (firstTimeId) {
+        await activateQuranPenuhSurah(firstTimeId);
+      } else {
+        const activeTime = allQuranTimes.find(t => t.isActive);
+        if (activeTime) {
+          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
+        }
       }
       currentRoutineIndex = 0;
 
       if (routineMode && routineModeSource === 'quran') rebuildRoutines();
       renderQuranKhatamCard();
       updateTasbihUI();
-      showToast("✅ Mula semula dari Surah 1! Sejarah khatam dikekalkan. 🕌", 4000);
+      showToast("✅ Mula semula dari Surah 1 (Al-Fatihah)! Sejarah kekal. 🕌", 4000);
     });
 
 // ── QURAN AUTO LOMPAT KOSONG ──
