@@ -6174,13 +6174,12 @@ function parseLaciQuran(title) {
       };
     }
 
-    function kiraTotalAyatDibaca(surahNum, ayatNum) {
-      // Kira jumlah ayat dari Surah 1 Ayat 1 hingga surah & ayat semasa
+function kiraTotalAyatDibaca(surahNum, ayatNum) {
       let total = 0;
       for (let i = 0; i < surahNum - 1; i++) {
         total += QURAN_SURAH_AYAT[i];
       }
-      total += ayatNum;
+      total += Math.max(0, ayatNum - 1);
       return total;
     }
 
