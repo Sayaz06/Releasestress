@@ -2722,11 +2722,17 @@ quranSessionTimer = setTimeout(async () => {
           }
         }
 
-        if (isQuran && learningMode === 0) {
+if (isQuran && learningMode === 0) {
           // Quran Normal: terus ke laci seterusnya
           isSempadan = true;
           routineAutoNext = true;
-        } else if (isQuran && learningMode === 3) {
+          // Link countdown dengan kemaskini bacaan
+          const curLaci = allRoutines[currentRoutineIndex];
+          if (curLaci && !curLaci.isTamat) {
+            updateQuranKhatamDariLaci(curLaci.title);
+          }
+  
+} else if (isQuran && learningMode === 3) {
           // Quran Combo: flip dulu → ketuk lagi → laci seterusnya
           if (comboStep === 0) {
             isFlipped = true;
@@ -2737,7 +2743,13 @@ quranSessionTimer = setTimeout(async () => {
             comboStep = 0;
             isSempadan = true;
             routineAutoNext = true;
+            // Link countdown dengan kemaskini bacaan
+            const curLaci = allRoutines[currentRoutineIndex];
+            if (curLaci && !curLaci.isTamat) {
+              updateQuranKhatamDariLaci(curLaci.title);
+            }
           }
+          
         } else {
           // Mode lain: kira target seperti biasa
           if (currentRoutineTarget > 0) {
@@ -5864,7 +5876,7 @@ ${(() => {
         ?.addEventListener('click', handleQuranTakBaca);
     }
 
-    async function handleQuranKhatamUpdate() {
+async function handleQuranKhatamUpdate() {
       if (!currentUser || !quranKhatamData) return;
       const d     = quranKhatamData;
       const curS  = d.currentSurah || 1;
@@ -5876,6 +5888,38 @@ ${(() => {
         `Surah ${curS}. ${sName} (${sMax} ayat)\n\nSkrg ayat ke berapa?\n• Taip nombor 1–${sMax}\n• Taip "habis" jika surah selesai`
       );
       if (input === null) return;
+
+      const trimmed = input.trim().toLowerCase();
+      let newSurah = curS, newAyat, isHabis = false;
+
+      if (trimmed === 'habis') {
+        isHabis  = true;
+        newAyat  = sMax;
+        newSurah = curS < 114 ? curS + 1 : 114;
+      } else {
+        const num = parseInt(trimmed);
+        if (isNaN(num) || num < 1 || num > sMax) {
+          showToast(`⚠️ Masukkan nombor 1–${sMax} atau "habis"`); return;
+        }
+        newAyat = num;
+      }
+
+      // Auto lompat laci dalam app ke ayat yang ditetapkan
+      if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
+        const targetTitle = `${newSurah}. ${QURAN_SURAH_NAMES[newSurah-1]} Ayat ${newAyat}`;
+        const targetIdx = allRoutines.findIndex(r => 
+          r.title && r.title.toLowerCase() === targetTitle.toLowerCase()
+        );
+        if (targetIdx !== -1) {
+          currentRoutineIndex = targetIdx;
+          comboStep = 0;
+          isFlipped = false;
+          currentRoutineTarget = allRoutines[targetIdx].target;
+          syncIndexToFirestore(targetIdx);
+          triggerFadeAnimation(renderCurrentFact);
+          showToast(`📖 Laci dilompat ke: ${targetTitle}`);
+        }
+      }
 
       const trimmed = input.trim().toLowerCase();
       let newSurah = curS, newAyat, isHabis = false;
@@ -6025,8 +6069,80 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
       }
     });
                           
+function parseLaciQuran(title) {
+      // Format: "2. Al-Baqarah Ayat 1"
+      const match = title?.match(/^(\d+)\.\s+(.+?)\s+Ayat\s+(\d+)$/i);
+      if (!match) return null;
+      return {
+        surahNum: parseInt(match[1]),
+        surahName: match[2].trim(),
+        ayatNum: parseInt(match[3])
+      };
+    }
+
+    function kiraTotalAyatDibaca(surahNum, ayatNum) {
+      // Kira jumlah ayat dari Surah 1 Ayat 1 hingga surah & ayat semasa
+      let total = 0;
+      for (let i = 0; i < surahNum - 1; i++) {
+        total += QURAN_SURAH_AYAT[i];
+      }
+      total += ayatNum;
+      return total;
+    }
+
+    async function updateQuranKhatamDariLaci(title) {
+      if (!currentUser || !quranKhatamData) return;
+      const parsed = parseLaciQuran(title);
+      if (!parsed) return;
+
+      const { surahNum, ayatNum } = parsed;
+      const totalRead = kiraTotalAyatDibaca(surahNum, ayatNum);
+      const prevTotal = quranKhatamData.totalAyatRead || 0;
+      if (totalRead <= prevTotal) return; // Jangan update kalau tak maju
+
+      const ayatSesi = totalRead - prevTotal;
+      const minitSesi = Math.max(0.1, (Date.now() - (quranKhatamData.lastUpdateTs || Date.now())) / 60000);
+
+      const newData = {
+        ...quranKhatamData,
+        currentSurah: surahNum,
+        currentAyat: ayatNum,
+        totalAyatRead: totalRead,
+        lastUpdateTs: Date.now(),
+        history: [...(quranKhatamData.history || []).slice(-29), {
+          ts: Date.now(),
+          surah: surahNum,
+          ayat: ayatNum,
+          totalRead,
+          ayatSesi,
+          minitSesi,
+          kelajuanSesi: ayatSesi / minitSesi,
+          takBaca: false,
+          dateKey: dateKeyQ(Date.now()),
+          fromCountdown: true
+        }]
+      };
+
+      quranKhatamData = newData;
+
+      // Simpan setiap 5 ayat untuk kurangkan writes
+      if (ayatSesi % 5 === 0) {
+        await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
+        renderQuranKhatamCard();
+
+        const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
+        const dailySnap = await getDoc(dailyRef);
+        const prevTapped = dailySnap.exists() ? (dailySnap.data().tapped || 0) : 0;
+        await setDoc(dailyRef, {
+          tapped: prevTapped + ayatSesi,
+          dateKey: dateKeyQ(Date.now()),
+          updatedAt: Date.now()
+        }, { merge: true });
+      }
+    }
+
     function rebuildIfActive(mode) {
-      if(routineMode && routineModeSource === mode) rebuildRoutines();
+          if(routineMode && routineModeSource === mode) rebuildRoutines();
     }
 
 // ── DARK MODE ──
