@@ -2623,8 +2623,8 @@ const qd = quranKhatamData;
               const baki = Math.max(0, 6236 - totalRead);
               const curS = qd.currentSurah || 1;
               const curSName = QURAN_SURAH_NAMES[curS - 1] || '';
-const etaLine = quranEtaLabel ? ` │ 🏁 ${quranEtaLabel.split('\n')[0]}` : '';
-                            metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
+              const etaLine = quranEtaLabel ? ` │ 🏁 ${quranEtaLabel.split('\n')[0]}${quranEtaLabel.split('\n')[1] ? ' - ' + quranEtaLabel.split('\n')[1].replace(/[()]/g, '').trim() : ''}` : '';
+              metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
             }
             modeBarSub.textContent = metaStr;
   
