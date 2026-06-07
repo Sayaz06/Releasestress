@@ -5887,7 +5887,22 @@ async function handleQuranKhatamUpdate() {
       const input = prompt(
         `Surah ${curS}. ${sName} (${sMax} ayat)\n\nSkrg ayat ke berapa?\n• Taip nombor 1–${sMax}\n• Taip "habis" jika surah selesai`
       );
-      if (input === null) return;
+if (input === null) return;
+
+      const trimmed = input.trim().toLowerCase();
+      let newSurah = curS, newAyat, isHabis = false;
+
+      if (trimmed === 'habis') {
+        isHabis  = true;
+        newAyat  = sMax;
+        newSurah = curS < 114 ? curS + 1 : 114;
+      } else {
+        const num = parseInt(trimmed);
+        if (isNaN(num) || num < 1 || num > sMax) {
+          showToast(`⚠️ Masukkan nombor 1–${sMax} atau "habis"`); return;
+        }
+        newAyat = num;
+      }
 
       // Auto lompat laci dalam app ke ayat yang ditetapkan
       if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
@@ -5905,9 +5920,6 @@ async function handleQuranKhatamUpdate() {
           showToast(`📖 Laci dilompat ke: ${targetTitle}`);
         }
       }
-
-      const trimmed = input.trim().toLowerCase();
-      let newSurah = curS, newAyat, isHabis = false;
 
       if (trimmed === 'habis') {
         isHabis  = true;
