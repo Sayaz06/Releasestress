@@ -5904,9 +5904,12 @@ if (input === null) return;
         newAyat = num;
       }
 
-      // Auto lompat laci dalam app ke ayat yang ditetapkan
+// Auto lompat laci dalam app ke ayat yang ditetapkan
       if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
         const targetTitle = `${newSurah}. ${QURAN_SURAH_NAMES[newSurah-1]} Ayat ${newAyat}`;
+        console.log('TARGET:', targetTitle);
+        console.log('LACI PERTAMA:', allRoutines[0]?.title);
+        console.log('LACI KEDUA:', allRoutines[1]?.title);
         const targetIdx = allRoutines.findIndex(r => 
           r.title && r.title.toLowerCase() === targetTitle.toLowerCase()
         );
