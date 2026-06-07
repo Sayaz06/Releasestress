@@ -5990,8 +5990,8 @@ ${(() => {
 ` : `
           <div style="text-align:center;padding:10px;font-size:0.8rem;color:var(--subtext);">Tekan kemaskini untuk mula rekod kelajuan bacaan anda</div>`}
 <button id="btn-quran-khatam-update"
-            style="width:100%;padding:10px;border-radius:999px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;margin-bottom:6px;">
-            📖 Kemaskini Bacaan Quran
+            style="width:100%;padding:10px;border-radius:999px;background:${routineMode && routineModeSource === 'quran' ? 'linear-gradient(135deg,#10b981,#059669)' : 'rgba(16,185,129,0.15)'};border:${routineMode && routineModeSource === 'quran' ? 'none' : '1px dashed rgba(16,185,129,0.3)'};color:${routineMode && routineModeSource === 'quran' ? 'white' : 'rgba(52,211,153,0.4)'};font-weight:700;font-size:0.82rem;cursor:pointer;margin-bottom:6px;">
+            📖 Kemaskini Bacaan Quran${routineMode && routineModeSource === 'quran' ? '' : ' (Al-Quran perlu aktif)'}
           </button>
 
 ${(() => {
@@ -6084,6 +6084,10 @@ document.getElementById('btn-quran-khatam-update')
 
 async function handleQuranKhatamUpdate() {
       if (!currentUser || !quranKhatamData) return;
+      if (!routineMode || routineModeSource !== 'quran') {
+        showToast('⚠️ Sila aktifkan mod Al-Quran terlebih dahulu. Kemaskini bacaan semasa mod Al-Quran tidak aktif boleh menyebabkan kedudukan laci tidak selari dengan kemajuan anda.', 6000);
+        return;
+      }
       const d     = quranKhatamData;
       const curS  = d.currentSurah || 1;
       const sName = QURAN_SURAH_NAMES[curS-1];
