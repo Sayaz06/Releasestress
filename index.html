@@ -5995,13 +5995,15 @@ if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
         const targetIdx2 = allRoutines.findIndex(r =>
           r.title && r.title.trim().toLowerCase() === targetTitle2.trim().toLowerCase()
         );
-        if (targetIdx2 !== -1) {
+if (targetIdx2 !== -1) {
           currentRoutineIndex = targetIdx2;
           comboStep = 0;
           isFlipped = false;
           currentRoutineTarget = allRoutines[targetIdx2].target;
           syncIndexToFirestore(targetIdx2);
-          triggerFadeAnimation(renderCurrentFact);
+          setTimeout(() => {
+            triggerFadeAnimation(renderCurrentFact);
+          }, 300);
           showToast(`📖 Laci dikemaskini ke: ${targetTitle2}`);
         } else {
           showToast(`⚠️ Laci "${targetTitle2}" tidak dijumpai dalam countdown.`);
