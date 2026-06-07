@@ -2627,13 +2627,17 @@ if (routineModeSource === 'quran') {
               const ayatHariIni = (qd.history || [])
                 .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
                 .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
+const lastH = (qd.history || []).slice(-1)[0];
+              const kSesi = lastH ? (lastH.kelajuanSesi || 0) : 0;
               const kHarian = ayatHariIni >= 5 && minitBerlalu > 0
                 ? ayatHariIni / minitBerlalu : 0;
+              const kGuna = kHarian > 0 ? kHarian : kSesi;
+        
               const curS = qd.currentSurah || 1;
               const curSName = QURAN_SURAH_NAMES[curS - 1] || '';
               let etaLine = '';
-if (kHarian > 0) {
-                const minitLeft = baki / kHarian;
+if (kGuna > 0) {
+                const minitLeft = baki / kGuna;
                 const eta = new Date(Date.now() + minitLeft * 60000);
                 const { label } = formatDateLabel(eta);
                 const h = eta.getHours();
