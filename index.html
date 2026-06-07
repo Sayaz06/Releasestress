@@ -1579,10 +1579,14 @@ body.dark-mode {
   <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;flex-shrink:0;">
     Tekan mana-mana surah untuk tetapkan kategori laci.
   </div>
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-shrink:0;">
+
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap;">
     <span id="susun-progress-chip" class="chip" style="border-color:#6366f1;color:#a5b4fc;">0 / 114</span>
+    <span id="susun-serasi-status" style="font-size:0.75rem;color:var(--subtext);"></span>
   </div>
-  <div class="list" id="susun-alquran-list" style="padding:8px;"></div>
+  
+<div class="list" id="susun-alquran-list" style="padding:8px;"></div>
+  <button id="btn-lompat-tidak-serasi" style="display:none;position:fixed;bottom:24px;right:24px;z-index:999;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;font-weight:700;font-size:0.85rem;padding:12px 18px;border-radius:999px;box-shadow:0 6px 20px rgba(239,68,68,0.5);cursor:pointer;align-items:center;gap:6px;">⚡ — →</button>
 </section>
 
       <!-- ══ DOA ══ -->
@@ -6677,10 +6681,12 @@ function getAlQuranPenuhActiveTimeId() {
       rebuildRoutines();
     }
 
-    function renderSusunAlQuran() {
+function renderSusunAlQuran() {
       const list = document.getElementById('susun-alquran-list');
       list.innerHTML = '';
       let tetapCount = 0;
+      let tidakSerasiCount = 0;
+      let tidakSerasiIndeks = [];
 
       QURAN_SURAH_NAMES.forEach((name, idx) => {
         const num = idx + 1;
@@ -6689,28 +6695,89 @@ function getAlQuranPenuhActiveTimeId() {
         const isTetap = !!category;
         if (isTetap) tetapCount++;
 
+// Semak nama serasi
+        let isSerasi = true;
+        if (isTetap && category) {
+          const drawersDalamKategori = allQuranDrawers.filter(d => d.timeId === timeId);
+          if (drawersDalamKategori.length > 0) {
+            const namaSurahBetul = QURAN_SURAH_NAMES[idx];
+            isSerasi = drawersDalamKategori.every(d => {
+              if (!d.title) return true;
+              const parsed = parseLaciQuran(d.title);
+              if (!parsed) return true;
+              return parsed.surahName.trim() === namaSurahBetul.trim();
+            });
+            if (!isSerasi) {
+              tidakSerasiCount++;
+              tidakSerasiIndeks.push(num);
+            }
+          }
+        }
+
         const div = document.createElement('div');
         div.className = 'list-item';
+        div.id = `susun-surah-${num}`;
         div.style.cursor = 'pointer';
         div.innerHTML = `
           <div class="list-main">
             <div class="list-title" style="font-size:0.85rem;">
               <span style="color:var(--subtext);margin-right:6px;">${num}.</span>${name}
+              ${!isSerasi ? '<span style="font-size:0.65rem;color:#f87171;margin-left:6px;">⚠️ Nama tak serasi</span>' : ''}
             </div>
-            <div class="list-sub" style="color:${isTetap ? '#34d399' : 'var(--subtext)'};">
-              ${isTetap ? '✅ ' + category.name : '⬜ Belum ditetapkan'}
+            <div class="list-sub" style="color:${isTetap ? (isSerasi ? '#34d399' : '#f87171') : 'var(--subtext)'};">
+              ${isTetap ? (isSerasi ? '✅ ' : '⚠️ ') + category.name : '⬜ Belum ditetapkan'}
             </div>
           </div>
-          <button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:0.72rem;${isTetap ? 'border-color:#34d399;color:#34d399;' : ''}">
+          <button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:0.72rem;${isTetap ? (isSerasi ? 'border-color:#34d399;color:#34d399;' : 'border-color:#f87171;color:#f87171;') : ''}">
             ${isTetap ? 'Tukar' : 'Tetap'}
           </button>`;
-
+        
         div.querySelector('button').addEventListener('click', () => tetapkanSurah(num));
         list.appendChild(div);
       });
 
-      const chip = document.getElementById('susun-progress-chip');
+const chip = document.getElementById('susun-progress-chip');
       if (chip) chip.textContent = `${tetapCount} / 114`;
+
+      // Kemaskini status tidak serasi
+      const statusEl = document.getElementById('susun-serasi-status');
+      const btnLompat = document.getElementById('btn-lompat-tidak-serasi');
+
+      if (statusEl) {
+        if (tidakSerasiCount > 0) {
+          statusEl.textContent = `⚠️ ${tidakSerasiCount} surah dengan nama tidak serasi`;
+          statusEl.style.color = '#f87171';
+          if (btnLompat) btnLompat.style.display = 'flex';
+        } else {
+          statusEl.textContent = `✅ Semua nama surah serasi`;
+          statusEl.style.color = '#34d399';
+          if (btnLompat) btnLompat.style.display = 'none';
+        }
+      }
+
+      // Simpan indeks untuk button lompat
+      if (btnLompat) {
+        let currentLompatIdx = 0;
+        btnLompat.onclick = () => {
+          if (!tidakSerasiIndeks.length) return;
+          const surahNum = tidakSerasiIndeks[currentLompatIdx % tidakSerasiIndeks.length];
+          const target = document.getElementById(`susun-surah-${surahNum}`);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.style.outline = '2px solid #f87171';
+            target.style.boxShadow = '0 0 14px rgba(248,113,113,0.5)';
+            setTimeout(() => {
+              target.style.outline = '';
+              target.style.boxShadow = '';
+            }, 2500);
+          }
+          currentLompatIdx++;
+          btnLompat.textContent = `⚡ ${tidakSerasiIndeks[currentLompatIdx % tidakSerasiIndeks.length] || tidakSerasiIndeks[0]} →`;
+        };
+        if (tidakSerasiIndeks.length) {
+          btnLompat.textContent = `⚡ ${tidakSerasiIndeks[0]} →`;
+        }
+      }
     }
 
     function tetapkanSurah(surahNum) {
