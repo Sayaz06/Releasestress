@@ -1573,8 +1573,8 @@ body.dark-mode {
 
 <section id="section-susun-alquran" class="section">
       
-        <div class="topbar">
-    <button id="btn-back-susun-alquran" class="btn btn-secondary btn-sm">← Surah/Juzuk</button>
+<div class="topbar">
+    <button id="btn-back-susun-alquran" class="btn btn-secondary btn-sm" style="position:fixed;bottom:24px;left:24px;z-index:999;box-shadow:0 6px 20px rgba(0,0,0,0.5);">← Balik</button>
     <div style="text-align:right;">
       <div class="topbar-title" style="color:#a5b4fc;">📖 Susun Al-Quran</div>
       <div class="topbar-sub">Tetapkan kategori untuk setiap surah</div>
@@ -5408,9 +5408,11 @@ const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').le
           quranSusunan[String(idx + 1)] === cfg.timeId()
         ) : null;
 
-        const laciFormatSalah = [];
+const laciFormatSalah = [];
         const laciNamaSalah = [];
 
+        // Kumpul semua nombor ayat yang ada
+        const ayatAdaSet = new Set();
         allFiltered.forEach(d => {
           if (!d.title) return;
           const parsed = parseLaciQuran(d.title);
@@ -5418,18 +5420,33 @@ const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').le
             laciFormatSalah.push(d.id);
           } else if (namaSurahBetul && parsed.surahName.trim() !== namaSurahBetul.trim()) {
             laciNamaSalah.push(d.id);
+          } else {
+            ayatAdaSet.add(parsed.ayatNum);
           }
         });
+
+        // Detect ayat tertinggal
+        const ayatTertinggal = [];
+        if (namaSurahBetul) {
+          const surahIdx = QURAN_SURAH_NAMES.indexOf(namaSurahBetul);
+          if (surahIdx !== -1) {
+            const jumlahAyat = QURAN_SURAH_AYAT[surahIdx];
+            for (let i = 1; i <= jumlahAyat; i++) {
+              if (!ayatAdaSet.has(i)) ayatTertinggal.push(i);
+            }
+          }
+        }
 
         const semuaSalah = [...new Set([...laciFormatSalah, ...laciNamaSalah])];
         const statusBarEl = document.getElementById('quran-drawer-masalah-status');
         const btnLompatLaci = document.getElementById('btn-lompat-laci-masalah');
 
         if (statusBarEl) {
-          if (semuaSalah.length > 0) {
+if (semuaSalah.length > 0 || ayatTertinggal.length > 0) {
             let mesej = [];
             if (laciFormatSalah.length > 0) mesej.push(`${laciFormatSalah.length} format salah`);
             if (laciNamaSalah.length > 0) mesej.push(`${laciNamaSalah.length} nama tak serasi`);
+            if (ayatTertinggal.length > 0) mesej.push(`${ayatTertinggal.length} ayat tertinggal`);
             statusBarEl.textContent = `⚠️ ${mesej.join(' | ')}`;
             statusBarEl.style.color = '#f87171';
             if (btnLompatLaci) {
@@ -6750,8 +6767,9 @@ function renderSusunAlQuran() {
       const list = document.getElementById('susun-alquran-list');
       list.innerHTML = '';
       let tetapCount = 0;
-let tidakSerasiCount = 0;
+      let tidakSerasiCount = 0;
       let formatSalahCount = 0;
+      let kurangAyatCount = 0;
       let tidakSerasiIndeks = [];
   
 
@@ -6762,29 +6780,40 @@ let tidakSerasiCount = 0;
         const isTetap = !!category;
         if (isTetap) tetapCount++;
 
-// Semak nama serasi dan format laci
+// Semak nama serasi, format laci, dan bilangan ayat
         let isSerasi = true;
         let adaFormatSalah = false;
+        let kurangAyat = 0;
         if (isTetap && category) {
           const drawersDalamKategori = allQuranDrawers.filter(d => d.timeId === timeId);
-          if (drawersDalamKategori.length > 0) {
-            const namaSurahBetul = QURAN_SURAH_NAMES[idx];
-            drawersDalamKategori.forEach(d => {
-              if (!d.title) return;
-              const parsed = parseLaciQuran(d.title);
-              if (!parsed) {
-                // Format salah — tidak ikut "X. NamaSurah Ayat Y"
-                adaFormatSalah = true;
-              } else if (parsed.surahName.trim() !== namaSurahBetul.trim()) {
-                // Nama surah tidak serasi
-                isSerasi = false;
-              }
-            });
-            if (!isSerasi || adaFormatSalah) {
-              if (!isSerasi) tidakSerasiCount++;
-              if (adaFormatSalah) formatSalahCount++;
-              tidakSerasiIndeks.push(num);
+          const jumlahAyatSebenar = QURAN_SURAH_AYAT[idx];
+          const namaSurahBetul = QURAN_SURAH_NAMES[idx];
+
+          drawersDalamKategori.forEach(d => {
+            if (!d.title) return;
+            const parsed = parseLaciQuran(d.title);
+            if (!parsed) {
+              adaFormatSalah = true;
+            } else if (parsed.surahName.trim() !== namaSurahBetul.trim()) {
+              isSerasi = false;
             }
+          });
+
+          // Semak bilangan ayat
+          const jumlahLaciAda = drawersDalamKategori.filter(d => {
+            const parsed = parseLaciQuran(d.title);
+            return parsed && parsed.surahName.trim() === namaSurahBetul.trim();
+          }).length;
+
+          if (jumlahLaciAda < jumlahAyatSebenar) {
+            kurangAyat = jumlahAyatSebenar - jumlahLaciAda;
+          }
+
+          if (!isSerasi || adaFormatSalah || kurangAyat > 0) {
+            if (!isSerasi) tidakSerasiCount++;
+            if (adaFormatSalah) formatSalahCount++;
+            if (kurangAyat > 0) kurangAyatCount++;
+            tidakSerasiIndeks.push(num);
           }
         }
 
@@ -6797,10 +6826,12 @@ let tidakSerasiCount = 0;
             <div class="list-title" style="font-size:0.85rem;">
               <span style="color:var(--subtext);margin-right:6px;">${num}.</span>${name}
 ${!isSerasi ? '<span style="font-size:0.65rem;color:#f87171;margin-left:6px;">⚠️ Nama tak serasi</span>' : ''}
-              ${adaFormatSalah ? '<span style="font-size:0.65rem;color:#fcd34d;margin-left:6px;">⚠️ Format laci salah</span>' : ''}
+              ${adaFormatSalah ? '<span style="font-size:0.65rem;color:#fcd34d;margin-left:6px;">⚠️ Format salah</span>' : ''}
+              ${kurangAyat > 0 ? `<span style="font-size:0.65rem;color:#f9a8d4;margin-left:6px;">⚠️ Kurang ${kurangAyat} ayat</span>` : ''}
             </div>
-            <div class="list-sub" style="color:${isTetap ? (!isSerasi || adaFormatSalah ? '#f87171' : '#34d399') : 'var(--subtext)'};">
-              ${isTetap ? ((!isSerasi || adaFormatSalah) ? '⚠️ ' : '✅ ') + category.name : '⬜ Belum ditetapkan'}
+            <div class="list-sub" style="color:${isTetap ? (!isSerasi || adaFormatSalah || kurangAyat > 0 ? '#f87171' : '#34d399') : 'var(--subtext)'};">
+              ${isTetap ? ((!isSerasi || adaFormatSalah || kurangAyat > 0) ? '⚠️ ' : '✅ ') + category.name : '⬜ Belum ditetapkan'}
+
             </div>
           </div>
           <button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:0.72rem;${isTetap ? (isSerasi ? 'border-color:#34d399;color:#34d399;' : 'border-color:#f87171;color:#f87171;') : ''}">
@@ -6820,10 +6851,12 @@ const chip = document.getElementById('susun-progress-chip');
 
 if (statusEl) {
         const adaMasalah = tidakSerasiCount > 0 || formatSalahCount > 0;
+const adaMasalah = tidakSerasiCount > 0 || formatSalahCount > 0 || kurangAyatCount > 0;
         if (adaMasalah) {
           let mesej = [];
-          if (tidakSerasiCount > 0) mesej.push(`⚠️ ${tidakSerasiCount} surah nama tak serasi`);
-          if (formatSalahCount > 0) mesej.push(`⚠️ ${formatSalahCount} surah format laci salah`);
+          if (tidakSerasiCount > 0) mesej.push(`⚠️ ${tidakSerasiCount} nama tak serasi`);
+          if (formatSalahCount > 0) mesej.push(`⚠️ ${formatSalahCount} format salah`);
+          if (kurangAyatCount > 0) mesej.push(`⚠️ ${kurangAyatCount} surah kurang ayat`);
           statusEl.textContent = mesej.join(' | ');
           statusEl.style.color = '#f87171';
           if (btnLompat) btnLompat.style.display = 'flex';
