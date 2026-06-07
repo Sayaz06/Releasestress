@@ -2623,8 +2623,8 @@ const qd = quranKhatamData;
               const baki = Math.max(0, 6236 - totalRead);
               const curS = qd.currentSurah || 1;
               const curSName = QURAN_SURAH_NAMES[curS - 1] || '';
-              const etaLine = quranEtaLabel ? ` │ 🏁 ${quranEtaLabel}` : '';
-              metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
+const etaLine = quranEtaLabel ? ` │ 🏁 ${quranEtaLabel.split('\n')[0]}` : '';
+                            metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
             }
             modeBarSub.textContent = metaStr;
   
@@ -5729,7 +5729,8 @@ const todayKeyNow = dateKeyQ(Date.now());
         .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
         .reduce((sum, h) => sum + (h.ayatSesi || 0), 0);
 const kHarian = calcKelajuanHarian(d.history||[], total, ayatHariIni);
-      if (kHarian > 0) {
+      quranEtaLabel = kHarian > 0 ? etaStr(barKhatam, kHarian) : '';
+            if (kHarian > 0) {
         const baki = Math.max(0, 6236 - total);
         const minitLeft = baki / kHarian;
         const eta = new Date(Date.now() + minitLeft * 60000);
