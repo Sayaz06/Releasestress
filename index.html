@@ -5989,24 +5989,44 @@ let totalRead = 0;
       await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca: false });
 
 if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
-        const surahTarget = isHabis ? newSurah : newSurah;
+        const surahTarget = newSurah;
         const ayatTarget = isHabis ? 1 : newAyat;
         const targetTitle2 = `${surahTarget}. ${QURAN_SURAH_NAMES[surahTarget - 1]} Ayat ${ayatTarget}`;
-        const targetIdx2 = allRoutines.findIndex(r =>
-          r.title && r.title.trim().toLowerCase() === targetTitle2.trim().toLowerCase()
-        );
-if (targetIdx2 !== -1) {
-          currentRoutineIndex = targetIdx2;
-          comboStep = 0;
-          isFlipped = false;
-          currentRoutineTarget = allRoutines[targetIdx2].target;
-          syncIndexToFirestore(targetIdx2);
+
+        if (isHabis) {
+          // Bila habis — surah bertukar, perlu rebuild dulu baru cari laci
+          await activateQuranPenuhSurah(
+            allQuranTimes.find(t => t.name && t.name.startsWith(String(surahTarget)))?.id ||
+            getAlQuranPenuhActiveTimeId()
+          );
           setTimeout(() => {
-            triggerFadeAnimation(renderCurrentFact);
-          }, 300);
-          showToast(`📖 Laci dikemaskini ke: ${targetTitle2}`);
+            const targetIdx2 = allRoutines.findIndex(r =>
+              r.title && r.title.trim().toLowerCase() === targetTitle2.trim().toLowerCase()
+            );
+            if (targetIdx2 !== -1) {
+              currentRoutineIndex = targetIdx2;
+              comboStep = 0;
+              isFlipped = false;
+              currentRoutineTarget = allRoutines[targetIdx2].target;
+              syncIndexToFirestore(targetIdx2);
+              triggerFadeAnimation(renderCurrentFact);
+            }
+          }, 800);
         } else {
-          showToast(`⚠️ Laci "${targetTitle2}" tidak dijumpai dalam countdown.`);
+          const targetIdx2 = allRoutines.findIndex(r =>
+            r.title && r.title.trim().toLowerCase() === targetTitle2.trim().toLowerCase()
+          );
+          if (targetIdx2 !== -1) {
+            currentRoutineIndex = targetIdx2;
+            comboStep = 0;
+            isFlipped = false;
+            currentRoutineTarget = allRoutines[targetIdx2].target;
+            syncIndexToFirestore(targetIdx2);
+            setTimeout(() => triggerFadeAnimation(renderCurrentFact), 300);
+            showToast(`📖 Laci dikemaskini ke: ${targetTitle2}`);
+          } else {
+            showToast(`⚠️ Laci "${targetTitle2}" tidak dijumpai dalam countdown.`);
+          }
         }
       }
 
