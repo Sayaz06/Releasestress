@@ -1520,42 +1520,51 @@ body.dark-mode {
                 <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
       </section>
 
-<section id="section-countdown-mini" class="section">
-  <div class="topbar">
+<section id="section-countdown-mini" class="section" style="position:relative;">
+  <div class="topbar" style="flex-shrink:0;">
     <button id="btn-back-countdown-mini" class="btn btn-secondary btn-sm">← Laci Ayat</button>
     <div style="text-align:right;">
       <div class="topbar-title" style="color:#f59e0b;">📖 Countdown Mini</div>
       <div class="topbar-sub" id="countdown-mini-surah-name"></div>
     </div>
+    <button id="cm-btn-history" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;color:#fcd34d;">📋 History</button>
   </div>
 
-  <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div id="cm-ayat-label" style="font-size:0.85rem;color:#fcd34d;font-weight:700;">Ayat 1</div>
-      <div id="cm-progress" style="font-size:0.8rem;color:var(--subtext);">0 / 0</div>
+  <!-- STATUS BAR -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;margin-bottom:10px;flex-shrink:0;">
+    <div id="cm-ayat-label" style="font-size:0.85rem;color:#fcd34d;font-weight:700;"></div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <span style="font-size:0.75rem;color:var(--subtext);">Baki: <strong id="cm-baki" style="color:#fcd34d;">0</strong></span>
+      <span style="font-size:0.75rem;color:var(--subtext);">Dibaca: <strong id="cm-dibaca" style="color:#34d399;">0</strong></span>
+      <span id="cm-progress" style="font-size:0.75rem;color:var(--subtext);"></span>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-size:0.75rem;color:var(--subtext);">Baki: <span id="cm-baki" style="color:#fcd34d;font-weight:700;">0</span> ayat</div>
-      <div style="font-size:0.75rem;color:var(--subtext);">Dibaca sesi: <span id="cm-dibaca" style="color:#34d399;font-weight:700;">0</span> ayat</div>
+  </div>
+
+  <!-- PAPARAN AYAT — FLEX 1, BOLEH SCROLL DALAM -->
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;position:relative;">
+    
+    <!-- OVERLAY TAP — cover seluruh kawasan ayat -->
+    <div id="cm-tap-overlay" style="position:absolute;inset:0;z-index:10;cursor:pointer;"></div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto;background:rgba(30,41,59,0.8);border:1px solid rgba(245,158,11,0.4);border-radius:14px;padding:16px;display:flex;flex-direction:column;">
+      <div id="cm-title" style="font-size:0.75rem;color:#f59e0b;font-weight:700;text-transform:uppercase;margin-bottom:12px;flex-shrink:0;"></div>
+      <div id="cm-content" style="flex:1;font-size:2rem;font-weight:600;line-height:2;text-align:right;font-family:'UthmanicHafs','Traditional Arabic',serif;direction:rtl;"></div>
+      <div id="cm-hint" style="font-size:0.65rem;color:#f59e0b;margin-top:12px;font-weight:600;text-align:center;flex-shrink:0;"></div>
     </div>
   </div>
 
-  <div id="cm-display-box" style="background:rgba(30,41,59,0.8);border:1px solid rgba(245,158,11,0.4);border-radius:14px;padding:16px;margin-bottom:10px;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
-    <div id="cm-title" style="font-size:0.75rem;color:#f59e0b;font-weight:700;text-transform:uppercase;margin-bottom:8px;"></div>
-    <div id="cm-content" style="font-size:2rem;font-weight:600;line-height:2;text-align:right;width:100%;font-family:'UthmanicHafs','Traditional Arabic',serif;direction:rtl;overflow-y:auto;max-height:200px;"></div>
-    <div id="cm-hint" style="font-size:0.65rem;color:#f59e0b;margin-top:8px;font-weight:600;">(Tap untuk papar maksud)</div>
-  </div>
+</section>
 
-  <div style="display:flex;gap:8px;flex-shrink:0;margin-bottom:10px;">
-    <button id="cm-btn-prev" class="btn btn-secondary btn-sm" style="flex:1;">← Sebelum</button>
-    <button id="cm-btn-tap" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;">Tap</button>
-    <button id="cm-btn-next" class="btn btn-secondary btn-sm" style="flex:1;">Seterusnya →</button>
+<!-- PAGE HISTORY COUNTDOWN MINI -->
+<section id="section-cm-history" class="section">
+  <div class="topbar">
+    <button id="btn-back-cm-history" class="btn btn-secondary btn-sm">← Countdown Mini</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#f59e0b;">📋 History Khatam</div>
+      <div class="topbar-sub" id="cm-history-surah-name"></div>
+    </div>
   </div>
-
-  <div style="flex:1;overflow-y:auto;min-height:0;">
-    <div style="font-size:0.75rem;color:#fcd34d;font-weight:700;margin-bottom:6px;">📋 History Khatam</div>
-    <div id="cm-history-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-  </div>
+  <div class="list" id="cm-history-list" style="padding:10px;"></div>
 </section>
 
 <section id="section-susun-alquran" class="section">
@@ -2338,8 +2347,10 @@ function showSection(section) {
       });
 if (sectionAmtAk) sectionAmtAk.classList.remove("active");
 if (sectionSusunAlQuran) sectionSusunAlQuran.classList.remove("active");
-      const cmSection = document.getElementById('section-countdown-mini');
+const cmSection = document.getElementById('section-countdown-mini');
       if (cmSection) cmSection.classList.remove("active");
+      const cmHistSection = document.getElementById('section-cm-history');
+      if (cmHistSection) cmHistSection.classList.remove("active");
           section.classList.add("active");      
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
@@ -6289,7 +6300,9 @@ function renderModeHistory() {
     let cmSurahName = '';
 
     const sectionCountdownMini = document.getElementById('section-countdown-mini');
+    const sectionCmHistory = document.getElementById('section-cm-history');
 
+    // Tambah dalam showSection
     document.getElementById('btn-buka-countdown-mini').addEventListener('click', async () => {
       if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
       await bukaCountdownMini(currentQuranTimeId);
@@ -6299,13 +6312,22 @@ function renderModeHistory() {
       showSection(document.getElementById('section-quran-drawers'));
     });
 
+    document.getElementById('btn-back-cm-history').addEventListener('click', () => {
+      showSection(sectionCountdownMini);
+    });
+
+    document.getElementById('cm-btn-history').addEventListener('click', async () => {
+      document.getElementById('cm-history-surah-name').textContent = cmSurahName;
+      await loadCmHistory();
+      showSection(sectionCmHistory);
+    });
+
     async function bukaCountdownMini(timeId) {
       cmTimeId = timeId;
       const cat = allQuranTimes.find(t => t.id === timeId);
       cmSurahName = cat ? cat.name : '';
       document.getElementById('countdown-mini-surah-name').textContent = cmSurahName;
 
-      // Ambil semua laci dalam kategori ini, sort ikut tajuk
       cmDrawers = allQuranDrawers
         .filter(d => d.timeId === timeId && d.zikir && d.zikir.trim())
         .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
@@ -6315,7 +6337,6 @@ function renderModeHistory() {
         return;
       }
 
-      // Load progress dari Firestore
       const refProg = doc(db, "users", currentUser.uid, "countdown_mini", timeId);
       const snap = await getDoc(refProg);
       cmIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
@@ -6325,7 +6346,6 @@ function renderModeHistory() {
       cmSesiDibaca = 0;
       cmMulaTs = null;
 
-      await loadCmHistory();
       renderCm();
       showSection(sectionCountdownMini);
     }
@@ -6352,15 +6372,15 @@ function renderModeHistory() {
         contentEl.style.direction = 'rtl';
         contentEl.style.textAlign = 'right';
         contentEl.textContent = data.zikir || '';
-        hintEl.textContent = '(Tap untuk papar maksud)';
+        hintEl.textContent = '(Sapu / Tap skrin untuk papar maksud)';
       } else {
-        titleEl.textContent = `[ ${data.title} ] (Maksud)`;
+        titleEl.textContent = `[ ${data.title} ] — Maksud`;
         contentEl.style.fontSize = '1rem';
         contentEl.style.fontFamily = 'inherit';
         contentEl.style.direction = 'ltr';
         contentEl.style.textAlign = 'left';
         contentEl.textContent = data.maksud || 'Tiada maksud diisi.';
-        hintEl.textContent = '(Tap lagi untuk ayat seterusnya)';
+        hintEl.textContent = '(Sapu / Tap skrin untuk ayat seterusnya)';
       }
     }
 
@@ -6368,20 +6388,15 @@ function renderModeHistory() {
       if (!cmDrawers.length) return;
 
       if (!cmFlipped) {
-        // Tap 1: tunjuk maksud
         cmFlipped = true;
         renderCm();
       } else {
-        // Tap 2: kira sebagai 1 ayat selesai, ke ayat seterusnya
         cmFlipped = false;
         cmSesiDibaca++;
-
         if (!cmMulaTs) cmMulaTs = Date.now();
-
         cmIndex++;
 
         if (cmIndex >= cmDrawers.length) {
-          // Habis semua ayat — khatam!
           const minitDiambil = cmMulaTs ? Math.round((Date.now() - cmMulaTs) / 60000) : 0;
           await simpanCmKhatam(minitDiambil);
           cmIndex = 0;
@@ -6400,8 +6415,7 @@ function renderModeHistory() {
 
     async function simpanCmKhatam(minitDiambil) {
       if (!currentUser || !cmTimeId) return;
-      const refHistory = collection(db, "users", currentUser.uid, "countdown_mini_history");
-      await addDoc(refHistory, {
+      await addDoc(collection(db, "users", currentUser.uid, "countdown_mini_history"), {
         timeId: cmTimeId,
         surahName: cmSurahName,
         khatamAt: Date.now(),
@@ -6409,17 +6423,18 @@ function renderModeHistory() {
         totalAyat: cmDrawers.length,
         dateKey: dateKeyQ(Date.now())
       });
-      await loadCmHistory();
     }
 
     async function loadCmHistory() {
       if (!currentUser || !cmTimeId) return;
+      const list = document.getElementById('cm-history-list');
+      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
       const q = query(
         collection(db, "users", currentUser.uid, "countdown_mini_history"),
         orderBy("khatamAt", "desc")
       );
       const snap = await getDocs(q);
-      const list = document.getElementById('cm-history-list');
       list.innerHTML = '';
 
       const filtered = snap.docs.filter(d => d.data().timeId === cmTimeId);
@@ -6440,43 +6455,45 @@ function renderModeHistory() {
           ? `${data.minitDiambil} minit`
           : `${(data.minitDiambil / 60).toFixed(1)} jam`;
 
-        const div = document.createElement('div');
-        div.style.cssText = 'background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:10px 12px;';
-        div.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:0.82rem;font-weight:700;color:#fcd34d;">🕌 Khatam</div>
-            <div style="font-size:0.7rem;color:var(--subtext);">${label} ${h12}:${m}${ampm}</div>
-          </div>
-          <div style="font-size:0.75rem;color:var(--subtext);margin-top:4px;">⏱ Masa diambil: <strong style="color:white;">${masa}</strong> | 📖 ${data.totalAyat} ayat</div>`;
-        list.appendChild(div);
+        list.insertAdjacentHTML('beforeend', `
+          <div class="list-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+            <div style="display:flex;justify-content:space-between;width:100%;">
+              <div style="font-size:0.82rem;font-weight:700;color:#fcd34d;">🕌 Khatam</div>
+              <div style="font-size:0.7rem;color:var(--subtext);">${label} ${h12}:${m}${ampm}</div>
+            </div>
+            <div style="font-size:0.75rem;color:var(--subtext);">⏱ ${masa} &nbsp;|&nbsp; 📖 ${data.totalAyat} ayat</div>
+          </div>`);
       });
     }
 
-    // Event listeners countdown mini
-    document.getElementById('cm-btn-tap').addEventListener('click', cmTap);
-    document.getElementById('cm-display-box').addEventListener('click', cmTap);
+    // TAP OVERLAY — tap mana-mana untuk trigger
+    const cmTapOverlay = document.getElementById('cm-tap-overlay');
+    let cmTouchY = 0;
+    let cmIsSwiping = false;
 
-    document.getElementById('cm-btn-prev').addEventListener('click', async () => {
-      if (cmIndex > 0) {
-        cmIndex--;
-        cmFlipped = false;
-        await setDoc(doc(db, "users", currentUser.uid, "countdown_mini", cmTimeId), {
-          lastIndex: cmIndex, updatedAt: Date.now()
-        }, { merge: true });
-        renderCm();
-      }
+    cmTapOverlay.addEventListener('touchstart', (e) => {
+      cmTouchY = e.touches[0].clientY;
+      cmIsSwiping = false;
+    }, {passive: true});
+
+    cmTapOverlay.addEventListener('touchmove', (e) => {
+      if (Math.abs(e.touches[0].clientY - cmTouchY) > 5) cmIsSwiping = true;
+    }, {passive: true});
+
+    cmTapOverlay.addEventListener('click', () => {
+      if (cmIsSwiping) return;
+      cmTap();
     });
 
-    document.getElementById('cm-btn-next').addEventListener('click', async () => {
-      if (cmIndex < cmDrawers.length - 1) {
-        cmIndex++;
-        cmFlipped = false;
-        await setDoc(doc(db, "users", currentUser.uid, "countdown_mini", cmTimeId), {
-          lastIndex: cmIndex, updatedAt: Date.now()
-        }, { merge: true });
-        renderCm();
+    cmTapOverlay.addEventListener('touchmove', (e) => {
+      const currentY = e.touches[0].clientY;
+      const diff = currentY - cmTouchY;
+      if (Math.abs(diff) > 10 && !cmIsSwiping) {
+        cmIsSwiping = true;
+        cmTap();
+        cmTouchY = currentY;
       }
-    });
+    }, {passive: true});
 
     // ── SUSUN AL-QURAN ──
                 const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
