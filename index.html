@@ -1466,12 +1466,10 @@ body.dark-mode {
         <div class="topbar">
           <button id="btn-back-tasbih-quran" class="btn btn-secondary btn-sm">← Tasbih</button>
           <div class="topbar-title" style="color:#34d399;">📖 Surah / Juzuk</div>
-       <button id="btn-reset-quran-index" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#f87171;color:#f87171;">🔄 Kembali ke Laci Pertama</button>
-       <button id="btn-reset-quran-full" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#dc2626;color:#fca5a5;">⚠️ Reset Penuh — Purata & Surah Pertama</button>
-       <button id="btn-quran-khatam-reset" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#fbbf24;color:#fbbf24;">🕌 Khatam Reset — Mula Semula (Sejarah Kekal)</button>
+          <button id="btn-reset-quran-full" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#dc2626;color:#fca5a5;">⚠️ Reset Penuh — Purata & Surah Pertama & Khatam</button>
+          <button id="btn-quran-khatam-reset" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#fbbf24;color:#fbbf24;">🕌 Khatam Reset — Mula Semula (Sejarah Kekal)</button>
         </div>
         <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
-          <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
           <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
           <button id="btn-susun-alquran" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;box-shadow:0 6px 18px rgba(99,102,241,.3);">📖 Susun Al-Quran</button>
           <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
@@ -2612,9 +2610,20 @@ if (hideCircle) {
           const tambahan = mRem < 0 ? Math.abs(mRem) : 0;
 
 modeBarText.textContent = `${getModeLabel(routineModeSource)} Aktif`;
-          const progressText = tambahan > 0
-            ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
-            : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
+let progressText;
+          if (routineModeSource === 'quran') {
+            const qd = quranKhatamData;
+            const todayKeyNow = dateKeyQ(Date.now());
+            const ayatHariIni = qd ? (qd.history||[])
+              .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
+              .reduce((sum, h) => sum + (h.ayatSesi || 0), 0) : 0;
+            progressText = `Harian ${ayatHariIni.toLocaleString()}/${target.toLocaleString()}`;
+          } else {
+            progressText = tambahan > 0
+              ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
+              : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
+          }
+
 if (routineModeSource === 'quran') {
 const qd = quranKhatamData;
             let metaStr = progressText;
@@ -2624,7 +2633,7 @@ const qd = quranKhatamData;
               const curS = qd.currentSurah || 1;
               const curSName = QURAN_SURAH_NAMES[curS - 1] || '';
               const etaLine = quranEtaLabel ? ` │ 🏁 ${quranEtaLabel.split('\n')[0]}${quranEtaLabel.split('\n')[1] ? ' - ' + quranEtaLabel.split('\n')[1].replace(/[()]/g, '').trim() : ''}` : '';
-              metaStr = `${progressText} │ 📖 ${curS}.${curSName} │ Baki: ${baki.toLocaleString()} ayat${etaLine}`;
+            metaStr = `${progressText} │ 📖 ${curS}.${curSName}${etaLine}`;
             }
             modeBarSub.textContent = metaStr;
   
@@ -2632,9 +2641,14 @@ const qd = quranKhatamData;
             modeBarSub.textContent = progressText;
           }
 
-          if (counterArea) counterArea.style.display = 'flex';
-          if (modeRemainingEl) modeRemainingEl.textContent = mRem.toLocaleString();
-          tasbihStatusChip.textContent = `${getModeLabel(routineModeSource)}: ${mRem.toLocaleString()}`;
+if (counterArea) counterArea.style.display = 'flex';
+          const qd = quranKhatamData;
+          const totalDibaca = qd ? (qd.totalAyatRead || 0) : 0;
+          const bakiKhatam = Math.max(0, 6236 - totalDibaca);
+          if (modeRemainingEl) modeRemainingEl.textContent = routineModeSource === 'quran' 
+            ? bakiKhatam.toLocaleString() 
+            : mRem.toLocaleString();
+          tasbihStatusChip.textContent = `${getModeLabel(routineModeSource)}: ${routineModeSource === 'quran' ? bakiKhatam.toLocaleString() : mRem.toLocaleString()}`;
         }
         return;
       }
@@ -5250,21 +5264,27 @@ if (result.score > 0) {
         const div = document.createElement("div");
         div.className = "drawer-card";
         div.style.cssText = "display:flex;gap:8px;align-items:center;";
+const isQuranMode = mode === 'quran';
         div.innerHTML = `
-          <input type="checkbox" ${data.isActive?'checked':''} style="width:20px;height:20px;accent-color:var(--grad1);">
+          ${!isQuranMode ? `<input type="checkbox" ${data.isActive?'checked':''} style="width:20px;height:20px;accent-color:var(--grad1);">` : ''}
           <input value="${data.name||''}" placeholder="Nama..." style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;">
           <button class="btn btn-secondary btn-sm">Buka</button>
           <button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">X</button>`;
 
-        div.querySelectorAll('input')[0].addEventListener("change", async (e) => {
-          if(e.target.checked) {
-            for(let t of cfg.arr.filter(t=>t.isActive&&t.id!==data.id))
-              await updateDoc(doc(db,"users",currentUser.uid,cfg.coll,t.id),{isActive:false});
-          }
-          await updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{isActive:e.target.checked});
-        });
-        div.querySelectorAll('input')[1].addEventListener("change", e =>
-          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{name:e.target.value}));
+        if (!isQuranMode) {
+          div.querySelectorAll('input')[0].addEventListener("change", async (e) => {
+            if(e.target.checked) {
+              for(let t of cfg.arr.filter(t=>t.isActive&&t.id!==data.id))
+                await updateDoc(doc(db,"users",currentUser.uid,cfg.coll,t.id),{isActive:false});
+            }
+            await updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{isActive:e.target.checked});
+          });
+          div.querySelectorAll('input')[1].addEventListener("change", e =>
+            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{name:e.target.value}));
+        } else {
+          div.querySelectorAll('input')[0].addEventListener("change", e =>
+            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{name:e.target.value}));
+        }
         div.querySelectorAll('button')[0].addEventListener("click", () => {
           cfg.setCurrent(data.id);
           document.getElementById(cfg.parentEl).textContent = data.name||'';
@@ -5682,13 +5702,6 @@ function getSurahHariIni() {
             showToast(`📖 Hari ini: Surah ${s.surahNum}. ${s.surahName} — Hari ${s.hariDalamSurah}/3`, 4000);
         }, 2000);
       }
-      if (quranSpeedInterval) clearInterval(quranSpeedInterval);
-      quranSpeedInterval = setInterval(() => {
-        const el = document.getElementById('quran-elapsed-live');
-        if (!el || !quranKhatamData) return;
-        const min = (Date.now() - (quranKhatamData.lastUpdateTs || Date.now())) / 60000;
-        el.textContent = `⏱ Masa berlalu sejak kemaskini terakhir: ${min < 60 ? Math.round(min)+' minit' : (min/60).toFixed(1)+' jam'}`;
-      }, 10000);
     }
 
     async function simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca }) {
@@ -5859,15 +5872,6 @@ ${(() => {
             ⏸ Tak Baca Al-Quran Langsung (Sesi Ini = 0)
           </button>
 
-          <div id="quran-elapsed-live" style="text-align:center;font-size:0.68rem;color:rgba(52,211,153,0.5);margin-bottom:4px;">
-            ⏱ Masa berlalu sejak kemaskini terakhir: ${minLaluStr}
-          </div>
-          <div style="text-align:center;font-size:0.7rem;color:var(--subtext);">
-            ${active ? `⏳ <strong style="color:#34d399;">${daysLeft} hari lagi</strong> | ${surahsLeft} surah lagi (1 surah = 3 hari)` : `Bermula ${startStr}`}
-          </div>
-          <div style="text-align:center;font-size:0.62rem;color:rgba(52,211,153,0.3);margin-top:4px;">
-            Countdown tasbih tidak berfungsi ${startStr} – ${endStr} (fasa penyalinan)
-          </div>
         </div>`;
 
       document.getElementById('btn-quran-khatam-update')
@@ -5906,14 +5910,10 @@ if (input === null) return;
 
 // Auto lompat laci dalam app ke ayat yang ditetapkan
       if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
-        const targetTitle = `${newSurah}. ${QURAN_SURAH_NAMES[newSurah-1]} Ayat ${newAyat}`;
-        console.log('TARGET:', targetTitle);
-        console.log('LACI PERTAMA:', allRoutines[0]?.title);
-        console.log('LACI KEDUA:', allRoutines[1]?.title);
-const targetIdx = allRoutines.findIndex(r => 
+const targetTitle = `${newSurah}. ${QURAN_SURAH_NAMES[newSurah-1]} Ayat ${newAyat}`;
+        const targetIdx = allRoutines.findIndex(r => 
           r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
         );
-        console.log('CARI:', targetTitle, '| JUMPA IDX:', targetIdx);
         
         if (targetIdx !== -1) {
           currentRoutineIndex = targetIdx;
@@ -5924,18 +5924,6 @@ const targetIdx = allRoutines.findIndex(r =>
           triggerFadeAnimation(renderCurrentFact);
           showToast(`📖 Laci dilompat ke: ${targetTitle}`);
         }
-      }
-
-      if (trimmed === 'habis') {
-        isHabis  = true;
-        newAyat  = sMax;
-        newSurah = curS < 114 ? curS + 1 : 114;
-      } else {
-        const num = parseInt(trimmed);
-        if (isNaN(num) || num < 1 || num > sMax) {
-          showToast(`⚠️ Masukkan nombor 1–${sMax} atau "habis"`); return;
-        }
-        newAyat = num;
       }
 
       let totalRead = 0;
@@ -6731,20 +6719,7 @@ document.getElementById('btn-reset-quran-full').addEventListener('click', async 
       showToast("✅ Reset penuh berjaya! Bermula semula dari Surah 1.");
     });
     
-// ── RESET LACI PERTAMA QURAN ──
-    document.getElementById('btn-reset-quran-index').addEventListener('click', async () => {
-      if (!confirm("Reset ke laci pertama Al-Quran?")) return;
-      const activeTime = allQuranTimes.find(t => t.isActive);
-      if (!activeTime) { showToast("Tiada kategori Quran aktif."); return; }
-      await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
-      currentRoutineIndex = 0;
-      if (routineMode && routineModeSource === 'quran') {
-        rebuildRoutines();
-        showToast("✅ Kembali ke laci pertama!");
-      } else {
-        showToast("✅ Reset berjaya! Aktifkan Quran untuk mula dari awal.");
-      }
-    });
+
 // ── AUTO SIMPAN SESI QURAN DARI COUNTDOWN ──
     async function saveQuranSession() {
       if (!currentUser || !quranKhatamData) return;
