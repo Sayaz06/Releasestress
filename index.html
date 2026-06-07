@@ -1514,10 +1514,14 @@ body.dark-mode {
           <input id="quran-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="quran" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
-        <button id="btn-quran-auto-jump" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#6366f1;color:#a5b4fc;">⚡ Auto Lompat Kosong: OFF</button>
+<button id="btn-quran-auto-jump" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#6366f1;color:#a5b4fc;">⚡ Auto Lompat Kosong: OFF</button>
 <button id="btn-quran-scroll-default" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#94a3b8;color:#cbd5e1;">📜 Default Skrol Textarea: Atas</button>
 <button id="btn-buka-countdown-mini" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">📖 Countdown Mini Surah</button>
+        <div style="margin-top:6px;padding:6px 10px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:8px;">
+          <span id="quran-drawer-masalah-status" style="font-size:0.72rem;color:var(--subtext);">Semakan format...</span>
+        </div>
                 <div class="list mt-8" id="quran-drawers-list" style="padding:10px;"></div>
+        <button id="btn-lompat-laci-masalah" style="display:none;position:fixed;bottom:24px;right:24px;z-index:999;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;font-weight:700;font-size:0.85rem;padding:12px 18px;border-radius:999px;box-shadow:0 6px 20px rgba(239,68,68,0.5);cursor:pointer;align-items:center;gap:6px;">⚡ — →</button>
       </section>
 
 <section id="section-countdown-mini" class="section" style="position:relative;">
