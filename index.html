@@ -2666,7 +2666,7 @@ let progressText;
             const ayatHariIni = qd ? (qd.history||[])
               .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
               .reduce((sum, h) => sum + (h.ayatSesi || 0), 0) : 0;
-            progressText = `Harian ${ayatHariIni.toLocaleString()}/${target.toLocaleString()}`;
+progressText = '';
           } else {
             progressText = tambahan > 0
               ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
@@ -2683,13 +2683,12 @@ const qd = quranKhatamData;
               const curSName = QURAN_SURAH_NAMES[curS - 1] || '';
               const etaLine = quranEtaLabel ? ` │ 🏁 ${quranEtaLabel.split('\n')[0]}${quranEtaLabel.split('\n')[1] ? ' - ' + quranEtaLabel.split('\n')[1].replace(/[()]/g, '').trim() : ''}` : '';
             metaStr = `${progressText} │ 📖 ${curS}.${curSName}${etaLine}`;
-            }
+                          }
             modeBarSub.textContent = metaStr;
   
           } else {
             modeBarSub.textContent = progressText;
           }
-
 if (counterArea) counterArea.style.display = 'flex';
           const qd = quranKhatamData;
           const totalDibaca = qd ? (qd.totalAyatRead || 0) : 0;
@@ -2698,6 +2697,7 @@ if (counterArea) counterArea.style.display = 'flex';
             ? bakiKhatam.toLocaleString() 
             : mRem.toLocaleString();
           tasbihStatusChip.textContent = `${getModeLabel(routineModeSource)}: ${routineModeSource === 'quran' ? bakiKhatam.toLocaleString() : mRem.toLocaleString()}`;
+
         }
         return;
       }
