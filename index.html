@@ -5997,11 +5997,12 @@ let totalRead = 0;
       quranSessionStartTime = null;
       quranSessionLastTapTime = null;
 
-      const kel = ayatSesi > 0 ? ` — ${(ayatSesi / minitSesi).toFixed(2)} ayat/minit` : '';
+  const kel = ayatSesi > 0 ? ` — ${(ayatSesi / minitSesi).toFixed(2)} ayat/minit` : '';
       showToast(isHabis
         ? `✅ ${sName} selesai! Seterusnya: ${QURAN_SURAH_NAMES[newSurah - 1]}`
         : `✅ Disimpan — ${sName} ayat ${newAyat}${kel}`
       );
+    }
 
     async function handleQuranTakBaca() {
       if (!currentUser || !quranKhatamData) return;
