@@ -6782,12 +6782,20 @@ function renderModeHistory() {
       const isDoubleTap = (now - terskipDoubleTapTs) < 400;
       terskipDoubleTapTs = now;
 
-      if (isDoubleTap) {
-        // Double tap — keluar
-        terskipOverlay.style.display = 'none';
-        terskipDrawers = [];
-        terskipIndex = 0;
-        terskipFlipped = false;
+if (isDoubleTap) {
+        // Double tap — tunjuk status tunggu dulu sebelum keluar
+        const hintEl = document.getElementById('terskip-hint');
+        const titleEl = document.getElementById('terskip-title');
+        if (hintEl) hintEl.textContent = '⏳ Sedang keluar...';
+        if (titleEl) titleEl.textContent = '';
+        isBlocked = true;
+        setTimeout(() => {
+          terskipOverlay.style.display = 'none';
+          terskipDrawers = [];
+          terskipIndex = 0;
+          terskipFlipped = false;
+          isBlocked = false;
+        }, 800);
         return;
       }
 
