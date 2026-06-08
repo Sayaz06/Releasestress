@@ -2726,7 +2726,8 @@ const qd = quranKhatamData;
           } else {
             modeBarSub.textContent = progressText;
           }
-if (counterArea) counterArea.style.display = 'flex';
+
+if (counterArea) counterArea.style.display = routineModeSource === 'quran' ? 'none' : 'flex';
           const qd = quranKhatamData;
           const totalDibaca = qd ? (qd.totalAyatRead || 0) : 0;
           const bakiKhatam = Math.max(0, 6236 - totalDibaca);
@@ -2734,7 +2735,7 @@ if (counterArea) counterArea.style.display = 'flex';
             ? bakiKhatam.toLocaleString() 
             : mRem.toLocaleString();
           tasbihStatusChip.textContent = `${getModeLabel(routineModeSource)}: ${routineModeSource === 'quran' ? bakiKhatam.toLocaleString() : mRem.toLocaleString()}`;
-
+          
           // Tambah button Terskip Ayat untuk Quran
           const existingTerskip = document.getElementById('btn-terskip-ayat-main');
           if (!existingTerskip && routineModeSource === 'quran') {
