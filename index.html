@@ -2786,8 +2786,9 @@ if (counterArea) counterArea.style.display = 'flex';
     }
 
 function decrementTasbih() {
-      if (isBlocked) return; 
+      if (isBlocked) return;
       if (videoOverlay.style.display === 'flex' || peraturanOverlay.style.display === 'flex') return;
+      if (terskipOverlay.style.display === 'flex') return;
 
       // ── BLOCK QURAN COUNTDOWN SEMASA FASA PENYALINAN ──
       if (routineMode && routineModeSource === 'quran') {
@@ -4532,14 +4533,16 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
     let isSwiping = false;
     const GAP = 5;
 
-    document.addEventListener("touchstart", (e) => {
+document.addEventListener("touchstart", (e) => {
+      if(terskipOverlay.style.display === 'flex') return;
       if(!sectionTasbih.classList.contains('active')) return;
       if(e.target.closest('button') || e.target.closest('.topbar') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       touchY = e.touches[0].clientY;
       isSwiping = false;
     }, {passive:true});
 
-    document.addEventListener("touchmove", (e) => {
+document.addEventListener("touchmove", (e) => {
+      if(terskipOverlay.style.display === 'flex') return;
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       const currentY = e.touches[0].clientY;
       const diff = currentY - touchY;
@@ -4557,7 +4560,8 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
       }
     }, {passive:true});
 
-    document.addEventListener("click", (e) => {
+document.addEventListener("click", (e) => {
+      if(terskipOverlay.style.display === 'flex') return;
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container') || isSwiping) return;
       decrementTasbih();
     });
