@@ -6084,7 +6084,7 @@ if (input === null) return;
       const trimmed = input.trim().toLowerCase();
       let newSurah = curS, newAyat, isHabis = false;
 
-      if (trimmed === 'habis') {
+if (trimmed === 'habis') {
         isHabis  = true;
         newAyat  = sMax;
         newSurah = curS < 114 ? curS + 1 : 114;
@@ -6092,6 +6092,13 @@ if (input === null) return;
         const num = parseInt(trimmed);
         if (isNaN(num) || num < 1 || num > sMax) {
           showToast(`⚠️ Masukkan nombor 1–${sMax} atau "habis"`); return;
+        }
+        // Semak sama ada nombor lebih rendah dari kedudukan semasa
+        const prevTotalSemasa = d.totalAyatRead || 0;
+        const totalBaru = kiraTotalAyatDibaca(curS, num);
+        if (totalBaru < prevTotalSemasa) {
+          showToast(`⚠️ Kemaskini tidak dibenarkan — nombor ayat yang dimasukkan (Ayat ${num}) adalah lebih rendah daripada kedudukan bacaan semasa anda. Sekiranya anda ingin menetapkan semula kedudukan ke ayat sebelumnya, sila gunakan butang "Reset Penuh" bagi mengelakkan ketidakselarasan pada laci countdown anda.`, 8000);
+          return;
         }
         newAyat = num;
       }
