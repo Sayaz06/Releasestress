@@ -4192,10 +4192,11 @@ allRoutines.push({
       }
       if (savedIndex >= allRoutines.length) savedIndex = 0;
 
-      const isIndexChanged = currentRoutineIndex !== savedIndex;
-      currentRoutineIndex = savedIndex;
-
-      if (isIndexChanged) {
+const isIndexChanged = currentRoutineIndex !== savedIndex;
+      // Hanya update index kalau savedIndex lebih besar atau sama
+      // Elak index undur akibat Firestore snapshot lambat
+      if (isIndexChanged && savedIndex >= currentRoutineIndex) {
+          currentRoutineIndex = savedIndex;
           comboStep = 0;
           isFlipped = false;
           if (allRoutines.length > 0) {
@@ -4204,7 +4205,7 @@ allRoutines.push({
               currentRoutineTarget = 0;
           }
       } else {
-          if (allRoutines.length > 0 && currentRoutineTarget === 0 && !allRoutines[currentRoutineIndex].isTamat) {
+          if (allRoutines.length > 0 && currentRoutineTarget === 0 && !allRoutines[currentRoutineIndex]?.isTamat) {
               currentRoutineTarget = allRoutines[currentRoutineIndex].target;
           }
       }
