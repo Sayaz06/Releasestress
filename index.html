@@ -6594,8 +6594,12 @@ function renderModeHistory() {
       showSection(document.getElementById('section-quran-drawers'));
     });
 
+document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () => {
+      document.getElementById('panduan-sistem-quran-modal').style.display = 'none';
+    });
+
     document.getElementById('btn-back-cm-history').addEventListener('click', () => {
-      showSection(sectionCountdownMini);
+          showSection(sectionCountdownMini);
     });
 
     document.getElementById('cm-btn-history').addEventListener('click', async () => {
