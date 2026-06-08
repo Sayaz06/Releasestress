@@ -1535,7 +1535,7 @@ body.dark-mode {
   </div>
 
   <!-- STATUS BAR -->
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;margin-bottom:10px;flex-shrink:0;">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;margin-bottom:6px;flex-shrink:0;">
     <div id="cm-ayat-label" style="font-size:0.85rem;color:#fcd34d;font-weight:700;"></div>
     <div style="display:flex;gap:12px;align-items:center;">
       <span style="font-size:0.75rem;color:var(--subtext);">Baki: <strong id="cm-baki" style="color:#fcd34d;">0</strong></span>
@@ -1543,6 +1543,7 @@ body.dark-mode {
       <span id="cm-progress" style="font-size:0.75rem;color:var(--subtext);"></span>
     </div>
   </div>
+  <button id="btn-terskip-ayat-cm" style="width:100%;padding:7px;border-radius:999px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;font-size:0.78rem;font-weight:600;cursor:pointer;margin-bottom:8px;flex-shrink:0;">⏪ Terskip Ayat</button>
 
   <!-- PAPARAN AYAT — FLEX 1, BOLEH SCROLL DALAM -->
   <div style="flex:1;min-height:0;display:flex;flex-direction:column;position:relative;">
@@ -1720,8 +1721,32 @@ body.dark-mode {
     </div>
   </div>
 
-  <div id="prompter-view">
-    <div id="prompter-zone">
+<!-- OVERLAY TERSKIP AYAT -->
+<div id="terskip-overlay" style="display:none;position:fixed;inset:0;z-index:999999;background:#020617;flex-direction:column;padding:16px;">
+  
+  <!-- STATUS BAR -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;margin-bottom:10px;flex-shrink:0;">
+    <div id="terskip-ayat-label" style="font-size:0.85rem;color:#a5b4fc;font-weight:700;"></div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <span style="font-size:0.75rem;color:var(--subtext);">Progress: <strong id="terskip-progress" style="color:#a5b4fc;">0/0</strong></span>
+      <span style="font-size:0.72rem;color:var(--subtext);">Ketik 2x untuk balik</span>
+    </div>
+  </div>
+
+  <!-- PAPARAN AYAT -->
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;position:relative;">
+    <div id="terskip-tap-overlay" style="position:absolute;inset:0;z-index:10;cursor:pointer;"></div>
+    <div style="flex:1;min-height:0;overflow-y:auto;background:rgba(30,41,59,0.8);border:1px solid rgba(99,102,241,0.4);border-radius:14px;padding:16px;display:flex;flex-direction:column;">
+      <div id="terskip-title" style="font-size:0.75rem;color:#a5b4fc;font-weight:700;text-transform:uppercase;margin-bottom:12px;flex-shrink:0;"></div>
+      <div id="terskip-content" style="flex:1;font-size:2rem;font-weight:600;line-height:2;text-align:right;font-family:'UthmanicHafs','Traditional Arabic',serif;direction:rtl;"></div>
+      <div id="terskip-hint" style="font-size:0.65rem;color:#a5b4fc;margin-top:12px;font-weight:600;text-align:center;flex-shrink:0;"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="prompter-view">
+  <div id="prompter-zone">
       <div class="prompter-focus-line"></div>
       <div id="scrolling-text"></div>
     </div>
@@ -2705,6 +2730,18 @@ if (counterArea) counterArea.style.display = 'flex';
             ? bakiKhatam.toLocaleString() 
             : mRem.toLocaleString();
           tasbihStatusChip.textContent = `${getModeLabel(routineModeSource)}: ${routineModeSource === 'quran' ? bakiKhatam.toLocaleString() : mRem.toLocaleString()}`;
+
+          // Tambah button Terskip Ayat untuk Quran
+          const existingTerskip = document.getElementById('btn-terskip-ayat-main');
+          if (!existingTerskip && routineModeSource === 'quran') {
+            const btnTerskip = document.createElement('button');
+            btnTerskip.id = 'btn-terskip-ayat-main';
+            btnTerskip.className = 'btn btn-secondary btn-sm';
+            btnTerskip.style.cssText = 'border-color:#6366f1;color:#a5b4fc;margin-top:6px;width:100%;';
+            btnTerskip.textContent = '⏪ Terskip Ayat';
+            btnTerskip.addEventListener('click', () => bukaTerskipAyat('main'));
+            counterArea.appendChild(btnTerskip);
+          }
 
         }
         return;
@@ -6702,8 +6739,154 @@ function renderModeHistory() {
       }
     }, {passive: true});
 
+// ── TERSKIP AYAT ──
+    const terskipOverlay = document.getElementById('terskip-overlay');
+    let terskipDrawers = [];
+    let terskipIndex = 0;
+    let terskipFlipped = false;
+    let terskipSource = 'main'; // 'main' atau 'cm'
+    let terskipDoubleTapTs = 0;
+
+    function bukaTerskipAyat(source) {
+      terskipSource = source;
+      terskipFlipped = false;
+
+      if (source === 'main') {
+        // Ambil 5 ayat sebelum kedudukan semasa dari allRoutines
+        const endIdx = Math.max(0, currentRoutineIndex);
+        const startIdx = Math.max(0, endIdx - 5);
+        terskipDrawers = allRoutines
+          .slice(startIdx, endIdx)
+          .filter(r => !r.isTamat);
+      } else {
+        // Ambil 5 ayat sebelum cmIndex dari cmDrawers
+        const endIdx = Math.max(0, cmIndex);
+        const startIdx = Math.max(0, endIdx - 5);
+        terskipDrawers = cmDrawers.slice(startIdx, endIdx);
+      }
+
+      if (!terskipDrawers.length) {
+        showToast('Tiada ayat sebelum ini untuk disemak.');
+        return;
+      }
+
+      terskipIndex = 0;
+      renderTerskip();
+      terskipOverlay.style.display = 'flex';
+    }
+
+    function renderTerskip() {
+      if (!terskipDrawers.length) return;
+
+      const isSelesai = terskipIndex >= terskipDrawers.length;
+      const total = terskipDrawers.length;
+      const progress = Math.min(terskipIndex + 1, total);
+
+      document.getElementById('terskip-progress').textContent = `${progress}/${total}`;
+
+      const titleEl = document.getElementById('terskip-title');
+      const contentEl = document.getElementById('terskip-content');
+      const hintEl = document.getElementById('terskip-hint');
+      const labelEl = document.getElementById('terskip-ayat-label');
+
+      if (isSelesai) {
+        labelEl.textContent = '✅ Selesai';
+        titleEl.textContent = '[ Selesai ]';
+        contentEl.style.fontSize = '1.2rem';
+        contentEl.style.fontFamily = 'inherit';
+        contentEl.style.direction = 'ltr';
+        contentEl.style.textAlign = 'center';
+        contentEl.textContent = 'Semua ayat telah disemak. Ketik untuk ulang semula atau tekan 2x untuk keluar.';
+        hintEl.textContent = '(Ketik 1x untuk ulang | Ketik 2x untuk keluar)';
+        return;
+      }
+
+      const data = terskipDrawers[terskipIndex];
+      const tajuk = terskipSource === 'main' ? data.title : (data.title || `Ayat ${terskipIndex + 1}`);
+      labelEl.textContent = tajuk;
+
+      if (!terskipFlipped) {
+        titleEl.textContent = `[ ${tajuk} ]`;
+        contentEl.style.fontSize = `${quranFontSize}rem`;
+        contentEl.style.fontFamily = "'UthmanicHafs','Traditional Arabic',serif";
+        contentEl.style.direction = 'rtl';
+        contentEl.style.textAlign = 'right';
+        contentEl.textContent = terskipSource === 'main' ? (data.text || '') : (data.zikir || '');
+        hintEl.textContent = '(Ketik 1x untuk papar maksud | Ketik 2x untuk keluar)';
+      } else {
+        titleEl.textContent = `[ ${tajuk} ] — Maksud`;
+        contentEl.style.fontSize = '1rem';
+        contentEl.style.fontFamily = 'inherit';
+        contentEl.style.direction = 'ltr';
+        contentEl.style.textAlign = 'left';
+        const maksud = terskipSource === 'main' ? data.translation : data.maksud;
+        contentEl.textContent = maksud || 'Tiada maksud diisi.';
+        hintEl.textContent = '(Ketik 1x untuk ayat seterusnya | Ketik 2x untuk keluar)';
+      }
+    }
+
+    function terskipTap() {
+      const now = Date.now();
+      const isDoubleTap = (now - terskipDoubleTapTs) < 400;
+      terskipDoubleTapTs = now;
+
+      if (isDoubleTap) {
+        // Double tap — keluar
+        terskipOverlay.style.display = 'none';
+        terskipDrawers = [];
+        terskipIndex = 0;
+        terskipFlipped = false;
+        return;
+      }
+
+      const isSelesai = terskipIndex >= terskipDrawers.length;
+
+      if (isSelesai) {
+        // Ketik sekali pada selesai — ulang semula dari ayat pertama
+        terskipIndex = 0;
+        terskipFlipped = false;
+        renderTerskip();
+        return;
+      }
+
+      if (!terskipFlipped) {
+        // Tap 1 — tunjuk maksud
+        terskipFlipped = true;
+        renderTerskip();
+      } else {
+        // Tap 2 — next ayat
+        terskipFlipped = false;
+        terskipIndex++;
+        renderTerskip();
+      }
+    }
+
+    // Event listener tap overlay terskip
+    const terskipTapOverlay = document.getElementById('terskip-tap-overlay');
+    let terskipTouchY = 0;
+    let terskipIsSwiping = false;
+
+    terskipTapOverlay.addEventListener('touchstart', (e) => {
+      terskipTouchY = e.touches[0].clientY;
+      terskipIsSwiping = false;
+    }, {passive: true});
+
+    terskipTapOverlay.addEventListener('touchmove', (e) => {
+      if (Math.abs(e.touches[0].clientY - terskipTouchY) > 5) terskipIsSwiping = true;
+    }, {passive: true});
+
+    terskipTapOverlay.addEventListener('click', () => {
+      if (terskipIsSwiping) return;
+      terskipTap();
+    });
+
+    // Button countdown mini
+    document.getElementById('btn-terskip-ayat-cm').addEventListener('click', () => {
+      bukaTerskipAyat('cm');
+    });
+
     // ── SUSUN AL-QURAN ──
-                const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
+    const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
     let quranSusunan = {}; // { "1": timeId, "2": timeId, ... }
     let alQuranPenuhSurahIdx = 1;
 
