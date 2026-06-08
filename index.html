@@ -2727,12 +2727,12 @@ const qd = quranKhatamData;
             modeBarSub.textContent = progressText;
           }
 
-if (counterArea) counterArea.style.display = routineModeSource === 'quran' ? 'none' : 'flex';
+          if (counterArea) counterArea.style.display = 'flex';
           const qd = quranKhatamData;
           const totalDibaca = qd ? (qd.totalAyatRead || 0) : 0;
           const bakiKhatam = Math.max(0, 6236 - totalDibaca);
-          if (modeRemainingEl) modeRemainingEl.textContent = routineModeSource === 'quran' 
-            ? bakiKhatam.toLocaleString() 
+if (modeRemainingEl) modeRemainingEl.textContent = routineModeSource === 'quran' 
+            ? '' 
             : mRem.toLocaleString();
           tasbihStatusChip.textContent = `${getModeLabel(routineModeSource)}: ${routineModeSource === 'quran' ? bakiKhatam.toLocaleString() : mRem.toLocaleString()}`;
           
