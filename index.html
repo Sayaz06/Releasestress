@@ -7537,25 +7537,22 @@ quranKhatamData = freshData;
 // ── AUTO SIMPAN SESI QURAN DARI COUNTDOWN ──
 async function saveQuranSession() {
       if (!currentUser || !quranKhatamData) return;
-      if (quranSessionTapCount < 5) return;
 
-      const minitSesi = Math.max(0.1, (quranSessionLastTapTime - quranSessionStartTime) / 60000);
-// ayatSesi = kedudukan semasa - kedudukan sebelum save
-      const prevTotalRead = quranKhatamData.totalAyatRead || 0;
-      let newTotalCheck = 0;
-      for (let i = 0; i < curSurah - 1; i++) newTotalCheck += QURAN_SURAH_AYAT[i];
-      newTotalCheck += curAyat;
-      const ayatSesi = Math.max(0, newTotalCheck - prevTotalRead);
-      const kelajuanSesi = ayatSesi / minitSesi;
-
-// Guna quranAyatSemasa dan quranSurahSemasa yang disimpan semasa flip ke Arab
-      // Ayat ini sudah selesai dibaca (Arab sudah dipapar) — guna tanpa -1
+      // Guna quranAyatSemasa dan quranSurahSemasa — ayat yang selesai dibaca
       const curSurah = quranSurahSemasa || (quranKhatamData.currentSurah || 1);
       const curAyat = quranAyatSemasa || (quranKhatamData.currentAyat || 0);
+
+      if (!curAyat || !curSurah) return;
+
       // Kira total tanpa -1 sebab ayat ini sudah selesai dibaca
       let newTotal = 0;
       for (let i = 0; i < curSurah - 1; i++) newTotal += QURAN_SURAH_AYAT[i];
       newTotal += curAyat;
+
+      const prevTotalRead = quranKhatamData.totalAyatRead || 0;
+      const ayatSesi = Math.max(0, newTotal - prevTotalRead);
+      const minitSesi = Math.max(0.1, ((quranSessionLastTapTime || Date.now()) - (quranSessionStartTime || Date.now())) / 60000);
+      const kelajuanSesi = minitSesi > 0 ? ayatSesi / minitSesi : 0;
 
       const newData = {
         ...quranKhatamData,
