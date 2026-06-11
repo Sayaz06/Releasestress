@@ -1743,8 +1743,9 @@ body.dark-mode {
         <div style="color:#a5b4fc;font-weight:700;margin-bottom:6px;">💾 Cara Kemajuan Tersimpan</div>
         <div>Kemajuan bacaan <strong>tidak disimpan setiap tap</strong> — ia disimpan secara berkelompok untuk mengurangkan penggunaan data.</div>
         <div style="margin-top:6px;">• App mengira bilangan <strong>ayat yang selesai dibaca</strong> dalam satu sesi</div>
-        <div>• Kemajuan disimpan ke awan apabila <strong>teks Arab ayat ke-5 (dan gandaannya) selesai dipaparkan</strong> — iaitu pada ketika pengguna mengetik untuk memaparkan maksud ayat tersebut</div>
-        <div>• Contohnya: simpanan berlaku semasa maksud Ayat 5, 10, 15, 20 dipaparkan — mengikut urutan ayat dalam surah semasa</div>
+        <div>• Kemajuan disimpan ke awan apabila <strong>teks Arab ayat gandaan 5 selesai dipaparkan</strong> — iaitu tepat pada ketika pengguna mengetik untuk memaparkan maksud ayat tersebut (contoh: Ayat 5, 10, 15, 20...)</div>
+        <div>• Pada ketika simpanan berlaku, ayat tersebut dikira sebagai <strong>selesai dibaca sepenuhnya</strong> — jumlah ayat dibaca dikira tanpa penolakan</div>
+        <div>• Contoh: Selesai baca Arab Ayat 135 → ketik untuk maksud → simpan → Dibaca: 142 ayat (7 Al-Fatihah + 135 Al-Baqarah)</div>
         <div>• Sekiranya ayat yang sedang dibaca adalah <strong>ayat terakhir sesebuah surah</strong>, kemajuan disimpan serta-merta tanpa menunggu gandaan 5</div>
         <div>• Kedudukan laci (ayat semasa) dan jumlah ayat dibaca dikemaskini serentak pada setiap simpanan</div>
         <div style="margin-top:6px;color:#c4b5fd;">⚠️ Nota: Sekiranya app ditutup sebelum mencapai ayat gandaan 5, kemajuan sesi semasa mungkin tidak tersimpan sepenuhnya. Ini adalah reka bentuk yang disengajakan bagi mengurangkan beban penulisan ke pangkalan data awan.</div>
@@ -2247,6 +2248,8 @@ const QURAN_SURAH_NAMES = ['Al-Fatihah','Al-Baqarah','Ali-\'Imran','An-Nisaa\'',
     let quranSessionStartTime = null;
     let quranSessionLastTapTime = null;
     let quranSessionTimer = null;
+    let quranAyatSemasa = 0;
+    let quranSurahSemasa = 0;
     let currentDoaTasbihRef = null, currentDoaTasbihData = null;
     let currentHadisTasbihRef = null, currentHadisTasbihData = null;
 
@@ -2909,29 +2912,28 @@ if (isQuran) {
           // Tap Maksud (comboStep 1→0): ayat selesai
           const isFlipKeMaksud = learningMode === 3 && comboStep === 1;
 
-          if (isFlipKeArab) {
-            // Mula timer jika belum ada
+if (isFlipKeArab) {
+            // Simpan ayat semasa SEBELUM flip — untuk semak gandaan 5 kemudian
+            const laciSemasaArab = allRoutines[currentRoutineIndex];
+            const parsedArab = laciSemasaArab ? parseLaciQuran(laciSemasaArab.title) : null;
+            quranAyatSemasa = parsedArab ? parsedArab.ayatNum : 0;
+            quranSurahSemasa = parsedArab ? parsedArab.surahNum : 0;
+
             const now = Date.now();
             if (!quranSessionStartTime) quranSessionStartTime = now;
             quranSessionLastTapTime = now;
           }
 
           if (isFlipKeMaksud) {
-            // Ayat Arab baru selesai dipapar, flip ke maksud
-            // Ambil ayat semasa dari laci
-            const laciSemasa = allRoutines[currentRoutineIndex];
-            const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
-            const ayatSemasa = parsed ? parsed.ayatNum : 0;
-            const surahSemasa = parsed ? parsed.surahNum : 0;
-            const jumlahAyatSurah = surahSemasa > 0 ? QURAN_SURAH_AYAT[surahSemasa - 1] : 0;
+            const jumlahAyatSurah = quranSurahSemasa > 0 ? QURAN_SURAH_AYAT[quranSurahSemasa - 1] : 0;
 
             quranSessionTapCount++;
             quranSessionLastTapTime = Date.now();
 
             // Save bila ayat gandaan 5 atau ayat terakhir surah
-            const patutSave = ayatSemasa > 0 && (
-              ayatSemasa % 5 === 0 ||
-              ayatSemasa === jumlahAyatSurah
+            const patutSave = quranAyatSemasa > 0 && (
+              quranAyatSemasa % 5 === 0 ||
+              quranAyatSemasa === jumlahAyatSurah
             );
 
             if (patutSave) {
@@ -6115,7 +6117,7 @@ ${(() => {
           <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;margin-bottom:10px;font-size:0.75rem;line-height:1.9;">
             <div style="color:#fcd34d;font-weight:700;margin-bottom:4px;">📊 Kemajuan</div>
 <div>📖 Semasa: Surah ${curS}. ${sName} — Ayat ${curA}/${sMax}</div>
-            <div style="color:var(--subtext);">✅ Dibaca: <strong style="color:white;">${total.toLocaleString()} ayat</strong><span style="font-size:0.65rem;color:var(--subtext);"> (ayat ${curA} belum selesai dibaca)</span></div>
+            <div style="color:var(--subtext);">✅ Dibaca: <strong style="color:white;">${total.toLocaleString()} ayat</strong></div>
             <div style="color:var(--subtext);">📋 Baki surah ini: <strong style="color:#fcd34d;">${barSurah} ayat</strong></div>
             <div style="color:var(--subtext);">📚 Baki khatam: <strong style="color:#f9a8d4;">${barKhatam.toLocaleString()} ayat</strong></div>
             <div style="color:var(--subtext);">🌙 Dibaca hari ini: <strong style="color:#6ee7b7;">${ayatHariIni.toLocaleString()} ayat</strong><span style="font-size:0.65rem;color:var(--subtext);"> (bermula 00:00am)</span></div>
@@ -7533,11 +7535,14 @@ async function saveQuranSession() {
       const ayatSesi = quranSessionTapCount;
       const kelajuanSesi = ayatSesi / minitSesi;
 
-      const laciSemasa = allRoutines[currentRoutineIndex];
-      const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
-      const curSurah = parsed ? parsed.surahNum : (quranKhatamData.currentSurah || 1);
-      const curAyat = parsed ? parsed.ayatNum : (quranKhatamData.currentAyat || 0);
-      const newTotal = kiraTotalAyatDibaca(curSurah, curAyat);
+// Guna quranAyatSemasa dan quranSurahSemasa yang disimpan semasa flip ke Arab
+      // Ayat ini sudah selesai dibaca (Arab sudah dipapar) — guna tanpa -1
+      const curSurah = quranSurahSemasa || (quranKhatamData.currentSurah || 1);
+      const curAyat = quranAyatSemasa || (quranKhatamData.currentAyat || 0);
+      // Kira total tanpa -1 sebab ayat ini sudah selesai dibaca
+      let newTotal = 0;
+      for (let i = 0; i < curSurah - 1; i++) newTotal += QURAN_SURAH_AYAT[i];
+      newTotal += curAyat;
 
       const newData = {
         ...quranKhatamData,
