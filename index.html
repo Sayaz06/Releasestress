@@ -2939,14 +2939,13 @@ if (isFlipKeArab) {
               quranAyatSemasa === jumlahAyatSurah
             );
 
-            if (patutSave) {
+if (patutSave) {
               clearTimeout(quranSessionTimer);
-              quranSessionTimer = setTimeout(async () => {
-                await saveQuranSession();
+              saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
-              }, 500);
+              });
             }
           }
         }
