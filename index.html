@@ -1739,13 +1739,15 @@ body.dark-mode {
         <div style="margin-top:6px;color:#6ee7b7;">Ini bermaksud setiap 2 tap = 1 ayat selesai dibaca.</div>
       </div>
 
-      <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px;">
+        <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px;">
         <div style="color:#a5b4fc;font-weight:700;margin-bottom:6px;">💾 Cara Kemajuan Tersimpan</div>
         <div>Kemajuan bacaan <strong>tidak disimpan setiap tap</strong> — ia disimpan secara berkelompok untuk mengurangkan penggunaan data.</div>
-        <div style="margin-top:6px;">• App mengira bilangan tap dalam satu sesi</div>
-        <div>• Selepas <strong>5 tap</strong> dan jeda 5 saat, kemajuan disimpan ke awan</div>
-        <div>• Kedudukan laci (ayat semasa) dan jumlah ayat dibaca dikemaskini serentak</div>
-        <div style="margin-top:6px;color:#c4b5fd;">⚠️ Nota: Simpanan adalah setiap 5 countdown tap, bukan 5 ayat. Ini bermakna kemajuan mungkin tersimpan di pertengahan ayat.</div>
+        <div style="margin-top:6px;">• App mengira bilangan <strong>ayat yang selesai dibaca</strong> dalam satu sesi</div>
+        <div>• Kemajuan disimpan ke awan apabila <strong>teks Arab ayat ke-5 (dan gandaannya) selesai dipaparkan</strong> — iaitu pada ketika pengguna mengetik untuk memaparkan maksud ayat tersebut</div>
+        <div>• Contohnya: simpanan berlaku semasa maksud Ayat 5, 10, 15, 20 dipaparkan — mengikut urutan ayat dalam surah semasa</div>
+        <div>• Sekiranya ayat yang sedang dibaca adalah <strong>ayat terakhir sesebuah surah</strong>, kemajuan disimpan serta-merta tanpa menunggu gandaan 5</div>
+        <div>• Kedudukan laci (ayat semasa) dan jumlah ayat dibaca dikemaskini serentak pada setiap simpanan</div>
+        <div style="margin-top:6px;color:#c4b5fd;">⚠️ Nota: Sekiranya app ditutup sebelum mencapai ayat gandaan 5, kemajuan sesi semasa mungkin tidak tersimpan sepenuhnya. Ini adalah reka bentuk yang disengajakan bagi mengurangkan beban penulisan ke pangkalan data awan.</div>
       </div>
 
       <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px;">
@@ -2902,22 +2904,45 @@ if (routineMode && allRoutines.length > 0) {
         const isQuran = routineModeSource === 'quran';
 
 if (isQuran) {
-          const isFlipTap = learningMode === 3 && comboStep === 0;
-          if (!isFlipTap) {
+          // Tap Arab (comboStep 0→1): mula kira ayat
+          const isFlipKeArab = learningMode === 3 && comboStep === 0;
+          // Tap Maksud (comboStep 1→0): ayat selesai
+          const isFlipKeMaksud = learningMode === 3 && comboStep === 1;
+
+          if (isFlipKeArab) {
+            // Mula timer jika belum ada
             const now = Date.now();
             if (!quranSessionStartTime) quranSessionStartTime = now;
-            quranSessionTapCount++;
             quranSessionLastTapTime = now;
-            clearTimeout(quranSessionTimer);
-quranSessionTimer = setTimeout(async () => {
-            if (quranSessionTapCount >= 5) {
-              await saveQuranSession();
-              quranSessionTapCount = 0;
-              quranSessionStartTime = null;
-              quranSessionLastTapTime = null;
+          }
+
+          if (isFlipKeMaksud) {
+            // Ayat Arab baru selesai dipapar, flip ke maksud
+            // Ambil ayat semasa dari laci
+            const laciSemasa = allRoutines[currentRoutineIndex];
+            const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
+            const ayatSemasa = parsed ? parsed.ayatNum : 0;
+            const surahSemasa = parsed ? parsed.surahNum : 0;
+            const jumlahAyatSurah = surahSemasa > 0 ? QURAN_SURAH_AYAT[surahSemasa - 1] : 0;
+
+            quranSessionTapCount++;
+            quranSessionLastTapTime = Date.now();
+
+            // Save bila ayat gandaan 5 atau ayat terakhir surah
+            const patutSave = ayatSemasa > 0 && (
+              ayatSemasa % 5 === 0 ||
+              ayatSemasa === jumlahAyatSurah
+            );
+
+            if (patutSave) {
+              clearTimeout(quranSessionTimer);
+              quranSessionTimer = setTimeout(async () => {
+                await saveQuranSession();
+                quranSessionTapCount = 0;
+                quranSessionStartTime = null;
+                quranSessionLastTapTime = null;
+              }, 500);
             }
-            // Kurang 5 tap: biarkan terkumpul, jangan reset
-          }, 5000);
           }
         }
 
