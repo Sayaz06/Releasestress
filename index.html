@@ -2910,10 +2910,8 @@ if (routineMode && allRoutines.length > 0) {
         const isQuran = routineModeSource === 'quran';
 
 if (isQuran) {
-          // Tap Arab (comboStep 0→1): mula kira ayat
-          const isFlipKeArab = learningMode === 3 && comboStep === 0;
-          // Tap Maksud (comboStep 1→0): ayat selesai
-          const isFlipKeMaksud = learningMode === 3 && comboStep === 1;
+          const isFlipKeArab = learningMode === 3 && comboStep === 1;
+          const isFlipKeMaksud = learningMode === 3 && comboStep === 0;
 
 if (isFlipKeArab) {
             // Simpan ayat semasa SEBELUM flip — untuk semak gandaan 5 kemudian
@@ -2959,8 +2957,13 @@ if (isQuran && learningMode === 0) {
           if (comboStep === 0) {
             isFlipped = true;
             comboStep = 1;
+            // Simpan ayat semasa SELEPAS flip ke Arab — untuk semak gandaan 5
+            const laciSemasaArab = allRoutines[currentRoutineIndex];
+            const parsedArab = laciSemasaArab ? parseLaciQuran(laciSemasaArab.title) : null;
+            quranAyatSemasa = parsedArab ? parsedArab.ayatNum : 0;
+            quranSurahSemasa = parsedArab ? parsedArab.surahNum : 0;
             triggerFlipAnimation(renderCurrentFact);
-} else {
+          } else {
             isFlipped = false;
             comboStep = 0;
             isSempadan = true;
