@@ -2945,24 +2945,25 @@ if (patutSave) {
 if (isQuran && learningMode === 0) {
           isSempadan = true;
           routineAutoNext = true;
-  
-} else if (isQuran && learningMode === 3) {
+ } else if (isQuran && learningMode === 3) {
           // Quran Combo: flip dulu → ketuk lagi → laci seterusnya
           if (comboStep === 0) {
-            isFlipped = true;
-            comboStep = 1;
-            // Simpan ayat semasa SELEPAS flip ke Arab — untuk semak gandaan 5
+            // Simpan ayat semasa SEKARANG sebelum flip — ini ayat yang sedang dibaca
             const laciSemasaArab = allRoutines[currentRoutineIndex];
             const parsedArab = laciSemasaArab ? parseLaciQuran(laciSemasaArab.title) : null;
             quranAyatSemasa = parsedArab ? parsedArab.ayatNum : 0;
             quranSurahSemasa = parsedArab ? parsedArab.surahNum : 0;
+            isFlipped = true;
+            comboStep = 1;
             triggerFlipAnimation(renderCurrentFact);
           } else {
+            // Ini masa flip ke maksud — ayat dalam quranAyatSemasa adalah ayat yang betul
             isFlipped = false;
             comboStep = 0;
             isSempadan = true;
             routineAutoNext = true;
-          }
+          } 
+
           
         } else {
           // Mode lain: kira target seperti biasa
