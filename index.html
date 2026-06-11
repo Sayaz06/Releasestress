@@ -2914,12 +2914,6 @@ if (isQuran) {
           const isFlipKeMaksud = learningMode === 3 && comboStep === 0;
 
 if (isFlipKeArab) {
-            // Simpan ayat semasa SEBELUM flip — untuk semak gandaan 5 kemudian
-            const laciSemasaArab = allRoutines[currentRoutineIndex];
-            const parsedArab = laciSemasaArab ? parseLaciQuran(laciSemasaArab.title) : null;
-            quranAyatSemasa = parsedArab ? parsedArab.ayatNum : 0;
-            quranSurahSemasa = parsedArab ? parsedArab.surahNum : 0;
-
             const now = Date.now();
             if (!quranSessionStartTime) quranSessionStartTime = now;
             quranSessionLastTapTime = now;
