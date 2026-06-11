@@ -7566,10 +7566,12 @@ async function saveQuranSession() {
         }]
       };
 
+// Papar toast TERUS sebelum await supaya muncul semasa ayat betul
+      showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
+
       quranKhatamData = newData;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
       renderQuranKhatamCard();
-
       const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
       const dailySnap = await getDoc(dailyRef);
       const prevTapped = dailySnap.exists() ? (dailySnap.data().tapped || 0) : 0;
@@ -7578,8 +7580,6 @@ async function saveQuranSession() {
         dateKey: dateKeyQ(Date.now()),
         updatedAt: Date.now()
       }, { merge: true });
-
-      showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
     }
   
 // ── KHATAM QURAN ──
