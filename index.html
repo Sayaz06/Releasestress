@@ -2913,25 +2913,33 @@ if (isQuran) {
           const isFlipKeArab = learningMode === 3 && comboStep === 1;
           const isFlipKeMaksud = learningMode === 3 && comboStep === 0;
 
-if (isFlipKeArab) {
+          if (isFlipKeArab) {
             const now = Date.now();
             if (!quranSessionStartTime) quranSessionStartTime = now;
             quranSessionLastTapTime = now;
           }
 
           if (isFlipKeMaksud) {
-            const jumlahAyatSurah = quranSurahSemasa > 0 ? QURAN_SURAH_AYAT[quranSurahSemasa - 1] : 0;
+            // Ambil ayat semasa SEKARANG sebelum comboStep berubah
+            const laciSemasaNow = allRoutines[currentRoutineIndex];
+            const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
+            const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
+            const surahUntukSave = parsedNow ? parsedNow.surahNum : 0;
+            const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
 
             quranSessionTapCount++;
             quranSessionLastTapTime = Date.now();
+            if (!quranSessionStartTime) quranSessionStartTime = Date.now();
 
-            // Save bila ayat gandaan 5 atau ayat terakhir surah
-            const patutSave = quranAyatSemasa > 0 && (
-              quranAyatSemasa % 5 === 0 ||
-              quranAyatSemasa === jumlahAyatSurah
+            const patutSave = ayatUntukSave > 0 && (
+              ayatUntukSave % 5 === 0 ||
+              ayatUntukSave === jumlahAyatSurah
             );
 
-if (patutSave) {
+            if (patutSave) {
+              // Simpan nilai ayat untuk digunakan dalam saveQuranSession
+              quranAyatSemasa = ayatUntukSave;
+              quranSurahSemasa = surahUntukSave;
               clearTimeout(quranSessionTimer);
               saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
