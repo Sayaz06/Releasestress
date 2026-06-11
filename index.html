@@ -7540,7 +7540,12 @@ async function saveQuranSession() {
       if (quranSessionTapCount < 5) return;
 
       const minitSesi = Math.max(0.1, (quranSessionLastTapTime - quranSessionStartTime) / 60000);
-      const ayatSesi = quranSessionTapCount;
+// ayatSesi = kedudukan semasa - kedudukan sebelum save
+      const prevTotalRead = quranKhatamData.totalAyatRead || 0;
+      let newTotalCheck = 0;
+      for (let i = 0; i < curSurah - 1; i++) newTotalCheck += QURAN_SURAH_AYAT[i];
+      newTotalCheck += curAyat;
+      const ayatSesi = Math.max(0, newTotalCheck - prevTotalRead);
       const kelajuanSesi = ayatSesi / minitSesi;
 
 // Guna quranAyatSemasa dan quranSurahSemasa yang disimpan semasa flip ke Arab
