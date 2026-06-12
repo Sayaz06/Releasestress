@@ -2922,7 +2922,8 @@ function decrementTasbih() {
       if (videoOverlay.style.display === 'flex' || peraturanOverlay.style.display === 'flex') return;
       if (terskipOverlay.style.display === 'flex') return;
       if (document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
-
+      if (document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
+      if (document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
       // ── BLOCK QURAN COUNTDOWN SEMASA FASA PENYALINAN ──
       if (routineMode && routineModeSource === 'quran') {
         const now = new Date();
@@ -4697,6 +4698,7 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
 document.addEventListener("touchstart", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
+      if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
       if(!sectionTasbih.classList.contains('active')) return;
       if(e.target.closest('button') || e.target.closest('.topbar') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       touchY = e.touches[0].clientY;
@@ -4706,7 +4708,7 @@ document.addEventListener("touchstart", (e) => {
 document.addEventListener("touchmove", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
-      if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
+      if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
       const currentY = e.touches[0].clientY;
       const diff = currentY - touchY;
       if(Math.abs(diff) > 3) isSwiping = true;
@@ -4726,6 +4728,7 @@ document.addEventListener("touchmove", (e) => {
 document.addEventListener("click", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
+      if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container') || isSwiping) return;
       decrementTasbih();
     });
@@ -6674,6 +6677,15 @@ function renderModeHistory() {
 
 document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () => {
       document.getElementById('panduan-sistem-quran-modal').style.display = 'none';
+    });
+
+    document.getElementById('btn-nota-tutup').addEventListener('click', () => {
+      document.getElementById('nota-keluar-overlay').style.display = 'none';
+    });
+
+    document.getElementById('btn-nota-update').addEventListener('click', async () => {
+      await simpanStatusKeluar();
+      muatNotaKeluar();
     });
 
     document.getElementById('btn-back-cm-history').addEventListener('click', () => {
