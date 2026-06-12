@@ -2829,7 +2829,7 @@ if (modeRemainingEl) modeRemainingEl.textContent = routineModeSource === 'quran'
             btnTerskip.addEventListener('click', () => bukaTerskipAyat('main'));
             counterArea.appendChild(btnTerskip);
 
-            const btnPanduan = document.createElement('button');
+const btnPanduan = document.createElement('button');
             btnPanduan.id = 'btn-panduan-sistem-quran';
             btnPanduan.className = 'btn btn-secondary btn-sm';
             btnPanduan.style.cssText = 'border-color:#f59e0b;color:#fcd34d;margin-top:6px;width:100%;font-size:0.72rem;';
@@ -2838,6 +2838,14 @@ if (modeRemainingEl) modeRemainingEl.textContent = routineModeSource === 'quran'
               document.getElementById('panduan-sistem-quran-modal').style.display = 'flex';
             });
             counterArea.appendChild(btnPanduan);
+
+            const btnSimpanKeluar = document.createElement('button');
+            btnSimpanKeluar.id = 'btn-simpan-status-quran';
+            btnSimpanKeluar.className = 'btn btn-secondary btn-sm';
+            btnSimpanKeluar.style.cssText = 'border-color:#34d399;color:#34d399;margin-top:6px;width:100%;font-size:0.72rem;';
+            btnSimpanKeluar.textContent = '💾 Simpan Status Semasa';
+            btnSimpanKeluar.addEventListener('click', simpanStatusKeluar);
+            counterArea.appendChild(btnSimpanKeluar);
           }
 
         }
@@ -4372,7 +4380,7 @@ showSection(secToShow);
         subscribeMyLaw(); // KOD BARU: Subscribe My Law dari Firestore
         subscribeToVideoRehat(); // KOD BARU: Subscribe video rehat (dah ada fungsi, tapi belum dipanggil)
         subscribeNewModes();
-        loadQuranKhatam();
+        loadQuranKhatam().then(() => semakStatusKeluar());
         loadQuranSusunan();
         
       } else {
@@ -6820,7 +6828,62 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       }
     }, {passive: true});
 
-// ── TERSKIP AYAT ──
+// ── SIMPAN STATUS KELUAR ──
+    async function simpanStatusKeluar() {
+      if (!currentUser || !quranKhatamData) return;
+
+      const laciSemasa = allRoutines[currentRoutineIndex];
+      const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
+      const curSurah = parsed ? parsed.surahNum : (quranKhatamData.currentSurah || 1);
+      const curAyat = parsed ? parsed.ayatNum : (quranKhatamData.currentAyat || 0);
+
+      const statusData = {
+        surah: curSurah,
+        ayat: curAyat,
+        surahName: QURAN_SURAH_NAMES[curSurah - 1],
+        totalAyatRead: quranKhatamData.totalAyatRead || 0,
+        savedAt: Date.now(),
+        dateKey: dateKeyQ(Date.now())
+      };
+
+      await setDoc(
+        doc(db, "users", currentUser.uid, "settings", "quranStatusKeluar"),
+        statusData,
+        { merge: true }
+      );
+
+      showToast(`💾 Status disimpan — Surah ${curSurah}. ${QURAN_SURAH_NAMES[curSurah - 1]} Ayat ${curAyat}`, 4000);
+    }
+
+    // ── SEMAK STATUS KELUAR SEMASA LOAD ──
+    async function semakStatusKeluar() {
+      if (!currentUser) return;
+      const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "quranStatusKeluar"));
+      if (!snap.exists()) return;
+
+      const status = snap.data();
+      const curSurah = quranKhatamData?.currentSurah || 1;
+      const curAyat = quranKhatamData?.currentAyat || 0;
+
+      // Tunjuk notifikasi kalau status berbeza dengan kemajuan semasa
+      if (status.surah !== curSurah || status.ayat !== curAyat) {
+        const tarikhSimpan = new Date(status.savedAt);
+        const { label } = formatDateLabel(tarikhSimpan);
+        const h = tarikhSimpan.getHours();
+        const m = String(tarikhSimpan.getMinutes()).padStart(2, '0');
+        const ampm = h >= 12 ? 'pm' : 'am';
+        const h12 = h % 12 || 12;
+
+        setTimeout(() => {
+          showToast(
+            `📌 Status terakhir disimpan: Surah ${status.surah}. ${status.surahName} Ayat ${status.ayat} — ${label} ${h12}:${m}${ampm}. Jika app tidak selari, sila kemaskini manual atau Reset Penuh.`,
+            8000
+          );
+        }, 3000);
+      }
+    }
+
+    // ── TERSKIP AYAT ──
     const terskipOverlay = document.getElementById('terskip-overlay');
     let terskipDrawers = [];
     let terskipIndex = 0;
