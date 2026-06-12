@@ -4709,6 +4709,7 @@ document.addEventListener("touchmove", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
       if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
+      if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       const currentY = e.touches[0].clientY;
       const diff = currentY - touchY;
       if(Math.abs(diff) > 3) isSwiping = true;
