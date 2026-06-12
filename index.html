@@ -2905,7 +2905,8 @@ function decrementTasbih() {
       if (videoOverlay.style.display === 'flex' || peraturanOverlay.style.display === 'flex') return;
       if (terskipOverlay.style.display === 'flex') return;
       if (document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
-
+      if (document.getElementById('nota-keluar-modal').style.display === 'flex') return;
+  
       // ── BLOCK QURAN COUNTDOWN SEMASA FASA PENYALINAN ──
       if (routineMode && routineModeSource === 'quran') {
         const now = new Date();
@@ -6212,6 +6213,34 @@ document.getElementById('btn-quran-khatam-update')
         ?.addEventListener('click', handleQuranKhatamUpdate);
       document.getElementById('btn-quran-tak-baca')
         ?.addEventListener('click', handleQuranTakBaca);
+      document.getElementById('btn-lihat-nota-keluar')
+        ?.addEventListener('click', async () => {
+          const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "quranStatusKeluar"));
+          const modal = document.getElementById('nota-keluar-modal');
+          const kandungan = document.getElementById('nota-keluar-kandungan');
+          const btnPadam = document.getElementById('btn-padam-nota-keluar');
+          if (snap.exists()) {
+            const status = snap.data();
+            const tarikh = new Date(status.savedAt);
+            const { label } = formatDateLabel(tarikh);
+            const h = tarikh.getHours();
+            const m = String(tarikh.getMinutes()).padStart(2, '0');
+            const ampm = h >= 12 ? 'pm' : 'am';
+            const h12 = h % 12 || 12;
+            kandungan.innerHTML = `
+              <div style="color:#a5b4fc;font-size:0.72rem;margin-bottom:8px;">Disimpan: ${label} ${h12}:${m}${ampm}</div>
+              <div style="font-size:1rem;font-weight:700;color:white;margin-bottom:4px;">📖 Surah ${status.surah}. ${status.surahName}</div>
+              <div style="color:#34d399;font-weight:600;">Ayat ${status.ayat}</div>
+              <div style="margin-top:8px;font-size:0.72rem;color:var(--subtext);">✅ Dibaca: ${(status.totalAyatRead || 0).toLocaleString()} ayat</div>
+              <div style="margin-top:8px;font-size:0.72rem;color:#fcd34d;">💡 Ini adalah nota peringatan sahaja. Guna Kemaskini Manual jika kedudukan app tidak selari.</div>
+            `;
+            btnPadam.style.display = 'block';
+          } else {
+            kandungan.innerHTML = '<div style="color:#a5b4fc;font-size:0.72rem;">Tiada nota disimpan lagi. Tekan "💾 Simpan Status Semasa" sebelum keluar app.</div>';
+            btnPadam.style.display = 'none';
+          }
+          modal.style.display = 'flex';
+        });
     }
 
 async function handleQuranKhatamUpdate() {
