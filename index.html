@@ -6828,26 +6828,45 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
     let terskipSource = 'main'; // 'main' atau 'cm'
     let terskipDoubleTapTs = 0;
 
-    function bukaTerskipAyat(source) {
+function bukaTerskipAyat(source) {
       terskipSource = source;
       terskipFlipped = false;
 
+      const maxAyat = source === 'main' 
+        ? Math.min(5, currentRoutineIndex)
+        : Math.min(5, cmIndex);
+
+      if (maxAyat === 0) {
+        showToast('Tiada ayat sebelum ini untuk disemak.');
+        return;
+      }
+
+      const inputStr = prompt(
+        `Berapa ayat ke belakang yang ingin disemak?\n• Masukkan nombor 1 hingga ${maxAyat}`
+      );
+
+      if (inputStr === null) return;
+
+      const jumlah = parseInt(inputStr.trim());
+      if (isNaN(jumlah) || jumlah < 1 || jumlah > maxAyat) {
+        showToast(`⚠️ Sila masukkan nombor 1 hingga ${maxAyat}.`);
+        return;
+      }
+
       if (source === 'main') {
-        // Ambil 5 ayat sebelum kedudukan semasa dari allRoutines
         const endIdx = Math.max(0, currentRoutineIndex);
-        const startIdx = Math.max(0, endIdx - 5);
+        const startIdx = Math.max(0, endIdx - jumlah);
         terskipDrawers = allRoutines
           .slice(startIdx, endIdx)
           .filter(r => !r.isTamat);
       } else {
-        // Ambil 5 ayat sebelum cmIndex dari cmDrawers
         const endIdx = Math.max(0, cmIndex);
-        const startIdx = Math.max(0, endIdx - 5);
+        const startIdx = Math.max(0, endIdx - jumlah);
         terskipDrawers = cmDrawers.slice(startIdx, endIdx);
       }
 
       if (!terskipDrawers.length) {
-        showToast('Tiada ayat sebelum ini untuk disemak.');
+        showToast('Tiada ayat untuk disemak.');
         return;
       }
 
