@@ -2488,10 +2488,6 @@ function getRoutineSrc() {
 qrTapOverlay.addEventListener('click', () => {
       if (qrIsSwiping) return;
       decrementTasbih();
-      // Refresh overlay selepas decrementTasbih selesai ubah state
-      if (routineMode && routineModeSource === 'quran') {
-        renderQuranFullscreen();
-      }
     });
 
     // Swipe atas/bawah dalam overlay quran
