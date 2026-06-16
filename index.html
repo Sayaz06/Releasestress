@@ -2485,9 +2485,23 @@ function getRoutineSrc() {
       if (Math.abs(e.touches[0].clientY - qrTouchY) > 5) qrIsSwiping = true;
     }, {passive: true});
 
-    qrTapOverlay.addEventListener('click', () => {
+qrTapOverlay.addEventListener('click', () => {
       if (qrIsSwiping) return;
-      decrementTasbih();
+      if (routineMode && routineModeSource === 'quran' && learningMode === 3) {
+        if (comboStep === 0) {
+          // Flip ke maksud
+          isFlipped = true;
+          comboStep = 1;
+          triggerFlipAnimation(renderQuranFullscreen);
+        } else {
+          // Next ayat
+          isFlipped = false;
+          comboStep = 0;
+          decrementTasbih();
+        }
+      } else {
+        decrementTasbih();
+      }
     });
 
     // Swipe atas/bawah dalam overlay quran
