@@ -813,116 +813,10 @@ body.dark-mode {
     body.dark-mode .chip {
       background: rgba(0, 0, 0, 0.9);
     }
-.mt-8 { margin-top: 8px; }
+    .mt-8 { margin-top: 8px; }
     .mt-12 { margin-top: 12px; }
     .mt-16 { margin-top: 16px; }
     .small { font-size: 0.8rem; }
-
-    /* ── MOD QURAN FULLSCREEN ── */
-    #quran-reading-overlay {
-      display: none;
-      position: absolute;
-      inset: 0;
-      z-index: 50;
-      flex-direction: column;
-      background: var(--bg);
-      padding: 0;
-    }
-    #quran-reading-overlay.active {
-      display: flex;
-    }
-    #quran-reading-topbar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 12px;
-      flex-shrink: 0;
-      flex-wrap: wrap;
-    }
-    #quran-reading-ayat-box {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      margin: 0 12px;
-    }
-    #quran-reading-tap-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 10;
-      cursor: pointer;
-    }
-    #quran-reading-content-wrap {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      background: rgba(30,41,59,0.8);
-      border: 1px solid rgba(52,211,153,0.4);
-      border-radius: 14px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-    }
-    #quran-reading-title {
-      font-size: 0.75rem;
-      color: #34d399;
-      font-weight: 700;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
-    #quran-reading-content {
-      flex: 1;
-      font-weight: 600;
-      line-height: 2;
-      text-align: right;
-      font-family: 'UthmanicHafs','Traditional Arabic',serif;
-      direction: rtl;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      -webkit-overflow-scrolling: touch;
-    }
-    #quran-reading-hint {
-      font-size: 0.65rem;
-      color: #34d399;
-      margin-top: 12px;
-      font-weight: 600;
-      text-align: center;
-      flex-shrink: 0;
-    }
-    #quran-reading-bottombar {
-      flex-shrink: 0;
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    #quran-reading-info {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      background: rgba(52,211,153,0.08);
-      border: 1px solid rgba(52,211,153,0.25);
-      border-radius: 10px;
-      font-size: 0.75rem;
-    }
-    #quran-reading-btn-row {
-      display: flex;
-      gap: 6px;
-    }
-    #quran-reading-btn-row button {
-      flex: 1;
-      padding: 8px 4px;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid var(--border-mid);
-      background: rgba(15,23,42,0.9);
-      color: var(--text);
-    }
   </style>
 </head>
 
@@ -1386,7 +1280,7 @@ body.dark-mode {
           <div id="fact-hint" class="fact-hint">(Tekan/Klik kotak ini untuk terjemahan)</div>
         </div>
 
-<div class="row" style="margin-top: auto;">
+        <div class="row" style="margin-top: auto;">
           <div class="chip">
             <span>Auto simpan ke Firestore</span>
           </div>
@@ -1394,39 +1288,6 @@ body.dark-mode {
             <span id="tasbih-status-chip">Status: Aktif</span>
           </div>
         </div>
-
-        <!-- OVERLAY QURAN FULLSCREEN -->
-        <div id="quran-reading-overlay">
-          <div id="quran-reading-topbar">
-            <button id="btn-back-home-from-tasbih" class="btn btn-secondary btn-sm" style="display:none;">← Menu</button>
-            <button id="qr-btn-toggle-quran" class="btn btn-sm btn-active" style="border-color:#10b981;background:rgba(16,185,129,0.15);color:#34d399;flex-shrink:0;">📖 Quran: ON</button>
-            <button id="qr-btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;flex-shrink:0;">📖 Laci Quran</button>
-            <button id="qr-btn-go-history" class="btn btn-secondary btn-sm" style="flex-shrink:0;">History</button>
-          </div>
-
-          <div id="quran-reading-ayat-box">
-            <div id="quran-reading-tap-overlay"></div>
-            <div id="quran-reading-content-wrap">
-              <div id="quran-reading-title"></div>
-              <div id="quran-reading-content"></div>
-              <div id="quran-reading-hint"></div>
-            </div>
-          </div>
-
-          <div id="quran-reading-bottombar">
-            <div id="quran-reading-info">
-              <span id="qr-info-surah" style="color:#34d399;font-weight:700;"></span>
-              <span id="qr-info-eta" style="color:var(--subtext);"></span>
-            </div>
-            <div id="quran-reading-btn-row">
-              <button id="qr-btn-history" style="border-color:#6b7280;color:#9ca3af;">📋 History</button>
-              <button id="qr-btn-terskip" style="border-color:#6366f1;color:#a5b4fc;">⏪ Terskip</button>
-              <button id="qr-btn-nota" style="border-color:#34d399;color:#34d399;">📌 Nota</button>
-              <button id="qr-btn-guide" style="border-color:#f59e0b;color:#fcd34d;">📘 Guide</button>
-            </div>
-          </div>
-        </div>
-
       </section>
 
       <section id="section-subjects" class="section">
@@ -2002,6 +1863,52 @@ body.dark-mode {
 
 </div>
 
+<!-- OVERLAY QURAN FULLSCREEN (seperti terskip) -->
+<div id="quran-fullscreen-overlay"
+    style="display:none;position:fixed;inset:0;z-index:999999;background:#020617;flex-direction:column;padding:16px;">
+
+  <!-- TOPBAR -->
+  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;margin-bottom:10px;">
+    <button id="qr-btn-toggle-off" class="btn btn-sm" style="border-color:#10b981;color:#34d399;background:rgba(16,185,129,0.15);">📖 Quran: ON</button>
+    <button id="qr-btn-laci-quran" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
+    <button id="qr-btn-history-top" class="btn btn-secondary btn-sm">History</button>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:10px;margin-bottom:6px;flex-shrink:0;">
+    <div id="qr-ayat-label" style="font-size:0.85rem;color:#34d399;font-weight:700;"></div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <span id="qr-progress" style="font-size:0.75rem;color:var(--subtext);"></span>
+      <span id="qr-eta" style="font-size:0.75rem;color:var(--subtext);"></span>
+    </div>
+  </div>
+
+  <!-- PAPARAN AYAT -->
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;position:relative;">
+    <div id="qr-tap-overlay" style="position:absolute;inset:0;z-index:10;cursor:pointer;"></div>
+    <div style="flex:1;min-height:0;overflow-y:auto;background:rgba(30,41,59,0.8);border:1px solid rgba(52,211,153,0.4);border-radius:14px;padding:16px;display:flex;flex-direction:column;">
+      <div id="qr-title" style="font-size:0.75rem;color:#34d399;font-weight:700;text-transform:uppercase;margin-bottom:12px;flex-shrink:0;"></div>
+      <div id="qr-content" style="flex:1;font-weight:600;line-height:3;text-align:right;font-family:'UthmanicHafs','Traditional Arabic',serif;direction:rtl;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;"></div>
+      <div id="qr-hint" style="font-size:0.65rem;color:#34d399;margin-top:12px;font-weight:600;text-align:center;flex-shrink:0;"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div style="flex-shrink:0;margin-top:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:10px;margin-bottom:8px;">
+      <span id="qr-surah-info" style="font-size:0.8rem;color:#34d399;font-weight:700;"></span>
+      <span id="qr-khatam-eta" style="font-size:0.72rem;color:var(--subtext);"></span>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button id="qr-btn-history" style="flex:1;padding:8px 4px;border-radius:999px;font-size:0.72rem;font-weight:600;cursor:pointer;border:1px solid #6b7280;background:rgba(15,23,42,0.9);color:#9ca3af;">📋 History</button>
+      <button id="qr-btn-terskip" style="flex:1;padding:8px 4px;border-radius:999px;font-size:0.72rem;font-weight:600;cursor:pointer;border:1px solid #6366f1;background:rgba(15,23,42,0.9);color:#a5b4fc;">⏪ Terskip</button>
+      <button id="qr-btn-nota" style="flex:1;padding:8px 4px;border-radius:999px;font-size:0.72rem;font-weight:600;cursor:pointer;border:1px solid #34d399;background:rgba(15,23,42,0.9);color:#34d399;">📌 Nota</button>
+      <button id="qr-btn-guide" style="flex:1;padding:8px 4px;border-radius:999px;font-size:0.72rem;font-weight:600;cursor:pointer;border:1px solid #f59e0b;background:rgba(15,23,42,0.9);color:#fcd34d;">📘 Guide</button>
+    </div>
+  </div>
+
+</div>
+  
 <div id="prompter-view">
   <div id="prompter-zone">
       <div class="prompter-focus-line"></div>
@@ -2488,37 +2395,58 @@ function getRoutineSrc() {
       }
     }
 
-    // ── QURAN READING OVERLAY ──
-    function showQuranReadingOverlay(show) {
-      const overlay = document.getElementById('quran-reading-overlay');
-      if (show) {
-        overlay.classList.add('active');
-      } else {
-        overlay.classList.remove('active');
-      }
+// ── QURAN FULLSCREEN OVERLAY ──
+    const quranFullscreenOverlay = document.getElementById('quran-fullscreen-overlay');
+
+    function bukaQuranFullscreen() {
+      quranFullscreenOverlay.style.display = 'flex';
+      renderQuranFullscreen();
     }
 
-    function renderQuranReading() {
+    function tutupQuranFullscreen() {
+      quranFullscreenOverlay.style.display = 'none';
+    }
+
+    function renderQuranFullscreen() {
       if (!routineMode || routineModeSource !== 'quran') return;
       if (!allRoutines.length) return;
 
       const data = allRoutines[currentRoutineIndex];
-      const titleEl = document.getElementById('quran-reading-title');
-      const contentEl = document.getElementById('quran-reading-content');
-      const hintEl = document.getElementById('quran-reading-hint');
-
       if (!data) return;
 
+      const titleEl = document.getElementById('qr-title');
+      const contentEl = document.getElementById('qr-content');
+      const hintEl = document.getElementById('qr-hint');
+      const labelEl = document.getElementById('qr-ayat-label');
+      const progressEl = document.getElementById('qr-progress');
+      const surahInfoEl = document.getElementById('qr-surah-info');
+      const etaEl = document.getElementById('qr-khatam-eta');
+
+      // Update surah info
+      const curS = currentQuranSurahNum;
+      const sName = QURAN_SURAH_NAMES[curS - 1] || '';
+      surahInfoEl.textContent = `📖 ${curS}. ${sName}`;
+      etaEl.textContent = quranEtaLabel ? `🏁 ${quranEtaLabel.split(',')[0]}` : '';
+
+      // Progress
+      const total = allRoutines.filter(r => !r.isTamat).length;
+      const semasa = Math.min(currentRoutineIndex + 1, total);
+      progressEl.textContent = `${semasa} / ${total}`;
+
       if (data.isTamat) {
-        titleEl.textContent = '[ Status ]';
+        labelEl.textContent = '✅ Surah Selesai';
+        titleEl.textContent = '[ Tamat ]';
         contentEl.style.fontSize = '1.2rem';
         contentEl.style.fontFamily = 'inherit';
         contentEl.style.direction = 'ltr';
         contentEl.style.textAlign = 'center';
+        contentEl.style.lineHeight = '2';
         contentEl.textContent = data.text || '';
         hintEl.textContent = '';
         return;
       }
+
+      labelEl.textContent = data.title || '';
 
       if (!isFlipped) {
         titleEl.textContent = `[ ${data.title} ]`;
@@ -2541,27 +2469,49 @@ function getRoutineSrc() {
       }
 
       contentEl.scrollTop = 0;
-
-      // Update info bar
-      const curS = currentQuranSurahNum;
-      const sName = QURAN_SURAH_NAMES[curS - 1] || '';
-      document.getElementById('qr-info-surah').textContent = `📖 ${curS}. ${sName}`;
-      document.getElementById('qr-info-eta').textContent = quranEtaLabel
-        ? `🏁 ${quranEtaLabel.split(',')[0]}`
-        : '';
     }
 
-    // Event listeners overlay quran
-    document.getElementById('qr-btn-toggle-quran').addEventListener('click', () => {
+    // Tap overlay quran fullscreen
+    const qrTapOverlay = document.getElementById('qr-tap-overlay');
+    let qrTouchY = 0;
+    let qrIsSwiping = false;
+
+    qrTapOverlay.addEventListener('touchstart', (e) => {
+      qrTouchY = e.touches[0].clientY;
+      qrIsSwiping = false;
+    }, {passive: true});
+
+    qrTapOverlay.addEventListener('touchmove', (e) => {
+      if (Math.abs(e.touches[0].clientY - qrTouchY) > 5) qrIsSwiping = true;
+    }, {passive: true});
+
+    qrTapOverlay.addEventListener('click', () => {
+      if (qrIsSwiping) return;
+      decrementTasbih();
+    });
+
+    // Swipe atas/bawah dalam overlay quran
+    qrTapOverlay.addEventListener('touchmove', (e) => {
+      const currentY = e.touches[0].clientY;
+      const diff = currentY - qrTouchY;
+      if (Math.abs(diff) > 5 && !qrIsSwiping) {
+        qrIsSwiping = true;
+        decrementTasbih();
+        qrTouchY = currentY;
+      }
+    }, {passive: true});
+
+    // Button events
+    document.getElementById('qr-btn-toggle-off').addEventListener('click', () => {
       activateRoutineMode('quran'); // toggle off
     });
 
-    document.getElementById('qr-btn-go-quran-times').addEventListener('click', () => {
+    document.getElementById('qr-btn-laci-quran').addEventListener('click', () => {
       showSection(document.getElementById('section-quran-times'));
       renderSurahPermanentList();
     });
 
-    document.getElementById('qr-btn-go-history').addEventListener('click', () => {
+    document.getElementById('qr-btn-history-top').addEventListener('click', () => {
       showSection(sectionHistory);
     });
 
@@ -2581,68 +2531,11 @@ function getRoutineSrc() {
     document.getElementById('qr-btn-guide').addEventListener('click', () => {
       document.getElementById('panduan-sistem-quran-modal').style.display = 'flex';
     });
-
-    // Tap overlay quran reading
-    const qrTapOverlay = document.getElementById('quran-reading-tap-overlay');
-    let qrTouchY = 0;
-    let qrIsSwiping = false;
-
-    qrTapOverlay.addEventListener('touchstart', (e) => {
-      qrTouchY = e.touches[0].clientY;
-      qrIsSwiping = false;
-    }, {passive: true});
-
-    qrTapOverlay.addEventListener('touchmove', (e) => {
-      if (Math.abs(e.touches[0].clientY - qrTouchY) > 5) qrIsSwiping = true;
-    }, {passive: true});
-
-    qrTapOverlay.addEventListener('click', () => {
-      if (qrIsSwiping) return;
-      decrementTasbih();
-    });
-
-function setQuranModeButtons(quranOn) {
-      // Button-button dalam topbar tasbih yang perlu disembunyikan
-      const toHide = [
-        'btn-toggle-fact',
-        'btn-toggle-rutin',
-        'btn-toggle-doa',
-        'btn-toggle-hadis',
-        'btn-toggle-mode',
-        'btn-toggle-main-rest-max',
-        'btn-toggle-tasbih-ui',
-        'btn-tm-pattern',
-        'btn-music-tasbih',
-        'btn-go-subjects',
-        'btn-go-routine-times',
-        'btn-go-doa-times',
-        'btn-go-hadis-times',
-        'btn-go-quran-times',
-        'btn-go-history',
-        'btn-toggle-quran',
-      ];
-      toHide.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = quranOn ? 'none' : '';
-      });
-
-      // Sembunyikan juga counter circle dan mode bar — overlay ambil alih
-      if (quranOn) {
-        tasbihCircle.style.display = 'none';
-        tasbihMemanahContainer.style.display = 'none';
-        factDisplayBox.classList.remove('show');
-        document.getElementById('tasbih-mode-bar').style.display = 'none';
-      } else {
-        // Pulih balik
-        factDisplayBox.classList.remove('show');
-        document.getElementById('tasbih-mode-bar').style.display = '';
-      }
-    }
     
     function activateRoutineMode(src) {
       const wasActive = routineMode && routineModeSource === src;
       // Reset semua
-      factMode = false; routineMode = false;
+factMode = false; routineMode = false;
       btnToggleFact.textContent="Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
       btnToggleRutin.textContent="Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
       ['quran','doa','hadis'].forEach(s => {
@@ -2652,39 +2545,30 @@ function setQuranModeButtons(quranOn) {
       factDisplayBox.classList.remove("show");
       btnToggleMode.style.display="none";
       btnToggleMainRestMax.style.display="none";
+      tutupQuranFullscreen();
 
 if (!wasActive) {
         routineMode = true; routineModeSource = src;
         const b = document.getElementById(`btn-toggle-${src}`);
         if(b){b.textContent=`${getModeLabel(src)}: ON`; b.classList.add("btn-active");}
-        factDisplayBox.classList.add("show");
+factDisplayBox.classList.add("show");
         btnToggleMode.style.display="inline-flex";
-        if (src === 'quran') {
+if (src === 'quran') {
           learningMode=3; btnToggleMode.textContent="Mode: Combo";
           btnToggleMainRestMax.style.display="none";
           syncLaciDariLeaderboard();
-          // Tunjuk overlay quran fullscreen
-          showQuranReadingOverlay(true);
-          // Sembunyikan semua button tidak relevan
-          setQuranModeButtons(true);
+          bukaQuranFullscreen();
         } else {
           learningMode=2; btnToggleMode.textContent="Mode: Rest";
           btnToggleMainRestMax.style.display="inline-flex";
-          showQuranReadingOverlay(false);
-          setQuranModeButtons(false);
         }
         rebuildRoutines();
+        // Pastikan countdown harian wujud untuk mode baru
         if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
-      } else {
-        // wasActive — toggle OFF
-        if (src === 'quran') {
-          showQuranReadingOverlay(false);
-          setQuranModeButtons(false);
-        }
       }
       updateTasbihUI();
     }
-      
+
 // ==========================================
     // KOD BARU: MY LAW + OVERLAY PERATURAN
     // ==========================================
@@ -3889,13 +3773,11 @@ function getRemainingInLaci() {
         }
       }
 
-// Sync ke overlay quran jika aktif
+// Sync ke overlay quran fullscreen
       if (routineMode && routineModeSource === 'quran') {
-        renderQuranReading();
-        return;
+        renderQuranFullscreen();
       }
-
-    
+      
 factHintEl.style.display = 'block';
       btnSpeak.style.display = 'flex';
       btnCopyFact.style.display = 'flex';
