@@ -6047,7 +6047,7 @@ async function loadQuranKhatam() {
         lastUpdateTs: Date.now(), history:[], startedAt:Date.now()
       };
 
-      // ── LEADERBOARD: Bandingkan dengan rekod terkini — pilih yang lebih maju ──
+// ── LEADERBOARD: Bandingkan dengan rekod terkini — pilih yang lebih maju ──
       const progressTerkini = await loadQuranProgressTerkini();
       if (
         progressTerkini &&
@@ -6068,6 +6068,39 @@ async function loadQuranKhatam() {
           { merge: true }
         );
         showToast("🔄 Kemajuan diselaraskan dari leaderboard.", 3000);
+
+        // ── SYNC LACI COUNTDOWN IKUT KEMAJUAN LEADERBOARD ──
+        // Tunggu allRoutines siap sebelum sync
+        const syncLaciDariLeaderboard = () => {
+          if (!routineMode || routineModeSource !== 'quran') return;
+          if (!allRoutines.length) return;
+
+          const targetSurah = progressTerkini.surah || 1;
+          const targetAyat = progressTerkini.ayat || 0;
+          const targetTitle = `${targetSurah}. ${QURAN_SURAH_NAMES[targetSurah - 1]} Ayat ${targetAyat}`;
+
+          const targetIdx = allRoutines.findIndex(r =>
+            r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
+          );
+
+          if (targetIdx !== -1 && targetIdx > currentRoutineIndex) {
+            currentRoutineIndex = targetIdx;
+            comboStep = 0;
+            isFlipped = false;
+            currentRoutineTarget = allRoutines[targetIdx].target;
+            syncIndexToFirestore(targetIdx);
+            triggerFadeAnimation(renderCurrentFact);
+            showToast(`📖 Laci countdown diselaraskan ke: ${targetTitle}`, 3000);
+          }
+        };
+
+        // Cuba sync terus, kalau allRoutines belum siap, cuba lagi selepas 2 saat
+        if (allRoutines.length > 0) {
+          syncLaciDariLeaderboard();
+        } else {
+          setTimeout(syncLaciDariLeaderboard, 2000);
+        }
+
       } else {
         quranKhatamData = dataFirestore;
       }
@@ -6346,7 +6379,18 @@ let totalRead = 0;
       const prevTotalRead = d.totalAyatRead || 0;
       const ayatSesi = Math.max(0, totalRead - prevTotalRead);
 
-      await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca: false });
+await simpanSesiQuran({ ayatSesi, minitSesi, newSurah, newAyat, totalRead, isHabis, isTakBaca: false });
+
+      // ── LEADERBOARD: Simpan kemaskini manual ──
+      await saveQuranProgress({
+        surah: isHabis ? newSurah : newSurah,
+        ayat: isHabis ? 0 : newAyat,
+        totalAyatRead: totalRead,
+        ayatSesi,
+        kelajuanSesi: ayatSesi > 0 ? ayatSesi / minitSesi : 0,
+        savedAt: Date.now(),
+        isManualUpdate: true
+      });  
 
 if (routineMode && routineModeSource === 'quran' && allRoutines.length > 0) {
         const surahTarget = newSurah;
