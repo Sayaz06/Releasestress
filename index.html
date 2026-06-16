@@ -8693,7 +8693,6 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       const topicIds  = new Set(allTopics.map(t => t.id));
       const subjectIds = new Set(allSubjects.map(s => s.id));
       const routineIds = new Set(allRoutineTimes.map(t => t.id));
-      const quranIds   = new Set(allQuranTimes.map(t => t.id));
       const doaIds     = new Set(allDoaTimes.map(t => t.id));
       const hadisIds   = new Set(allHadisTimes.map(t => t.id));
 
@@ -8710,7 +8709,7 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
           yatim.push({ coll:'routine_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
       });
       allQuranDrawers.forEach(d => {
-        if (!quranIds.has(d.timeId))
+        if (typeof d.timeId === 'string')
           yatim.push({ coll:'quran_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
       });
       allDoaDrawers.forEach(d => {
@@ -8775,16 +8774,14 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
         return;
       }
 
-      // Auto-padam yang dah > 1 tahun
       const expired = snap.docs.filter(d => (Date.now() - (d.data().deletedAt||0)) > SATU_TAHUN);
       if (expired.length) {
         let i = 0;
-        const expArr = expired;
-        while (i < expArr.length) {
+        while (i < expired.length) {
           const batch = writeBatch(db);
-          const end = Math.min(i + 499, expArr.length);
+          const end = Math.min(i + 499, expired.length);
           for (let j = i; j < end; j++)
-            batch.delete(doc(db,"users",currentUser.uid,"trash",expArr[j].id));
+            batch.delete(doc(db,"users",currentUser.uid,"trash",expired[j].id));
           await batch.commit(); i = end;
         }
         showToast(`🗑️ ${expired.length} item padam kekal (dah > 1 tahun)`);
@@ -8838,7 +8835,7 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       });
     }
 
-if ("serviceWorker" in navigator) {
+    if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
       });
