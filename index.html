@@ -1957,6 +1957,7 @@ import {
     const sectionRoutineTimes = document.getElementById("section-routine-times");
     const sectionRoutineDrawers = document.getElementById("section-routine-drawers");
 
+    const terskipOverlay = document.getElementById('terskip-overlay');
     const btnLoginGoogle = document.getElementById("btn-login-google");
     const btnLogout = document.getElementById("btn-logout");
     const btnGoTasbih = document.getElementById("btn-go-tasbih");
@@ -5633,9 +5634,8 @@ document.getElementById('btn-go-quran-times').addEventListener('click', () => {
     document.getElementById('btn-back-quran-drawer').addEventListener('click', () => {
       showSection(document.getElementById('section-quran-times')); renderGenericTimes('quran');
     });
-    document.getElementById('btn-add-quran-time').addEventListener('click', () => {
-      if(currentUser) addDoc(collection(db,"users",currentUser.uid,"quran_times"),{name:"",isActive:false,createdAt:Date.now()});
-    });
+document.getElementById('btn-pecah-surah').addEventListener('click', async () => {
+    
     document.getElementById('btn-add-quran-drawer').addEventListener('click', () => {
       if(currentQuranTimeId) addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"",zikir:"",target:"",maksud:"",timeId:currentQuranTimeId,createdAt:Date.now()});
     });
@@ -7196,8 +7196,7 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       }
     }
 
-    // ── TERSKIP AYAT ──
-    const terskipOverlay = document.getElementById('terskip-overlay');
+    const btnLoginGoogle = document.getElementById("btn-login-google");
     let terskipDrawers = [];
     let terskipIndex = 0;
     let terskipFlipped = false;
