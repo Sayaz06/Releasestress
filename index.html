@@ -7781,10 +7781,28 @@ quranKhatamData = freshData;
       const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
       await setDoc(dailyRef, { tapped: 0, dateKey: dateKeyQ(Date.now()), updatedAt: Date.now() });
 
-      // Reset sesi tap
+// Reset sesi tap
       quranSessionTapCount = 0;
       quranSessionStartTime = null;
       quranSessionLastTapTime = null;
+
+      // ── PADAM SEMUA REKOD LEADERBOARD ──
+      showToast('⏳ Membersihkan leaderboard...', 0);
+      try {
+        const logSnap = await getDocs(collection(db, "users", currentUser.uid, "quran_progress_log"));
+        if (!logSnap.empty) {
+          let i = 0;
+          const allDocs = logSnap.docs;
+          while (i < allDocs.length) {
+            const batch = writeBatch(db);
+            const end = Math.min(i + 499, allDocs.length);
+            for (let j = i; j < end; j++)
+              batch.delete(doc(db, "users", currentUser.uid, "quran_progress_log", allDocs[j].id));
+            await batch.commit();
+            i = end;
+          }
+        }
+      } catch(e) { console.log("Gagal padam progress log:", e); }
 
       alQuranPenuhSurahIdx = 1;
       const firstTimeId = getAlQuranPenuhActiveTimeId();
@@ -7930,9 +7948,22 @@ document.getElementById('btn-quran-khatam-reset').addEventListener('click', asyn
       currentQuranTasbihData = { remaining: 6236, done: false, dateKey: 'main' };
       currentQuranTasbihRef = mainRef;
 
-      quranSessionTapCount = 0;
+quranSessionTapCount = 0;
       quranSessionStartTime = null;
       quranSessionLastTapTime = null;
+
+      // ── LEADERBOARD: Tambah rekod reset supaya kemajuan baru bermula dari 0 ──
+      try {
+        await saveQuranProgress({
+          surah: 1,
+          ayat: 0,
+          totalAyatRead: 0,
+          ayatSesi: 0,
+          kelajuanSesi: 0,
+          savedAt: Date.now(),
+          isKhatamReset: true
+        });
+      } catch(e) { console.log("Gagal simpan rekod reset:", e); }
 
       alQuranPenuhSurahIdx = 1;
       const firstTimeId = getAlQuranPenuhActiveTimeId();
