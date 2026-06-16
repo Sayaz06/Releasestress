@@ -1474,6 +1474,7 @@ body.dark-mode {
           <button id="btn-susun-alquran" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;box-shadow:0 6px 18px rgba(99,102,241,.3);">📖 Susun Al-Quran</button>
           <button id="btn-lihat-progress-log" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;box-shadow:0 6px 18px rgba(14,165,233,.3);">📊 Leaderboard Kemajuan</button>
           <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
+          <button id="btn-export-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;box-shadow:0 6px 18px rgba(245,158,11,.3);">📦 Export Semua Data Quran (JSON)</button>
           
           <button id="btn-pecah-surah" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">✂️ Pecahkan Surah Besar kepada Surah Berasingan</button>
           <div id="quran-times-list" style="padding:10px;margin-top:8px;min-height:120px;"></div>
@@ -7738,8 +7739,73 @@ const lainnya = allQuranTimes
       document.getElementById('qr-modal').style.display = 'none';
     });
 
-// ── LEADERBOARD PROGRESS LOG ──
-    document.getElementById('btn-lihat-progress-log').addEventListener('click', async () => {
+// ── EXPORT DATA QURAN ──
+    document.getElementById('btn-export-quran-data').addEventListener('click', async () => {
+      if (!currentUser) return;
+      showToast('⏳ Sedang mengumpul data... Jangan tutup app.', 0);
+
+      try {
+        // Kumpul semua quran_times dan quran_drawers
+        const timesSnap = await getDocs(collection(db, "users", currentUser.uid, "quran_times"));
+        const drawersSnap = await getDocs(collection(db, "users", currentUser.uid, "quran_drawers"));
+
+        const allTimes = timesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const allDrawersRaw = drawersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Susun ikut nama surah (numeric sort)
+        const timesSorted = [...allTimes].sort((a, b) =>
+          (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })
+        );
+
+        // Bina struktur export
+        const exportData = {
+          exportedAt: new Date().toISOString(),
+          exportedBy: currentUser.email,
+          totalSurah: timesSorted.length,
+          surah: timesSorted.map(time => {
+            const drawers = allDrawersRaw
+              .filter(d => d.timeId === time.id)
+              .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+            return {
+              id: time.id,
+              nama: time.name || '',
+              isActive: time.isActive || false,
+              lastIndex: time.lastIndex || 0,
+              totalAyat: drawers.length,
+              ayat: drawers.map(d => ({
+                id: d.id,
+                tajuk: d.title || '',
+                arab: d.zikir || '',
+                maksud: d.maksud || '',
+                target: d.target || ''
+              }))
+            };
+          })
+        };
+
+        // Hitung statistik
+        const totalAyat = exportData.surah.reduce((sum, s) => sum + s.totalAyat, 0);
+        const surahAdaArab = exportData.surah.filter(s => s.ayat.some(a => a.arab)).length;
+        const surahAdaMaksud = exportData.surah.filter(s => s.ayat.some(a => a.maksud)).length;
+
+        // Muat turun sebagai JSON
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `quran-backup-${dateKeyQ(Date.now())}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast(`✅ Export berjaya! ${timesSorted.length} surah, ${totalAyat} ayat. ${surahAdaArab} surah ada Arab, ${surahAdaMaksud} surah ada maksud.`, 6000);
+
+      } catch(e) {
+        showToast('❌ Gagal export: ' + e.message);
+      }
+    });
       await muatProgressLog();
       showSection(document.getElementById('section-progress-log'));
     });
