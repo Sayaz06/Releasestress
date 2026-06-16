@@ -7806,6 +7806,10 @@ const lainnya = allQuranTimes
         showToast('❌ Gagal export: ' + e.message);
       }
     });
+
+    
+// ── LEADERBOARD PROGRESS LOG ──
+    document.getElementById('btn-lihat-progress-log').addEventListener('click', async () => {
       await muatProgressLog();
       showSection(document.getElementById('section-progress-log'));
     });
