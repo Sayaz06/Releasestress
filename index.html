@@ -8838,10 +8838,6 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       });
     }
 
-// ── PECAHKAN SURAH BESAR ──
-    document.getElementById('btn-pecah-surah').addEventListener('click', async () => {
-      if (!currentUser) return;
-
 if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
