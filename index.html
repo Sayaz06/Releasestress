@@ -4882,11 +4882,29 @@ function syncFullscreenFact() {
       fsContent.scrollTop = 0;
     }
 
-    btnFullscreenFact.addEventListener('click', (e) => {
+btnFullscreenFact.addEventListener('click', (e) => {
       e.stopPropagation();
       fullscreenOverlay.classList.add('show');
-      syncFullscreenFact();
-    });
+      if (isFlipped) {
+        // Sedang papar maksud — tunjuk maksud terus dalam zoom
+        fsShowingMaksud = true;
+        const dataSource = routineMode ? allRoutines : allFacts;
+        const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
+        const data = dataSource[currentIndex];
+        const fsContent = document.getElementById('fullscreen-fact-content');
+        const fsTitle = document.getElementById('fullscreen-fact-title');
+        const fsHint = document.getElementById('fullscreen-fact-hint');
+        fsTitle.textContent = (factTitleEl.textContent || '');
+        fsContent.style.cssText = 'font-size:0.95rem; font-family:inherit; direction:ltr; text-align:left; line-height:1.5; font-weight:500; color:#e5e7eb; overflow-y:auto; padding:0 8px;';
+        fsContent.textContent = data?.translation || 'Tiada maksud diisi.';
+        fsContent.scrollTop = 0;
+        fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
+      } else {
+        // Sedang papar Arab — sync seperti biasa
+        fsShowingMaksud = false;
+        syncFullscreenFact();
+      }
+    });    
 
 document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (e) => {
       e.stopPropagation();
