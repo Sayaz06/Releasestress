@@ -7527,7 +7527,7 @@ if (statusEl) {
 
           const ayatBaru = (surah.ayat || []).filter(a => !existingTitles.has(a.tajuk));
 
-          if (ayatBaru.length > 0) {
+if (ayatBaru.length > 0) {
             let i = 0;
             while (i < ayatBaru.length) {
               const batch = writeBatch(db);
@@ -7545,8 +7545,8 @@ if (statusEl) {
                 });
               }
               await batch.commit();
+              totalAyatImport += end - i;
               i = end;
-              totalAyatImport += (end - (i - (end - i)));
             }
           }
 
