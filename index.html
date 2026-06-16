@@ -4887,9 +4887,10 @@ function syncFullscreenFact() {
       syncFullscreenFact();
     });
 
-    document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (e) => {
+document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (e) => {
       e.stopPropagation();
       fullscreenOverlay.classList.remove('show');
+      fsShowingMaksud = false;
     });
 
 // Tap overlay fullscreen = trigger decrementTasbih (combo jalan seperti biasa)
@@ -4907,25 +4908,39 @@ function syncFullscreenFact() {
       }
     }, {passive: true});
 
-fullscreenOverlay.addEventListener('click', (e) => {
+let fsShowingMaksud = false;
+
+    fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target === document.getElementById('btn-close-fullscreen-fact')) return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
       if (fsIsSwiping) return;
-      // Simulate tap sama seperti factDisplayBox — ikut comboStep
-      const dataSource = routineMode ? allRoutines : allFacts;
-      const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
-      if (routineMode && routineModeSource === 'quran') {
-        // Quran combo: ikut decrementTasbih seperti biasa
-        decrementTasbih();
-      } else if (!routineMode && (learningMode === 3 || learningMode === 4)) {
-        // Combo/Super mode fakta: flip dulu macam factDisplayBox
-        if (dataSource.length === 0 || dataSource[currentIndex]?.isTamat) return;
-        isFlipped = !isFlipped;
-        triggerFlipAnimation(renderCurrentFact);
+
+      if (!fsShowingMaksud) {
+        // Tap pertama — tunjuk maksud dalam page zoom sahaja, tak trigger decrement
+        fsShowingMaksud = true;
+        const dataSource = routineMode ? allRoutines : allFacts;
+        const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
+        const data = dataSource[currentIndex];
+        if (!data || data.isTamat) return;
+        const fsContent = document.getElementById('fullscreen-fact-content');
+        const fsTitle = document.getElementById('fullscreen-fact-title');
+        const fsHint = document.getElementById('fullscreen-fact-hint');
+        const maksud = routineMode ? data.translation : data.translation;
+        fsTitle.textContent = (factTitleEl.textContent || '') + ' (Maksud)';
+        fsContent.style.fontSize = '1rem';
+        fsContent.style.fontFamily = 'inherit';
+        fsContent.style.direction = 'ltr';
+        fsContent.style.textAlign = 'left';
+        fsContent.style.lineHeight = '';
+        fsContent.textContent = maksud || 'Tiada maksud diisi.';
+        fsContent.scrollTop = 0;
+        fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
       } else {
+        // Tap kedua — trigger decrement (next ayat), reset flag
+        fsShowingMaksud = false;
         decrementTasbih();
+        setTimeout(() => syncFullscreenFact(), 400);
       }
-      setTimeout(() => syncFullscreenFact(), 400);
     });
     
     btnSpeak.addEventListener('click', (e) => {
