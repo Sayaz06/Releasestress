@@ -4865,10 +4865,11 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
 
 function syncFullscreenFact() {
       if (!fullscreenOverlay.classList.contains('show')) return;
+      // Kalau sedang tunjuk maksud, jangan overwrite
+      if (fsShowingMaksud) return;
       const fsContent = document.getElementById('fullscreen-fact-content');
       const fsTitle = document.getElementById('fullscreen-fact-title');
       const fsHint = document.getElementById('fullscreen-fact-hint');
-      // Ambil terus dari DOM faktual yang sudah dirender
       fsTitle.textContent = factTitleEl.textContent;
       fsContent.innerHTML = factContentEl.innerHTML;
       fsHint.textContent = factHintEl.textContent;
@@ -4877,7 +4878,6 @@ function syncFullscreenFact() {
       fsContent.style.direction = factContentEl.style.direction || '';
       fsContent.style.textAlign = factContentEl.style.textAlign || '';
       fsContent.style.lineHeight = factContentEl.style.lineHeight || '';
-      // Scroll ke atas setiap kali kandungan bertukar
       fsContent.scrollTop = 0;
     }
 
