@@ -4896,10 +4896,25 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
       fullscreenOverlay.classList.remove('show');
     });
 
-    // Tap overlay fullscreen = trigger decrementTasbih (combo jalan seperti biasa)
+// Tap overlay fullscreen = trigger decrementTasbih (combo jalan seperti biasa)
+    let fsTouchStartY = 0;
+    let fsIsSwiping = false;
+
+    fullscreenOverlay.addEventListener('touchstart', (e) => {
+      fsTouchStartY = e.touches[0].clientY;
+      fsIsSwiping = false;
+    }, {passive: true});
+
+    fullscreenOverlay.addEventListener('touchmove', (e) => {
+      if (Math.abs(e.touches[0].clientY - fsTouchStartY) > 8) {
+        fsIsSwiping = true;
+      }
+    }, {passive: true});
+
     fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target === document.getElementById('btn-close-fullscreen-fact')) return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
+      if (fsIsSwiping) return;
       decrementTasbih();
       setTimeout(() => syncFullscreenFact(), 200);
     });
