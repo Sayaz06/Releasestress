@@ -4940,8 +4940,7 @@ overlay.classList.add('show');
 
         // Tunggu sehingga allRoutines siap dan laci selari
         let cuba = 0;
-        const maksimumCuba = 20; // 20 x 300ms = 6 saat maksimum
-
+        const maksimumCuba = 33; // 33 x 300ms = ~10 saat maksimum
         const semakSelari = setInterval(() => {
           cuba++;
           const targetTitle = `${targetSurah}. ${QURAN_SURAH_NAMES[targetSurah - 1]} Ayat ${targetAyat}`;
@@ -4949,17 +4948,36 @@ overlay.classList.add('show');
             r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
           );
 
-          const sudahSelari = targetIdx !== -1 && currentRoutineIndex >= targetIdx;
+const sudahSelari = targetIdx !== -1;
           const tiadaAyat = targetAyat === 0;
 
-          if (sudahSelari || tiadaAyat || cuba >= maksimumCuba) {
+if (sudahSelari || tiadaAyat || cuba >= maksimumCuba) {
             clearInterval(semakSelari);
-            if (statusEl) statusEl.textContent = sudahSelari
-              ? `✅ Laci disahkan — Ayat ${targetAyat}`
-              : cuba >= maksimumCuba
-              ? '⚠️ Tamat masa. Teruskan dengan kedudukan semasa.'
-              : '✅ Sedia.';
-            Timeout(() => { overlay.style.pointerEvents = 'none'; overlay.classList.remove('show'); callback(); }, 800);
+
+            if (cuba >= maksimumCuba && !sudahSelari && !tiadaAyat) {
+              // Tamat masa — kemajuan gagal diselaraskan
+              const surahName = QURAN_SURAH_NAMES[targetSurah - 1] || '';
+              const pesanGagal =
+                `⚠️ Penyelerasan Kemajuan Gagal\n\n` +
+                `Rekod kemajuan anda menunjukkan:\n` +
+                `📖 Surah ${targetSurah}. ${surahName} — Ayat ${targetAyat}\n\n` +
+                `Namun laci countdown tidak dapat dipadankan secara automatik.\n\n` +
+                `Tindakan yang disyorkan:\n` +
+                `1️⃣  Pastikan laci "Surah ${targetSurah}. ${surahName} Ayat ${targetAyat}" wujud dalam koleksi laci anda.\n` +
+                `2️⃣  Gunakan butang "Kemaskini Bacaan Quran" dan taip ayat ${targetAyat} untuk tetapkan semula kedudukan secara manual.\n` +
+                `3️⃣  Jika masalah berterusan, gunakan "Reset Penuh" untuk bermula semula dari Surah 1.\n\n` +
+                `Tekan OK untuk teruskan dengan kedudukan semasa.`;
+
+              overlay.style.pointerEvents = 'none';
+              overlay.classList.remove('show');
+              alert(pesanGagal);
+              callback();
+            } else {
+              if (statusEl) statusEl.textContent = sudahSelari
+                ? `✅ Laci disahkan — Surah ${targetSurah} Ayat ${targetAyat}`
+                : '✅ Sedia.';
+              setTimeout(() => { overlay.style.pointerEvents = 'none'; overlay.classList.remove('show'); callback(); }, 800);
+            }
           } else {
             if (statusEl) statusEl.textContent = `Menunggu laci selari... (${cuba}/${maksimumCuba})`;
           }
