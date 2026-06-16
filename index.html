@@ -1053,6 +1053,17 @@ body.dark-mode {
   </div>
 </div>
 
+<div id="tong-sampah-quran-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #f59e0b;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:1.1rem;font-weight:700;color:#fcd34d;">♻️ Pulih History Quran</div>
+      <button id="btn-tong-sampah-quran-close" style="background:rgba(255,255,255,.08);border:1px solid #4b5563;border-radius:999px;color:#e5e7eb;padding:4px 12px;font-size:.8rem;cursor:pointer;">Tutup</button>
+    </div>
+    <div style="font-size:.72rem;color:#6b7280;margin-bottom:12px;">History dipadam kekal selepas 7 hari. Tekan Pulihkan untuk kembalikan rekod.</div>
+    <div id="tong-sampah-quran-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:100px;"></div>
+  </div>
+</div>
+  
 <div id="tong-sampah-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -1246,8 +1257,11 @@ body.dark-mode {
 <button id="btn-show-qr" class="btn btn-secondary" style="border-color:#34d399; color:#34d399;">
             📱 QR Code App
           </button>
-          <button id="btn-reset-quran-history-dev" class="btn btn-secondary" style="border-color:#dc2626;color:#f87171;">
+<button id="btn-reset-quran-history-dev" class="btn btn-secondary" style="border-color:#dc2626;color:#f87171;">
             🗑️ Reset History Quran (Dev)
+          </button>
+          <button id="btn-tong-sampah-quran" class="btn btn-secondary" style="border-color:#f59e0b;color:#fcd34d;">
+            ♻️ Pulih History Quran
           </button>
         </div>
         <div class="footer mt-16">
@@ -8252,29 +8266,203 @@ document.getElementById('btn-close-qr').addEventListener('click', () => {
       document.getElementById('qr-modal').style.display = 'none';
     });
 
-    // ── RESET HISTORY QURAN (PADAM SEKALI SAHAJA) ──
+    document.getElementById('btn-tong-sampah-quran').addEventListener('click', () => {
+      document.getElementById('tong-sampah-quran-modal').style.display = 'flex';
+      muatTongSampahQuran();
+    });
+
+    document.getElementById('btn-tong-sampah-quran-close').addEventListener('click', () => {
+      document.getElementById('tong-sampah-quran-modal').style.display = 'none';
+    });
+
+// ── RESET HISTORY QURAN (DEV) — DENGAN TONG SAMPAH 7 HARI ──
+    const TUJUH_HARI = 7 * 24 * 60 * 60 * 1000;
+
     document.getElementById('btn-reset-quran-history-dev').addEventListener('click', async () => {
       if (!currentUser) return;
-      if (!confirm('Padam SEMUA history harian Quran dan leaderboard kemajuan?\n\nTindakan ini tidak boleh diundur!')) return;
-      showToast('⏳ Memadamkan history...', 0);
+
+      // Confirmation — user mesti taip teks tepat
+      const jawapan = prompt(
+        'Tindakan ini akan memadamkan SEMUA history harian Al-Quran dan leaderboard kemajuan.\n\n' +
+        'History akan disimpan dalam Tong Sampah selama 7 hari sebelum dipadam kekal.\n\n' +
+        'Untuk teruskan, sila taip dengan tepat:\n\n' +
+        'padam history alquran termasuk kesemua hari sebelum'
+      );
+
+      if (jawapan === null) return;
+      if (jawapan.trim() !== 'padam history alquran termasuk kesemua hari sebelum') {
+        showToast('❌ Teks tidak tepat. Tindakan dibatalkan.'); return;
+      }
+
+      showToast('⏳ Menyimpan ke tong sampah & memadamkan...', 0);
+
       try {
         const [tapSnap, logSnap] = await Promise.all([
           getDocs(collection(db, "users", currentUser.uid, "quran_daily_taps")),
           getDocs(collection(db, "users", currentUser.uid, "quran_progress_log"))
         ]);
-        const semua = [...tapSnap.docs, ...logSnap.docs];
+
+        const semuaDocs = [...tapSnap.docs, ...logSnap.docs];
+
+        // Simpan ke tong sampah khas quran_history_trash
         let i = 0;
-        while (i < semua.length) {
+        while (i < semuaDocs.length) {
           const batch = writeBatch(db);
-          const end = Math.min(i + 499, semua.length);
-          for (let j = i; j < end; j++)
-            batch.delete(semua[j].ref);
+          const end = Math.min(i + 249, semuaDocs.length);
+          for (let j = i; j < end; j++) {
+            const d = semuaDocs[j];
+            const trashRef = doc(collection(db, "users", currentUser.uid, "quran_history_trash"));
+            batch.set(trashRef, {
+              originalColl: d.ref.parent.id,
+              originalId: d.id,
+              originalData: d.data(),
+              deletedAt: Date.now(),
+              luputAt: Date.now() + TUJUH_HARI
+            });
+            batch.delete(d.ref);
+          }
           await batch.commit();
           i = end;
         }
-        showToast(`✅ ${semua.length} rekod berjaya dipadam!`);
+
+        // Reset penuh quranKhatamData
+        const freshData = {
+          currentSurah: 1, currentAyat: 0, totalAyatRead: 0,
+          lastUpdateTs: Date.now(), history: [], startedAt: Date.now()
+        };
+        quranKhatamData = freshData;
+        await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), freshData);
+
+        // Reset history harian hari ini ke 0
+        const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
+        await setDoc(dailyRef, { tapped: 0, dateKey: dateKeyQ(Date.now()), updatedAt: Date.now() });
+
+        // Reset semua state sesi
+        quranSessionTapCount = 0;
+        quranSessionStartTime = null;
+        quranSessionLastTapTime = null;
+        quranAyatSemasa = 0;
+        quranSurahSemasa = 0;
+        currentQuranSurahNum = 1;
+        currentRoutineIndex = 0;
+
+        if (routineMode && routineModeSource === 'quran') rebuildRoutines();
+        renderQuranKhatamCard();
+        updateTasbihUI();
+
+        showToast(`✅ ${semuaDocs.length} rekod dipindah ke tong sampah (7 hari). Kemajuan di-reset penuh.`);
+
       } catch(e) { showToast('❌ Gagal: ' + e.message); }
     });
+
+    // ── TONG SAMPAH HISTORY QURAN ──
+    async function muatTongSampahQuran() {
+      if (!currentUser) return;
+      const list = document.getElementById('tong-sampah-quran-list');
+      if (!list) return;
+      list.innerHTML = '<div style="color:#6b7280;font-size:.8rem;text-align:center;padding:20px;">Memuatkan...</div>';
+
+      const snap = await getDocs(
+        query(collection(db, "users", currentUser.uid, "quran_history_trash"), orderBy("deletedAt", "desc"))
+      );
+
+      // Padam kekal yang dah luput
+      const luput = snap.docs.filter(d => Date.now() > (d.data().luputAt || 0));
+      if (luput.length) {
+        let i = 0;
+        while (i < luput.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + 499, luput.length);
+          for (let j = i; j < end; j++)
+            batch.delete(doc(db, "users", currentUser.uid, "quran_history_trash", luput[j].id));
+          await batch.commit(); i = end;
+        }
+      }
+
+      const aktif = snap.docs.filter(d => Date.now() <= (d.data().luputAt || 0));
+
+      if (!aktif.length) {
+        list.innerHTML = '<div style="color:#6b7280;font-size:.8rem;text-align:center;padding:20px;">🧹 Tong sampah history Quran kosong</div>';
+        return;
+      }
+
+      // Kumpulkan ikut tarikh padam
+      const kumpulan = {};
+      aktif.forEach(d => {
+        const data = d.data();
+        const tarikhPadam = dateKeyQ(data.deletedAt);
+        if (!kumpulan[tarikhPadam]) kumpulan[tarikhPadam] = { docs: [], deletedAt: data.deletedAt, luputAt: data.luputAt };
+        kumpulan[tarikhPadam].docs.push(d);
+      });
+
+      list.innerHTML = '';
+      Object.entries(kumpulan).sort((a, b) => b[1].deletedAt - a[1].deletedAt).forEach(([tarikh, info]) => {
+        const tarikhPadam = new Date(info.deletedAt);
+        const tarikhLuput = new Date(info.luputAt);
+        const card = document.createElement('div');
+        card.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid #374151;border-radius:10px;padding:10px 12px;margin-bottom:8px;';
+        card.innerHTML = `
+          <div style="font-size:.82rem;font-weight:600;color:#e5e7eb;margin-bottom:2px;">📅 History dipadam: ${tarikhPadam.toLocaleDateString('ms-MY')} ${tarikhPadam.toLocaleTimeString('ms-MY')}</div>
+          <div style="font-size:.7rem;color:#6b7280;margin-bottom:6px;">${info.docs.length} rekod · Luput: ${tarikhLuput.toLocaleDateString('ms-MY')}</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-pulih-quran-history" data-tarikh="${tarikh}" style="flex:1;padding:6px;border-radius:999px;background:rgba(52,211,153,.15);border:1px solid #10b981;color:#34d399;font-size:.78rem;cursor:pointer;">↩ Pulihkan</button>
+            <button class="btn-padam-quran-history" data-tarikh="${tarikh}" style="padding:6px 12px;border-radius:999px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:#f87171;font-size:.78rem;cursor:pointer;">Padam Kekal</button>
+          </div>`;
+        list.appendChild(card);
+      });
+
+      // Pulihkan
+      list.querySelectorAll('.btn-pulih-quran-history').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const tarikh = btn.getAttribute('data-tarikh');
+          const docsUntukPulih = aktif.filter(d => dateKeyQ(d.data().deletedAt) === tarikh);
+          showToast('⏳ Memulihkan...', 0);
+          try {
+            let i = 0;
+            while (i < docsUntukPulih.length) {
+              const batch = writeBatch(db);
+              const end = Math.min(i + 249, docsUntukPulih.length);
+              for (let j = i; j < end; j++) {
+                const item = docsUntukPulih[j].data();
+                const targetRef = doc(db, "users", currentUser.uid, item.originalColl, item.originalId);
+                const existing = await getDoc(targetRef);
+                if (existing.exists() && item.originalColl === 'quran_daily_taps') {
+                  // Merge — tambah ayat dari recovery ke tarikh yang sama
+                  const prevTapped = existing.data().tapped || 0;
+                  const recTapped = item.originalData.tapped || 0;
+                  batch.set(targetRef, { ...item.originalData, tapped: prevTapped + recTapped }, { merge: true });
+                } else {
+                  batch.set(targetRef, item.originalData);
+                }
+                batch.delete(doc(db, "users", currentUser.uid, "quran_history_trash", docsUntukPulih[j].id));
+              }
+              await batch.commit(); i = end;
+            }
+            showToast(`✅ ${docsUntukPulih.length} rekod berjaya dipulihkan!`);
+            muatTongSampahQuran();
+          } catch(e) { showToast('❌ Gagal pulihkan: ' + e.message); }
+        });
+      });
+
+      // Padam kekal
+      list.querySelectorAll('.btn-padam-quran-history').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Padam kekal? Tidak boleh dipulihkan lagi.')) return;
+          const tarikh = btn.getAttribute('data-tarikh');
+          const docsUntukPadam = aktif.filter(d => dateKeyQ(d.data().deletedAt) === tarikh);
+          let i = 0;
+          while (i < docsUntukPadam.length) {
+            const batch = writeBatch(db);
+            const end = Math.min(i + 499, docsUntukPadam.length);
+            for (let j = i; j < end; j++)
+              batch.delete(doc(db, "users", currentUser.uid, "quran_history_trash", docsUntukPadam[j].id));
+            await batch.commit(); i = end;
+          }
+          showToast('🗑️ Dipadam kekal.');
+          muatTongSampahQuran();
+        });
+      });
+    }
 
 // ── EXPORT DATA QURAN ──
     document.getElementById('btn-export-quran-data').addEventListener('click', async () => {
