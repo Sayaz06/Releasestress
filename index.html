@@ -6056,7 +6056,7 @@ list.appendChild(div);
     function subscribeNewModes() {
       if(!currentUser) return;
       const modes = [
-        {coll:'quran_times', arr:(d)=>{allQuranTimes=d; if(document.getElementById('section-quran-times')?.classList.contains('active')) renderGenericTimes('quran'); rebuildIfActive('quran');} },
+        {coll:'quran_times', arr:(d)=>{allQuranTimes=d; if(document.getElementById('section-quran-times')?.classList.contains('active')) renderSurahPermanentList(); rebuildIfActive('quran');} },
         {coll:'quran_drawers', arr:(d)=>{allQuranDrawers=d; if(document.getElementById('section-quran-drawers')?.classList.contains('active')) renderGenericDrawers('quran'); rebuildIfActive('quran');} },
         {coll:'doa_times', arr:(d)=>{allDoaTimes=d; if(document.getElementById('section-doa-times')?.classList.contains('active')) renderGenericTimes('doa'); rebuildIfActive('doa');} },
         {coll:'doa_drawers', arr:(d)=>{allDoaDrawers=d; if(document.getElementById('section-doa-drawers')?.classList.contains('active')) renderGenericDrawers('doa'); rebuildIfActive('doa');} },
@@ -8046,11 +8046,11 @@ const lainnya = allQuranTimes
       showSection(document.getElementById('section-progress-log'));
     });
 
-    document.getElementById('btn-back-progress-log').addEventListener('click', () => {
+document.getElementById('btn-back-progress-log').addEventListener('click', () => {
       showSection(document.getElementById('section-quran-times'));
-      renderGenericTimes('quran');
+      renderSurahPermanentList();
     });
-
+    
     async function muatProgressLog() {
       if (!currentUser) return;
       const list = document.getElementById('progress-log-list');
@@ -8150,18 +8150,8 @@ quranKhatamData = freshData;
         }
       } catch(e) { console.log("Gagal padam progress log:", e); }
 
-      alQuranPenuhSurahIdx = 1;
-      const firstTimeId = getAlQuranPenuhActiveTimeId();
-      if (firstTimeId) {
-        await activateQuranPenuhSurah(firstTimeId);
-      } else {
-        const activeTime = allQuranTimes.find(t => t.isActive);
-        if (activeTime) {
-          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
-        }
-      }
+currentQuranSurahNum = 1;
       currentRoutineIndex = 0;
-
       if (routineMode && routineModeSource === 'quran') rebuildRoutines();
       renderQuranKhatamCard();
       updateTasbihUI();
@@ -8313,18 +8303,8 @@ quranSessionTapCount = 0;
         });
       } catch(e) { console.log("Gagal simpan rekod reset:", e); }
 
-      alQuranPenuhSurahIdx = 1;
-      const firstTimeId = getAlQuranPenuhActiveTimeId();
-      if (firstTimeId) {
-        await activateQuranPenuhSurah(firstTimeId);
-      } else {
-        const activeTime = allQuranTimes.find(t => t.isActive);
-        if (activeTime) {
-          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", activeTime.id), { lastIndex: 0 });
-        }
-      }
+currentQuranSurahNum = 1;
       currentRoutineIndex = 0;
-
       if (routineMode && routineModeSource === 'quran') rebuildRoutines();
       renderQuranKhatamCard();
       updateTasbihUI();
