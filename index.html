@@ -4458,7 +4458,6 @@ showSection(secToShow);
         subscribeToVideoRehat(); // KOD BARU: Subscribe video rehat (dah ada fungsi, tapi belum dipanggil)
         subscribeNewModes();
         loadQuranKhatam().then(() => semakStatusKeluar());
-        loadQuranSusunan();
         
       } else {
         homeUserEmail.textContent = "";
@@ -5662,9 +5661,11 @@ const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').le
       // Semak format dan nama laci untuk mode quran
       if (mode === 'quran') {
         const kategoriSemasa = allQuranTimes.find(t => t.id === cfg.timeId());
-        const namaSurahBetul = kategoriSemasa ? QURAN_SURAH_NAMES.find((n, idx) => 
-          quranSusunan[String(idx + 1)] === cfg.timeId()
-        ) : null;
+// Keluarkan nombor surah dari nama kategori (contoh: "2. Al-Baqarah" → 2)
+        const namaSurahBetul = kategoriSemasa ? (() => {
+          const match = (kategoriSemasa.name || '').match(/^(\d+)\.\s+(.+)/);
+          return match ? match[2].trim() : null;
+        })() : null;
 
 const laciFormatSalah = [];
         const laciNamaSalah = [];
