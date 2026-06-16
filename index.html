@@ -2506,16 +2506,19 @@ function getRoutineSrc() {
       activateRoutineMode('quran'); // toggle off
     });
 
-    document.getElementById('qr-btn-laci-quran').addEventListener('click', () => {
+document.getElementById('qr-btn-laci-quran').addEventListener('click', () => {
+      tutupQuranFullscreen();
       showSection(document.getElementById('section-quran-times'));
       renderSurahPermanentList();
     });
 
     document.getElementById('qr-btn-history-top').addEventListener('click', () => {
+      tutupQuranFullscreen();
       showSection(sectionHistory);
     });
 
     document.getElementById('qr-btn-history').addEventListener('click', () => {
+      tutupQuranFullscreen();
       showSection(document.getElementById('section-mode-history'));
       renderModeHistory();
     });
@@ -4741,8 +4744,11 @@ showSection(secToShow);
     btnAddNote.addEventListener("click", addNoteFunc);
 
     btnGoHistory.addEventListener("click", () => showSection(sectionHistory));
-    btnBackTasbihFromHistory.addEventListener("click", () => showSection(sectionTasbih));
-
+    btnBackTasbihFromHistory.addEventListener("click", () => {
+      showSection(sectionTasbih);
+      if (routineMode && routineModeSource === 'quran') bukaQuranFullscreen();
+    });
+    
     // Navigasi Fakta
     btnGoSubjects.addEventListener("click", () => { showSection(sectionSubjects); renderSubjects(); });
     btnBackTasbihSubj.addEventListener("click", () => showSection(sectionTasbih));
@@ -5819,8 +5825,11 @@ document.getElementById('btn-go-quran-times').addEventListener('click', () => {
     }
 
     
-    document.getElementById('btn-back-tasbih-quran').addEventListener('click', () => showSection(sectionTasbih));
-document.getElementById('btn-back-quran-drawer').addEventListener('click', () => {
+    document.getElementById('btn-back-tasbih-quran').addEventListener('click', () => {
+      showSection(sectionTasbih);
+      if (routineMode && routineModeSource === 'quran') bukaQuranFullscreen();
+    });
+    document.getElementById('btn-back-quran-drawer').addEventListener('click', () => {
       showSection(document.getElementById('section-quran-times'));
       renderSurahPermanentList();
     });
@@ -6999,8 +7008,10 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
 
 // ── MODE HISTORY ──
     const sectionModeHistory = document.getElementById('section-mode-history');
-    document.getElementById('btn-back-from-mode-history').addEventListener('click', () => showSection(sectionTasbih));
-
+    document.getElementById('btn-back-from-mode-history').addEventListener('click', () => {
+      showSection(sectionTasbih);
+      if (routineMode && routineModeSource === 'quran') bukaQuranFullscreen();
+    });
     document.getElementById('btn-mode-history').addEventListener('click', () => {
       showSection(sectionModeHistory);
       renderModeHistory();
