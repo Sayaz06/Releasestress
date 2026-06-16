@@ -2426,8 +2426,8 @@ function getRoutineSrc() {
       const curS = currentQuranSurahNum;
       const sName = QURAN_SURAH_NAMES[curS - 1] || '';
       surahInfoEl.textContent = `📖 ${curS}. ${sName}`;
-      etaEl.textContent = quranEtaLabel ? `🏁 ${quranEtaLabel.split(',')[0]}` : '';
-
+      etaEl.textContent = quranEtaLabel ? `🏁 ${quranEtaLabel}` : '';
+      
       // Progress
       const total = allRoutines.filter(r => !r.isTamat).length;
       const semasa = Math.min(currentRoutineIndex + 1, total);
@@ -2487,57 +2487,10 @@ function getRoutineSrc() {
 
 qrTapOverlay.addEventListener('click', () => {
       if (qrIsSwiping) return;
-      if (routineMode && routineModeSource === 'quran' && learningMode === 3) {
-        if (comboStep === 0) {
-          // Flip ke Arab — sama seperti isFlipKeArab dalam decrementTasbih
-          const now = Date.now();
-          if (!quranSessionStartTime) quranSessionStartTime = now;
-          quranSessionLastTapTime = now;
-
-          // Simpan ayat semasa sebelum flip
-          const laciSemasaArab = allRoutines[currentRoutineIndex];
-          const parsedArab = laciSemasaArab ? parseLaciQuran(laciSemasaArab.title) : null;
-          quranAyatSemasa = parsedArab ? parsedArab.ayatNum : 0;
-          quranSurahSemasa = parsedArab ? parsedArab.surahNum : 0;
-
-          isFlipped = true;
-          comboStep = 1;
-          triggerFlipAnimation(renderQuranFullscreen);
-        } else {
-          // Flip ke maksud — sama seperti isFlipKeMaksud dalam decrementTasbih
-          const laciSemasaNow = allRoutines[currentRoutineIndex];
-          const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
-          const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
-          const surahUntukSave = parsedNow ? parsedNow.surahNum : 0;
-          const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
-
-          quranSessionTapCount++;
-          quranSessionLastTapTime = Date.now();
-          if (!quranSessionStartTime) quranSessionStartTime = Date.now();
-
-          const patutSave = ayatUntukSave > 0 && (
-            ayatUntukSave % 5 === 0 ||
-            ayatUntukSave === jumlahAyatSurah
-          );
-
-          if (patutSave) {
-            quranAyatSemasa = ayatUntukSave;
-            quranSurahSemasa = surahUntukSave;
-            clearTimeout(quranSessionTimer);
-            saveQuranSession().then(() => {
-              quranSessionTapCount = 0;
-              quranSessionStartTime = null;
-              quranSessionLastTapTime = null;
-            });
-          }
-
-          // Next ayat
-          isFlipped = false;
-          comboStep = 0;
-          decrementTasbih();
-        }
-      } else {
-        decrementTasbih();
+      decrementTasbih();
+      // Refresh overlay selepas decrementTasbih selesai ubah state
+      if (routineMode && routineModeSource === 'quran') {
+        renderQuranFullscreen();
       }
     });
 
