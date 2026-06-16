@@ -4916,16 +4916,17 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
       const statusEl = document.getElementById('quran-load-status');
       if (!overlay) { await callback(); return; }
 
-      overlay.classList.add('show');
+overlay.classList.add('show');
+      overlay.style.pointerEvents = 'all';
       if (statusEl) statusEl.textContent = 'Sedang mendapatkan rekod kemajuan...';
-
+      
       try {
         // Ambil rekod terkini dari leaderboard
         const progressTerkini = await loadQuranProgressTerkini();
 
         if (!progressTerkini) {
           if (statusEl) statusEl.textContent = 'Tiada rekod dijumpai. Bermula dari semula.';
-          setTimeout(() => { overlay.classList.remove('show'); callback(); }, 1000);
+            setTimeout(() => { overlay.style.pointerEvents = 'none'; overlay.classList.remove('show'); callback(); }, 1000);
           return;
         }
 
@@ -4954,7 +4955,7 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
               : cuba >= maksimumCuba
               ? '⚠️ Tamat masa. Teruskan dengan kedudukan semasa.'
               : '✅ Sedia.';
-            setTimeout(() => { overlay.classList.remove('show'); callback(); }, 800);
+            Timeout(() => { overlay.style.pointerEvents = 'none'; overlay.classList.remove('show'); callback(); }, 800);
           } else {
             if (statusEl) statusEl.textContent = `Menunggu laci selari... (${cuba}/${maksimumCuba})`;
           }
@@ -4962,6 +4963,7 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
 
       } catch(e) {
         console.log("Overlay tunggu gagal:", e);
+        overlay.style.pointerEvents = 'none';
         overlay.classList.remove('show');
         callback();
       }
