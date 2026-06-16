@@ -1464,24 +1464,25 @@ body.dark-mode {
 
 <!-- ══ AL-QURAN ══ -->
 <section id="section-quran-times" class="section">
-        <div class="topbar">
-          <button id="btn-back-tasbih-quran" class="btn btn-secondary btn-sm">← Tasbih</button>
-          <div class="topbar-title" style="color:#34d399;">📖 Surah / Juzuk</div>
-          <button id="btn-reset-quran-full" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#dc2626;color:#fca5a5;">⚠️ Reset Penuh — Purata & Surah Pertama & Khatam</button>
-          <button id="btn-quran-khatam-reset" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#fbbf24;color:#fbbf24;">🕌 Khatam Reset — Mula Semula (Sejarah Kekal)</button>
-        </div>
-        <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
-          <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
-          <button id="btn-lihat-progress-log" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;box-shadow:0 6px 18px rgba(14,165,233,.3);">📊 Leaderboard Kemajuan</button>
-          <button id="btn-import-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;box-shadow:0 6px 18px rgba(16,185,129,.3);">📥 Import Data Quran (JSON)</button>
-          <button id="btn-export-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;box-shadow:0 6px 18px rgba(245,158,11,.3);">📦 Export Semua Data Quran (JSON)</button>
-          <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
-          <button id="btn-export-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;box-shadow:0 6px 18px rgba(245,158,11,.3);">📦 Export Semua Data Quran (JSON)</button>
-          
-          <button id="btn-pecah-surah" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">✂️ Pecahkan Surah Besar kepada Surah Berasingan</button>
-          <div id="quran-times-list" style="padding:10px;margin-top:8px;min-height:120px;"></div>
-        </div>
-      </section>
+  <div class="topbar">
+    <button id="btn-back-tasbih-quran" class="btn btn-secondary btn-sm">← Tasbih</button>
+    <div class="topbar-title" style="color:#34d399;">📖 Al-Quran</div>
+  </div>
+  <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
+    <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
+    <button id="btn-reset-quran-full" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#dc2626;color:#fca5a5;">⚠️ Reset Penuh — Purata & Surah Pertama & Khatam</button>
+    <button id="btn-quran-khatam-reset" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#fbbf24;color:#fbbf24;">🕌 Khatam Reset — Mula Semula (Sejarah Kekal)</button>
+    <button id="btn-lihat-progress-log" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;box-shadow:0 6px 18px rgba(14,165,233,.3);">📊 Leaderboard Kemajuan</button>
+    <button id="btn-import-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;box-shadow:0 6px 18px rgba(16,185,129,.3);">📥 Import Data Quran (JSON)</button>
+    <button id="btn-export-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;box-shadow:0 6px 18px rgba(245,158,11,.3);">📦 Export Semua Data Quran (JSON)</button>
+
+    <!-- 114 SURAH PERMANENT -->
+    <div style="margin-top:12px;font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:6px;">
+      Pilih surah untuk buka laci ayat
+    </div>
+    <div id="quran-surah-permanent-list" style="display:flex;flex-direction:column;gap:6px;padding:4px;"></div>
+  </div>
+</section>
 
       <section id="section-quran-drawers" class="section">
         <div class="topbar">
@@ -2335,14 +2336,15 @@ async function ensureTodayModeTasbih(mode) {
 
 function getRoutineSrc() {
       switch(routineModeSource) {
-case 'quran': {
-          const timeId = getAlQuranPenuhActiveTimeId();
-          if (timeId) activeGlobalQuranId = timeId;
-          return {times:allQuranTimes, drawers:allQuranDrawers, globalId:activeGlobalQuranId, coll:'quran'};
-        }
-        case 'doa':   return {times:allDoaTimes, drawers:allDoaDrawers, globalId:activeGlobalDoaId, coll:'doa'};
-        case 'hadis': return {times:allHadisTimes, drawers:allHadisDrawers, globalId:activeGlobalHadisId, coll:'hadis'};
-        default:      return {times:allRoutineTimes, drawers:allRoutineDrawers, globalId:activeGlobalRoutineId, coll:'routine'};
+        case 'quran':
+          // Quran guna surahNum terus — bukan allQuranTimes
+          return { times: [], drawers: allQuranDrawers, globalId: currentQuranSurahNum, coll: 'quran' };
+        case 'doa':
+          return { times: allDoaTimes, drawers: allDoaDrawers, globalId: activeGlobalDoaId, coll: 'doa' };
+        case 'hadis':
+          return { times: allHadisTimes, drawers: allHadisDrawers, globalId: activeGlobalHadisId, coll: 'hadis' };
+        default:
+          return { times: allRoutineTimes, drawers: allRoutineDrawers, globalId: activeGlobalRoutineId, coll: 'routine' };
       }
     }
 
@@ -2366,9 +2368,11 @@ if (!wasActive) {
         if(b){b.textContent=`${getModeLabel(src)}: ON`; b.classList.add("btn-active");}
 factDisplayBox.classList.add("show");
         btnToggleMode.style.display="inline-flex";
-        if (src === 'quran') {
+if (src === 'quran') {
           learningMode=3; btnToggleMode.textContent="Mode: Combo";
           btnToggleMainRestMax.style.display="none";
+          // Sync surah dari leaderboard bila quran diaktifkan
+          syncLaciDariLeaderboard();
         } else {
           learningMode=2; btnToggleMode.textContent="Mode: Rest";
           btnToggleMainRestMax.style.display="inline-flex";
@@ -5568,10 +5572,63 @@ if (result.score > 0) {
     document.getElementById('btn-toggle-hadis').addEventListener('click', () => activateRoutineMode('hadis'));
 
     // ── NAV QURAN ──
-    document.getElementById('btn-go-quran-times').addEventListener('click', () => {
+document.getElementById('btn-go-quran-times').addEventListener('click', () => {
       showSection(document.getElementById('section-quran-times'));
-      renderGenericTimes('quran');
+      renderSurahPermanentList();
     });
+
+    function renderSurahPermanentList() {
+      const list = document.getElementById('quran-surah-permanent-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      SURAH_PERMANENT.forEach(surah => {
+        // Kira berapa ayat dah ada dalam Firestore
+        const ayatAda = allQuranDrawers.filter(d => d.timeId === surah.num).length;
+        const isLengkap = ayatAda >= surah.jumlahAyat;
+        const isAktif = surah.num === currentQuranSurahNum;
+
+        const div = document.createElement('div');
+        div.style.cssText = `
+          display:flex;align-items:center;justify-content:space-between;
+          padding:10px 12px;border-radius:10px;cursor:pointer;
+          background:${isAktif ? 'rgba(52,211,153,0.12)' : 'rgba(15,23,42,0.6)'};
+          border:1px solid ${isAktif ? '#34d399' : 'var(--border-soft)'};
+          gap:10px;
+        `;
+
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+            <span style="font-size:0.75rem;color:var(--subtext);min-width:28px;">${surah.num}.</span>
+            <div>
+              <div style="font-size:0.88rem;font-weight:${isAktif ? '700' : '500'};color:${isAktif ? '#34d399' : 'var(--text)'};">
+                ${surah.nama}
+                ${isAktif ? '<span style="font-size:0.65rem;background:#34d399;color:#020617;padding:1px 6px;border-radius:999px;margin-left:6px;font-weight:700;">AKTIF</span>' : ''}
+              </div>
+              <div style="font-size:0.7rem;color:${isLengkap ? '#34d399' : 'var(--subtext)'};">
+                ${ayatAda} / ${surah.jumlahAyat} ayat ${isLengkap ? '✅' : ''}
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:0.72rem;${isAktif ? 'border-color:#34d399;color:#34d399;' : ''}">
+            Buka
+          </button>
+        `;
+
+        div.querySelector('button').addEventListener('click', () => {
+          currentQuranSurahNum = surah.num;
+          // Set currentQuranTimeId untuk keserasian fungsi lain
+          currentQuranTimeId = surah.num;
+          document.getElementById('parent-quran-time-name').textContent = surah.namaLengkap;
+          showSection(document.getElementById('section-quran-drawers'));
+          renderGenericDrawers('quran');
+        });
+
+        list.appendChild(div);
+      });
+    }
+
+    
     document.getElementById('btn-back-tasbih-quran').addEventListener('click', () => showSection(sectionTasbih));
     document.getElementById('btn-back-quran-drawer').addEventListener('click', () => {
       showSection(document.getElementById('section-quran-times')); renderGenericTimes('quran');
