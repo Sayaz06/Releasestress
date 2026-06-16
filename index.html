@@ -2494,15 +2494,11 @@ function showSection(section) {
       sectionMemanah.classList.remove("active"); 
       sectionPrompterEditor.classList.remove("active"); 
       if (sectionMyLaw) sectionMyLaw.classList.remove("active"); // KOD BARU: Hapus active dari My Law
-['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history'].forEach(id => {
+['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history','section-progress-log','section-susun-alquran','section-countdown-mini','section-cm-history'].forEach(id => {
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
+  
 if (sectionAmtAk) sectionAmtAk.classList.remove("active");
-if (sectionSusunAlQuran) sectionSusunAlQuran.classList.remove("active");
-const cmSection = document.getElementById('section-countdown-mini');
-      if (cmSection) cmSection.classList.remove("active");
-      const cmHistSection = document.getElementById('section-cm-history');
-      if (cmHistSection) cmHistSection.classList.remove("active");
           section.classList.add("active");      
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
