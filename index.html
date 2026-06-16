@@ -4904,11 +4904,24 @@ function syncFullscreenFact() {
       }
     }, {passive: true});
 
-    fullscreenOverlay.addEventListener('click', (e) => {
+fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target === document.getElementById('btn-close-fullscreen-fact')) return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
       if (fsIsSwiping) return;
-      decrementTasbih();
+      // Simulate tap sama seperti factDisplayBox — ikut comboStep
+      const dataSource = routineMode ? allRoutines : allFacts;
+      const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
+      if (routineMode && routineModeSource === 'quran') {
+        // Quran combo: ikut decrementTasbih seperti biasa
+        decrementTasbih();
+      } else if (!routineMode && (learningMode === 3 || learningMode === 4)) {
+        // Combo/Super mode fakta: flip dulu macam factDisplayBox
+        if (dataSource.length === 0 || dataSource[currentIndex]?.isTamat) return;
+        isFlipped = !isFlipped;
+        triggerFlipAnimation(renderCurrentFact);
+      } else {
+        decrementTasbih();
+      }
       setTimeout(() => syncFullscreenFact(), 200);
     });
     
