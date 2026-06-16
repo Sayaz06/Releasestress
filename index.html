@@ -4323,67 +4323,111 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
         return;
       }
 
+// ── QURAN: Guna SURAH_PERMANENT — bukan allQuranTimes ──
+      if (routineModeSource === 'quran') {
+        const surah = SURAH_PERMANENT[currentQuranSurahNum - 1];
+        if (!surah) return;
+
+        const activeDrawers = allQuranDrawers
+          .filter(d => d.timeId === currentQuranSurahNum)
+          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+        activeDrawers.forEach(data => {
+          const tajukLaci = data.title || 'Tiada Tajuk';
+          const zikirText = (data.zikir || '').trim() || (data.maksud || '').trim() || 'Kosong';
+          const maksudText = data.zikir ? (data.maksud ? data.maksud.trim() : null) : null;
+
+          allRoutines.push({
+            title: tajukLaci,
+            text: zikirText,
+            target: 1,
+            translation: maksudText,
+            isTamat: false
+          });
+        });
+
+        if (allRoutines.length > 0) {
+          allRoutines.push({
+            title: 'Tamat',
+            text: `✅ Surah ${surah.num}. ${surah.nama} selesai! Auto ke surah seterusnya...`,
+            target: 0,
+            isTamat: true
+          });
+        }
+
+        if (allRoutines.length > 0 && currentRoutineTarget === 0 && !allRoutines[currentRoutineIndex]?.isTamat) {
+          currentRoutineTarget = allRoutines[currentRoutineIndex].target;
+        }
+
+        // Sync laci dari leaderboard selepas rebuild
+        setTimeout(() => syncLaciDariLeaderboard(), 500);
+
+        if (routineMode && allRoutines.length > 0) {
+          updateTasbihUI();
+          renderCurrentFact();
+        }
+        return;
+      }
+
+      // ── DOA / HADIS / RUTIN: Kekal sistem lama ──
       const src = getRoutineSrc();
       const activeTime = src.times.find(t => t.isActive);
       
       if (activeTime) {
-        if(routineModeSource==='quran') activeGlobalQuranId = activeTime.id;
-        else if(routineModeSource==='doa') activeGlobalDoaId = activeTime.id;
+        if(routineModeSource==='doa') activeGlobalDoaId = activeTime.id;
         else if(routineModeSource==='hadis') activeGlobalHadisId = activeTime.id;
         else activeGlobalRoutineId = activeTime.id;
-        const activeDrawers = src.drawers.filter(d => d.timeId === activeTime.id).sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
+
+        const activeDrawers = src.drawers
+          .filter(d => d.timeId === activeTime.id)
+          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
         
         activeDrawers.forEach(data => {
-          const tajukLaci = data.title || "Tiada Tajuk";
+          const tajukLaci = data.title || 'Tiada Tajuk';
           
-          if(data.notes && !data.zikir) {
-            const lines = data.notes.split('\n').filter(l => l.trim() !== "");
+          if (data.notes && !data.zikir) {
+            const lines = data.notes.split('\n').filter(l => l.trim() !== '');
             if (lines.length > 0) {
               lines.forEach(line => {
                 const parts = line.split('=');
-                const zikir = parts[0] ? parts[0].trim() : "Kosong";
+                const zikir = parts[0] ? parts[0].trim() : 'Kosong';
                 const targetVal = parts[1] ? parseInt(parts[1].trim()) : 1;
                 const maksud = parts[2] ? parts[2].trim() : null;
-
-                allRoutines.push({ 
-                  title: tajukLaci, 
-                  text: zikir, 
+                allRoutines.push({
+                  title: tajukLaci,
+                  text: zikir,
                   target: isNaN(targetVal) ? 1 : targetVal,
-                  translation: maksud, 
-                  isTamat: false 
+                  translation: maksud,
+                  isTamat: false
                 });
               });
             }
-          } 
-          else if (data.zikir || data.target || data.maksud) {
-const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Kosong";
-             const targetVal = parseInt(data.target);
-             const maksudText = data.zikir ? (data.maksud ? data.maksud.trim() : null) : null;
-
-             allRoutines.push({ 
-                  title: tajukLaci, 
-                  text: zikirText, 
-                  target: isNaN(targetVal) ? 1 : targetVal,
-                  translation: maksudText,
-                  isTamat: false 
-             });
+          } else if (data.zikir || data.target || data.maksud) {
+            const zikirText = (data.zikir || '').trim() || (data.maksud || '').trim() || 'Kosong';
+            const targetVal = parseInt(data.target);
+            const maksudText = data.zikir ? (data.maksud ? data.maksud.trim() : null) : null;
+            allRoutines.push({
+              title: tajukLaci,
+              text: zikirText,
+              target: isNaN(targetVal) ? 1 : targetVal,
+              translation: maksudText,
+              isTamat: false
+            });
           }
         });
 
-if (allRoutines.length > 0) {
-allRoutines.push({ 
-            title: "Tamat", 
-            text: `✅ Surah ${alQuranPenuhSurahIdx}. ${QURAN_SURAH_NAMES[alQuranPenuhSurahIdx-1]} selesai! Auto ke surah seterusnya...`, 
-            target: 0, isTamat: true 
+        if (allRoutines.length > 0) {
+          allRoutines.push({
+            title: 'Tamat',
+            text: `✅ ${getModeLabel(routineModeSource)} selesai!`,
+            target: 0,
+            isTamat: true
           });
         }
       } else {
         activeGlobalRoutineId = 'default';
       }
 
-      // ── GUNA LEADERBOARD SAHAJA — buang lastIndex ──
-      // Index semasa dikekalkan dalam currentRoutineIndex (memory)
-      // Sync dari leaderboard berlaku dalam syncLaciDariLeaderboard()
       if (allRoutines.length > 0 && currentRoutineTarget === 0 && !allRoutines[currentRoutineIndex]?.isTamat) {
         currentRoutineTarget = allRoutines[currentRoutineIndex].target;
       }
@@ -4399,10 +4443,10 @@ if (routineMode && allRoutines.length > 0) {
       }
     }
 
-    // ── FUNGSI SYNC LACI DARI LEADERBOARD ──
+
+// ── FUNGSI SYNC LACI DARI LEADERBOARD ──
     async function syncLaciDariLeaderboard() {
       if (!currentUser) return;
-      if (!allRoutines.length) return;
 
       try {
         const progressTerkini = await loadQuranProgressTerkini();
@@ -4410,21 +4454,32 @@ if (routineMode && allRoutines.length > 0) {
 
         const targetSurah = progressTerkini.surah || 1;
         const targetAyat = progressTerkini.ayat || 0;
-        if (!targetSurah || !targetAyat) return;
+        if (!targetSurah) return;
+
+        // Update surah aktif kalau berbeza
+        if (targetSurah !== currentQuranSurahNum) {
+          currentQuranSurahNum = targetSurah;
+          currentRoutineIndex = 0;
+          comboStep = 0;
+          isFlipped = false;
+          rebuildRoutines();
+          return; // rebuildRoutines akan panggil syncLaciDariLeaderboard semula
+        }
+
+        // Surah sama — sync index ayat
+        if (!allRoutines.length) return;
+        if (!targetAyat) return;
 
         const targetTitle = `${targetSurah}. ${QURAN_SURAH_NAMES[targetSurah - 1]} Ayat ${targetAyat}`;
-
         const targetIdx = allRoutines.findIndex(r =>
           r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
         );
 
-        // Hanya update kalau leaderboard tunjuk index LEBIH MAJU dari semasa
         if (targetIdx !== -1 && targetIdx > currentRoutineIndex) {
           currentRoutineIndex = targetIdx;
           comboStep = 0;
           isFlipped = false;
           currentRoutineTarget = allRoutines[targetIdx].target;
-          syncIndexToFirestore(targetIdx);
           if (routineMode && routineModeSource === 'quran') {
             triggerFadeAnimation(renderCurrentFact);
           }
@@ -4433,7 +4488,6 @@ if (routineMode && allRoutines.length > 0) {
         console.log("Gagal sync laci dari leaderboard:", e);
       }
     }
-
 
     // ==========================================
     // INITIALIZATION & AUTH 
@@ -7286,24 +7340,35 @@ function getAlQuranPenuhActiveTimeId() {
     }
 
 async function alQuranPenuhNextSurah() {
-      // Cari surah semasa dari quranKhatamData
-      const curSurah = quranKhatamData?.currentSurah || alQuranPenuhSurahIdx;
+      const nextSurahNum = currentQuranSurahNum + 1;
 
-      // Cari quran_times yang namanya bermula dengan nombor surah seterusnya
-      for (let i = curSurah + 1; i <= 114; i++) {
-        const surahPrefix = `${i}.`;
-        const found = allQuranTimes.find(t =>
-          (t.name || '').trim().startsWith(surahPrefix)
-        );
-        if (found) {
-          alQuranPenuhSurahIdx = i;
-          await activateQuranPenuhSurah(found.id);
-          return true;
-        }
+      if (nextSurahNum > 114) {
+        showToast('🕌 Tahniah! Al-Quran Penuh selesai! الحمد لله 🎉', 6000);
+        return false;
       }
-      // Habis semua 114 surah
-      showToast('🕌 Tahniah! Al-Quran Penuh selesai! الحمد لله 🎉', 6000);
-      return false;
+
+      currentQuranSurahNum = nextSurahNum;
+      const surah = SURAH_PERMANENT[nextSurahNum - 1];
+      showToast(`📖 Surah ${surah.num}. ${surah.nama} — Mula!`, 4000);
+
+      // Reset index ke 0 untuk surah baru
+      currentRoutineIndex = 0;
+      comboStep = 0;
+      isFlipped = false;
+
+      // Simpan ke leaderboard supaya bila reopen tahu surah mana
+      await saveQuranProgress({
+        surah: nextSurahNum,
+        ayat: 1,
+        totalAyatRead: quranKhatamData?.totalAyatRead || 0,
+        ayatSesi: 0,
+        kelajuanSesi: 0,
+        savedAt: Date.now(),
+        isNextSurah: true
+      });
+
+      rebuildRoutines();
+      return true;
     }
 
 async function activateQuranPenuhSurah(timeId) {
