@@ -867,10 +867,39 @@ body.dark-mode {
     body.dark-mode .chip {
       background: rgba(0, 0, 0, 0.9);
     }
-    .mt-8 { margin-top: 8px; }
+.mt-8 { margin-top: 8px; }
     .mt-12 { margin-top: 12px; }
     .mt-16 { margin-top: 16px; }
     .small { font-size: 0.8rem; }
+
+    /* ======== OVERLAY COUNTDOWN QURAN ======== */
+    #quran-load-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999999;
+      background: rgba(2, 6, 23, 0.97);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+    }
+    #quran-load-overlay.show {
+      display: flex;
+    }
+    #quran-countdown-number {
+      font-size: 5rem;
+      font-weight: 700;
+      color: #34d399;
+      line-height: 1;
+      margin-bottom: 16px;
+      animation: pulseCount 1s ease-in-out infinite;
+    }
+    @keyframes pulseCount {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.8; }
+    }
   </style>
 </head>
 
@@ -1121,6 +1150,21 @@ body.dark-mode {
     </div>
   </div>
 </div>
+
+<!-- OVERLAY COUNTDOWN KESELAMATAN QURAN -->
+  <div id="quran-load-overlay">
+    <div style="font-size:1.3rem;font-weight:700;color:#34d399;margin-bottom:8px;">📖 Al-Quran Sedang Dimuat</div>
+    <div id="quran-countdown-number">5</div>
+    <div style="max-width:340px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:14px;padding:18px;text-align:center;">
+      <div style="font-size:0.82rem;color:#34d399;font-weight:700;margin-bottom:10px;">🔒 Mengapa ada kiraan detik ini?</div>
+      <div style="font-size:0.78rem;color:#e5e7eb;line-height:1.7;">
+        App sedang memuatkan <strong style="color:#34d399;">kedudukan bacaan terakhir</strong> anda dari awan.<br><br>
+        Jika anda menekan sebelum data selesai dimuat, <strong style="color:#f87171;">kedudukan ayat mungkin tidak tepat</strong> dan kemajuan anda boleh terjejas.<br><br>
+        <span style="color:#fcd34d;">⏳ Sila tunggu sebentar...</span>
+      </div>
+    </div>
+  </div>
+  
 <!-- FULLSCREEN FACT OVERLAY -->
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
@@ -2435,8 +2479,10 @@ factDisplayBox.classList.add("show");
 if (src === 'quran') {
           learningMode=3; btnToggleMode.textContent="Mode: Combo";
           btnToggleMainRestMax.style.display="none";
-          // Sync surah dari leaderboard bila quran diaktifkan
-          syncLaciDariLeaderboard();
+          // Tunjuk overlay countdown keselamatan sebelum sync leaderboard
+          mulakanCountdownQuran(() => {
+            syncLaciDariLeaderboard();
+          });
         } else {
           learningMode=2; btnToggleMode.textContent="Mode: Rest";
           btnToggleMainRestMax.style.display="inline-flex";
@@ -4862,6 +4908,27 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
 // ── FULLSCREEN FACT ──
     const btnFullscreenFact = document.getElementById('btn-fullscreen-fact');
     const fullscreenOverlay = document.getElementById('fullscreen-fact-overlay');
+
+    // ── COUNTDOWN KESELAMATAN QURAN ──
+    function mulakanCountdownQuran(callback) {
+      const overlay = document.getElementById('quran-load-overlay');
+      const numberEl = document.getElementById('quran-countdown-number');
+      if (!overlay || !numberEl) { callback(); return; }
+
+      let saat = 5;
+      numberEl.textContent = saat;
+      overlay.classList.add('show');
+
+      const timer = setInterval(() => {
+        saat--;
+        numberEl.textContent = saat;
+        if (saat <= 0) {
+          clearInterval(timer);
+          overlay.classList.remove('show');
+          callback();
+        }
+      }, 1000);
+    }
 
 function syncFullscreenFact() {
       if (!fullscreenOverlay.classList.contains('show')) return;
@@ -8373,8 +8440,30 @@ quranKhatamData = newData;
     }
 
     // ── FUNGSI BARU: Simpan ke Leaderboard Progress ──
-    async function saveQuranProgress(data) {
+async function saveQuranProgress(data) {
       if (!currentUser) return;
+      // Semak — jangan save kalau ayat lebih rendah dari rekod terkini (ikut masa, bukan jumlah)
+      try {
+        const q = query(
+          collection(db, "users", currentUser.uid, "quran_progress_log"),
+          orderBy("savedAt", "desc"),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const terkini = snap.docs[0].data();
+          const isSurahSama = (terkini.surah || 0) === (data.surah || 0);
+          const isResetFlag = data.isKhatamReset || data.isManualUpdate || data.isNextSurah;
+          if (isSurahSama && !isResetFlag) {
+            if ((data.ayat || 0) < (terkini.ayat || 0)) {
+              console.log("Leaderboard: Ayat lebih rendah — simpanan dibatalkan.");
+              return;
+            }
+          }
+        }
+      } catch(e) {
+        console.log("Gagal semak leaderboard:", e);
+      }
       await addDoc(collection(db, "users", currentUser.uid, "quran_progress_log"), {
         ...data,
         savedAt: Date.now(),
@@ -8383,24 +8472,18 @@ quranKhatamData = newData;
     }
 
     // ── FUNGSI BARU: Baca kemajuan TERKINI dari Leaderboard ──
-    async function loadQuranProgressTerkini() {
+async function loadQuranProgressTerkini() {
       if (!currentUser) return null;
       try {
-const q = query(
+        // Ambil rekod paling atas ikut masa — bukan ikut jumlah ayat
+        const q = query(
           collection(db, "users", currentUser.uid, "quran_progress_log"),
           orderBy("savedAt", "desc"),
-          limit(20)
+          limit(1)
         );
         const snap = await getDocs(q);
         if (snap.empty) return null;
-
-        // Ambil 20 rekod terkini, pilih yang totalAyatRead TERTINGGI
-        const rekods = snap.docs.slice(0, 20).map(d => d.data());
-        const terbaik = rekods.reduce((best, cur) =>
-          (cur.totalAyatRead || 0) > (best.totalAyatRead || 0) ? cur : best
-        , rekods[0]);
-
-        return terbaik;
+        return snap.docs[0].data();
       } catch(e) {
         console.log("Gagal baca progress log:", e);
         return null;
