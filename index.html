@@ -888,17 +888,17 @@ body.dark-mode {
     #quran-load-overlay.show {
       display: flex;
     }
-    #quran-countdown-number {
-      font-size: 5rem;
-      font-weight: 700;
-      color: #34d399;
-      line-height: 1;
-      margin-bottom: 16px;
-      animation: pulseCount 1s ease-in-out infinite;
+#quran-load-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(52,211,153,0.2);
+      border-top-color: #34d399;
+      border-radius: 50%;
+      animation: spinLoader 0.9s linear infinite;
+      margin-bottom: 20px;
     }
-    @keyframes pulseCount {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.15); opacity: 0.8; }
+    @keyframes spinLoader {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -1151,18 +1151,19 @@ body.dark-mode {
   </div>
 </div>
 
-<!-- OVERLAY COUNTDOWN KESELAMATAN QURAN -->
+<!-- OVERLAY TUNGGU KESELAMATAN QURAN -->
   <div id="quran-load-overlay">
-    <div style="font-size:1.3rem;font-weight:700;color:#34d399;margin-bottom:8px;">📖 Al-Quran Sedang Dimuat</div>
-    <div id="quran-countdown-number">5</div>
+    <div id="quran-load-spinner"></div>
+    <div style="font-size:1.1rem;font-weight:700;color:#34d399;margin-bottom:12px;">📖 Menyemak Kemajuan...</div>
     <div style="max-width:340px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:14px;padding:18px;text-align:center;">
-      <div style="font-size:0.82rem;color:#34d399;font-weight:700;margin-bottom:10px;">🔒 Mengapa ada kiraan detik ini?</div>
+      <div style="font-size:0.82rem;color:#34d399;font-weight:700;margin-bottom:10px;">🔒 Kenapa perlu tunggu?</div>
       <div style="font-size:0.78rem;color:#e5e7eb;line-height:1.7;">
-        App sedang memuatkan <strong style="color:#34d399;">kedudukan bacaan terakhir</strong> anda dari awan.<br><br>
-        Jika anda menekan sebelum data selesai dimuat, <strong style="color:#f87171;">kedudukan ayat mungkin tidak tepat</strong> dan kemajuan anda boleh terjejas.<br><br>
-        <span style="color:#fcd34d;">⏳ Sila tunggu sebentar...</span>
+        App sedang mengesahkan <strong style="color:#34d399;">kedudukan ayat terakhir</strong> anda dari rekod kemajuan awan.<br><br>
+        Ini memastikan laci countdown anda <strong style="color:#fcd34d;">bermula dari ayat yang betul</strong> — bukan dari awal.<br><br>
+        <strong style="color:#f87171;">Jangan tekan apa-apa</strong> sehingga overlay ini hilang sendiri.
       </div>
     </div>
+    <div id="quran-load-status" style="font-size:0.72rem;color:var(--subtext);margin-top:14px;font-style:italic;"></div>
   </div>
   
 <!-- FULLSCREEN FACT OVERLAY -->
@@ -4909,25 +4910,61 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
     const btnFullscreenFact = document.getElementById('btn-fullscreen-fact');
     const fullscreenOverlay = document.getElementById('fullscreen-fact-overlay');
 
-    // ── COUNTDOWN KESELAMATAN QURAN ──
-    function mulakanCountdownQuran(callback) {
+// ── OVERLAY TUNGGU KESELAMATAN QURAN ──
+    async function mulakanCountdownQuran(callback) {
       const overlay = document.getElementById('quran-load-overlay');
-      const numberEl = document.getElementById('quran-countdown-number');
-      if (!overlay || !numberEl) { callback(); return; }
+      const statusEl = document.getElementById('quran-load-status');
+      if (!overlay) { await callback(); return; }
 
-      let saat = 5;
-      numberEl.textContent = saat;
       overlay.classList.add('show');
+      if (statusEl) statusEl.textContent = 'Sedang mendapatkan rekod kemajuan...';
 
-      const timer = setInterval(() => {
-        saat--;
-        numberEl.textContent = saat;
-        if (saat <= 0) {
-          clearInterval(timer);
-          overlay.classList.remove('show');
-          callback();
+      try {
+        // Ambil rekod terkini dari leaderboard
+        const progressTerkini = await loadQuranProgressTerkini();
+
+        if (!progressTerkini) {
+          if (statusEl) statusEl.textContent = 'Tiada rekod dijumpai. Bermula dari semula.';
+          setTimeout(() => { overlay.classList.remove('show'); callback(); }, 1000);
+          return;
         }
-      }, 1000);
+
+        const targetSurah = progressTerkini.surah || 1;
+        const targetAyat = progressTerkini.ayat || 0;
+        if (statusEl) statusEl.textContent = `Rekod dijumpai: Surah ${targetSurah}, Ayat ${targetAyat}. Mengesahkan laci...`;
+
+        // Tunggu sehingga allRoutines siap dan laci selari
+        let cuba = 0;
+        const maksimumCuba = 20; // 20 x 300ms = 6 saat maksimum
+
+        const semakSelari = setInterval(() => {
+          cuba++;
+          const targetTitle = `${targetSurah}. ${QURAN_SURAH_NAMES[targetSurah - 1]} Ayat ${targetAyat}`;
+          const targetIdx = allRoutines.findIndex(r =>
+            r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
+          );
+
+          const sudahSelari = targetIdx !== -1 && currentRoutineIndex >= targetIdx;
+          const tiadaAyat = targetAyat === 0;
+
+          if (sudahSelari || tiadaAyat || cuba >= maksimumCuba) {
+            clearInterval(semakSelari);
+            if (statusEl) statusEl.textContent = sudahSelari
+              ? `✅ Laci disahkan — Ayat ${targetAyat}`
+              : cuba >= maksimumCuba
+              ? '⚠️ Tamat masa. Teruskan dengan kedudukan semasa.'
+              : '✅ Sedia.';
+            setTimeout(() => { overlay.classList.remove('show'); callback(); }, 800);
+          } else {
+            if (statusEl) statusEl.textContent = `Menunggu laci selari... (${cuba}/${maksimumCuba})`;
+          }
+        }, 300);
+
+      } catch(e) {
+        console.log("Overlay tunggu gagal:", e);
+        overlay.classList.remove('show');
+        callback();
+      }
     }
 
 function syncFullscreenFact() {
