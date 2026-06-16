@@ -3618,7 +3618,7 @@ function syncIndexToFirestore(newIndex) {
         return;
       }
 
-  if (hadisReadAllMode && routineModeSource === 'hadis') {
+      if (hadisReadAllMode && routineModeSource === 'hadis') {
         syncHadisReadAllProgress(newIndex);
         return;
       }
@@ -3627,7 +3627,10 @@ function syncIndexToFirestore(newIndex) {
         updateDoc(doc(db, "users", currentUser.uid, "topics", activeGlobalTopicId), {
           lastIndex: newIndex
         }).catch(err => console.log("Gagal sync index Fakta ke Firestore:", err));
-} else if (routineMode) {
+      } else if (routineMode) {
+        // ── QURAN: Skip lastIndex — guna leaderboard sahaja ──
+        if (routineModeSource === 'quran') return;
+
         const src = getRoutineSrc();
         if (src.globalId !== 'default') {
           updateDoc(doc(db, "users", currentUser.uid, `${src.coll}_times`, src.globalId), {
@@ -4364,33 +4367,56 @@ allRoutines.push({
         activeGlobalRoutineId = 'default';
       }
 
-      let savedIndex = 0;
-      if (activeTime && activeTime.lastIndex !== undefined) {
-        savedIndex = parseInt(activeTime.lastIndex);
-      }
-      if (savedIndex >= allRoutines.length) savedIndex = 0;
-
-const isIndexChanged = currentRoutineIndex !== savedIndex;
-      // Hanya update index kalau savedIndex lebih besar atau sama
-      // Elak index undur akibat Firestore snapshot lambat
-      if (isIndexChanged && savedIndex >= currentRoutineIndex) {
-          currentRoutineIndex = savedIndex;
-          comboStep = 0;
-          isFlipped = false;
-          if (allRoutines.length > 0) {
-              currentRoutineTarget = allRoutines[currentRoutineIndex].target;
-          } else {
-              currentRoutineTarget = 0;
-          }
-      } else {
-          if (allRoutines.length > 0 && currentRoutineTarget === 0 && !allRoutines[currentRoutineIndex]?.isTamat) {
-              currentRoutineTarget = allRoutines[currentRoutineIndex].target;
-          }
+      // ── GUNA LEADERBOARD SAHAJA — buang lastIndex ──
+      // Index semasa dikekalkan dalam currentRoutineIndex (memory)
+      // Sync dari leaderboard berlaku dalam syncLaciDariLeaderboard()
+      if (allRoutines.length > 0 && currentRoutineTarget === 0 && !allRoutines[currentRoutineIndex]?.isTamat) {
+        currentRoutineTarget = allRoutines[currentRoutineIndex].target;
       }
       
-      if (routineMode && allRoutines.length > 0) {
+if (routineMode && allRoutines.length > 0) {
         updateTasbihUI();
         renderCurrentFact();
+      }
+
+      // ── SYNC LACI DARI LEADERBOARD SELEPAS REBUILD ──
+      if (routineModeSource === 'quran' && allRoutines.length > 0) {
+        syncLaciDariLeaderboard();
+      }
+    }
+
+    // ── FUNGSI SYNC LACI DARI LEADERBOARD ──
+    async function syncLaciDariLeaderboard() {
+      if (!currentUser) return;
+      if (!allRoutines.length) return;
+
+      try {
+        const progressTerkini = await loadQuranProgressTerkini();
+        if (!progressTerkini) return;
+
+        const targetSurah = progressTerkini.surah || 1;
+        const targetAyat = progressTerkini.ayat || 0;
+        if (!targetSurah || !targetAyat) return;
+
+        const targetTitle = `${targetSurah}. ${QURAN_SURAH_NAMES[targetSurah - 1]} Ayat ${targetAyat}`;
+
+        const targetIdx = allRoutines.findIndex(r =>
+          r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
+        );
+
+        // Hanya update kalau leaderboard tunjuk index LEBIH MAJU dari semasa
+        if (targetIdx !== -1 && targetIdx > currentRoutineIndex) {
+          currentRoutineIndex = targetIdx;
+          comboStep = 0;
+          isFlipped = false;
+          currentRoutineTarget = allRoutines[targetIdx].target;
+          syncIndexToFirestore(targetIdx);
+          if (routineMode && routineModeSource === 'quran') {
+            triggerFadeAnimation(renderCurrentFact);
+          }
+        }
+      } catch(e) {
+        console.log("Gagal sync laci dari leaderboard:", e);
       }
     }
 
@@ -7263,15 +7289,15 @@ function getAlQuranPenuhActiveTimeId() {
       return false;
     }
 
-    async function activateQuranPenuhSurah(timeId) {
+async function activateQuranPenuhSurah(timeId) {
       if (!currentUser) return;
       // Nyahaktif semua, aktifkan timeId baru
       for (const t of allQuranTimes) {
         if (t.isActive && t.id !== timeId) {
-          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", t.id), { isActive: false, lastIndex: 0 });
+          await updateDoc(doc(db, "users", currentUser.uid, "quran_times", t.id), { isActive: false });
         }
       }
-      await updateDoc(doc(db, "users", currentUser.uid, "quran_times", timeId), { isActive: true, lastIndex: 0 });
+      await updateDoc(doc(db, "users", currentUser.uid, "quran_times", timeId), { isActive: true });
       activeGlobalQuranId = timeId;
       currentRoutineIndex = 0;
       
