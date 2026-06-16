@@ -3657,8 +3657,9 @@ factHintEl.style.display = 'block';
       btnCopyFact.style.display = 'flex';
       const btnFs = document.getElementById('btn-fullscreen-fact');
       if (btnFs) btnFs.style.display = 'flex';
-      // Sync fullscreen overlay kalau sedang terbuka
-      syncFullscreenFact();
+      // Sync fullscreen overlay kalau sedang terbuka — tunggu DOM render dulu
+      requestAnimationFrame(() => syncFullscreenFact());
+      
 if (routineMode && routineModeSource === 'quran') {
   if (isFlipped) {
     factContentEl.style.fontSize = '';
@@ -4867,15 +4868,17 @@ function syncFullscreenFact() {
       const fsContent = document.getElementById('fullscreen-fact-content');
       const fsTitle = document.getElementById('fullscreen-fact-title');
       const fsHint = document.getElementById('fullscreen-fact-hint');
+      // Ambil terus dari DOM faktual yang sudah dirender
       fsTitle.textContent = factTitleEl.textContent;
       fsContent.innerHTML = factContentEl.innerHTML;
       fsHint.textContent = factHintEl.textContent;
-      // Salin terus style dari kotak asal — tidak dibesarkan
       fsContent.style.fontSize = factContentEl.style.fontSize || '';
       fsContent.style.fontFamily = factContentEl.style.fontFamily || '';
       fsContent.style.direction = factContentEl.style.direction || '';
       fsContent.style.textAlign = factContentEl.style.textAlign || '';
       fsContent.style.lineHeight = factContentEl.style.lineHeight || '';
+      // Scroll ke atas setiap kali kandungan bertukar
+      fsContent.scrollTop = 0;
     }
 
     btnFullscreenFact.addEventListener('click', (e) => {
@@ -4922,7 +4925,7 @@ fullscreenOverlay.addEventListener('click', (e) => {
       } else {
         decrementTasbih();
       }
-      setTimeout(() => syncFullscreenFact(), 200);
+      setTimeout(() => syncFullscreenFact(), 400);
     });
     
     btnSpeak.addEventListener('click', (e) => {
