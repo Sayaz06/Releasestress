@@ -7281,34 +7281,11 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       showToast(`💾 Status disimpan — Surah ${curSurah}. ${QURAN_SURAH_NAMES[curSurah - 1]} Ayat ${curAyat}`, 4000);
     }
 
-    // ── SEMAK STATUS KELUAR SEMASA LOAD ──
+// ── SEMAK STATUS KELUAR SEMASA LOAD ──
     async function semakStatusKeluar() {
-      if (!currentUser) return;
-      const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "quranStatusKeluar"));
-      if (!snap.exists()) return;
-
-      const status = snap.data();
-      const curSurah = quranKhatamData?.currentSurah || 1;
-      const curAyat = quranKhatamData?.currentAyat || 0;
-
-      // Tunjuk notifikasi kalau status berbeza dengan kemajuan semasa
-      if (status.surah !== curSurah || status.ayat !== curAyat) {
-        const tarikhSimpan = new Date(status.savedAt);
-        const { label } = formatDateLabel(tarikhSimpan);
-        const h = tarikhSimpan.getHours();
-        const m = String(tarikhSimpan.getMinutes()).padStart(2, '0');
-        const ampm = h >= 12 ? 'pm' : 'am';
-        const h12 = h % 12 || 12;
-
-        setTimeout(() => {
-          showToast(
-            `📌 Status terakhir disimpan: Surah ${status.surah}. ${status.surahName} Ayat ${status.ayat} — ${label} ${h12}:${m}${ampm}. Jika app tidak selari, sila kemaskini manual atau Reset Penuh.`,
-            8000
-          );
-        }, 3000);
-      }
+      // Toast dibuang — fungsi dikosongkan
     }
-
+    
     let terskipDrawers = [];
     let terskipIndex = 0;
     let terskipFlipped = false;
