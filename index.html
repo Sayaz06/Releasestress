@@ -825,8 +825,9 @@ body.dark-mode {
     <div id="upload-progress-bar"></div>
   </div>
 
-  <input type="file" id="video-upload-input" accept="video/*" style="display: none;">
-
+<input type="file" id="video-upload-input" accept="video/*" style="display: none;">
+  <input type="file" id="quran-import-input" accept=".json" style="display: none;">
+  
   <div id="video-rest-overlay">
     <div style="color:var(--grad1); font-size:1.4rem; font-weight:bold; margin-bottom:8px; text-align:center;">Fasa 1 Selesai! 🧠</div>
     <div style="color:var(--subtext); font-size:0.9rem; margin-bottom:24px; text-align:center;">Tarik nafas, tenangkan minda. Biarkan memori diproses.</div>
@@ -1471,8 +1472,9 @@ body.dark-mode {
         </div>
         <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
           <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
-          <button id="btn-susun-alquran" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;box-shadow:0 6px 18px rgba(99,102,241,.3);">📖 Susun Al-Quran</button>
           <button id="btn-lihat-progress-log" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;box-shadow:0 6px 18px rgba(14,165,233,.3);">📊 Leaderboard Kemajuan</button>
+          <button id="btn-import-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;box-shadow:0 6px 18px rgba(16,185,129,.3);">📥 Import Data Quran (JSON)</button>
+          <button id="btn-export-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;box-shadow:0 6px 18px rgba(245,158,11,.3);">📦 Export Semua Data Quran (JSON)</button>
           <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
           <button id="btn-export-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;box-shadow:0 6px 18px rgba(245,158,11,.3);">📦 Export Semua Data Quran (JSON)</button>
           
@@ -7243,49 +7245,51 @@ if (isDoubleTap) {
       bukaTerskipAyat('cm');
     });
 
-    // ── SUSUN AL-QURAN ──
+// ── SUSUN AL-QURAN (PERMANENT — ikut nombor surah) ──
     const sectionSusunAlQuran = document.getElementById('section-susun-alquran');
-    let quranSusunan = {}; // { "1": timeId, "2": timeId, ... }
     let alQuranPenuhSurahIdx = 1;
 
-    async function loadQuranSusunan() {
-      if (!currentUser) return;
-      const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "quranSusunan"));
-      quranSusunan = snap.exists() ? (snap.data().surah || {}) : {};
-    }
-
-    async function saveQuranSusunan() {
-      if (!currentUser) return;
-      await setDoc(doc(db, "users", currentUser.uid, "settings", "quranSusunan"),
-        { surah: quranSusunan, updatedAt: Date.now() }, { merge: true });
-    }
-
 function getAlQuranPenuhActiveTimeId() {
-      // Cari timeId untuk surah semasa dalam susunan
-      for (let i = alQuranPenuhSurahIdx; i <= 114; i++) {
-        const timeId = quranSusunan[String(i)];
-        if (timeId && allQuranTimes.find(t => t.id === timeId)) {
+      // Cari quran_times yang sedang aktif
+      const activeTime = allQuranTimes.find(t => t.isActive);
+      if (activeTime) {
+        // Keluarkan nombor surah dari nama
+        const match = (activeTime.name || '').match(/^(\d+)\./);
+        if (match) alQuranPenuhSurahIdx = parseInt(match[1]);
+        return activeTime.id;
+      }
+      // Kalau tiada aktif, cari dari surah 1
+      for (let i = 1; i <= 114; i++) {
+        const surahPrefix = `${i}.`;
+        const found = allQuranTimes.find(t =>
+          (t.name || '').trim().startsWith(surahPrefix)
+        );
+        if (found) {
           alQuranPenuhSurahIdx = i;
-          return timeId;
+          return found.id;
         }
       }
-      return null; // Semua surah habis
+      return null;
     }
 
-    async function alQuranPenuhNextSurah() {
-      // Cari surah seterusnya yang ada timeId
-      for (let i = alQuranPenuhSurahIdx + 1; i <= 114; i++) {
-        const timeId = quranSusunan[String(i)];
-        if (timeId && allQuranTimes.find(t => t.id === timeId)) {
+async function alQuranPenuhNextSurah() {
+      // Cari surah semasa dari quranKhatamData
+      const curSurah = quranKhatamData?.currentSurah || alQuranPenuhSurahIdx;
+
+      // Cari quran_times yang namanya bermula dengan nombor surah seterusnya
+      for (let i = curSurah + 1; i <= 114; i++) {
+        const surahPrefix = `${i}.`;
+        const found = allQuranTimes.find(t =>
+          (t.name || '').trim().startsWith(surahPrefix)
+        );
+        if (found) {
           alQuranPenuhSurahIdx = i;
-          // Aktifkan kategori baru
-          await activateQuranPenuhSurah(timeId);
+          await activateQuranPenuhSurah(found.id);
           return true;
         }
       }
       // Habis semua 114 surah
       showToast('🕌 Tahniah! Al-Quran Penuh selesai! الحمد لله 🎉', 6000);
-
       return false;
     }
 
@@ -7470,15 +7474,95 @@ if (statusEl) {
       showToast(`✅ Surah ${surahNum} → "${sorted[idx].name}"`);
     }
 
-    document.getElementById('btn-susun-alquran').addEventListener('click', async () => {
-      await loadQuranSusunan();
-      renderSusunAlQuran();
-      showSection(sectionSusunAlQuran);
+// ── IMPORT DATA QURAN ──
+    document.getElementById('btn-import-quran-data').addEventListener('click', () => {
+      if (!confirm('Import akan TAMBAH data dari JSON ke Firestore.\n\nData sedia ada TIDAK dipadam — hanya data baru ditambah.\n\nTeruskan?')) return;
+      document.getElementById('quran-import-input').click();
     });
 
-    document.getElementById('btn-back-susun-alquran').addEventListener('click', () => {
-      showSection(document.getElementById('section-quran-times'));
-      renderGenericTimes('quran');
+    document.getElementById('quran-import-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      showToast('⏳ Membaca fail JSON...', 0);
+
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+
+        if (!json.surah || !Array.isArray(json.surah)) {
+          showToast('❌ Format JSON tidak sah.'); return;
+        }
+
+        const totalSurah = json.surah.length;
+        let surahSelesai = 0;
+        let totalAyatImport = 0;
+
+        showToast(`⏳ Mengimport ${totalSurah} surah... Jangan tutup app.`, 0);
+
+        for (const surah of json.surah) {
+          // Semak sama ada quran_times untuk surah ini sudah wujud
+          let timeId = null;
+          const existing = allQuranTimes.find(t =>
+            (t.name || '').trim().toLowerCase() === (surah.nama || '').trim().toLowerCase()
+          );
+
+          if (existing) {
+            // Guna yang sedia ada
+            timeId = existing.id;
+          } else {
+            // Cipta baru
+            const newTimeRef = doc(collection(db, "users", currentUser.uid, "quran_times"));
+            await setDoc(newTimeRef, {
+              name: surah.nama,
+              isActive: surah.isActive || false,
+              createdAt: Date.now()
+            });
+            timeId = newTimeRef.id;
+          }
+
+          // Import ayat — hanya tambah yang belum wujud (ikut tajuk)
+          const existingDrawers = allQuranDrawers.filter(d => d.timeId === timeId);
+          const existingTitles = new Set(existingDrawers.map(d => d.title));
+
+          const ayatBaru = (surah.ayat || []).filter(a => !existingTitles.has(a.tajuk));
+
+          if (ayatBaru.length > 0) {
+            let i = 0;
+            while (i < ayatBaru.length) {
+              const batch = writeBatch(db);
+              const end = Math.min(i + 499, ayatBaru.length);
+              for (let j = i; j < end; j++) {
+                const a = ayatBaru[j];
+                const ref = doc(collection(db, "users", currentUser.uid, "quran_drawers"));
+                batch.set(ref, {
+                  title: a.tajuk || '',
+                  zikir: a.arab || '',
+                  maksud: a.maksud || '',
+                  target: a.target || '',
+                  timeId: timeId,
+                  createdAt: Date.now() + j
+                });
+              }
+              await batch.commit();
+              i = end;
+              totalAyatImport += (end - (i - (end - i)));
+            }
+          }
+
+          surahSelesai++;
+          if (surahSelesai % 10 === 0) {
+            showToast(`⏳ ${surahSelesai}/${totalSurah} surah selesai...`, 0);
+          }
+        }
+
+        showToast(`✅ Import selesai! ${surahSelesai} surah, ${totalAyatImport} ayat baru ditambah.`, 6000);
+        document.getElementById('quran-import-input').value = '';
+
+      } catch(e) {
+        showToast('❌ Gagal import: ' + e.message);
+        document.getElementById('quran-import-input').value = '';
+      }
     });
 
 // ── SEARCH + GOTO EMPTY ──
