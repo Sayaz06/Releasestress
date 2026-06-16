@@ -4938,6 +4938,12 @@ overlay.classList.add('show');
         const targetAyat = progressTerkini.ayat || 0;
         if (statusEl) statusEl.textContent = `Rekod dijumpai: Surah ${targetSurah}, Ayat ${targetAyat}. Mengesahkan laci...`;
 
+        // Pastikan allRoutines siap dulu sebelum mula semak
+        if (allRoutines.length === 0) {
+          rebuildRoutines();
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         // Tunggu sehingga allRoutines siap dan laci selari
         let cuba = 0;
         const maksimumCuba = 33; // 33 x 300ms = ~10 saat maksimum
