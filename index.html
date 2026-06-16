@@ -1246,6 +1246,9 @@ body.dark-mode {
 <button id="btn-show-qr" class="btn btn-secondary" style="border-color:#34d399; color:#34d399;">
             📱 QR Code App
           </button>
+          <button id="btn-reset-quran-history-dev" class="btn btn-secondary" style="border-color:#dc2626;color:#f87171;">
+            🗑️ Reset History Quran (Dev)
+          </button>
         </div>
         <div class="footer mt-16">
           Repo: <span class="small">Stressbetul / Istigfar</span>
@@ -8245,8 +8248,32 @@ const lainnya = allQuranTimes
       document.getElementById('qr-modal').style.display = 'flex';
     });
 
-    document.getElementById('btn-close-qr').addEventListener('click', () => {
+document.getElementById('btn-close-qr').addEventListener('click', () => {
       document.getElementById('qr-modal').style.display = 'none';
+    });
+
+    // ── RESET HISTORY QURAN (PADAM SEKALI SAHAJA) ──
+    document.getElementById('btn-reset-quran-history-dev').addEventListener('click', async () => {
+      if (!currentUser) return;
+      if (!confirm('Padam SEMUA history harian Quran dan leaderboard kemajuan?\n\nTindakan ini tidak boleh diundur!')) return;
+      showToast('⏳ Memadamkan history...', 0);
+      try {
+        const [tapSnap, logSnap] = await Promise.all([
+          getDocs(collection(db, "users", currentUser.uid, "quran_daily_taps")),
+          getDocs(collection(db, "users", currentUser.uid, "quran_progress_log"))
+        ]);
+        const semua = [...tapSnap.docs, ...logSnap.docs];
+        let i = 0;
+        while (i < semua.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + 499, semua.length);
+          for (let j = i; j < end; j++)
+            batch.delete(semua[j].ref);
+          await batch.commit();
+          i = end;
+        }
+        showToast(`✅ ${semua.length} rekod berjaya dipadam!`);
+      } catch(e) { showToast('❌ Gagal: ' + e.message); }
     });
 
 // ── EXPORT DATA QURAN ──
