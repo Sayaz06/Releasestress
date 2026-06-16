@@ -1472,7 +1472,9 @@ body.dark-mode {
         <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
           <div id="quran-khatam-card" style="margin-bottom:8px;"></div>
           <button id="btn-susun-alquran" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;box-shadow:0 6px 18px rgba(99,102,241,.3);">📖 Susun Al-Quran</button>
+          <button id="btn-lihat-progress-log" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;box-shadow:0 6px 18px rgba(14,165,233,.3);">📊 Leaderboard Kemajuan</button>
           <button id="btn-add-quran-time" class="btn btn-sm mt-8">Tambah Surah/Juzuk</button>
+          
           <button id="btn-pecah-surah" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">✂️ Pecahkan Surah Besar kepada Surah Berasingan</button>
           <div id="quran-times-list" style="padding:10px;margin-top:8px;min-height:120px;"></div>
         </div>
@@ -1572,6 +1574,21 @@ body.dark-mode {
   <div class="list" id="cm-history-list" style="padding:10px;"></div>
 </section>
 
+<!-- PAGE LEADERBOARD PROGRESS -->
+<section id="section-progress-log" class="section">
+  <div class="topbar">
+    <button id="btn-back-progress-log" class="btn btn-secondary btn-sm">← Surah/Juzuk</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#0ea5e9;">📊 Leaderboard Kemajuan</div>
+      <div class="topbar-sub">Rekod setiap kali app simpan kemajuan</div>
+    </div>
+  </div>
+  <div style="font-size:0.72rem;color:var(--subtext);text-align:center;margin-bottom:8px;padding:6px 10px;background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.2);border-radius:8px;">
+    💡 App simpan kemajuan ke sini setiap kali ayat gandaan 5 selesai. Rekod paling atas = kemajuan terkini. Bila app dibuka semula, rekod tertinggi dipilih secara automatik.
+  </div>
+  <div class="list" id="progress-log-list" style="padding:10px;"></div>
+</section>
+      
 <section id="section-susun-alquran" class="section">
       
 <div class="topbar">
@@ -1867,8 +1884,9 @@ import {
       signInWithEmailAndPassword,
       updatePassword
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
 import {
-getFirestore,
+      getFirestore,
       doc,
       setDoc,
       getDoc,
@@ -1880,8 +1898,10 @@ getFirestore,
       onSnapshot,
       query,
       orderBy,
+      limit,
       writeBatch
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
     
     // IMPORT BARU: FIREBASE STORAGE (Masih dibiarkan mengikut arahan)
     import { 
@@ -6023,15 +6043,41 @@ function getSurahHariIni() {
       };
     }
 
-    async function loadQuranKhatam() {
+async function loadQuranKhatam() {
       if (!currentUser) return;
       const snap = await getDoc(doc(db,"users",currentUser.uid,"settings","quranKhatam"));
-      quranKhatamData = snap.exists() ? snap.data() : {
+      const dataFirestore = snap.exists() ? snap.data() : {
         currentSurah:1, currentAyat:0, totalAyatRead:0,
         lastUpdateTs: Date.now(), history:[], startedAt:Date.now()
       };
+
+      // ── LEADERBOARD: Bandingkan dengan rekod terkini — pilih yang lebih maju ──
+      const progressTerkini = await loadQuranProgressTerkini();
+      if (
+        progressTerkini &&
+        (progressTerkini.totalAyatRead || 0) > (dataFirestore.totalAyatRead || 0)
+      ) {
+        // Rekod leaderboard lebih maju — guna dia, patch ke dataFirestore
+        quranKhatamData = {
+          ...dataFirestore,
+          currentSurah: progressTerkini.surah || dataFirestore.currentSurah,
+          currentAyat: progressTerkini.ayat || dataFirestore.currentAyat,
+          totalAyatRead: progressTerkini.totalAyatRead,
+          lastUpdateTs: progressTerkini.savedAt || dataFirestore.lastUpdateTs
+        };
+        // Patch balik ke Firestore supaya selaras
+        await setDoc(
+          doc(db, "users", currentUser.uid, "settings", "quranKhatam"),
+          quranKhatamData,
+          { merge: true }
+        );
+        showToast("🔄 Kemajuan diselaraskan dari leaderboard.", 3000);
+      } else {
+        quranKhatamData = dataFirestore;
+      }
+
       renderQuranKhatamCard();
-// Toast peringatan surah hari ini
+      // Toast peringatan surah hari ini
       const s = getSurahHariIni();
       if (s) {
         setTimeout(() => {
@@ -7651,6 +7697,79 @@ const lainnya = allQuranTimes
     document.getElementById('btn-close-qr').addEventListener('click', () => {
       document.getElementById('qr-modal').style.display = 'none';
     });
+
+// ── LEADERBOARD PROGRESS LOG ──
+    document.getElementById('btn-lihat-progress-log').addEventListener('click', async () => {
+      await muatProgressLog();
+      showSection(document.getElementById('section-progress-log'));
+    });
+
+    document.getElementById('btn-back-progress-log').addEventListener('click', () => {
+      showSection(document.getElementById('section-quran-times'));
+      renderGenericTimes('quran');
+    });
+
+    async function muatProgressLog() {
+      if (!currentUser) return;
+      const list = document.getElementById('progress-log-list');
+      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
+      try {
+        const q = query(
+          collection(db, "users", currentUser.uid, "quran_progress_log"),
+          orderBy("savedAt", "desc"),
+          limit(50)
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          list.innerHTML = '<div class="empty-state">Belum ada rekod. Mula countdown untuk rekod pertama.</div>';
+          return;
+        }
+
+        list.innerHTML = '';
+        let isTop = true;
+
+        snap.docs.forEach((docSnap, idx) => {
+          const d = docSnap.data();
+          const tarikh = new Date(d.savedAt);
+          const { label } = formatDateLabel(tarikh);
+          const h = tarikh.getHours();
+          const m = String(tarikh.getMinutes()).padStart(2, '0');
+          const s = String(tarikh.getSeconds()).padStart(2, '0');
+          const ampm = h >= 12 ? 'pm' : 'am';
+          const h12 = h % 12 || 12;
+          const masaStr = `${h12}:${m}:${s}${ampm}`;
+          const surahName = QURAN_SURAH_NAMES[(d.surah || 1) - 1] || '';
+          const isFirst = idx === 0;
+
+          list.insertAdjacentHTML('beforeend', `
+            <div class="list-item" style="flex-direction:column;align-items:flex-start;gap:5px;${isFirst ? 'border-left:3px solid #0ea5e9;' : ''}">
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  ${isFirst ? '<span style="font-size:0.7rem;background:#0ea5e9;color:white;padding:2px 8px;border-radius:999px;font-weight:700;">TERKINI</span>' : `<span style="font-size:0.7rem;color:var(--subtext);">#${idx + 1}</span>`}
+                  <span style="font-size:0.82rem;font-weight:700;color:${isFirst ? '#0ea5e9' : 'var(--text)'};">
+                    Surah ${d.surah}. ${surahName} — Ayat ${d.ayat}
+                  </span>
+                </div>
+                <span style="font-size:0.7rem;color:var(--subtext);">${masaStr}</span>
+              </div>
+              <div style="font-size:0.72rem;color:var(--subtext);">${label}</div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <span style="font-size:0.72rem;color:#34d399;">✅ Total: <strong>${(d.totalAyatRead||0).toLocaleString()} ayat</strong></span>
+                <span style="font-size:0.72rem;color:#a5b4fc;">⚡ Sesi: <strong>+${d.ayatSesi||0} ayat</strong></span>
+                <span style="font-size:0.72rem;color:#fcd34d;">🏃 ${(d.kelajuanSesi||0).toFixed(2)} ayat/min</span>
+              </div>
+            </div>
+          `);
+          isTop = false;
+        });
+
+      } catch(e) {
+        list.innerHTML = `<div class="empty-state">Gagal muatkan: ${e.message}</div>`;
+      }
+    }
+    
 // ── RESET PENUH QURAN ──
 document.getElementById('btn-reset-quran-full').addEventListener('click', async () => {
       if (!confirm("⚠️ Reset PENUH?\n\nIni akan:\n• Padam semua sejarah bacaan\n• Reset purata kelajuan ke 0\n• Kembali ke Surah 1\n\nData tidak boleh dipulihkan!")) return;
@@ -7735,6 +7854,17 @@ async function saveQuranSession() {
 
       quranKhatamData = newData;
       await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
+
+      // ── LEADERBOARD: Simpan setiap kemajuan sebagai rekod berasingan ──
+      await saveQuranProgress({
+        surah: curSurah,
+        ayat: curAyat,
+        totalAyatRead: newTotal,
+        ayatSesi,
+        kelajuanSesi,
+        savedAt: Date.now()
+      });
+
       renderQuranKhatamCard();
       const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
       const dailySnap = await getDoc(dailyRef);
@@ -7744,6 +7874,41 @@ async function saveQuranSession() {
         dateKey: dateKeyQ(Date.now()),
         updatedAt: Date.now()
       }, { merge: true });
+    }
+
+    // ── FUNGSI BARU: Simpan ke Leaderboard Progress ──
+    async function saveQuranProgress(data) {
+      if (!currentUser) return;
+      await addDoc(collection(db, "users", currentUser.uid, "quran_progress_log"), {
+        ...data,
+        savedAt: Date.now(),
+        dateKey: dateKeyQ(Date.now())
+      });
+    }
+
+    // ── FUNGSI BARU: Baca kemajuan TERKINI dari Leaderboard ──
+    async function loadQuranProgressTerkini() {
+      if (!currentUser) return null;
+      try {
+const q = query(
+          collection(db, "users", currentUser.uid, "quran_progress_log"),
+          orderBy("savedAt", "desc"),
+          limit(20)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) return null;
+
+        // Ambil 20 rekod terkini, pilih yang totalAyatRead TERTINGGI
+        const rekods = snap.docs.slice(0, 20).map(d => d.data());
+        const terbaik = rekods.reduce((best, cur) =>
+          (cur.totalAyatRead || 0) > (best.totalAyatRead || 0) ? cur : best
+        , rekods[0]);
+
+        return terbaik;
+      } catch(e) {
+        console.log("Gagal baca progress log:", e);
+        return null;
+      }
     }
   
 // ── KHATAM QURAN ──
