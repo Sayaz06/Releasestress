@@ -4862,7 +4862,7 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
     const btnFullscreenFact = document.getElementById('btn-fullscreen-fact');
     const fullscreenOverlay = document.getElementById('fullscreen-fact-overlay');
 
-    function syncFullscreenFact() {
+function syncFullscreenFact() {
       if (!fullscreenOverlay.classList.contains('show')) return;
       const fsContent = document.getElementById('fullscreen-fact-content');
       const fsTitle = document.getElementById('fullscreen-fact-title');
@@ -4870,19 +4870,12 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
       fsTitle.textContent = factTitleEl.textContent;
       fsContent.innerHTML = factContentEl.innerHTML;
       fsHint.textContent = factHintEl.textContent;
-      // Apply font style sama seperti kotak asal
-      const isQuranMode = routineMode && routineModeSource === 'quran';
-      if (isQuranMode && !isFlipped) {
-        fsContent.style.fontSize = `${quranFontSize * 1.3}rem`;
-        fsContent.style.fontFamily = "'UthmanicHafs','Traditional Arabic',serif";
-        fsContent.style.direction = 'rtl';
-        fsContent.style.textAlign = 'right';
-      } else {
-        fsContent.style.fontSize = '1.4rem';
-        fsContent.style.fontFamily = 'inherit';
-        fsContent.style.direction = 'ltr';
-        fsContent.style.textAlign = 'left';
-      }
+      // Salin terus style dari kotak asal — tidak dibesarkan
+      fsContent.style.fontSize = factContentEl.style.fontSize || '';
+      fsContent.style.fontFamily = factContentEl.style.fontFamily || '';
+      fsContent.style.direction = factContentEl.style.direction || '';
+      fsContent.style.textAlign = factContentEl.style.textAlign || '';
+      fsContent.style.lineHeight = factContentEl.style.lineHeight || '';
     }
 
     btnFullscreenFact.addEventListener('click', (e) => {
