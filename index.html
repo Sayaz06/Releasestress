@@ -2276,7 +2276,19 @@ const MODE_DAILY_DEFAULTS = { quran: 6236, doa: 1000, hadis: 10 };
     ].map(([l,n]) => ({ char: l+'\u0651'+'\u0650', label: n }));
 const QURAN_SURAH_AYAT = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,40,46,42,29,19,36,25,22,17,19,26,30,20,15,21,11,8,8,19,5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6];
 const QURAN_SURAH_NAMES = ['Al-Fatihah','Al-Baqarah','Ali-\'Imran','An-Nisaa\'','Al-Ma\'idah','Al-An\'aam','Al-A\'raaf','Al-Anfaal','At-Taubah','Yunus','Hud','Yusuf','Ar-Ra\'d','Ibrahim','Al-Hijr','An-Nahl','Al-Israa\'','Al-Kahfi','Maryam','Taha','Al-Anbiyaa\'','Al-Hajj','Al-Mu\'minuun','An-Nur','Al-Furqaan','Asy-Syu\'araa\'','An-Naml','Al-Qasas','Al-\'Ankabuut','Ar-Ruum','Luqman','As-Sajdah','Al-Ahzaab','Saba\'','Faatir','Yaa siin','As-Saaffaat','Saad','Az-Zumar','Ghaafir (Al-Mu\'min)','Fussilat','Asy-Syura','Az-Zukhruf','Ad-Dukhaan','Al-Jaathiyah','Al-Ahqaaf','Muhammad','Al-Fat-h','Al-Hujuraat','Qaaf','Adz-Dzaariyaat','At-Tuur','An-Najm','Al-Qamar','Ar-Rahmaan','Al-Waaqi\'ah','Al-Hadiid','Al-Mujaadalah','Al-Hasyr','Al-Mumtahanah','As-Saff','Al-Jumu\'ah','Al-Munaafiquun','At-Taghaabun','At-Talaaq','At-Tahriim','Al-Mulk','Al-Qalam','Al-Haaqqah','Al-Ma\'aarij','Nuh','Al-Jinn','Al-Muzzammil','Al-Muddaththir','Al-Qiyamah','Al-Insaan','Al-Mursalaat','An-Naba\'','An-Naazi\'aat','\'Abasa','At-Takwiir','Al-Infitaar','Al-Mutaffifiin','Al-Insyiqaaq','Al-Buruuj','At-Taariq','Al-A\'laa','Al-Ghaasyiyah','Al-Fajr','Al-Balad','Asy-Syams','Al-Lail','Adh-Dhuha','Al-Insyiraah','At-Tiin','Al-\'Alaq','Al-Qadr','Al-Bayyinah','Az-Zalzalah','Al-\'Aadiyaat','Al-Qaari\'ah','At-Takaathur','Al-\'Asr','Al-Humazah','Al-Fiil','Quraisy','Al-Maa\'uun','Al-Kauthar','Al-Kaafiruun','An-Nasr','Al-Masad','Al-Ikhlaas','Al-Falaq','An-Naas'];
-        const TOTAL_AYAT_QURAN = 6236;
+
+// ── SURAH PERMANENT — 114 surah hardcoded ──
+const SURAH_PERMANENT = QURAN_SURAH_NAMES.map((nama, idx) => ({
+  num: idx + 1,
+  nama: nama,
+  namaLengkap: `${idx + 1}. ${nama}`,
+  jumlahAyat: QURAN_SURAH_AYAT[idx]
+}));
+
+// Variable surah aktif semasa — diset dari leaderboard
+let currentQuranSurahNum = 1;
+    
+    const TOTAL_AYAT_QURAN = 6236;
     const QURAN_KHATAM_START = new Date('2026-05-21T00:00:00');
     const QURAN_KHATAM_END   = new Date(QURAN_KHATAM_START.getTime() + 342 * 864e5);
     let quranKhatamData    = null;
@@ -7481,7 +7493,7 @@ if (statusEl) {
       document.getElementById('quran-import-input').click();
     });
 
-    document.getElementById('quran-import-input').addEventListener('change', async (e) => {
+document.getElementById('quran-import-input').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
@@ -7502,33 +7514,22 @@ if (statusEl) {
         showToast(`⏳ Mengimport ${totalSurah} surah... Jangan tutup app.`, 0);
 
         for (const surah of json.surah) {
-          // Semak sama ada quran_times untuk surah ini sudah wujud
-          let timeId = null;
-          const existing = allQuranTimes.find(t =>
-            (t.name || '').trim().toLowerCase() === (surah.nama || '').trim().toLowerCase()
-          );
+          // Extract nombor surah dari nama (contoh: "2. Al-Baqarah" → 2)
+          const matchNum = (surah.nama || '').match(/^(\d+)\./);
+          if (!matchNum) continue;
+          const surahNum = parseInt(matchNum[1]);
+          if (surahNum < 1 || surahNum > 114) continue;
 
-          if (existing) {
-            // Guna yang sedia ada
-            timeId = existing.id;
-          } else {
-            // Cipta baru
-            const newTimeRef = doc(collection(db, "users", currentUser.uid, "quran_times"));
-            await setDoc(newTimeRef, {
-              name: surah.nama,
-              isActive: surah.isActive || false,
-              createdAt: Date.now()
-            });
-            timeId = newTimeRef.id;
-          }
+          // TimeId adalah nombor surah terus — permanent
+          const timeId = surahNum;
 
-          // Import ayat — hanya tambah yang belum wujud (ikut tajuk)
+          // Semak ayat yang sudah wujud
           const existingDrawers = allQuranDrawers.filter(d => d.timeId === timeId);
           const existingTitles = new Set(existingDrawers.map(d => d.title));
 
           const ayatBaru = (surah.ayat || []).filter(a => !existingTitles.has(a.tajuk));
 
-if (ayatBaru.length > 0) {
+          if (ayatBaru.length > 0) {
             let i = 0;
             while (i < ayatBaru.length) {
               const batch = writeBatch(db);
