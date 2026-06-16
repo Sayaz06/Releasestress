@@ -873,7 +873,7 @@ body.dark-mode {
     .small { font-size: 0.8rem; }
 
     /* ======== OVERLAY COUNTDOWN QURAN ======== */
-    #quran-load-overlay {
+#quran-load-overlay {
       display: none;
       position: fixed;
       inset: 0;
@@ -884,6 +884,10 @@ body.dark-mode {
       justify-content: center;
       padding: 24px;
       backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+    #quran-load-overlay.show {
+      pointer-events: all;
     }
     #quran-load-overlay.show {
       display: flex;
