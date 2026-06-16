@@ -7910,10 +7910,9 @@ async function saveQuranSession() {
 // Papar toast TERUS sebelum await supaya muncul semasa ayat betul
       showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
 
-      quranKhatamData = newData;
-      await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
+quranKhatamData = newData;
 
-      // ── LEADERBOARD: Simpan setiap kemajuan sebagai rekod berasingan ──
+      // ── LEADERBOARD DULU — supaya kalau app tutup tiba-tiba, leaderboard ada rekod terkini ──
       await saveQuranProgress({
         surah: curSurah,
         ayat: curAyat,
@@ -7922,6 +7921,9 @@ async function saveQuranSession() {
         kelajuanSesi,
         savedAt: Date.now()
       });
+
+      // Baru tulis ke dokumen utama
+      await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"), newData, { merge: true });
 
       renderQuranKhatamCard();
       const dailyRef = doc(db, "users", currentUser.uid, "quran_daily_taps", dateKeyQ(Date.now()));
