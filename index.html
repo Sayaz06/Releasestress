@@ -5631,11 +5631,11 @@ document.getElementById('btn-go-quran-times').addEventListener('click', () => {
 
     
     document.getElementById('btn-back-tasbih-quran').addEventListener('click', () => showSection(sectionTasbih));
-    document.getElementById('btn-back-quran-drawer').addEventListener('click', () => {
-      showSection(document.getElementById('section-quran-times')); renderGenericTimes('quran');
+document.getElementById('btn-back-quran-drawer').addEventListener('click', () => {
+      showSection(document.getElementById('section-quran-times'));
+      renderSurahPermanentList();
     });
-document.getElementById('btn-pecah-surah').addEventListener('click', async () => {
-    
+
     document.getElementById('btn-add-quran-drawer').addEventListener('click', () => {
       if(currentQuranTimeId) addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"",zikir:"",target:"",maksud:"",timeId:currentQuranTimeId,createdAt:Date.now()});
     });
@@ -7196,7 +7196,6 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       }
     }
 
-    const btnLoginGoogle = document.getElementById("btn-login-google");
     let terskipDrawers = [];
     let terskipIndex = 0;
     let terskipFlipped = false;
