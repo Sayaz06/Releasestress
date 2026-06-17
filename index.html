@@ -1174,8 +1174,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
       </div>
       <input id="fs-rehat-input" type="text" placeholder='Taip "keluar" untuk off Al-Quran...'
       <div id="fs-rehat-pesan" style="font-size:0.75rem;color:#f87171;min-height:18px;text-align:center;"></div>
-      <button id="fs-rehat-btn-keluar" style="width:100%;padding:12px;border-radius:999px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;">Teruskan Membaca →</button>
-    </div>
+      <button id="fs-rehat-btn-keluar" style="display:none;" aria-hidden="true"></button>
+        </div>
   </div>
   
 <!-- OVERLAY TUNGGU KESELAMATAN QURAN -->
@@ -3224,9 +3224,9 @@ const ayatDariBaseline = totalBaru - quranPopupBaseline;
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
-                if (patutPopup) {
-                  setTimeout(() => bukaPopupRehatFullscreen(totalBaru), 500);
-                }
+if (patutPopup) {
+                setTimeout(() => bukaPopupRehatFullscreen(totalBaru), 50);
+              }
               });
             }
           }
@@ -5208,9 +5208,11 @@ function cubaKeluar() {
         }
       }
 
-      btnKeluar.addEventListener('click', cubaKeluar);
-      input.addEventListener('keydown', (e) => {
+input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') cubaKeluar();
+      });
+      input.addEventListener('input', () => {
+        if (input.value.trim() === 'keluar') cubaKeluar();
       });
     }
 
