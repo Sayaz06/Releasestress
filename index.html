@@ -3207,18 +3207,24 @@ if (isQuran) {
             );
 
 if (patutSave) {
-              // Simpan nilai ayat untuk digunakan dalam saveQuranSession
               quranAyatSemasa = ayatUntukSave;
               quranSurahSemasa = surahUntukSave;
               clearTimeout(quranSessionTimer);
-saveQuranSession().then(() => {
+
+              // Kira total baru SEBELUM save untuk semak popup
+              let totalBaru = 0;
+              for (let i = 0; i < surahUntukSave - 1; i++) totalBaru += QURAN_SURAH_AYAT[i];
+              totalBaru += ayatUntukSave;
+
+              const ayatDariBaseline = totalBaru - quranPopupBaseline;
+              const patutPopup = ayatDariBaseline > 0 && ayatDariBaseline % 10 === 0;
+
+              saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
-// Popup hanya bila dah lepasi baseline + gandaan 10
-                const ayatDariBaseline = (quranKhatamData?.totalAyatRead || 0) - quranPopupBaseline;
-                if (ayatDariBaseline > 0 && ayatDariBaseline % 10 === 0) {
-                  setTimeout(() => bukaPopupRehatFullscreen(quranKhatamData?.totalAyatRead || 0), 500);
+                if (patutPopup) {
+                  setTimeout(() => bukaPopupRehatFullscreen(totalBaru), 500);
                 }
               });
             }
