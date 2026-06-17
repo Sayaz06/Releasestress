@@ -8697,8 +8697,17 @@ async function saveQuranSession() {
       };
 
 // Papar toast TERUS sebelum await supaya muncul semasa ayat betul
-      showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
-
+      if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+        // Page zoom — tunjuk notifikasi khas setiap 10 ayat
+        const totalSemasa = newTotal;
+        if (totalSemasa % 10 === 0) {
+          showToast(`🌟 Tahniah! ${totalSemasa} ayat selesai — Mari rehatkan minda sebentar! 🧠`, 5000);
+        }
+      } else {
+        // Page biasa — toast asal
+        showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
+      }
+  
 quranKhatamData = newData;
 
       // ── LEADERBOARD DULU — supaya kalau app tutup tiba-tiba, leaderboard ada rekod terkini ──
