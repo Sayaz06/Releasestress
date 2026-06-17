@@ -3197,119 +3197,58 @@ if (routineMode && allRoutines.length > 0) {
         didDecrement = true;
         const isQuran = routineModeSource === 'quran';
 
-if (isQuran) {
-          const isFlipKeArab = learningMode === 3 && comboStep === 1;
-          const isFlipKeMaksud = learningMode === 3 && comboStep === 0;
-
-if (isFlipKeArab) {
-            // Tap 2 — user flip ke maksud, ambil ayat semasa dan save
-            const laciSemasaNow = allRoutines[currentRoutineIndex];
-            const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
-            const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
-            const surahUntukSave = parsedNow ? parsedNow.surahNum : 0;
-            const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
-
-            quranSessionTapCount++;
-            quranSessionLastTapTime = Date.now();
-            if (!quranSessionStartTime) quranSessionStartTime = Date.now();
-
-            const patutSave = ayatUntukSave > 0 && (
-              ayatUntukSave % 5 === 0 ||
-              ayatUntukSave === jumlahAyatSurah
-            );
-
-            const ayatMod10 = ayatUntukSave % 10;
-            if (ayatMod10 === 1 || ayatMod10 === 6) {
-              quranPopupSuisLock = false;
-            }
-
-            if (patutSave) {
-              if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
-                quranPopupSuisOn = true;
-              }
-
-              const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
-
-              console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
-
-              saveQuranSession().then(() => {
-                quranSessionTapCount = 0;
-                quranSessionStartTime = null;
-                quranSessionLastTapTime = null;
-                if (patutPopup) {
-                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
-                }
-              });
-            }
-          }
-
-if (isFlipKeArab) {
-            // Tap 2 — user flip ke maksud, save ayat semasa
-            const laciSemasaNow = allRoutines[currentRoutineIndex];
-            const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
-            const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
-            const surahUntukSave = parsedNow ? parsedNow.surahNum : 0;
-            const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
-
-            quranSessionTapCount++;
-            quranSessionLastTapTime = Date.now();
-            if (!quranSessionStartTime) quranSessionStartTime = Date.now();
-
-            const patutSave = ayatUntukSave > 0 && (
-              ayatUntukSave % 5 === 0 ||
-              ayatUntukSave === jumlahAyatSurah
-            );
-
-            // Semak lock SETIAP ayat — tidak perlu tunggu patutSave
-            const ayatMod10 = ayatUntukSave % 10;
-            if (ayatMod10 === 1 || ayatMod10 === 6) {
-              quranPopupSuisLock = false;
-            }
-
-            if (patutSave) {
-              // Gandaan 5 — cuba ON suis kalau lock dah hilang
-              if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
-                quranPopupSuisOn = true;
-              }
-
-              const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
-
-              console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
-
-              saveQuranSession().then(() => {
-                quranSessionTapCount = 0;
-                quranSessionStartTime = null;
-                quranSessionLastTapTime = null;
-                if (patutPopup) {
-                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
-                }
-              });
-            }
-          }
-        }
-
 if (isQuran && learningMode === 0) {
           isSempadan = true;
           routineAutoNext = true;
- } else if (isQuran && learningMode === 3) {
-          // Quran Combo: flip dulu → ketuk lagi → laci seterusnya
+        } else if (isQuran && learningMode === 3) {
           if (comboStep === 0) {
-            // Simpan ayat semasa SEKARANG sebelum flip — ini ayat yang sedang dibaca
-            const laciSemasaArab = allRoutines[currentRoutineIndex];
-            const parsedArab = laciSemasaArab ? parseLaciQuran(laciSemasaArab.title) : null;
-            quranAyatSemasa = parsedArab ? parsedArab.ayatNum : 0;
-            quranSurahSemasa = parsedArab ? parsedArab.surahNum : 0;
+            // Tap 1 — flip ke Arab sahaja
             isFlipped = true;
             comboStep = 1;
             triggerFlipAnimation(renderCurrentFact);
           } else {
-            // Ini masa flip ke maksud — ayat dalam quranAyatSemasa adalah ayat yang betul
+            // Tap 2 — flip ke Maksud, SAVE berlaku di sini
+            const laciSemasaNow = allRoutines[currentRoutineIndex];
+            const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
+            const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
+            const surahUntukSave = parsedNow ? parsedNow.surahNum : 0;
+            const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
+
+            quranSessionTapCount++;
+            quranSessionLastTapTime = Date.now();
+            if (!quranSessionStartTime) quranSessionStartTime = Date.now();
+
+            const patutSave = ayatUntukSave > 0 && (
+              ayatUntukSave % 5 === 0 ||
+              ayatUntukSave === jumlahAyatSurah
+            );
+
+            const ayatMod10 = ayatUntukSave % 10;
+            if (ayatMod10 === 1 || ayatMod10 === 6) {
+              quranPopupSuisLock = false;
+            }
+
+            if (patutSave) {
+              if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
+                quranPopupSuisOn = true;
+              }
+              const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
+              console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
+              saveQuranSession().then(() => {
+                quranSessionTapCount = 0;
+                quranSessionStartTime = null;
+                quranSessionLastTapTime = null;
+                if (patutPopup) {
+                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
+                }
+              });
+            }
+
             isFlipped = false;
             comboStep = 0;
             isSempadan = true;
             routineAutoNext = true;
-          } 
-
+          }
         } else {
           // Mode lain: kira target seperti biasa
           if (currentRoutineTarget > 0) {
