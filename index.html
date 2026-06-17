@@ -4974,7 +4974,8 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
     const btnFullscreenFact = document.getElementById('btn-fullscreen-fact');
     const fullscreenOverlay = document.getElementById('fullscreen-fact-overlay');
     let fsShowingMaksud = false;
-    
+    let fsAyatCount = 0; // Kiraan ayat dalam sesi fullscreen
+        
 // ── OVERLAY TUNGGU KESELAMATAN QURAN ──
     async function mulakanCountdownQuran(callback) {
       const overlay = document.getElementById('quran-load-overlay');
@@ -5157,12 +5158,14 @@ function syncFullscreenFact() {
       popup.style.pointerEvents = 'all';
       setTimeout(() => input.focus(), 100);
 
-      function cubaKeluar() {
+function cubaKeluar() {
         if (input.value.trim() === 'keluar') {
           popup.style.display = 'none';
           popup.style.pointerEvents = 'none';
           input.value = '';
           btnKeluar.removeEventListener('click', cubaKeluar);
+          // Sync fullscreen selepas popup tutup
+          setTimeout(() => syncFullscreenFact(), 200);
         } else {
           pesanEl.textContent = '⚠️ Sila taip "keluar" dengan tepat untuk meneruskan.';
           input.focus();
@@ -5201,8 +5204,9 @@ document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (
       e.stopPropagation();
       fullscreenOverlay.classList.remove('show');
       fsShowingMaksud = false;
+      fsAyatCount = 0;
     });
-
+    
 // Tap overlay fullscreen = trigger decrementTasbih (combo jalan seperti biasa)
 let fsTouchStartY = 0;
     let fsIsSwiping = false;
@@ -5250,11 +5254,17 @@ fullscreenOverlay.addEventListener('touchstart', (e) => {
         fsContent.textContent = maksud || 'Tiada maksud diisi.';
         fsContent.scrollTop = 0;
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
-      } else {
+} else {
         // Tap kedua — trigger decrement (next ayat), reset flag
         fsShowingMaksud = false;
+        fsAyatCount++;
         decrementTasbih();
-        setTimeout(() => syncFullscreenFact(), 400);
+        // Semak setiap 10 ayat — trigger popup
+        if (fsAyatCount > 0 && fsAyatCount % 10 === 0) {
+          setTimeout(() => bukaPopupRehatFullscreen(fsAyatCount), 300);
+        } else {
+          setTimeout(() => syncFullscreenFact(), 400);
+        }
       }
     });
     
