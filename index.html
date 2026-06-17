@@ -1178,8 +1178,8 @@ body.dark-mode {
   </div>
 
 <!-- POPUP REHAT DALAM FULLSCREEN -->
-  <div id="fs-rehat-popup" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:none;">
-    <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div id="fs-rehat-popup" style="display:none;position:fixed;inset:0;z-index:99999999;
+      <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
       <div style="font-size:2rem;">🌟</div>
       <div style="font-size:1.1rem;font-weight:700;color:#34d399;text-align:center;">Pencapaian Luar Biasa!</div>
       <div style="font-size:0.88rem;color:#e5e7eb;text-align:center;line-height:1.7;">
@@ -5256,15 +5256,9 @@ fullscreenOverlay.addEventListener('touchstart', (e) => {
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
 } else {
         // Tap kedua — trigger decrement (next ayat), reset flag
-        fsShowingMaksud = false;
-        fsAyatCount++;
+fsShowingMaksud = false;
         decrementTasbih();
-        // Semak setiap 10 ayat — trigger popup
-        if (fsAyatCount > 0 && fsAyatCount % 10 === 0) {
-          setTimeout(() => bukaPopupRehatFullscreen(fsAyatCount), 300);
-        } else {
-          setTimeout(() => syncFullscreenFact(), 400);
-        }
+        setTimeout(() => syncFullscreenFact(), 400);
       }
     });
     
@@ -8872,13 +8866,13 @@ async function saveQuranSession() {
       };
 
 // Papar toast TERUS sebelum await supaya muncul semasa ayat betul
-if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
-        const totalSemasa = newTotal;
-        if (totalSemasa % 10 === 0) {
-          bukaPopupRehatFullscreen(totalSemasa);
-        }
-      } else {
+// Toast page biasa
+      if (!fullscreenOverlay || !fullscreenOverlay.classList.contains('show')) {
         showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
+      }
+      // Popup global setiap 10 ayat — tindih semua termasuk fullscreen
+      if (newTotal > 0 && newTotal % 10 === 0) {
+        setTimeout(() => bukaPopupRehatFullscreen(newTotal), 500);
       }
   
 quranKhatamData = newData;
