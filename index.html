@@ -1226,8 +1226,14 @@ body.dark-mode {
     
     <!-- BAHAGIAN TEKS — SELEBIHNYA, SCROLL JIKA PANJANG -->
     <div style="width:100%;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;">
-      <div id="fullscreen-fact-title" style="font-size:0.75rem;color:var(--grad2);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;padding:10px 16px 0 16px;"></div>
-      <div id="fullscreen-fact-content" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;width:100%;box-sizing:border-box;"></div>
+<div id="fullscreen-fact-title" style="font-size:0.75rem;color:var(--grad2);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;padding:10px 16px 0 16px;"></div>
+      
+      <!-- KOTAK ARAB — RTL -->
+      <div id="fullscreen-fact-content" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;width:100%;box-sizing:border-box;direction:rtl;text-align:right;"></div>
+      
+      <!-- KOTAK TERJEMAHAN — LTR (tersembunyi dulu) -->
+      <div id="fullscreen-fact-maksud" style="display:none;flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;width:100%;box-sizing:border-box;direction:ltr;text-align:left;font-size:1.1rem;font-weight:600;line-height:1.4;color:#e5e7eb;"></div>
+      
       <div id="fullscreen-fact-hint" style="flex-shrink:0;padding:8px 16px 16px 16px;font-size:0.65rem;color:var(--grad1);font-weight:600;text-align:center;"></div>
     </div>
   </div>
@@ -5070,6 +5076,9 @@ function syncFullscreenFact() {
       const fsHint = document.getElementById('fullscreen-fact-hint');
       fsTitle.textContent = factTitleEl.textContent;
       fsContent.innerHTML = factContentEl.innerHTML;
+      fsContent.style.display = 'block';
+      const fsMaksudSync = document.getElementById('fullscreen-fact-maksud');
+      if (fsMaksudSync) fsMaksudSync.style.display = 'none';
       fsHint.textContent = factHintEl.textContent;
       fsContent.style.fontSize = factContentEl.style.fontSize || '';
       fsContent.style.fontFamily = factContentEl.style.fontFamily || '';
@@ -5151,11 +5160,17 @@ btnFullscreenFact.addEventListener('click', (e) => {
         const dataSource = routineMode ? allRoutines : allFacts;
         const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
         const data = dataSource[currentIndex];
-        const fsContent = document.getElementById('fullscreen-fact-content');
+const fsContent = document.getElementById('fullscreen-fact-content');
+        const fsMaksud = document.getElementById('fullscreen-fact-maksud');
         const fsTitle = document.getElementById('fullscreen-fact-title');
         const fsHint = document.getElementById('fullscreen-fact-hint');
-        fsTitle.textContent = (factTitleEl.textContent || '');
-        fsContent.style.cssText = 'font-size:1.1rem !important; font-family:inherit !important; direction:ltr !important; text-align:left !important; line-height:1.4 !important; font-weight:600 !important; color:#e5e7eb !important; overflow-y:auto; padding:0 8px;';
+        const maksud = data.translation;
+        fsTitle.textContent = (factTitleEl.textContent || '') + ' — Maksud';
+        // Sembunyikan kotak Arab, tunjuk kotak terjemahan
+        fsContent.style.display = 'none';
+        fsMaksud.style.display = 'block';
+        fsMaksud.textContent = maksud || 'Tiada maksud diisi.';
+        fsMaksud.scrollTop = 0;
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
       } else {
         // Sedang papar Arab — sync seperti biasa
@@ -5213,13 +5228,19 @@ fullscreenOverlay.addEventListener('touchstart', (e) => {
         const fsHint = document.getElementById('fullscreen-fact-hint');
         const maksud = routineMode ? data.translation : data.translation;
         fsTitle.textContent = (factTitleEl.textContent || '') + ' (Maksud)';
-        fsContent.style.cssText = 'font-size:1.1rem !important; font-family:inherit !important; direction:ltr !important; text-align:left !important; line-height:1.4 !important; font-weight:600 !important; color:#e5e7eb !important; overflow-y:auto; padding:0 8px;';
-        fsContent.textContent = maksud || 'Tiada maksud diisi.';
+const fsMaksudFlip = document.getElementById('fullscreen-fact-maksud');
+        document.getElementById('fullscreen-fact-content').style.display = 'none';
+        fsMaksudFlip.style.display = 'block';
+        fsMaksudFlip.textContent = data?.translation || 'Tiada maksud diisi.';
         fsContent.scrollTop = 0;
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
-      } else {
+} else {
         // Tap kedua — trigger decrement (next ayat), reset flag
         fsShowingMaksud = false;
+        const fsMaksudReset = document.getElementById('fullscreen-fact-maksud');
+        const fsContentReset = document.getElementById('fullscreen-fact-content');
+        if (fsMaksudReset) fsMaksudReset.style.display = 'none';
+        if (fsContentReset) fsContentReset.style.display = 'block';
         decrementTasbih();
         setTimeout(() => syncFullscreenFact(), 400);
       }
