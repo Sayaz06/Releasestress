@@ -5300,7 +5300,7 @@ fullscreenOverlay.addEventListener('click', (e) => {
       const fsTitle = document.getElementById('fullscreen-fact-title');
       const fsHint = document.getElementById('fullscreen-fact-hint');
 
-      if (!fsShowingMaksud) {
+if (!fsShowingMaksud) {
         // Tap pertama — tunjuk maksud sahaja, JANGAN trigger decrement
         const dataSource = routineMode ? allRoutines : allFacts;
         const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
@@ -5308,7 +5308,7 @@ fullscreenOverlay.addEventListener('click', (e) => {
         if (!data || data.isTamat) return;
 
         fsShowingMaksud = true;
-        // Sync isFlipped supaya main screen tahu kita dah kat maksud
+        // Sync isFlipped dan comboStep supaya decrementTasbih tahu kita dah kat maksud
         isFlipped = true;
         comboStep = 1;
 
@@ -5320,8 +5320,11 @@ fullscreenOverlay.addEventListener('click', (e) => {
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
 
       } else {
-        // Tap kedua — next ayat, reset semua flag
+        // Tap kedua — next ayat
+        // Set comboStep = 0 dulu supaya decrementTasbih anggap ini Tap 2 (flip ke maksud → next)
         fsShowingMaksud = false;
+        isFlipped = true;
+        comboStep = 1;
         decrementTasbih();
         setTimeout(() => {
           syncFullscreenFact();
