@@ -3187,14 +3187,14 @@ if (isQuran) {
           const isFlipKeArab = learningMode === 3 && comboStep === 1;
           const isFlipKeMaksud = learningMode === 3 && comboStep === 0;
 
-          if (isFlipKeArab) {
+if (isFlipKeArab) {
             const now = Date.now();
             if (!quranSessionStartTime) quranSessionStartTime = now;
             quranSessionLastTapTime = now;
           }
 
-if (isFlipKeArab) {
-            // Tap 1 — SET ayat semasa sebelum flip ke Arab
+if (isFlipKeMaksud) {
+            // Tap untuk flip ke maksud — ini masa save berlaku (sama seperti App 2)
             const laciSemasaNow = allRoutines[currentRoutineIndex];
             const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
             const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
