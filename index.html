@@ -5194,8 +5194,7 @@ function syncFullscreenFact() {
       document.getElementById('fs-rehat-jumlah').textContent = jumlahAyat;
       popup.style.display = 'flex';
       popup.style.pointerEvents = 'all';
-      // Jangan auto focus — elak keyboard phone terkeluar sendiri
-      // input.focus(); // dibuang
+      setTimeout(() => input.focus(), 100);
 
 function cubaKeluar() {
         if (input.value.trim() === 'keluar') {
