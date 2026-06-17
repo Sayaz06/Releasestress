@@ -1203,10 +1203,10 @@ body.dark-mode {
 <!-- FULLSCREEN FACT OVERLAY -->
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
-    <!-- TOPBAR KOSONG — SEPARUH ATAS -->
-    <div style="width:100%;flex-shrink:0;height:50vh;border-bottom:1px solid rgba(255,255,255,0.08);"></div>
-    <!-- BAHAGIAN TEKS — SEPARUH BAWAH, SCROLL JIKA PANJANG -->
-    <div style="width:100%;height:50vh;display:flex;flex-direction:column;overflow:hidden;">
+<!-- TOPBAR KOSONG — 4 BARIS ARAB -->
+    <div style="width:100%;flex-shrink:0;height:calc(${quranFontSize}rem * 4 * 2.2);border-bottom:1px solid rgba(255,255,255,0.08);min-height:120px;max-height:180px;"></div>
+    <!-- BAHAGIAN TEKS — SELEBIHNYA, SCROLL JIKA PANJANG -->
+    <div style="width:100%;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;">
       <div id="fullscreen-fact-title" style="font-size:0.75rem;color:var(--grad2);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;padding:10px 16px 0 16px;"></div>
       <div id="fullscreen-fact-content" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;"></div>
       <div id="fullscreen-fact-hint" style="flex-shrink:0;padding:8px 16px 16px 16px;font-size:0.65rem;color:var(--grad1);font-weight:600;text-align:center;"></div>
@@ -5103,9 +5103,7 @@ btnFullscreenFact.addEventListener('click', (e) => {
         const fsTitle = document.getElementById('fullscreen-fact-title');
         const fsHint = document.getElementById('fullscreen-fact-hint');
         fsTitle.textContent = (factTitleEl.textContent || '');
-        fsContent.style.cssText = 'font-size:1.1rem; font-family:inherit; direction:ltr; text-align:left; line-height:1.4; font-weight:600; color:#e5e7eb; overflow-y:auto; padding:0 8px;';
-        fsContent.textContent = data?.translation || 'Tiada maksud diisi.';
-        fsContent.scrollTop = 0;
+        fsContent.style.cssText = 'font-size:1.1rem !important; font-family:inherit !important; direction:ltr !important; text-align:left !important; line-height:1.4 !important; font-weight:600 !important; color:#e5e7eb !important; overflow-y:auto; padding:0 8px;';
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
       } else {
         // Sedang papar Arab — sync seperti biasa
@@ -5121,25 +5119,27 @@ document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (
     });
 
 // Tap overlay fullscreen = trigger decrementTasbih (combo jalan seperti biasa)
-    let fsTouchStartY = 0;
+let fsTouchStartY = 0;
     let fsIsSwiping = false;
 
     fullscreenOverlay.addEventListener('touchstart', (e) => {
+      // Jangan intercept kalau dalam kawasan scroll content
+      if (e.target.closest('#fullscreen-fact-content')) return;
       fsTouchStartY = e.touches[0].clientY;
       fsIsSwiping = false;
     }, {passive: true});
 
     fullscreenOverlay.addEventListener('touchmove', (e) => {
+      if (e.target.closest('#fullscreen-fact-content')) return;
       if (Math.abs(e.touches[0].clientY - fsTouchStartY) > 8) {
         fsIsSwiping = true;
       }
     }, {passive: true});
 
-let fsShowingMaksud = false;
-
     fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target === document.getElementById('btn-close-fullscreen-fact')) return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
+      if (e.target.closest('#fullscreen-fact-content')) return;
       if (fsIsSwiping) return;
 
       if (!fsShowingMaksud) {
@@ -5154,7 +5154,7 @@ let fsShowingMaksud = false;
         const fsHint = document.getElementById('fullscreen-fact-hint');
         const maksud = routineMode ? data.translation : data.translation;
         fsTitle.textContent = (factTitleEl.textContent || '') + ' (Maksud)';
-        fsContent.style.cssText = 'font-size:1.1rem; font-family:inherit; direction:ltr; text-align:left; line-height:1.4; font-weight:600; color:#e5e7eb; overflow-y:auto; padding:0 8px;';
+        fsContent.style.cssText = 'font-size:1.1rem !important; font-family:inherit !important; direction:ltr !important; text-align:left !important; line-height:1.4 !important; font-weight:600 !important; color:#e5e7eb !important; overflow-y:auto; padding:0 8px;';
         fsContent.textContent = maksud || 'Tiada maksud diisi.';
         fsContent.scrollTop = 0;
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
