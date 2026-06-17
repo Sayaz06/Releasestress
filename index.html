@@ -3217,13 +3217,19 @@ if (patutSave) {
               quranSurahSemasa = surahUntukSave;
               clearTimeout(quranSessionTimer);
 
-// Tangan gandaan 5 — cuba ON suis kalau tak kena lock
-              if (!quranPopupSuisLock) {
+// Ayat 1,6,11,16,21,26... — hilangkan lock (buka laluan untuk suis ON)
+              const ayatMod10 = ayatUntukSave % 10;
+              if (ayatMod10 === 1 || ayatMod10 === 6) {
+                quranPopupSuisLock = false;
+              }
+
+              // Tangan gandaan 5 — cuba ON suis kalau lock dah hilang
+              if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
                 quranPopupSuisOn = true;
               }
 
-              const patutPopup = ayatUntukSave > 0 && ayatUntukSave % 10 === 0 && quranPopupSuisOn;
-              console.log(`ayat:${ayatUntukSave} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
+              const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
+              console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
 
               saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
