@@ -3211,22 +3211,17 @@ if (patutSave) {
               quranSurahSemasa = surahUntukSave;
               clearTimeout(quranSessionTimer);
 
-              // Kira total baru SEBELUM save untuk semak popup
-              let totalBaru = 0;
-              for (let i = 0; i < surahUntukSave - 1; i++) totalBaru += QURAN_SURAH_AYAT[i];
-              totalBaru += ayatUntukSave;
-
-const ayatDariBaseline = totalBaru - quranPopupBaseline;
-              const patutPopup = ayatDariBaseline > 0 && ayatDariBaseline % 10 === 0;
-              console.log(`totalBaru:${totalBaru} baseline:${quranPopupBaseline} dariBaseline:${ayatDariBaseline} patutPopup:${patutPopup}`);
+// Semak popup ikut ayat dalam surah semasa sahaja
+              const patutPopup = ayatUntukSave > 0 && ayatUntukSave % 10 === 0;
+              console.log(`ayatUntukSave:${ayatUntukSave} patutPopup:${patutPopup}`);
 
               saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
-if (patutPopup) {
-                setTimeout(() => bukaPopupRehatFullscreen(totalBaru), 50);
-              }
+                if (patutPopup) {
+                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
+                }
               });
             }
           }
