@@ -1162,6 +1162,22 @@ body.dark-mode {
   </div>
 </div>
 
+<!-- POPUP REHAT GLOBAL -->
+  <div id="fs-rehat-popup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;">
+    <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div style="font-size:2rem;">🌟</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#34d399;text-align:center;">Pencapaian Luar Biasa!</div>
+      <div style="font-size:0.88rem;color:#e5e7eb;text-align:center;line-height:1.7;">
+        Anda telah menyempurnakan pembacaan <strong style="color:#fcd34d;font-size:1.1rem;" id="fs-rehat-jumlah">10</strong> ayat Al-Quran dalam sesi ini.<br><br>
+        Sebelum meneruskan, ambillah seketika untuk <strong style="color:#34d399;">merehatkan minda</strong> anda — biar ilmu yang baru diterima itu benar-benar meresap ke dalam ingatan.<br><br>
+        <span style="color:#9ca3af;font-size:0.78rem;">Apabila anda sudah bersedia untuk meneruskan perjalanan membaca, taip perkataan di bawah:</span>
+      </div>
+      <input id="fs-rehat-input" type="text" placeholder='Taip "keluar" untuk teruskan...' style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #34d399;border-radius:10px;color:#fff;padding:12px;font-size:1rem;text-align:center;outline:none;">
+      <div id="fs-rehat-pesan" style="font-size:0.75rem;color:#f87171;min-height:18px;text-align:center;"></div>
+      <button id="fs-rehat-btn-keluar" style="width:100%;padding:12px;border-radius:999px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;">Teruskan Membaca →</button>
+    </div>
+  </div>
+  
 <!-- OVERLAY TUNGGU KESELAMATAN QURAN -->
   <div id="quran-load-overlay">
     <div id="quran-load-spinner"></div>
@@ -2475,7 +2491,7 @@ let currentQuranSurahNum = 1;
     let quranSessionTimer = null;
     let quranAyatSemasa = 0;
     let quranSurahSemasa = 0;
-    let quranSaveCount = 0;
+    // quranSaveCount dibuang — popup kini ikut ayatUntukSave % 10
     let currentDoaTasbihRef = null, currentDoaTasbihData = null;
     let currentHadisTasbihRef = null, currentHadisTasbihData = null;
 
@@ -3192,13 +3208,12 @@ if (patutSave) {
               quranAyatSemasa = ayatUntukSave;
               quranSurahSemasa = surahUntukSave;
               clearTimeout(quranSessionTimer);
-              saveQuranSession().then(() => {
+saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
-                // Popup setiap 10 ayat (setiap 2 kali save)
-                quranSaveCount = (quranSaveCount || 0) + 1;
-                if (quranSaveCount % 2 === 0) {
+                // Popup hanya pada ayat tepat gandaan 10
+                if (ayatUntukSave > 0 && ayatUntukSave % 10 === 0) {
                   setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 500);
                 }
               });
