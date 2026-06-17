@@ -2541,8 +2541,22 @@ function getRoutineSrc() {
       }
     }
 
-    function activateRoutineMode(src) {
+function activateRoutineMode(src) {
       const wasActive = routineMode && routineModeSource === src;
+
+      // Kalau OFF Quran semasa berada di maksud — reset ke Arab ayat sama
+      if (wasActive && src === 'quran' && isFlipped) {
+        isFlipped = false;
+        comboStep = 0;
+        fsShowingMaksud = false;
+        // Tutup fullscreen kalau terbuka
+        if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+          fullscreenOverlay.classList.remove('show');
+        }
+        renderCurrentFact();
+        showToast('↩ Dikembalikan ke Arab ayat semasa.');
+      }
+
       // Reset semua
       factMode = false; routineMode = false;
       btnToggleFact.textContent="Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
@@ -5203,14 +5217,25 @@ function cubaKeluar() {
           popup.style.pointerEvents = 'none';
           input.value = '';
           btnKeluar.removeEventListener('click', cubaKeluar);
-// Off suis popup dulu sebelum off quran — elak trigger semula
-          quranPopupSuisOn = false;
-          quranPopupSuisLock = true;
+
+          // Reset ke Arab ayat sama sebelum off
+          if (isFlipped) {
+            isFlipped = false;
+            comboStep = 0;
+            fsShowingMaksud = false;
+            renderCurrentFact();
+          }
+
           // Tutup fullscreen kalau terbuka
           if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
             fullscreenOverlay.classList.remove('show');
             fsShowingMaksud = false;
           }
+
+          // Off suis popup dulu sebelum off quran
+          quranPopupSuisOn = false;
+          quranPopupSuisLock = true;
+
           // Off mode Quran
           activateRoutineMode('quran');
           setTimeout(() => syncFullscreenFact(), 200);
@@ -5230,10 +5255,14 @@ input.addEventListener('keydown', (e) => {
 
 btnFullscreenFact.addEventListener('click', (e) => {
       e.stopPropagation();
-      
-      // Reset state fullscreen ikut state semasa
-      fsShowingMaksud = isFlipped;
-      
+
+      // Block fullscreen kalau sedang papar maksud
+      if (isFlipped) {
+        showToast('⚠️ Fullscreen hanya boleh dibuka semasa paparan Arab. Tekan skrin dahulu untuk kembali ke Arab.');
+        return;
+      }
+
+      fsShowingMaksud = false;
       fullscreenOverlay.classList.add('show');
       
       const fsContent = document.getElementById('fullscreen-fact-content');
