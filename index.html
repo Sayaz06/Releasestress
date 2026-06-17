@@ -392,6 +392,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
+      padding-top: env(safe-area-inset-top, 20px);
     }
     #fullscreen-fact-overlay.show {
       display: flex;
@@ -409,6 +410,9 @@
       overflow-y: auto;
       flex: 1;
       padding: 20px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #fullscreen-fact-hint {
       font-size: 0.75rem;
@@ -1184,7 +1188,7 @@ body.dark-mode {
 <!-- FULLSCREEN FACT OVERLAY -->
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
-    <div id="fullscreen-fact-title" style="font-size:0.75rem;color:var(--grad2);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;margin-bottom:8px;"></div>
+    <div id="fullscreen-fact-title" style="font-size:0.75rem;color:var(--grad2);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;margin-bottom:8px;margin-top:44px;"></div>
     <div id="fullscreen-fact-content"></div>
     <div id="fullscreen-fact-hint"></div>
   </div>
