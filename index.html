@@ -3204,28 +3204,25 @@ if (isQuran) {
             quranSessionLastTapTime = Date.now();
             if (!quranSessionStartTime) quranSessionStartTime = Date.now();
 
-            const patutSave = ayatUntukSave > 0 && (
+const patutSave = ayatUntukSave > 0 && (
               ayatUntukSave % 5 === 0 ||
               ayatUntukSave === jumlahAyatSurah
             );
 
+            // Semak lock SETIAP ayat — tidak perlu tunggu patutSave
+            const ayatMod10 = ayatUntukSave % 10;
+            if (ayatMod10 === 1 || ayatMod10 === 6) {
+              quranPopupSuisLock = false;
+            }
+
 if (patutSave) {
-              quranAyatSemasa = ayatUntukSave;
-              quranSurahSemasa = surahUntukSave;
-              clearTimeout(quranSessionTimer);
-
-// Ayat 1,6,11,16,21,26... — hilangkan lock (buka laluan untuk suis ON)
-              const ayatMod10 = ayatUntukSave % 10;
-              if (ayatMod10 === 1 || ayatMod10 === 6) {
-                quranPopupSuisLock = false;
-              }
-
               // Tangan gandaan 5 — cuba ON suis kalau lock dah hilang
               if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
                 quranPopupSuisOn = true;
               }
 
               const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
+            
               console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
 
               saveQuranSession().then(() => {
