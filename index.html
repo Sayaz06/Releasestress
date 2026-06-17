@@ -1163,8 +1163,8 @@ body.dark-mode {
 </div>
 
 <!-- POPUP REHAT GLOBAL -->
-  <div id="fs-rehat-popup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;">
-    <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div id="fs-rehat-popup" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();">
+      <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
       <div style="font-size:2rem;">🌟</div>
       <div style="font-size:1.1rem;font-weight:700;color:#34d399;text-align:center;">Pencapaian Luar Biasa!</div>
       <div style="font-size:0.88rem;color:#e5e7eb;text-align:center;line-height:1.7;">
@@ -2491,6 +2491,8 @@ let currentQuranSurahNum = 1;
     let quranSessionTimer = null;
     let quranAyatSemasa = 0;
     let quranSurahSemasa = 0;
+    let quranPopupSuisOn = false;     // Suis relay — mesti ON dulu baru popup boleh muncul
+    let quranPopupSuisLock = false;   // Lock — elak tangan gandaan 5 on suis terlalu awal
     let quranPopupBaseline = 0; // Ayat baseline — popup tidak keluar sehingga lepas baseline + 10
     // quranSaveCount dibuang — popup kini ikut ayatUntukSave % 10
     let currentDoaTasbihRef = null, currentDoaTasbihData = null;
@@ -2562,8 +2564,12 @@ factDisplayBox.classList.add("show");
 if (src === 'quran') {
           learningMode=3; btnToggleMode.textContent="Mode: Combo";
           btnToggleMainRestMax.style.display="none";
-          // Set baseline semasa ON — popup tidak akan keluar sehingga 10 ayat selepas baseline
-          quranPopupBaseline = quranKhatamData ? (quranKhatamData.totalAyatRead || 0) : 0;
+          // OFF suis popup dulu, lock selama 15 saat
+          quranPopupSuisOn = false;
+          quranPopupSuisLock = true;
+          setTimeout(() => {
+            quranPopupSuisLock = false;
+          }, 15000); // 15 saat lock
           // Tunjuk overlay countdown keselamatan sebelum sync leaderboard
           mulakanCountdownQuran(() => {
             syncLaciDariLeaderboard();
@@ -3211,9 +3217,13 @@ if (patutSave) {
               quranSurahSemasa = surahUntukSave;
               clearTimeout(quranSessionTimer);
 
-// Semak popup ikut ayat dalam surah semasa sahaja
-              const patutPopup = ayatUntukSave > 0 && ayatUntukSave % 10 === 0;
-              console.log(`ayatUntukSave:${ayatUntukSave} patutPopup:${patutPopup}`);
+// Tangan gandaan 5 — cuba ON suis kalau tak kena lock
+              if (!quranPopupSuisLock) {
+                quranPopupSuisOn = true;
+              }
+
+              const patutPopup = ayatUntukSave > 0 && ayatUntukSave % 10 === 0 && quranPopupSuisOn;
+              console.log(`ayat:${ayatUntukSave} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
 
               saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
@@ -5191,11 +5201,11 @@ function cubaKeluar() {
           popup.style.pointerEvents = 'none';
           input.value = '';
           btnKeluar.removeEventListener('click', cubaKeluar);
-// Off mode Quran — jangan reset baseline
-          const baselineSemasa = quranPopupBaseline;
+          // Off suis popup dulu sebelum off quran — elak trigger semula
+          quranPopupSuisOn = false;
+          quranPopupSuisLock = true;
+          // Off mode Quran
           activateRoutineMode('quran');
-          // Pulihkan baseline — activateRoutineMode mungkin reset dia
-          quranPopupBaseline = baselineSemasa;
           setTimeout(() => syncFullscreenFact(), 200);
         } else {
           pesanEl.textContent = '⚠️ Sila taip "keluar" dengan tepat untuk meneruskan.';
