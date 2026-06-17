@@ -5319,16 +5319,18 @@ if (!fsShowingMaksud) {
         fsContent.scrollTop = 0;
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
 
-      } else {
+} else {
         // Tap kedua — next ayat
-        // Set comboStep = 0 dulu supaya decrementTasbih anggap ini Tap 2 (flip ke maksud → next)
         fsShowingMaksud = false;
         isFlipped = true;
         comboStep = 1;
         decrementTasbih();
+        // Tunggu isBlocked clear (1300ms) baru sync fullscreen
         setTimeout(() => {
+          fsShowingMaksud = false;
+          isFlipped = false;
           syncFullscreenFact();
-        }, 400);
+        }, 1400);
       }
     });
     
