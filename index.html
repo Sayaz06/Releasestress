@@ -3193,10 +3193,12 @@ if (isQuran) {
             quranSessionLastTapTime = now;
           }
 
-            if (isFlipKeMaksud) {
-            // Guna ayatUntukSave yang sudah dikira dengan betul
-            quranAyatSemasa = ayatUntukSave;
-            quranSurahSemasa = surahUntukSave;
+if (isFlipKeMaksud) {
+            // Ambil ayat semasa dari laci semasa
+            const laciSemasaNow = allRoutines[currentRoutineIndex];
+            const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
+            quranAyatSemasa = parsedNow ? parsedNow.ayatNum : 0;
+            quranSurahSemasa = parsedNow ? parsedNow.surahNum : 0;
             console.log(`🕌 FlipKeMaksud — laci:"${laciSemasaNow?.title}" ayat:${ayatUntukSave} surah:${surahUntukSave} patutSave:${ayatUntukSave % 5 === 0}`);
             const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
 
