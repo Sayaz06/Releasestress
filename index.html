@@ -4954,7 +4954,8 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
 // ── FULLSCREEN FACT ──
     const btnFullscreenFact = document.getElementById('btn-fullscreen-fact');
     const fullscreenOverlay = document.getElementById('fullscreen-fact-overlay');
-
+    let fsShowingMaksud = false;
+    
 // ── OVERLAY TUNGGU KESELAMATAN QURAN ──
     async function mulakanCountdownQuran(callback) {
       const overlay = document.getElementById('quran-load-overlay');
