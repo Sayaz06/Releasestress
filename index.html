@@ -7703,9 +7703,6 @@ if (isDoubleTap) {
     let terskipIsSwiping = false;
 
 // Guna document listener untuk terskip — overlay pointer-events:none
-    let terskipTouchY = 0;
-    let terskipIsSwiping = false;
-
     document.addEventListener('touchstart', (e) => {
       if (terskipOverlay.style.display !== 'flex') return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
