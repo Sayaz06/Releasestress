@@ -3194,7 +3194,6 @@ if (isFlipKeArab) {
           }
 
 if (isFlipKeMaksud) {
-            // Tap untuk flip ke maksud — ini masa save berlaku (sama seperti App 2)
             const laciSemasaNow = allRoutines[currentRoutineIndex];
             const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
             const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
@@ -3210,29 +3209,14 @@ if (isFlipKeMaksud) {
               ayatUntukSave === jumlahAyatSurah
             );
 
-            // Semak lock SETIAP ayat — tidak perlu tunggu patutSave
-            const ayatMod10 = ayatUntukSave % 10;
-            if (ayatMod10 === 1 || ayatMod10 === 6) {
-              quranPopupSuisLock = false;
-            }
-
             if (patutSave) {
-              // Gandaan 5 — cuba ON suis kalau lock dah hilang
-              if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
-                quranPopupSuisOn = true;
-              }
-
-              const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
-
-              console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
-
+              quranAyatSemasa = ayatUntukSave;
+              quranSurahSemasa = surahUntukSave;
+              clearTimeout(quranSessionTimer);
               saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
-                if (patutPopup) {
-                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
-                }
               });
             }
           }
