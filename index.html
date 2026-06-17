@@ -397,21 +397,12 @@
       display: flex;
     }
 #fullscreen-fact-content {
-      font-size: 2.5rem;
-      font-weight: 600;
-      line-height: 2.2;
-      text-align: right;
-      direction: rtl;
-      font-family: 'UthmanicHafs','Traditional Arabic',serif;
-      color: #e5e7eb;
       width: 100%;
-      max-width: 600px;
       overflow-y: auto;
       flex: 1;
-      padding: 20px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
     }
     #fullscreen-fact-hint {
       font-size: 0.75rem;
