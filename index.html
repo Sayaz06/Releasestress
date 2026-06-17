@@ -5324,13 +5324,22 @@ if (!fsShowingMaksud) {
         fsShowingMaksud = false;
         isFlipped = true;
         comboStep = 1;
+
+        // Block touch semasa peralihan
+        fullscreenOverlay.style.pointerEvents = 'none';
+
         decrementTasbih();
-        // Tunggu isBlocked clear (1300ms) baru sync fullscreen
+
         setTimeout(() => {
           fsShowingMaksud = false;
           isFlipped = false;
+          comboStep = 0;
           syncFullscreenFact();
-        }, 1400);
+          // Buka semula touch selepas isBlocked clear
+          setTimeout(() => {
+            fullscreenOverlay.style.pointerEvents = 'auto';
+          }, 1350);
+        }, 50);
       }
     });
     
