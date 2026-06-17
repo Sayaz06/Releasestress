@@ -5232,8 +5232,9 @@ btnFullscreenFact.addEventListener('click', (e) => {
       e.stopPropagation();
       fullscreenOverlay.classList.add('show');
 if (isFlipped) {
-        // Sedang papar maksud — tunjuk maksud dalam zoom, set fsShowingMaksud = true
-        fsShowingMaksud = true;
+        // Sedang papar maksud — tunjuk maksud dalam zoom
+        // fsShowingMaksud = FALSE supaya tap seterusnya dalam fullscreen treat sebagai tap pertama (Arab)
+        fsShowingMaksud = false;
         const dataSource = routineMode ? allRoutines : allFacts;
         const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
         const data = dataSource[currentIndex];
