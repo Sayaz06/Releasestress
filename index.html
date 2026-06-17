@@ -5308,10 +5308,14 @@ fullscreenOverlay.addEventListener('touchstart', (e) => {
         fsContent.scrollTop = 0;
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
 } else {
-        // Tap kedua — trigger decrement (next ayat), reset flag
+        // Tap kedua — next ayat, pastikan background reset dulu
         fsShowingMaksud = false;
+        // Kalau background masih dalam maksud, reset dulu sebelum decrement
+        if (isFlipped) {
+          isFlipped = false;
+          comboStep = 0;
+        }
         decrementTasbih();
-        // Sync selepas decrement selesai render
         setTimeout(() => {
           fsShowingMaksud = false;
           syncFullscreenFact();
