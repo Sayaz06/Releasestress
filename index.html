@@ -8961,11 +8961,10 @@ async function saveQuranSession() {
         }]
       };
 
-// Papar toast TERUS sebelum await supaya muncul semasa ayat betul
 // Toast hanya pada gandaan 5 yang BUKAN gandaan 10
-      const curAyatSave = quranAyatSemasa || 0;
+      const curAyatSave = curAyat || 0;
       if (curAyatSave % 10 !== 0) {
-        showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
+        showToast(`📖 Sesi dirakam — Ayat ${curAyatSave} | ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
       }
   
 quranKhatamData = newData;
