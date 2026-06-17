@@ -3216,8 +3216,9 @@ if (patutSave) {
               for (let i = 0; i < surahUntukSave - 1; i++) totalBaru += QURAN_SURAH_AYAT[i];
               totalBaru += ayatUntukSave;
 
-              const ayatDariBaseline = totalBaru - quranPopupBaseline;
+const ayatDariBaseline = totalBaru - quranPopupBaseline;
               const patutPopup = ayatDariBaseline > 0 && ayatDariBaseline % 10 === 0;
+              console.log(`totalBaru:${totalBaru} baseline:${quranPopupBaseline} dariBaseline:${ayatDariBaseline} patutPopup:${patutPopup}`);
 
               saveQuranSession().then(() => {
                 quranSessionTapCount = 0;
@@ -5195,10 +5196,11 @@ function cubaKeluar() {
           popup.style.pointerEvents = 'none';
           input.value = '';
           btnKeluar.removeEventListener('click', cubaKeluar);
-          // Off mode Quran
+// Off mode Quran — jangan reset baseline
+          const baselineSemasa = quranPopupBaseline;
           activateRoutineMode('quran');
-          // Simpan ayat baseline — supaya bila on semula, popup tak keluar terus
-          quranPopupBaseline = quranKhatamData ? (quranKhatamData.totalAyatRead || 0) : 0;
+          // Pulihkan baseline — activateRoutineMode mungkin reset dia
+          quranPopupBaseline = baselineSemasa;
           setTimeout(() => syncFullscreenFact(), 200);
         } else {
           pesanEl.textContent = '⚠️ Sila taip "keluar" dengan tepat untuk meneruskan.';
