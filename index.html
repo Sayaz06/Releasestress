@@ -2567,6 +2567,7 @@ if (src === 'quran') {
           // OFF suis popup, lock aktif — hilang bila user sampai ayat gandaan 1 atau 6
           quranPopupSuisOn = false;
           quranPopupSuisLock = true;
+          console.log('🔒 Quran ON — suis lock aktif');
           // Tunjuk overlay countdown keselamatan sebelum sync leaderboard
           mulakanCountdownQuran(() => {
             syncLaciDariLeaderboard();
