@@ -3201,10 +3201,46 @@ if (isQuran) {
           const isFlipKeArab = learningMode === 3 && comboStep === 1;
           const isFlipKeMaksud = learningMode === 3 && comboStep === 0;
 
-          if (isFlipKeArab) {
-            const now = Date.now();
-            if (!quranSessionStartTime) quranSessionStartTime = now;
-            quranSessionLastTapTime = now;
+if (isFlipKeArab) {
+            // Tap 2 — user flip ke maksud, ambil ayat semasa dan save
+            const laciSemasaNow = allRoutines[currentRoutineIndex];
+            const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
+            const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
+            const surahUntukSave = parsedNow ? parsedNow.surahNum : 0;
+            const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
+
+            quranSessionTapCount++;
+            quranSessionLastTapTime = Date.now();
+            if (!quranSessionStartTime) quranSessionStartTime = Date.now();
+
+            const patutSave = ayatUntukSave > 0 && (
+              ayatUntukSave % 5 === 0 ||
+              ayatUntukSave === jumlahAyatSurah
+            );
+
+            const ayatMod10 = ayatUntukSave % 10;
+            if (ayatMod10 === 1 || ayatMod10 === 6) {
+              quranPopupSuisLock = false;
+            }
+
+            if (patutSave) {
+              if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
+                quranPopupSuisOn = true;
+              }
+
+              const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
+
+              console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
+
+              saveQuranSession().then(() => {
+                quranSessionTapCount = 0;
+                quranSessionStartTime = null;
+                quranSessionLastTapTime = null;
+                if (patutPopup) {
+                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
+                }
+              });
+            }
           }
 
 if (isFlipKeArab) {
@@ -3274,7 +3310,6 @@ if (isQuran && learningMode === 0) {
             routineAutoNext = true;
           } 
 
-          
         } else {
           // Mode lain: kira target seperti biasa
           if (currentRoutineTarget > 0) {
