@@ -5075,8 +5075,14 @@ function syncFullscreenFact() {
       const fsTitle = document.getElementById('fullscreen-fact-title');
       const fsHint = document.getElementById('fullscreen-fact-hint');
       fsTitle.textContent = factTitleEl.textContent;
-      fsContent.innerHTML = factContentEl.innerHTML;
+fsContent.innerHTML = factContentEl.innerHTML;
       fsContent.style.display = 'block';
+      fsContent.style.direction = factContentEl.style.direction || 'rtl';
+      fsContent.style.textAlign = factContentEl.style.textAlign || 'right';
+      fsContent.style.fontSize = factContentEl.style.fontSize || '';
+      fsContent.style.fontFamily = factContentEl.style.fontFamily || '';
+      fsContent.style.fontWeight = '600';
+      fsContent.style.lineHeight = factContentEl.style.lineHeight || '2.0';
       const fsMaksudSync = document.getElementById('fullscreen-fact-maksud');
       if (fsMaksudSync) fsMaksudSync.style.display = 'none';
       fsHint.textContent = factHintEl.textContent;
