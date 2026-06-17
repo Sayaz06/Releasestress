@@ -2475,6 +2475,7 @@ let currentQuranSurahNum = 1;
     let quranSessionTimer = null;
     let quranAyatSemasa = 0;
     let quranSurahSemasa = 0;
+    let quranSaveCount = 0;
     let currentDoaTasbihRef = null, currentDoaTasbihData = null;
     let currentHadisTasbihRef = null, currentHadisTasbihData = null;
 
@@ -3186,7 +3187,7 @@ if (isQuran) {
               ayatUntukSave === jumlahAyatSurah
             );
 
-            if (patutSave) {
+if (patutSave) {
               // Simpan nilai ayat untuk digunakan dalam saveQuranSession
               quranAyatSemasa = ayatUntukSave;
               quranSurahSemasa = surahUntukSave;
@@ -3195,6 +3196,11 @@ if (isQuran) {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
+                // Popup setiap 10 ayat (setiap 2 kali save)
+                quranSaveCount = (quranSaveCount || 0) + 1;
+                if (quranSaveCount % 2 === 0) {
+                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 500);
+                }
               });
             }
           }
@@ -8866,14 +8872,8 @@ async function saveQuranSession() {
       };
 
 // Papar toast TERUS sebelum await supaya muncul semasa ayat betul
-// Toast page biasa
-      if (!fullscreenOverlay || !fullscreenOverlay.classList.contains('show')) {
-        showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
-      }
-      // Popup global setiap 10 ayat — tindih semua termasuk fullscreen
-      if (newTotal > 0 && newTotal % 10 === 0) {
-        setTimeout(() => bukaPopupRehatFullscreen(newTotal), 500);
-      }
+// Toast page biasa sahaja
+      showToast(`📖 Sesi dirakam — ${ayatSesi} ayat | ${kelajuanSesi.toFixed(2)} ayat/min`, 3000);
   
 quranKhatamData = newData;
 
