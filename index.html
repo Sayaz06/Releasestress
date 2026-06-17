@@ -5199,7 +5199,7 @@ function syncFullscreenFact() {
       // input.focus(); // dibuang
 
 function cubaKeluar() {
-        if (input.value.trim() === 'keluar') {
+          if (input.value.trim().toLowerCase() === 'keluar') {
           popup.style.display = 'none';
           popup.style.pointerEvents = 'none';
           input.value = '';
@@ -5225,7 +5225,7 @@ input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') cubaKeluar();
       });
       input.addEventListener('input', () => {
-        if (input.value.trim() === 'keluar') cubaKeluar();
+        if (input.value.trim().toLowerCase() === 'keluar') cubaKeluar();
       });
     }
 
