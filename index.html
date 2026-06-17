@@ -2564,12 +2564,9 @@ factDisplayBox.classList.add("show");
 if (src === 'quran') {
           learningMode=3; btnToggleMode.textContent="Mode: Combo";
           btnToggleMainRestMax.style.display="none";
-          // OFF suis popup dulu, lock selama 15 saat
+          // OFF suis popup, lock aktif — hilang bila user sampai ayat gandaan 1 atau 6
           quranPopupSuisOn = false;
           quranPopupSuisLock = true;
-          setTimeout(() => {
-            quranPopupSuisLock = false;
-          }, 15000); // 15 saat lock
           // Tunjuk overlay countdown keselamatan sebelum sync leaderboard
           mulakanCountdownQuran(() => {
             syncLaciDariLeaderboard();
