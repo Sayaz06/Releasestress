@@ -5223,16 +5223,17 @@ function cubaKeluar() {
 input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') cubaKeluar();
       });
+
 input.addEventListener('input', () => {
         if (input.value.trim().toLowerCase() === 'keluar') cubaKeluar();
-      });
+      });      
     }
 
 btnFullscreenFact.addEventListener('click', (e) => {
       e.stopPropagation();
       fullscreenOverlay.classList.add('show');
-      if (isFlipped) {
-        // Sedang papar maksud — tunjuk maksud terus dalam zoom
+if (isFlipped) {
+        // Sedang papar maksud — tunjuk maksud dalam zoom, set fsShowingMaksud = true
         fsShowingMaksud = true;
         const dataSource = routineMode ? allRoutines : allFacts;
         const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
@@ -5241,16 +5242,16 @@ btnFullscreenFact.addEventListener('click', (e) => {
         const fsTitle = document.getElementById('fullscreen-fact-title');
         const fsHint = document.getElementById('fullscreen-fact-hint');
         fsTitle.textContent = (factTitleEl.textContent || '');
-        fsContent.style.cssText = 'font-size:1.1rem !important; font-family:inherit !important; direction:ltr !important; text-align:left !important; line-height:1.4 !important; font-weight:600 !important; color:#e5e7eb !important; overflow-y:auto; padding:0 8px;';
-        fsContent.innerHTML = factContentEl.innerHTML;
+        fsContent.style.cssText = 'font-size:1.1rem; font-family:inherit; direction:ltr; text-align:left; line-height:1.4; font-weight:600; color:#e5e7eb; overflow-y:auto; padding:12px 16px; width:100%; box-sizing:border-box;';
+        fsContent.textContent = data?.translation || 'Tiada maksud diisi.';
         fsContent.scrollTop = 0;
         fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
       } else {
-        // Sedang papar Arab — sync seperti biasa
+        // Sedang papar Arab — reset fsShowingMaksud dan sync
         fsShowingMaksud = false;
         syncFullscreenFact();
       }
-    });
+    });    
 
 document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -5310,10 +5311,11 @@ fullscreenOverlay.addEventListener('touchstart', (e) => {
         // Tap kedua — trigger decrement (next ayat), reset flag
         fsShowingMaksud = false;
         decrementTasbih();
+        // Sync selepas decrement selesai render
         setTimeout(() => {
           fsShowingMaksud = false;
           syncFullscreenFact();
-        }, 450);
+        }, 400);
       }
     });
     
