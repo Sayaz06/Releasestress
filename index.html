@@ -5202,9 +5202,14 @@ function cubaKeluar() {
           popup.style.pointerEvents = 'none';
           input.value = '';
           btnKeluar.removeEventListener('click', cubaKeluar);
-          // Off suis popup dulu sebelum off quran — elak trigger semula
+// Off suis popup dulu sebelum off quran — elak trigger semula
           quranPopupSuisOn = false;
           quranPopupSuisLock = true;
+          // Tutup fullscreen kalau terbuka
+          if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+            fullscreenOverlay.classList.remove('show');
+            fsShowingMaksud = false;
+          }
           // Off mode Quran
           activateRoutineMode('quran');
           setTimeout(() => syncFullscreenFact(), 200);
