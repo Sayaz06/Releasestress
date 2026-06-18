@@ -7781,12 +7781,11 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
     }
 
 // ── LACI BAHASA ──
-    document.getElementById('btn-go-bahasa').addEventListener('click', () => showSection(sectionBahasa));
-    document.getElementById('btn-back-home-bahasa').addEventListener('click', () => showSection(sectionHome));
-    document.getElementById('btn-back-bahasa-jenis').addEventListener('click', () => { showSection(sectionBahasa); renderBahasaList(); });
-    document.getElementById('btn-back-jenis-drawer').addEventListener('click', () => { showSection(sectionJenisKata); renderJenisKata(); });
-
-    document.getElementById('btn-add-bahasa').addEventListener('click', () => {
+    document.getElementById('btn-go-bahasa')?.addEventListener('click', () => showSection(sectionBahasa));
+    document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => showSection(sectionHome));
+    document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { showSection(sectionBahasa); renderBahasaList(); });
+    document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { showSection(sectionJenisKata); renderJenisKata(); });
+    document.getElementById('btn-add-bahasa')?.addEventListener('click', () => {
       if (!currentUser) return;
       addDoc(collection(db, "users", currentUser.uid, "bahasa_list"), { name: "", createdAt: Date.now() });
     });
