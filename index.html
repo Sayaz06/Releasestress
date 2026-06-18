@@ -8043,10 +8043,26 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
       showSection(sectionJournalHub);
       renderJournalStats();
     });
-    document.getElementById('btn-back-contact-list').addEventListener('click', () => {
+document.getElementById('btn-back-contact-list').addEventListener('click', async () => {
+      // Simpan dulu sebelum balik supaya nama terkini tersimpan
+      if (currentUser && currentContactId) {
+        const name = document.getElementById('contact-name-input').value;
+        const data = {
+          name,
+          relation: document.getElementById('contact-relation-input').value,
+          story: document.getElementById('contact-story').value,
+          lesson: document.getElementById('contact-lesson').value,
+          rating: selectedRating,
+          updatedAt: Date.now()
+        };
+        try {
+          await updateDoc(doc(db, "users", currentUser.uid, "journal_contacts", currentContactId), data);
+        } catch(e) { console.log("Gagal simpan sebelum balik:", e); }
+      }
       showSection(sectionContactJournal);
       loadContactList();
     });
+    
 
     // ── UTILITY ──
     function journalDateKey(ts) {
