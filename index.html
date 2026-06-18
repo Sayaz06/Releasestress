@@ -1298,9 +1298,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-go-prompter" class="btn btn-secondary" style="border-color: var(--grad1);">
             <span>Teleprompter Kamera</span>
           </button>
+<button id="btn-go-journal" class="btn btn-secondary" style="border-color: #f472b6; color: #f9a8d4;">
+            <span>📓 Journal</span>
+          </button>
           <button id="btn-go-my-law" class="btn btn-secondary" style="border-color: var(--grad2); color: var(--grad2);">
             <span>📜 My Law</span>
           </button>
+  
 
   <button id="btn-go-bahasa" class="btn btn-secondary" style="border-color: #06b6d4; color: #22d3ee;">
             <span>📝 Laci Bahasa</span>
@@ -1333,8 +1337,184 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
       </section>
 
-<!-- KOD BARU: Section My Law -->
-      <section id="section-my-law" class="section">
+
+<!-- ══ JOURNAL HUB ══ -->
+      <section id="section-journal-hub" class="section">
+        <div class="topbar">
+          <button id="btn-back-home-journal" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#f472b6;">📓 Journal</div>
+            <div class="topbar-sub">Ruang refleksi peribadi</div>
+          </div>
+        </div>
+
+        <!-- Nota panduan -->
+        <div style="background:rgba(244,114,182,0.08);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:14px;margin-bottom:14px;">
+          <div style="font-size:0.78rem;font-weight:700;color:#f472b6;margin-bottom:6px;">📌 Tujuan Journal Ini</div>
+          <div style="font-size:0.75rem;color:var(--text);line-height:1.7;">
+            Journal ini bukan sekadar catatan — ia <strong style="color:#f9a8d4;">cermin diri anda</strong>.<br>
+            • <strong>My Journal</strong> — rakam perasaan, pengajaran & tindakan harian anda<br>
+            • <strong>Contact Journal</strong> — simpan cerita & pengajaran dari setiap orang yang anda temui<br><br>
+            <span style="color:#9ca3af;font-style:italic;">Tulis dengan jujur. Tiada siapa yang akan membaca selain anda.</span>
+          </div>
+        </div>
+
+        <div class="stack">
+          <button id="btn-go-my-journal" class="btn" style="background:linear-gradient(135deg,#db2777,#9d174d);border:none;box-shadow:0 8px 25px rgba(219,39,119,0.35);">
+            <span>📔 My Journal</span>
+          </button>
+          <button id="btn-go-contact-journal" class="btn btn-secondary" style="border-color:#f472b6;color:#f9a8d4;">
+            <span>👥 Contact Journal — My POV</span>
+          </button>
+        </div>
+
+        <!-- Streak & stats ringkas -->
+        <div id="journal-stats-bar" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </section>
+
+      <!-- ══ MY JOURNAL — LIST ══ -->
+      <section id="section-my-journal" class="section">
+        <div class="topbar">
+          <button id="btn-back-journal-hub" class="btn btn-secondary btn-sm">← Journal</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#f472b6;">📔 My Journal</div>
+            <div class="topbar-sub" id="journal-streak-label"></div>
+          </div>
+        </div>
+<div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-journal-entry" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#db2777,#9d174d);border:none;">
+            + Tulis Journal Hari Ini
+          </button>
+          <button id="btn-trash-journal" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
+        
+        <div class="list mt-8" id="journal-list" style="padding:10px;"></div>
+      </section>
+
+      <!-- ══ MY JOURNAL — EDITOR ══ -->
+      <section id="section-journal-editor" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-journal-list" class="btn btn-secondary btn-sm">← Senarai</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#f472b6;" id="journal-editor-date"></div>
+            <div class="topbar-sub" id="journal-editor-saved" style="color:#34d399;">✓ Auto-save</div>
+          </div>
+        </div>
+
+        <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;display:flex;flex-direction:column;gap:12px;">
+
+          <!-- Mood Tracker -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:10px;">😊 Mood Hari Ini</div>
+            <div id="mood-picker" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+              <button class="mood-btn" data-mood="😄" data-label="Gembira" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">😄<span style="font-size:0.55rem;color:var(--subtext);">Gembira</span></button>
+              <button class="mood-btn" data-mood="😌" data-label="Tenang" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">😌<span style="font-size:0.55rem;color:var(--subtext);">Tenang</span></button>
+              <button class="mood-btn" data-mood="😐" data-label="Biasa" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">😐<span style="font-size:0.55rem;color:var(--subtext);">Biasa</span></button>
+              <button class="mood-btn" data-mood="😔" data-label="Sedih" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">😔<span style="font-size:0.55rem;color:var(--subtext);">Sedih</span></button>
+              <button class="mood-btn" data-mood="😤" data-label="Marah" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">😤<span style="font-size:0.55rem;color:var(--subtext);">Marah</span></button>
+              <button class="mood-btn" data-mood="😰" data-label="Cemas" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">😰<span style="font-size:0.55rem;color:var(--subtext);">Cemas</span></button>
+              <button class="mood-btn" data-mood="🥳" data-label="Excited" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">🥳<span style="font-size:0.55rem;color:var(--subtext);">Excited</span></button>
+              <button class="mood-btn" data-mood="😴" data-label="Penat" style="flex-direction:column;display:flex;align-items:center;gap:2px;background:rgba(30,41,59,0.8);border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1.4rem;transition:all 0.15s;">😴<span style="font-size:0.55rem;color:var(--subtext);">Penat</span></button>
+            </div>
+          </div>
+
+          <!-- Soalan Panduan -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:8px;">📋 Soalan Panduan</div>
+
+            <div style="font-size:0.72rem;color:#a5b4fc;margin-bottom:4px;font-weight:600;">① Apa yang berlaku hari ini?</div>
+            <textarea id="journal-q1" class="drawer-notes" style="min-height:70px;resize:none;width:100%;margin-bottom:10px;" placeholder="Ceritakan kejadian penting hari ini..."></textarea>
+
+            <div style="font-size:0.72rem;color:#34d399;margin-bottom:4px;font-weight:600;">② Apa pengajaran yang saya dapat?</div>
+            <textarea id="journal-q2" class="drawer-notes" style="min-height:70px;resize:none;width:100%;margin-bottom:10px;" placeholder="Apa yang saya pelajari dari hari ini?"></textarea>
+
+            <div style="font-size:0.72rem;color:#fcd34d;margin-bottom:4px;font-weight:600;">③ Apa tindakan saya seterusnya?</div>
+            <textarea id="journal-q3" class="drawer-notes" style="min-height:70px;resize:none;width:100%;margin-bottom:0;" placeholder="Apa yang akan saya buat esok atau minggu depan?"></textarea>
+          </div>
+
+          <!-- Teks Bebas -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:8px;">✏️ Nota Bebas (Pilihan)</div>
+            <textarea id="journal-free" class="drawer-notes" style="min-height:100px;resize:none;width:100%;" placeholder="Tulis apa sahaja yang ada di fikiran..."></textarea>
+          </div>
+
+          <!-- Tags -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:8px;">🏷️ Tag Hari Ini</div>
+            <div id="tag-picker" style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="tag-btn" data-tag="syukur" style="padding:5px 12px;border-radius:999px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;">🙏 Syukur</button>
+              <button class="tag-btn" data-tag="refleksi" style="padding:5px 12px;border-radius:999px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;">🪞 Refleksi</button>
+              <button class="tag-btn" data-tag="cabaran" style="padding:5px 12px;border-radius:999px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;">⚡ Cabaran</button>
+              <button class="tag-btn" data-tag="idea" style="padding:5px 12px;border-radius:999px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;">💡 Idea</button>
+              <button class="tag-btn" data-tag="pencapaian" style="padding:5px 12px;border-radius:999px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;">🏆 Pencapaian</button>
+              <button class="tag-btn" data-tag="doa" style="padding:5px 12px;border-radius:999px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;">🤲 Doa</button>
+            </div>
+          </div>
+
+          <button id="btn-delete-journal-entry" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);display:none;">
+            🗑️ Padam Entry Ini
+          </button>
+        </div>
+      </section>
+
+      <!-- ══ CONTACT JOURNAL — LIST ══ -->
+      <section id="section-contact-journal" class="section">
+        <div class="topbar">
+          <button id="btn-back-journal-hub-contact" class="btn btn-secondary btn-sm">← Journal</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#f472b6;">👥 Contact Journal</div>
+            <div class="topbar-sub">Cerita & pengajaran dari kenalan</div>
+          </div>
+        </div>
+
+        <!-- Nota panduan contact journal -->
+        <div style="background:rgba(244,114,182,0.06);border:1px solid rgba(244,114,182,0.2);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:0.72rem;color:#f9a8d4;line-height:1.6;">
+            📌 Simpan cerita setiap orang yang pernah anda temui. Bukan untuk menghakimi — tetapi untuk <strong>belajar dari setiap interaksi</strong> dan menjadi versi diri yang lebih baik.
+          </div>
+        </div>
+
+<div style="display:flex;gap:8px;">
+          <button id="btn-add-contact" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#db2777,#9d174d);border:none;">
+            + Tambah Kenalan
+          </button>
+          <button id="btn-trash-contact" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
+
+        <!-- Carian -->
+        <input id="contact-search" type="text" placeholder="🔍 Cari nama kenalan..." class="drawer-input-box mt-8" style="width:100%;margin-bottom:0;padding:8px 12px;font-size:0.85rem;">
+
+        <div class="list mt-8" id="contact-list" style="padding:10px;"></div>
+      </section>
+
+      <!-- ══ CONTACT JOURNAL — EDITOR ══ -->
+      <section id="section-contact-editor" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-contact-list" class="btn btn-secondary btn-sm">← Kenalan</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#f472b6;" id="contact-editor-name">Kenalan</div>
+            <div class="topbar-sub" style="color:#34d399;">✓ Auto-save</div>
+          </div>
+        </div>
+
+        <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;display:flex;flex-direction:column;gap:12px;">
+
+          <!-- Info kenalan -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:8px;">👤 Info Kenalan</div>
+            <input id="contact-name-input" class="drawer-input-box" placeholder="Nama kenalan..." style="width:100%;margin-bottom:8px;font-size:1rem;font-weight:600;">
+            <input id="contact-relation-input" class="drawer-input-box" placeholder="Hubungan (cth: rakan sekerja, jiran, keluarga...)" style="width:100%;margin-bottom:0;font-size:0.85rem;">
+          </div>
+
+          <!-- Cerita / nota -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:8px;">📖 Cerita & Nota (My POV)</div>
+            <textarea id="contact-story" class="drawer-notes" style="min-height:150px;resize:none;width:100%;" placeholder="Ceritakan apa yang berlaku, bagaimana mereka bertindak, apa yang membuat anda terkesan..."></textarea>
+          </div>
+
+          <!-- Rating pengajaran -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:6px      
         <div class="topbar">
           <button id="btn-back-home-my-law" class="btn btn-secondary btn-sm">← Menu</button>
           <div style="text-align: right;">
@@ -2702,8 +2882,15 @@ if (src === 'quran') {
 // ==========================================
     // KOD BARU: MY LAW + OVERLAY PERATURAN
     // ==========================================
-    const sectionMyLaw = document.getElementById("section-my-law");
+const sectionMyLaw = document.getElementById("section-my-law");
     const btnGoMyLaw = document.getElementById("btn-go-my-law");
+
+    // Journal sections
+    const sectionJournalHub     = document.getElementById("section-journal-hub");
+    const sectionMyJournal      = document.getElementById("section-my-journal");
+    const sectionJournalEditor  = document.getElementById("section-journal-editor");
+    const sectionContactJournal = document.getElementById("section-contact-journal");
+    const sectionContactEditor  = document.getElementById("section-contact-editor");
     const btnBackHomeMyLaw = document.getElementById("btn-back-home-my-law");
     const myLawTextarea = document.getElementById("my-law-textarea");
     const myLawSaveIndicator = document.getElementById("my-law-save-indicator");
@@ -2712,10 +2899,19 @@ if (src === 'quran') {
     const peraturanContent = document.getElementById("peraturan-content");
     const btnPeraturanContinue = document.getElementById("btn-peraturan-continue");
 
-    let myLawText = "";
+let myLawText = "";
     let myLawUnsub = null;
     let myLawSaveTimer = null;
     let peraturanCallback = null;
+
+    // ── JOURNAL VARIABLES ──
+    let currentJournalEntryId = null;
+    let currentContactId = null;
+    let journalSaveTimer = null;
+    let contactSaveTimer = null;
+    let selectedMood = '';
+    let selectedTags = new Set();
+    let selectedRating = 0;
 
     // SUBSCRIBE MY LAW DARI FIRESTORE
     function subscribeMyLaw() {
@@ -2832,11 +3028,16 @@ function showSection(section) {
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
   
-  if (sectionAmtAk) sectionAmtAk.classList.remove("active");
+if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       if (sectionSem) sectionSem.classList.remove("active");
       if (sectionBahasa) sectionBahasa.classList.remove("active");
       if (sectionJenisKata) sectionJenisKata.classList.remove("active");
       if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
+      if (sectionJournalHub)     sectionJournalHub.classList.remove("active");
+      if (sectionMyJournal)      sectionMyJournal.classList.remove("active");
+      if (sectionJournalEditor)  sectionJournalEditor.classList.remove("active");
+      if (sectionContactJournal) sectionContactJournal.classList.remove("active");
+      if (sectionContactEditor)  sectionContactEditor.classList.remove("active");
           section.classList.add("active");
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
@@ -7812,6 +8013,437 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
       });
     }
 
+// ══════════════════════════════════════════
+    // JOURNAL SYSTEM
+    // ══════════════════════════════════════════
+
+    // ── NAVIGATION ──
+    document.getElementById('btn-go-journal').addEventListener('click', () => {
+      showSection(sectionJournalHub);
+      renderJournalStats();
+    });
+    document.getElementById('btn-back-home-journal').addEventListener('click', () => showSection(sectionHome));
+    document.getElementById('btn-go-my-journal').addEventListener('click', () => {
+      showSection(sectionMyJournal);
+      loadJournalList();
+    });
+    document.getElementById('btn-back-journal-hub').addEventListener('click', () => {
+      showSection(sectionJournalHub);
+      renderJournalStats();
+    });
+    document.getElementById('btn-back-journal-list').addEventListener('click', () => {
+      showSection(sectionMyJournal);
+      loadJournalList();
+    });
+    document.getElementById('btn-go-contact-journal').addEventListener('click', () => {
+      showSection(sectionContactJournal);
+      loadContactList();
+    });
+    document.getElementById('btn-back-journal-hub-contact').addEventListener('click', () => {
+      showSection(sectionJournalHub);
+      renderJournalStats();
+    });
+    document.getElementById('btn-back-contact-list').addEventListener('click', () => {
+      showSection(sectionContactJournal);
+      loadContactList();
+    });
+
+    // ── UTILITY ──
+    function journalDateKey(ts) {
+      const d = new Date(ts || Date.now());
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function journalDateLabel(ts) {
+      const d = new Date(ts || Date.now());
+      const days = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+      const months = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogs','Sep','Okt','Nov','Dis'];
+      return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    // ── STATS & STREAK ──
+    async function renderJournalStats() {
+      if (!currentUser) return;
+      const statsBar = document.getElementById('journal-stats-bar');
+      if (!statsBar) return;
+
+      try {
+        const snap = await getDocs(
+          query(collection(db, "users", currentUser.uid, "journal_entries"), orderBy("createdAt", "desc"))
+        );
+        const entries = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        const totalEntries = entries.length;
+
+        // Kira streak
+        let streak = 0;
+        const today = journalDateKey(Date.now());
+        let checkDate = new Date();
+        const dateKeys = new Set(entries.map(e => e.dateKey));
+
+        while (true) {
+          const key = journalDateKey(checkDate.getTime());
+          if (dateKeys.has(key)) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else if (key === today) {
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+
+        // Mood paling kerap
+        const moodCount = {};
+        entries.forEach(e => { if (e.mood) moodCount[e.mood] = (moodCount[e.mood] || 0) + 1; });
+        const topMood = Object.entries(moodCount).sort((a,b) => b[1]-a[1])[0];
+
+        const contactSnap = await getDocs(collection(db, "users", currentUser.uid, "journal_contacts"));
+
+        statsBar.innerHTML = `
+          <div class="chip" style="border-color:#f472b6;color:#f9a8d4;">🔥 Streak: ${streak} hari</div>
+          <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📔 ${totalEntries} entry</div>
+          <div class="chip" style="border-color:#34d399;color:#6ee7b7;">👥 ${contactSnap.size} kenalan</div>
+          ${topMood ? `<div class="chip" style="border-color:#fcd34d;color:#fde68a;">${topMood[0]} Mood kerap</div>` : ''}
+        `;
+
+        const streakLabel = document.getElementById('journal-streak-label');
+        if (streakLabel) streakLabel.textContent = streak > 0 ? `🔥 ${streak} hari berturut-turut` : 'Mula tulis hari ini!';
+
+      } catch(e) {
+        console.log("Gagal load journal stats:", e);
+      }
+    }
+
+    // ── MY JOURNAL — LIST ──
+    async function loadJournalList() {
+      if (!currentUser) return;
+      const list = document.getElementById('journal-list');
+      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
+      try {
+        const snap = await getDocs(
+          query(collection(db, "users", currentUser.uid, "journal_entries"), orderBy("createdAt", "desc"))
+        );
+
+        if (snap.empty) {
+          list.innerHTML = '<div class="empty-state">Belum ada entry. Tekan "+ Tulis Journal Hari Ini".</div>';
+          return;
+        }
+
+        list.innerHTML = '';
+        snap.docs.forEach(docSnap => {
+          const data = docSnap.data();
+          const tagsHtml = (data.tags || []).map(t =>
+            `<span style="font-size:0.62rem;padding:2px 8px;border-radius:999px;background:rgba(244,114,182,0.15);color:#f9a8d4;border:1px solid rgba(244,114,182,0.3);">${t}</span>`
+          ).join('');
+
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.style.cssText = 'flex-direction:column;align-items:flex-start;gap:6px;cursor:pointer;';
+          div.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:1.4rem;">${data.mood || '📔'}</span>
+                <div>
+                  <div style="font-size:0.85rem;font-weight:600;">${journalDateLabel(data.createdAt)}</div>
+                  <div style="font-size:0.7rem;color:var(--subtext);">${data.moodLabel || ''}</div>
+                </div>
+              </div>
+              <span style="font-size:0.7rem;color:var(--subtext);">${data.dateKey || ''}</span>
+            </div>
+            ${data.q1 ? `<div style="font-size:0.75rem;color:var(--subtext);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${data.q1.substring(0, 100)}${data.q1.length > 100 ? '...' : ''}</div>` : ''}
+            ${tagsHtml ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${tagsHtml}</div>` : ''}
+          `;
+          div.addEventListener('click', () => openJournalEditor(docSnap.id, data));
+          list.appendChild(div);
+        });
+      } catch(e) {
+        list.innerHTML = `<div class="empty-state">Gagal muatkan: ${e.message}</div>`;
+      }
+    }
+
+    // ── MY JOURNAL — ADD ENTRY ──
+    document.getElementById('btn-add-journal-entry').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const today = journalDateKey(Date.now());
+
+      // Semak kalau dah ada entry hari ini
+      const snap = await getDocs(
+        query(collection(db, "users", currentUser.uid, "journal_entries"), orderBy("createdAt", "desc"))
+      );
+      const todayEntry = snap.docs.find(d => d.data().dateKey === today);
+
+      if (todayEntry) {
+        // Buka entry hari ini
+        openJournalEditor(todayEntry.id, todayEntry.data());
+        showToast('📔 Entry hari ini sudah ada — dibuka semula.');
+      } else {
+        // Buat baru
+        const newRef = await addDoc(collection(db, "users", currentUser.uid, "journal_entries"), {
+          dateKey: today,
+          createdAt: Date.now(),
+          mood: '',
+          moodLabel: '',
+          q1: '', q2: '', q3: '',
+          freeNote: '',
+          tags: []
+        });
+        openJournalEditor(newRef.id, { dateKey: today, createdAt: Date.now(), mood: '', moodLabel: '', q1: '', q2: '', q3: '', freeNote: '', tags: [] });
+      }
+    });
+
+    // ── MY JOURNAL — EDITOR ──
+    function openJournalEditor(id, data) {
+      currentJournalEntryId = id;
+      selectedMood = data.mood || '';
+      selectedTags = new Set(data.tags || []);
+      selectedRating = 0;
+
+      document.getElementById('journal-editor-date').textContent = journalDateLabel(data.createdAt);
+      document.getElementById('journal-q1').value = data.q1 || '';
+      document.getElementById('journal-q2').value = data.q2 || '';
+      document.getElementById('journal-q3').value = data.q3 || '';
+      document.getElementById('journal-free').value = data.freeNote || '';
+
+      // Apply mood
+      document.querySelectorAll('.mood-btn').forEach(btn => {
+        const isActive = btn.getAttribute('data-mood') === selectedMood;
+        btn.style.background = isActive ? 'rgba(244,114,182,0.25)' : 'rgba(30,41,59,0.8)';
+        btn.style.borderColor = isActive ? '#f472b6' : 'var(--border-mid)';
+        btn.style.transform = isActive ? 'scale(1.1)' : 'scale(1)';
+      });
+
+      // Apply tags
+      document.querySelectorAll('.tag-btn').forEach(btn => {
+        const isActive = selectedTags.has(btn.getAttribute('data-tag'));
+        btn.style.background = isActive ? 'rgba(244,114,182,0.2)' : 'rgba(30,41,59,0.8)';
+        btn.style.borderColor = isActive ? '#f472b6' : 'var(--border-mid)';
+        btn.style.color = isActive ? '#f9a8d4' : 'var(--subtext)';
+      });
+
+      // Tunjuk button padam
+      const btnDel = document.getElementById('btn-delete-journal-entry');
+      if (btnDel) btnDel.style.display = 'inline-flex';
+
+      showSection(sectionJournalEditor);
+    }
+
+    function autoSaveJournal() {
+      if (!currentUser || !currentJournalEntryId) return;
+      if (journalSaveTimer) clearTimeout(journalSaveTimer);
+      const savedEl = document.getElementById('journal-editor-saved');
+      if (savedEl) { savedEl.textContent = '⏳ Menyimpan...'; savedEl.style.color = '#fcd34d'; }
+
+      journalSaveTimer = setTimeout(async () => {
+        const data = {
+          mood: selectedMood,
+          moodLabel: document.querySelector(`.mood-btn[data-mood="${selectedMood}"]`)?.getAttribute('data-label') || '',
+          q1: document.getElementById('journal-q1').value,
+          q2: document.getElementById('journal-q2').value,
+          q3: document.getElementById('journal-q3').value,
+          freeNote: document.getElementById('journal-free').value,
+          tags: [...selectedTags],
+          updatedAt: Date.now()
+        };
+        try {
+          await updateDoc(doc(db, "users", currentUser.uid, "journal_entries", currentJournalEntryId), data);
+          if (savedEl) { savedEl.textContent = '✓ Auto-save'; savedEl.style.color = '#34d399'; }
+        } catch(e) {
+          if (savedEl) { savedEl.textContent = '❌ Gagal simpan'; savedEl.style.color = '#f87171'; }
+        }
+      }, 800);
+    }
+
+    // Mood picker
+    document.querySelectorAll('.mood-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedMood = btn.getAttribute('data-mood');
+        document.querySelectorAll('.mood-btn').forEach(b => {
+          const isActive = b.getAttribute('data-mood') === selectedMood;
+          b.style.background = isActive ? 'rgba(244,114,182,0.25)' : 'rgba(30,41,59,0.8)';
+          b.style.borderColor = isActive ? '#f472b6' : 'var(--border-mid)';
+          b.style.transform = isActive ? 'scale(1.1)' : 'scale(1)';
+        });
+        autoSaveJournal();
+      });
+    });
+
+    // Tag picker
+    document.querySelectorAll('.tag-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tag = btn.getAttribute('data-tag');
+        if (selectedTags.has(tag)) {
+          selectedTags.delete(tag);
+          btn.style.background = 'rgba(30,41,59,0.8)';
+          btn.style.borderColor = 'var(--border-mid)';
+          btn.style.color = 'var(--subtext)';
+        } else {
+          selectedTags.add(tag);
+          btn.style.background = 'rgba(244,114,182,0.2)';
+          btn.style.borderColor = '#f472b6';
+          btn.style.color = '#f9a8d4';
+        }
+        autoSaveJournal();
+      });
+    });
+
+    // Auto-save pada semua textarea journal
+    ['journal-q1','journal-q2','journal-q3','journal-free'].forEach(id => {
+      document.getElementById(id).addEventListener('input', autoSaveJournal);
+    });
+
+// Padam entry
+    document.getElementById('btn-delete-journal-entry').addEventListener('click', async () => {
+      if (!currentUser || !currentJournalEntryId) return;
+      if (!confirm("Padam entry journal ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+      const entrySnap = await getDoc(doc(db, "users", currentUser.uid, "journal_entries", currentJournalEntryId));
+      if (entrySnap.exists()) {
+        const d = entrySnap.data();
+        await hantarKeTrashUniversal('journal_entries', currentJournalEntryId, d, journalDateLabel(d.createdAt));
+      }
+      await deleteDoc(doc(db, "users", currentUser.uid, "journal_entries", currentJournalEntryId));
+      showToast('🗑️ Entry disimpan dalam Tong Sampah 30 hari.');
+      showSection(sectionMyJournal);
+      loadJournalList();
+    });
+
+    // ── CONTACT JOURNAL — LIST ──
+    async function loadContactList() {
+      if (!currentUser) return;
+      const list = document.getElementById('contact-list');
+      const search = (document.getElementById('contact-search')?.value || '').toLowerCase().trim();
+      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
+      try {
+        const snap = await getDocs(
+          query(collection(db, "users", currentUser.uid, "journal_contacts"), orderBy("createdAt", "desc"))
+        );
+
+        let contacts = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        if (search) contacts = contacts.filter(c => (c.name || '').toLowerCase().includes(search));
+
+        if (!contacts.length) {
+          list.innerHTML = '<div class="empty-state">Belum ada kenalan. Tekan "+ Tambah Kenalan".</div>';
+          return;
+        }
+
+        list.innerHTML = '';
+        contacts.forEach(data => {
+          const stars = '⭐'.repeat(data.rating || 0);
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.style.cssText = 'flex-direction:column;align-items:flex-start;gap:4px;cursor:pointer;';
+          div.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#db2777,#9d174d);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:white;flex-shrink:0;">
+                  ${(data.name || '?')[0].toUpperCase()}
+                </div>
+                <div>
+                  <div style="font-size:0.88rem;font-weight:600;">${data.name || 'Tanpa Nama'}</div>
+                  <div style="font-size:0.7rem;color:var(--subtext);">${data.relation || ''}</div>
+                </div>
+              </div>
+              <span style="font-size:0.82rem;">${data.rating ? '⭐'.repeat(data.rating) : ''}</span>
+            </div>
+            ${data.lesson ? `<div style="font-size:0.72rem;color:#34d399;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">💡 ${data.lesson.substring(0, 80)}</div>` : ''}
+          `;
+          div.addEventListener('click', () => openContactEditor(data.id, data));
+          list.appendChild(div);
+        });
+      } catch(e) {
+        list.innerHTML = `<div class="empty-state">Gagal: ${e.message}</div>`;
+      }
+    }
+
+    document.getElementById('contact-search').addEventListener('input', loadContactList);
+
+    // ── CONTACT JOURNAL — ADD ──
+    document.getElementById('btn-add-contact').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const newRef = await addDoc(collection(db, "users", currentUser.uid, "journal_contacts"), {
+        name: '', relation: '', story: '', lesson: '',
+        rating: 0, createdAt: Date.now()
+      });
+      openContactEditor(newRef.id, { name: '', relation: '', story: '', lesson: '', rating: 0 });
+    });
+
+    // ── CONTACT JOURNAL — EDITOR ──
+    function openContactEditor(id, data) {
+      currentContactId = id;
+      selectedRating = data.rating || 0;
+
+      document.getElementById('contact-editor-name').textContent = data.name || 'Kenalan Baru';
+      document.getElementById('contact-name-input').value = data.name || '';
+      document.getElementById('contact-relation-input').value = data.relation || '';
+      document.getElementById('contact-story').value = data.story || '';
+      document.getElementById('contact-lesson').value = data.lesson || '';
+
+      // Apply rating
+      document.querySelectorAll('.rating-btn').forEach(btn => {
+        const r = parseInt(btn.getAttribute('data-rating'));
+        const isActive = r === selectedRating;
+        btn.style.background = isActive ? 'rgba(244,114,182,0.25)' : 'rgba(30,41,59,0.8)';
+        btn.style.borderColor = isActive ? '#f472b6' : 'var(--border-mid)';
+        btn.style.color = isActive ? '#f9a8d4' : 'var(--subtext)';
+      });
+
+      showSection(sectionContactEditor);
+    }
+
+    function autoSaveContact() {
+      if (!currentUser || !currentContactId) return;
+      if (contactSaveTimer) clearTimeout(contactSaveTimer);
+      contactSaveTimer = setTimeout(async () => {
+        const name = document.getElementById('contact-name-input').value;
+        document.getElementById('contact-editor-name').textContent = name || 'Kenalan Baru';
+        const data = {
+          name,
+          relation: document.getElementById('contact-relation-input').value,
+          story: document.getElementById('contact-story').value,
+          lesson: document.getElementById('contact-lesson').value,
+          rating: selectedRating,
+          updatedAt: Date.now()
+        };
+        try {
+          await updateDoc(doc(db, "users", currentUser.uid, "journal_contacts", currentContactId), data);
+        } catch(e) { console.log("Gagal save contact:", e); }
+      }, 800);
+    }
+
+    // Rating picker
+    document.querySelectorAll('.rating-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedRating = parseInt(btn.getAttribute('data-rating'));
+        document.querySelectorAll('.rating-btn').forEach(b => {
+          const isActive = parseInt(b.getAttribute('data-rating')) === selectedRating;
+          b.style.background = isActive ? 'rgba(244,114,182,0.25)' : 'rgba(30,41,59,0.8)';
+          b.style.borderColor = isActive ? '#f472b6' : 'var(--border-mid)';
+          b.style.color = isActive ? '#f9a8d4' : 'var(--subtext)';
+        });
+        autoSaveContact();
+      });
+    });
+
+    ['contact-name-input','contact-relation-input','contact-story','contact-lesson'].forEach(id => {
+      document.getElementById(id).addEventListener('input', autoSaveContact);
+    });
+
+// Padam kenalan
+    document.getElementById('btn-delete-contact').addEventListener('click', async () => {
+      if (!currentUser || !currentContactId) return;
+      if (!confirm("Padam kenalan ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+      const contactSnap = await getDoc(doc(db, "users", currentUser.uid, "journal_contacts", currentContactId));
+      if (contactSnap.exists()) {
+        const d = contactSnap.data();
+        await hantarKeTrashUniversal('journal_contacts', currentContactId, d, d.name || 'Kenalan');
+      }
+      await deleteDoc(doc(db, "users", currentUser.uid, "journal_contacts", currentContactId));
+      showToast('🗑️ Kenalan disimpan dalam Tong Sampah 30 hari.');
+      showSection(sectionContactJournal);
+      loadContactList();
+    });
+    
     // ── DARK MODE ──
     const btnDarkMode = document.getElementById('btn-dark-mode');
     let isDarkMode = localStorage.getItem('darkMode') === 'true';
@@ -9906,9 +10538,13 @@ const SATU_TAHUN = 365 * 24 * 60 * 60 * 1000;
         title: '🗑️ Tong Sampah — Laci Hadis',
         colls: ['hadis_times','hadis_drawers']
       },
-      bahasa: {
+bahasa: {
         title: '🗑️ Tong Sampah — Laci Bahasa',
         colls: ['bahasa_list','jenis_kata','bahasa_drawers']
+      },
+      journal: {
+        title: '🗑️ Tong Sampah — Journal',
+        colls: ['journal_entries','journal_contacts']
       }
     };
 
@@ -9917,8 +10553,10 @@ const SATU_TAHUN = 365 * 24 * 60 * 60 * 1000;
       routine_times: 'Waktu Rutin', routine_drawers: 'Laci Zikir',
       doa_times: 'Kategori Doa', doa_drawers: 'Laci Doa',
       hadis_times: 'Kitab/Bab Hadis', hadis_drawers: 'Laci Hadis',
-      bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa'
+bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa',
+      journal_entries: 'Journal Harian', journal_contacts: 'Kenalan Journal'
     };
+      
 
     async function hantarKeTrashUniversal(coll, id, data, label) {
       if (!currentUser) return;
@@ -10047,8 +10685,10 @@ const SATU_TAHUN = 365 * 24 * 60 * 60 * 1000;
     document.getElementById('btn-trash-rutin').addEventListener('click', () => bukaTrashUniversal('rutin'));
     document.getElementById('btn-trash-doa').addEventListener('click',   () => bukaTrashUniversal('doa'));
     document.getElementById('btn-trash-hadis').addEventListener('click', () => bukaTrashUniversal('hadis'));
-    document.getElementById('btn-trash-bahasa').addEventListener('click',() => bukaTrashUniversal('bahasa'));
-
+    document.getElementById('btn-trash-bahasa').addEventListener('click', () => bukaTrashUniversal('bahasa'));
+    document.getElementById('btn-trash-journal').addEventListener('click',  () => bukaTrashUniversal('journal'));
+    document.getElementById('btn-trash-contact').addEventListener('click',  () => bukaTrashUniversal('journal'));
+    
     // ── NAVIGASI LACI BAHASA DARI TASBIH ──
     document.getElementById('btn-go-bahasa-times').addEventListener('click', () => {
       showSection(sectionBahasa);
