@@ -863,7 +863,8 @@ body.dark-mode {
     body.dark-mode .chip {
       background: rgba(0, 0, 0, 0.9);
     }
-.mt-8 { margin-top: 8px; }
+    .mt-8 { margin-top: 8px; }
+    .btn-trash { border-color: #f59e0b !important; color: #fcd34d !important; }
     .mt-12 { margin-top: 12px; }
     .mt-16 { margin-top: 16px; }
     .small { font-size: 0.8rem; }
@@ -1364,7 +1365,11 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <input type="checkbox" id="btn-toggle-bahasa-cb" style="width:18px;height:18px;accent-color:#06b6d4;cursor:pointer;">
           <span style="font-size:0.82rem;color:#22d3ee;font-weight:600;">Bahasa: OFF (aktifkan untuk countdown fakta)</span>
         </div>
-        <button id="btn-add-bahasa" class="btn btn-sm mt-8">+ Tambah Bahasa</button>
+
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-bahasa" class="btn btn-sm" style="flex:1;">+ Tambah Bahasa</button>
+          <button id="btn-trash-bahasa" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
         <div class="list mt-8" id="bahasa-list" style="padding: 10px;"></div>
       </section>
 
@@ -1451,6 +1456,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
 <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
 <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
+            <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 33</button>
@@ -1466,7 +1472,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
               <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
               <button id="btn-go-doa-times" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Laci Doa</button>
               <button id="btn-go-hadis-times" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Laci Hadis</button>
-            </div>
+              <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
+                          </div>
             <div class="topbar-sub" id="tasbih-date-label" style="margin-top: 4px;"></div>
           </div>
         </div>
@@ -1532,7 +1539,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-back-tasbih-sem" class="btn btn-secondary btn-sm">← Tasbih</button>
           <div class="topbar-title">Sem / Tahun</div>
         </div>
-        <button id="btn-add-sem" class="btn btn-sm mt-8">Tambah Sem/Tahun</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-sem" class="btn btn-sm" style="flex:1;">Tambah Sem/Tahun</button>
+          <button id="btn-trash-fakta" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
         <div class="list mt-8" id="sem-list" style="padding: 10px;"></div>
       </section>
 
@@ -1685,7 +1695,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         <div style="font-size: 0.75rem; color: var(--subtext); text-align: center; margin-bottom: 8px;">
           Tanda (tick) SATU kotak sahaja untuk aktifkan rutin ini.
         </div>
-        <button id="btn-add-routine-time" class="btn btn-sm mt-8">Tambah Waktu Rutin</button>
+<div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-routine-time" class="btn btn-sm" style="flex:1;">Tambah Waktu Rutin</button>
+          <button id="btn-trash-rutin" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
         <div class="list mt-8" id="routine-times-list" style="padding: 10px;"></div>
       </section>
 
@@ -1868,7 +1881,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <div class="topbar-title" style="color:#fcd34d;">🤲 Kategori Doa</div>
         </div>
         <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
-        <button id="btn-add-doa-time" class="btn btn-sm mt-8">Tambah Kategori</button>
+<div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-doa-time" class="btn btn-sm" style="flex:1;">Tambah Kategori</button>
+          <button id="btn-trash-doa" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
         <div class="list mt-8" id="doa-times-list" style="padding:10px;"></div>
       </section>
 
@@ -1903,7 +1919,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <div class="topbar-title" style="color:#f9a8d4;">📚 Kitab / Bab</div>
         </div>
         <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
-        <button id="btn-add-hadis-time" class="btn btn-sm mt-8">Tambah Kitab/Bab</button>
+<div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-hadis-time" class="btn btn-sm" style="flex:1;">Tambah Kitab/Bab</button>
+          <button id="btn-trash-hadis" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
         <div class="list mt-8" id="hadis-times-list" style="padding:10px;"></div>
       </section>
 
@@ -2109,8 +2128,20 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 
 </div>
 
+<!-- MODAL TONG SAMPAH UNIVERSAL -->
+<div id="tong-sampah-universal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #f59e0b;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:1.1rem;font-weight:700;color:#fcd34d;" id="tong-universal-title">🗑️ Tong Sampah</div>
+      <button id="btn-tong-universal-close" style="background:rgba(255,255,255,.08);border:1px solid #4b5563;border-radius:999px;color:#e5e7eb;padding:4px 12px;font-size:.8rem;cursor:pointer;">Tutup</button>
+    </div>
+    <div style="font-size:.72rem;color:#6b7280;margin-bottom:12px;">Item dipadam kekal selepas 30 hari. Tekan Pulihkan untuk kembalikan.</div>
+    <div id="tong-universal-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:100px;"></div>
+  </div>
+</div>
+
 <div id="prompter-view">
-  <div id="prompter-zone">
+    <div id="prompter-zone">
       <div class="prompter-focus-line"></div>
       <div id="scrolling-text"></div>
     </div>
@@ -4213,13 +4244,19 @@ function renderSems() {
           showSection(sectionSubjects);
           renderSubjects();
         });
-        div.querySelector(".btn-del-sem").addEventListener("click", async () => {
-          if (!confirm("Padam Sem/Tahun ini?\n\nSemua subjek, topik dan laci di dalamnya akan turut dipadam.")) return;
+div.querySelector(".btn-del-sem").addEventListener("click", async () => {
+          if (!confirm("Padam Sem/Tahun ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          // Hantar ke trash dulu sebelum padam
+          await hantarKeTrashUniversal('sems', data.id, data, data.name || 'Sem Tanpa Nama');
           const subjToDelete = allSubjects.filter(s => s.semId === data.id);
           for (const subj of subjToDelete) {
+            await hantarKeTrashUniversal('subjects', subj.id, subj, subj.name || 'Subjek');
             const topsToDelete = allTopics.filter(t => t.subjectId === subj.id);
             for (const topic of topsToDelete) {
+              await hantarKeTrashUniversal('topics', topic.id, topic, topic.name || 'Topik');
               const drawersToDelete = allDrawers.filter(d => d.topicId === topic.id);
+              for (const dr of drawersToDelete)
+                await hantarKeTrashUniversal('drawer', dr.id, dr, dr.title || 'Laci');
               let i = 0;
               while (i < drawersToDelete.length) {
                 const batch = writeBatch(db);
@@ -4233,6 +4270,7 @@ function renderSems() {
             await deleteDoc(doc(db,"users",currentUser.uid,"subjects",subj.id));
           }
           await deleteDoc(doc(db,"users",currentUser.uid,"sems",data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         semList.appendChild(div);
       });
@@ -4267,10 +4305,14 @@ function renderSubjects() {
         });
         
 div.querySelector(".btn-del-sub").addEventListener("click", async () => {
-          if (!confirm("Padam subjek ini?\n\nSemua topik dan laci di dalamnya akan turut dipadam.")) return;
+          if (!confirm("Padam subjek ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          await hantarKeTrashUniversal('subjects', data.id, data, data.name || 'Subjek');
           const topicsToDelete = allTopics.filter(t => t.subjectId === data.id);
           for (const topic of topicsToDelete) {
+            await hantarKeTrashUniversal('topics', topic.id, topic, topic.name || 'Topik');
             const drawersToDelete = allDrawers.filter(d => d.topicId === topic.id);
+            for (const dr of drawersToDelete)
+              await hantarKeTrashUniversal('drawer', dr.id, dr, dr.title || 'Laci');
             let i = 0;
             while (i < drawersToDelete.length) {
               const batch = writeBatch(db);
@@ -4282,6 +4324,7 @@ div.querySelector(".btn-del-sub").addEventListener("click", async () => {
             await deleteDoc(doc(db,"users",currentUser.uid,"topics",topic.id));
           }
           await deleteDoc(doc(db,"users",currentUser.uid,"subjects",data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
         subjectsList.appendChild(div);
@@ -4332,8 +4375,11 @@ div.querySelector(".btn-del-sub").addEventListener("click", async () => {
         });
         
 div.querySelector(".btn-del-topik").addEventListener("click", async () => {
-          if (!confirm("Padam topik ini?\n\nSemua laci di dalamnya akan turut dipadam.")) return;
+          if (!confirm("Padam topik ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          await hantarKeTrashUniversal('topics', data.id, data, data.name || 'Topik');
           const drawersToDelete = allDrawers.filter(d => d.topicId === data.id);
+          for (const dr of drawersToDelete)
+            await hantarKeTrashUniversal('drawer', dr.id, dr, dr.title || 'Laci');
           let i = 0;
           while (i < drawersToDelete.length) {
             const batch = writeBatch(db);
@@ -4343,6 +4389,7 @@ div.querySelector(".btn-del-topik").addEventListener("click", async () => {
             await batch.commit(); i = end;
           }
           await deleteDoc(doc(db,"users",currentUser.uid,"topics",data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
         topicsList.appendChild(div);
@@ -4401,9 +4448,11 @@ div.querySelector(".btn-del-topik").addEventListener("click", async () => {
           openMemanahMode(data);
         });
         
-        div.querySelector(".btn-del-laci").addEventListener("click", () => {
-          if (!confirm("Adakah anda pasti mahu memadam laci ini?")) return; 
-          deleteDoc(doc(db, "users", currentUser.uid, "drawer", data.id));
+div.querySelector(".btn-del-laci").addEventListener("click", async () => {
+          if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          await hantarKeTrashUniversal('drawer', data.id, data, data.title || 'Laci');
+          await deleteDoc(doc(db, "users", currentUser.uid, "drawer", data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
         drawerList.appendChild(div);
@@ -4515,8 +4564,11 @@ div.querySelector(".btn-del-topik").addEventListener("click", async () => {
         });
         
 div.querySelector(".btn-del-rtn").addEventListener("click", async () => {
-          if (!confirm("Padam waktu rutin ini?\n\nSemua laci zikir di dalamnya akan turut dipadam.")) return;
+          if (!confirm("Padam waktu rutin ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          await hantarKeTrashUniversal('routine_times', data.id, data, data.name || 'Waktu Rutin');
           const drawersToDelete = allRoutineDrawers.filter(d => d.timeId === data.id);
+          for (const dr of drawersToDelete)
+            await hantarKeTrashUniversal('routine_drawers', dr.id, dr, dr.title || 'Laci Rutin');
           let i = 0;
           while (i < drawersToDelete.length) {
             const batch = writeBatch(db);
@@ -4526,6 +4578,7 @@ div.querySelector(".btn-del-rtn").addEventListener("click", async () => {
             await batch.commit(); i = end;
           }
           await deleteDoc(doc(db,"users",currentUser.uid,"routine_times",data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
         routineTimesList.appendChild(div);
@@ -4613,9 +4666,11 @@ const isEmpty = !data.zikir || data.zikir.trim() === '';
           });
         });
 
-        div.querySelector(".btn-del-laci").addEventListener("click", () => {
-          if (!confirm("Adakah anda pasti mahu memadam laci zikir ini?")) return; 
-          deleteDoc(doc(db, "users", currentUser.uid, "routine_drawers", data.id));
+div.querySelector(".btn-del-laci").addEventListener("click", async () => {
+          if (!confirm("Padam laci zikir ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          await hantarKeTrashUniversal('routine_drawers', data.id, data, data.title || 'Laci Rutin');
+          await deleteDoc(doc(db, "users", currentUser.uid, "routine_drawers", data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
         routineDrawersList.appendChild(div);
@@ -6432,14 +6487,16 @@ const isQuranMode = mode === 'quran';
         });
 
 div.querySelectorAll('button')[1].addEventListener("click", async () => {
-          if(!confirm(`Padam "${data.name}"?\n\nSemua laci di dalamnya akan turut dipadam.`)) return;
+          if(!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
           const drawerInfo = {
-            'quran_times': {coll:'quran_drawers', arr:allQuranDrawers},
             'doa_times':   {coll:'doa_drawers',   arr:allDoaDrawers},
             'hadis_times': {coll:'hadis_drawers',  arr:allHadisDrawers}
           }[cfg.coll];
           if (drawerInfo) {
+            await hantarKeTrashUniversal(cfg.coll, data.id, data, data.name || 'Kategori');
             const toDelete = drawerInfo.arr.filter(d => d.timeId === data.id);
+            for (const dr of toDelete)
+              await hantarKeTrashUniversal(drawerInfo.coll, dr.id, dr, dr.title || 'Laci');
             let i = 0;
             while (i < toDelete.length) {
               const batch = writeBatch(db);
@@ -6450,6 +6507,7 @@ div.querySelectorAll('button')[1].addEventListener("click", async () => {
             }
           }
           await deleteDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
         list.appendChild(div);
@@ -6746,9 +6804,13 @@ if (mode === 'quran') {
           });
         }
 
-div.querySelector('.btn-del').addEventListener("click", () => {
-          if(confirm("Padam laci ini?")) deleteDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id));
-        });
+
+div.querySelector('.btn-del').addEventListener("click", async () => {
+          if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          await hantarKeTrashUniversal(cfg.coll, data.id, data, data.title || 'Laci');
+          await deleteDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
+        });        
         if (mode === 'quran' && quranSelectMode) {
           const cb = div.querySelector('.quran-select-cb');
           if (cb) cb.addEventListener('change', () => {
@@ -7585,11 +7647,15 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
           showSection(sectionJenisKata);
           renderJenisKata();
         });
-        div.querySelectorAll('button')[1].addEventListener('click', async () => {
-          if (!confirm(`Padam "${data.name}"?\n\nSemua jenis kata dan nota akan turut dipadam.`)) return;
+div.querySelectorAll('button')[1].addEventListener('click', async () => {
+          if (!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
+          await hantarKeTrashUniversal('bahasa_list', data.id, data, data.name || 'Bahasa');
           const jenis = allJenisKata.filter(j => j.bahasaId === data.id);
           for (const j of jenis) {
+            await hantarKeTrashUniversal('jenis_kata', j.id, j, j.name || 'Jenis Kata');
             const drawers = allBahasaDrawers.filter(d => d.jenisId === j.id);
+            for (const dr of drawers)
+              await hantarKeTrashUniversal('bahasa_drawers', dr.id, dr, dr.title || 'Laci Bahasa');
             let i = 0;
             while (i < drawers.length) {
               const batch = writeBatch(db);
@@ -7601,6 +7667,7 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
             await deleteDoc(doc(db,"users",currentUser.uid,"jenis_kata",j.id));
           }
           await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         list.appendChild(div);
       });
@@ -7641,9 +7708,12 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
           showSection(sectionBahasaDrawer);
           renderBahasaDrawers();
         });
-        div.querySelectorAll('button')[1].addEventListener('click', async () => {
-          if (!confirm(`Padam "${data.name}"?`)) return;
+div.querySelectorAll('button')[1].addEventListener('click', async () => {
+          if (!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
+          await hantarKeTrashUniversal('jenis_kata', data.id, data, data.name || 'Jenis Kata');
           const drawers = allBahasaDrawers.filter(d => d.jenisId === data.id);
+          for (const dr of drawers)
+            await hantarKeTrashUniversal('bahasa_drawers', dr.id, dr, dr.title || 'Laci Bahasa');
           let i = 0;
           while (i < drawers.length) {
             const batch = writeBatch(db);
@@ -7653,6 +7723,7 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
             await batch.commit(); i = end;
           }
           await deleteDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         list.appendChild(div);
       });
@@ -7684,10 +7755,13 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id), {title: e.target.value}));
         div.querySelector('.drawer-notes').addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id), {notes: e.target.value, repeatCount: 0}));
-        div.querySelector('.btn-del-bd').addEventListener('click', () => {
-          if (!confirm("Padam?")) return;
-          deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
+div.querySelector('.btn-del-bd').addEventListener('click', async () => {
+          if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
+          await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
+          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
+        
         list.appendChild(div);
       });
     }
@@ -9808,10 +9882,181 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
     });          
 
 // ── TONG SAMPAH & PEMBERSIH ──
-    const SATU_TAHUN = 365 * 24 * 60 * 60 * 1000;
+const SATU_TAHUN = 365 * 24 * 60 * 60 * 1000;
+    const TIGA_PULUH_HARI = 30 * 24 * 60 * 60 * 1000;
+    
+// ── TONG SAMPAH UNIVERSAL (30 HARI) ──
+    const TRASH_COLL = 'universal_trash';
+
+    // Config tong sampah untuk setiap laci
+    const TRASH_CONFIG = {
+      fakta: {
+        title: '🗑️ Tong Sampah — Laci Fakta',
+        colls: ['sems','subjects','topics','drawer']
+      },
+      rutin: {
+        title: '🗑️ Tong Sampah — Laci Rutin',
+        colls: ['routine_times','routine_drawers']
+      },
+      doa: {
+        title: '🗑️ Tong Sampah — Laci Doa',
+        colls: ['doa_times','doa_drawers']
+      },
+      hadis: {
+        title: '🗑️ Tong Sampah — Laci Hadis',
+        colls: ['hadis_times','hadis_drawers']
+      },
+      bahasa: {
+        title: '🗑️ Tong Sampah — Laci Bahasa',
+        colls: ['bahasa_list','jenis_kata','bahasa_drawers']
+      }
+    };
+
+    const TRASH_COLL_LABEL = {
+      sems: 'Sem/Tahun', subjects: 'Subjek', topics: 'Topik', drawer: 'Laci Fakta',
+      routine_times: 'Waktu Rutin', routine_drawers: 'Laci Zikir',
+      doa_times: 'Kategori Doa', doa_drawers: 'Laci Doa',
+      hadis_times: 'Kitab/Bab Hadis', hadis_drawers: 'Laci Hadis',
+      bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa'
+    };
+
+    async function hantarKeTrashUniversal(coll, id, data, label) {
+      if (!currentUser) return;
+      const trashRef = doc(collection(db, "users", currentUser.uid, TRASH_COLL));
+      await setDoc(trashRef, {
+        originalColl: coll,
+        originalId: id,
+        originalData: data,
+        label: label || 'Tanpa Nama',
+        deletedAt: Date.now(),
+        luputAt: Date.now() + TIGA_PULUH_HARI
+      });
+    }
+
+    async function bukaTrashUniversal(jenisKey) {
+      if (!currentUser) return;
+      const cfg = TRASH_CONFIG[jenisKey];
+      if (!cfg) return;
+      document.getElementById('tong-universal-title').textContent = cfg.title;
+      document.getElementById('tong-sampah-universal-modal').style.display = 'flex';
+      await muatTrashUniversal(cfg.colls);
+    }
+
+    async function muatTrashUniversal(colls) {
+      if (!currentUser) return;
+      const list = document.getElementById('tong-universal-list');
+      list.innerHTML = '<div style="color:#6b7280;font-size:.8rem;text-align:center;padding:20px;">Memuatkan...</div>';
+
+      try {
+        const snap = await getDocs(
+          query(collection(db, "users", currentUser.uid, TRASH_COLL), orderBy("deletedAt", "desc"))
+        );
+
+        // Padam kekal yang dah luput
+        const luput = snap.docs.filter(d => Date.now() > (d.data().luputAt || 0));
+        if (luput.length) {
+          let i = 0;
+          while (i < luput.length) {
+            const batch = writeBatch(db);
+            const end = Math.min(i + 499, luput.length);
+            for (let j = i; j < end; j++)
+              batch.delete(doc(db, "users", currentUser.uid, TRASH_COLL, luput[j].id));
+            await batch.commit(); i = end;
+          }
+        }
+
+        // Filter ikut colls yang berkaitan
+        const aktif = snap.docs.filter(d =>
+          Date.now() <= (d.data().luputAt || 0) &&
+          colls.includes(d.data().originalColl)
+        );
+
+        if (!aktif.length) {
+          list.innerHTML = '<div style="color:#6b7280;font-size:.8rem;text-align:center;padding:20px;">🧹 Tong sampah kosong</div>';
+          return;
+        }
+
+        list.innerHTML = '';
+        aktif.forEach(docSnap => {
+          const item = docSnap.data();
+          const tarikhPadam = new Date(item.deletedAt);
+          const tarikhLuput = new Date(item.luputAt);
+          const hariBaki = Math.max(0, Math.ceil((item.luputAt - Date.now()) / 864e5));
+          const collLabel = TRASH_COLL_LABEL[item.originalColl] || item.originalColl;
+
+          const card = document.createElement('div');
+          card.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid #374151;border-radius:10px;padding:10px 12px;';
+          card.innerHTML = `
+            <div style="font-size:.85rem;font-weight:600;color:#e5e7eb;margin-bottom:2px;">${item.label}</div>
+            <div style="font-size:.7rem;color:#6b7280;margin-bottom:6px;">
+              ${collLabel} · ${tarikhPadam.toLocaleDateString('ms-MY')} · 
+              <span style="color:${hariBaki <= 3 ? '#f87171' : '#f59e0b'};">⏳ ${hariBaki} hari lagi</span>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-pulih-universal" data-id="${docSnap.id}" 
+                style="flex:1;padding:6px;border-radius:999px;background:rgba(52,211,153,.15);border:1px solid #10b981;color:#34d399;font-size:.78rem;cursor:pointer;">
+                ↩ Pulihkan
+              </button>
+              <button class="btn-padam-universal" data-id="${docSnap.id}"
+                style="padding:6px 12px;border-radius:999px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:#f87171;font-size:.78rem;cursor:pointer;">
+                Padam Kekal
+              </button>
+            </div>`;
+          list.appendChild(card);
+        });
+
+        // Event listeners
+        list.querySelectorAll('.btn-pulih-universal').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const trashId = btn.getAttribute('data-id');
+            const trashSnap = await getDoc(doc(db, "users", currentUser.uid, TRASH_COLL, trashId));
+            if (!trashSnap.exists()) return;
+            const item = trashSnap.data();
+            try {
+              // Pulihkan ke collection asal (ID baru supaya tak conflict)
+              const newRef = doc(collection(db, "users", currentUser.uid, item.originalColl));
+              await setDoc(newRef, item.originalData);
+              await deleteDoc(doc(db, "users", currentUser.uid, TRASH_COLL, trashId));
+              showToast(`✅ "${item.label}" berjaya dipulihkan!`);
+              await muatTrashUniversal(colls);
+            } catch(e) { showToast('❌ Gagal pulihkan: ' + e.message); }
+          });
+        });
+
+        list.querySelectorAll('.btn-padam-universal').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Padam kekal? Tidak boleh dipulihkan lagi.')) return;
+            const trashId = btn.getAttribute('data-id');
+            await deleteDoc(doc(db, "users", currentUser.uid, TRASH_COLL, trashId));
+            showToast('🗑️ Dipadam kekal.');
+            await muatTrashUniversal(colls);
+          });
+        });
+
+      } catch(e) {
+        list.innerHTML = `<div class="empty-state">Gagal muatkan: ${e.message}</div>`;
+      }
+    }
+
+    // Event listeners untuk semua button tong sampah
+    document.getElementById('btn-tong-universal-close').addEventListener('click', () => {
+      document.getElementById('tong-sampah-universal-modal').style.display = 'none';
+    });
+
+    document.getElementById('btn-trash-fakta').addEventListener('click', () => bukaTrashUniversal('fakta'));
+    document.getElementById('btn-trash-rutin').addEventListener('click', () => bukaTrashUniversal('rutin'));
+    document.getElementById('btn-trash-doa').addEventListener('click',   () => bukaTrashUniversal('doa'));
+    document.getElementById('btn-trash-hadis').addEventListener('click', () => bukaTrashUniversal('hadis'));
+    document.getElementById('btn-trash-bahasa').addEventListener('click',() => bukaTrashUniversal('bahasa'));
+
+    // ── NAVIGASI LACI BAHASA DARI TASBIH ──
+    document.getElementById('btn-go-bahasa-times').addEventListener('click', () => {
+      showSection(sectionBahasa);
+      renderBahasaList();
+    });
 
     const COLL_LABEL = {
-      drawer: 'Laci Fakta', topics: 'Topik',
+     drawer: 'Laci Fakta', topics: 'Topik',
       routine_drawers: 'Laci Rutin', quran_drawers: 'Laci Quran',
       doa_drawers: 'Laci Doa', hadis_drawers: 'Laci Hadis'
     };
