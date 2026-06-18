@@ -5629,7 +5629,7 @@ function syncFullscreenFact() {
       // input.focus(); // dibuang
 
 function cubaKeluar() {
-        if (input.value.trim() === 'keluar') {
+        if (input.value.trim().toLowerCase() === 'keluar') {
           popup.style.display = 'none';
           popup.style.pointerEvents = 'none';
           input.value = '';
