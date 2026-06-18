@@ -1164,7 +1164,7 @@ body.dark-mode {
 </div>
 
 <!-- POPUP REHAT GLOBAL -->
-      <div id="fs-rehat-popup-global" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();">
+      <div id="fs-rehat-popup" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();">
       <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
       <div style="font-size:2rem;">🌟</div>
       <div style="font-size:1.1rem;font-weight:700;color:#34d399;text-align:center;">Pencapaian Luar Biasa!</div>
@@ -1173,10 +1173,10 @@ body.dark-mode {
 Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</strong> dalam kadar yang ditetapkan, lalu kembali lagi kepada Al-Quran selepas itu. Apabila anda sudah habis membaca fakta, kembali kepada Al-Quran kerana <strong style="color:#fcd34d;">matlamat utama kita adalah khatam Al-Quran di atas rata-rata.</strong><br><br>
         <span style="color:#9ca3af;font-size:0.78rem;">Selepas tutup popup ini, anda terus perlu off Al-Quran dan membuat projek matlamat lain. Jika anda sudah faham, taip perkataan di bawah:</span>
       </div>
-<input id="fs-rehat-input-global" type="text" placeholder='Taip "keluar" untuk off Al-Quran...' style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #34d399;border-radius:10px;color:#fff;padding:12px;font-size:1rem;text-align:center;outline:none;">
-      <div id="fs-rehat-pesan-global" style="font-size:0.75rem;color:#f87171;min-height:18px;text-align:center;"></div>
-     <button id="fs-rehat-btn-keluar-global" style="display:none;" aria-hidden="true"></button>
-                </div>
+      <input id="fs-rehat-input" type="text" placeholder='Taip "keluar" untuk off Al-Quran...'
+      <div id="fs-rehat-pesan" style="font-size:0.75rem;color:#f87171;min-height:18px;text-align:center;"></div>
+      <button id="fs-rehat-btn-keluar" style="display:none;" aria-hidden="true"></button>
+        </div>
   </div>
   
 <!-- OVERLAY TUNGGU KESELAMATAN QURAN -->
@@ -1385,6 +1385,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-trash-journal" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
         </div>
   
+          <button id="btn-trash-journal" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
+        
         <div class="list mt-8" id="journal-list" style="padding:10px;"></div>
       </section>
 
@@ -5613,13 +5616,8 @@ function syncFullscreenFact() {
     }
 
     // ── POPUP REHAT DALAM FULLSCREEN ──
-function bukaPopupRehatFullscreen(jumlahAyat) {
-      const isFullscreen = fullscreenOverlay && fullscreenOverlay.classList.contains('show');
-      const popupId = isFullscreen ? 'fs-rehat-popup' : 'fs-rehat-popup-global';
-      const inputId = isFullscreen ? 'fs-rehat-input' : 'fs-rehat-input-global';
-      const btnId   = isFullscreen ? 'fs-rehat-btn-keluar' : 'fs-rehat-btn-keluar-global';
-      const pesanId = isFullscreen ? 'fs-rehat-pesan' : 'fs-rehat-pesan-global';
-      const popup = document.getElementById(popupId);
+    function bukaPopupRehatFullscreen(jumlahAyat) {
+      const popup = document.getElementById('fs-rehat-popup');
       const input = document.getElementById('fs-rehat-input');
       const btnKeluar = document.getElementById('fs-rehat-btn-keluar');
       const pesanEl = document.getElementById('fs-rehat-pesan');
