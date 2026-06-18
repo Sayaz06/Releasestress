@@ -1379,7 +1379,6 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
         </div>
 <div style="display:flex;gap:8px;margin-top:8px;">
-<div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-journal-entry" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#db2777,#9d174d);border:none;">
             + Tulis Journal Hari Ini
           </button>
@@ -1476,13 +1475,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
 
 <div style="display:flex;gap:8px;">
-<div style="display:flex;gap:8px;">
           <button id="btn-add-contact" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#db2777,#9d174d);border:none;">
             + Tambah Kenalan
           </button>
-          <button id="btn-trash-contact" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
-        </div>
-  
           <button id="btn-trash-contact" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
         </div>
 
@@ -1519,7 +1514,31 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 
           <!-- Rating pengajaran -->
           <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
-            <div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:6px      
+<div style="font-size:0.75rem;font-weight:700;color:#f472b6;margin-bottom:6px;">⭐ Rating — Pengajaran yang Saya Dapat</div>
+            <div style="font-size:0.68rem;color:var(--subtext);margin-bottom:10px;">Sejauh mana interaksi ini memberi impak kepada pertumbuhan diri anda?</div>
+            <div id="rating-picker" style="display:flex;gap:6px;justify-content:center;">
+              <button class="rating-btn" data-rating="1" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;flex-direction:column;display:flex;align-items:center;gap:2px;">⭐<span>Biasa</span></button>
+              <button class="rating-btn" data-rating="2" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;flex-direction:column;display:flex;align-items:center;gap:2px;">⭐⭐<span>Baik</span></button>
+              <button class="rating-btn" data-rating="3" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;flex-direction:column;display:flex;align-items:center;gap:2px;">⭐⭐⭐<span>Kuat</span></button>
+              <button class="rating-btn" data-rating="4" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;flex-direction:column;display:flex;align-items:center;gap:2px;">⭐⭐⭐⭐<span>Sangat Kuat</span></button>
+              <button class="rating-btn" data-rating="5" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--border-mid);background:rgba(30,41,59,0.8);color:var(--subtext);font-size:0.72rem;cursor:pointer;flex-direction:column;display:flex;align-items:center;gap:2px;">🌟<span>Mengubah Hidup</span></button>
+            </div>
+          </div>
+
+          <!-- Pengajaran khusus -->
+          <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(244,114,182,0.3);border-radius:12px;padding:12px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#34d399;margin-bottom:8px;">💡 Pengajaran Utama dari Kenalan Ini</div>
+            <textarea id="contact-lesson" class="drawer-notes" style="min-height:80px;resize:none;width:100%;" placeholder="Apa 1 perkara terpenting yang anda pelajari dari kenalan ini?"></textarea>
+          </div>
+
+          <button id="btn-delete-contact" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">
+            🗑️ Padam Kenalan Ini
+          </button>
+        </div>
+      </section>
+
+<!-- KOD BARU: Section My Law -->
+      <section id="section-my-law" class="section">
         <div class="topbar">
           <button id="btn-back-home-my-law" class="btn btn-secondary btn-sm">← Menu</button>
           <div style="text-align: right;">
@@ -1641,7 +1660,6 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
 <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
 <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
-            <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 33</button>
@@ -7781,10 +7799,19 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
     }
 
 // ── LACI BAHASA ──
-    document.getElementById('btn-go-bahasa')?.addEventListener('click', () => showSection(sectionBahasa));
+document.getElementById('btn-go-bahasa')?.addEventListener('click', () => { 
+      const sec = document.getElementById('section-bahasa');
+      if (sec) { showSection(sec); renderBahasaList(); }
+    });
     document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => showSection(sectionHome));
-    document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { showSection(sectionBahasa); renderBahasaList(); });
-    document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { showSection(sectionJenisKata); renderJenisKata(); });
+    document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
+      const sec = document.getElementById('section-bahasa');
+      if (sec) { showSection(sec); renderBahasaList(); }
+    });
+    document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { 
+      const sec = document.getElementById('section-jenis-kata');
+      if (sec) { showSection(sec); renderJenisKata(); }
+    });
     document.getElementById('btn-add-bahasa')?.addEventListener('click', () => {
       if (!currentUser) return;
       addDoc(collection(db, "users", currentUser.uid, "bahasa_list"), { name: "", createdAt: Date.now() });
@@ -10714,9 +10741,9 @@ bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa',
     
     
     // ── NAVIGASI LACI BAHASA DARI TASBIH ──
-    document.getElementById('btn-go-bahasa-times').addEventListener('click', () => {
-      showSection(sectionBahasa);
-      renderBahasaList();
+document.getElementById('btn-go-bahasa-times')?.addEventListener('click', () => {
+      const sec = document.getElementById('section-bahasa');
+      if (sec) { showSection(sec); renderBahasaList(); }
     });
 
     const COLL_LABEL = {
