@@ -8308,9 +8308,10 @@ document.getElementById('btn-back-contact-list').addEventListener('click', async
     });
 
     // Auto-save pada semua textarea journal
-    ['journal-q1','journal-q2','journal-q3','journal-free'].forEach(id => {
-      document.getElementById(id).addEventListener('input', autoSaveJournal);
+['journal-q1','journal-q2','journal-q3','journal-free'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', autoSaveJournal);
     });
+    
 
 // Padam entry
     document.getElementById('btn-delete-journal-entry').addEventListener('click', async () => {
@@ -8444,10 +8445,11 @@ document.getElementById('btn-back-contact-list').addEventListener('click', async
         autoSaveContact();
       });
     });
-
-    ['contact-name-input','contact-relation-input','contact-story','contact-lesson'].forEach(id => {
-      document.getElementById(id).addEventListener('input', autoSaveContact);
+    
+['contact-name-input','contact-relation-input','contact-story','contact-lesson'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', autoSaveContact);
     });
+
 
 // Padam kenalan
     document.getElementById('btn-delete-contact').addEventListener('click', async () => {
