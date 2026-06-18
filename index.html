@@ -122,10 +122,10 @@
       border-color: rgba(248, 113, 113, 0.5);
       box-shadow: 0 10px 26px rgba(127, 29, 29, 0.7);
     }
-    .btn-sm {
+.btn-sm {
       width: auto;
-      padding: 6px 12px;
-      font-size: 0.8rem;
+      padding: 3px 6px;
+      font-size: 0.65rem;
       border-radius: 999px;
     }
     .btn-active { 
@@ -1300,7 +1300,11 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-go-my-law" class="btn btn-secondary" style="border-color: var(--grad2); color: var(--grad2);">
             <span>📜 My Law</span>
           </button>
-<button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
+
+  <button id="btn-go-bahasa" class="btn btn-secondary" style="border-color: #06b6d4; color: #22d3ee;">
+            <span>📝 Laci Bahasa</span>
+          </button>
+          <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
           </button>
 <button id="btn-pembersih" class="btn btn-secondary" style="border-color:#f59e0b;color:#fcd34d;">
@@ -1347,8 +1351,52 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
       </section>
 
-<section id="section-amt-ak" class="section">
+<!-- LACI BAHASA -->
+      <section id="section-bahasa" class="section">
         <div class="topbar">
+          <button id="btn-back-home-bahasa" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align: right;">
+            <div class="topbar-title" style="color: #22d3ee;">📝 Laci Bahasa</div>
+            <div class="topbar-sub">Koleksi kamus bahasa anda</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px; align-items:center; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:8px;">
+          <input type="checkbox" id="btn-toggle-bahasa-cb" style="width:18px;height:18px;accent-color:#06b6d4;cursor:pointer;">
+          <span style="font-size:0.82rem;color:#22d3ee;font-weight:600;">Bahasa: OFF (aktifkan untuk countdown fakta)</span>
+        </div>
+        <button id="btn-add-bahasa" class="btn btn-sm mt-8">+ Tambah Bahasa</button>
+        <div class="list mt-8" id="bahasa-list" style="padding: 10px;"></div>
+      </section>
+
+      <section id="section-jenis-kata" class="section">
+        <div class="topbar">
+          <button id="btn-back-bahasa-jenis" class="btn btn-secondary btn-sm">← Bahasa</button>
+          <div style="text-align: right;">
+            <div class="topbar-title" style="color: #22d3ee;">📝 Jenis Kata</div>
+            <div class="topbar-sub" id="parent-bahasa-name" style="color:#06b6d4; font-weight:bold;"></div>
+          </div>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--subtext); text-align: center; margin-bottom: 8px;">
+          Tanda (tick) SATU untuk aktifkan sebagai sumber countdown.
+        </div>
+        <button id="btn-add-jenis-kata" class="btn btn-sm">+ Tambah Jenis Kata</button>
+        <div class="list mt-8" id="jenis-kata-list" style="padding: 10px;"></div>
+      </section>
+
+      <section id="section-bahasa-drawer" class="section">
+        <div class="topbar">
+          <button id="btn-back-jenis-drawer" class="btn btn-secondary btn-sm">← Jenis Kata</button>
+          <div style="text-align: right;">
+            <div class="topbar-title" style="color: #22d3ee;">📝 Nota Perkataan</div>
+            <div class="topbar-sub" id="parent-jenis-name" style="color:#06b6d4; font-weight:bold;"></div>
+          </div>
+        </div>
+        <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Perkataan</button>
+        <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
+      </section>
+
+      <section id="section-amt-ak" class="section">
+              <div class="topbar">
           <button id="btn-back-home-amt-ak" class="btn btn-secondary btn-sm">← Menu</button>
           <div style="text-align:right;">
             <div class="topbar-title" style="color:#34d399;">🎧 AMT-AK</div>
@@ -1402,7 +1450,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <button id="btn-toggle-quran" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Quran: OFF</button>
 <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
 <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
-<button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
+<button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
+            <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 33</button>
 
@@ -1478,10 +1527,19 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
       </section>
 
-      <section id="section-subjects" class="section">
+<section id="section-sem" class="section">
         <div class="topbar">
-          <button id="btn-back-tasbih-subj" class="btn btn-secondary btn-sm">← Tasbih</button>
-          <div class="topbar-title">Senarai Subjek</div>
+          <button id="btn-back-tasbih-sem" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div class="topbar-title">Sem / Tahun</div>
+        </div>
+        <button id="btn-add-sem" class="btn btn-sm mt-8">Tambah Sem/Tahun</button>
+        <div class="list mt-8" id="sem-list" style="padding: 10px;"></div>
+      </section>
+
+      <section id="section-subjects" class="section">
+      <div class="topbar">
+        <button id="btn-back-tasbih-subj" class="btn btn-secondary btn-sm">← Sem/Tahun</button>
+                  <div class="topbar-title">Senarai Subjek</div>
         </div>
         <button id="btn-add-subject" class="btn btn-sm mt-8">Tambah Subjek</button>
         <div class="list mt-8" id="subjects-list" style="padding: 10px;"></div>
@@ -2142,8 +2200,12 @@ import {
     const prompterLaciList = document.getElementById("prompter-laci-list");
     const btnStartPrompter = document.getElementById("btn-start-prompter");
 
+const sectionSem = document.getElementById("section-sem");
     const sectionRoutineTimes = document.getElementById("section-routine-times");
     const sectionRoutineDrawers = document.getElementById("section-routine-drawers");
+    const sectionBahasa = document.getElementById("section-bahasa");
+    const sectionJenisKata = document.getElementById("section-jenis-kata");
+    const sectionBahasaDrawer = document.getElementById("section-bahasa-drawer");
 
     const terskipOverlay = document.getElementById('terskip-overlay');
     const btnLoginGoogle = document.getElementById("btn-login-google");
@@ -2408,12 +2470,14 @@ btnSambungFasa2.addEventListener('click', () => {
     let mainRestCount = mainRestMax;
     let mainRestPhase = 1;
     
+let allSems = [];
     let allSubjects = [];
     let allTopics = [];
     let allDrawers = [];
+    let currentSemId = null;
     let currentSubjectId = null;
     let currentTopicId = null;
-    let activeGlobalTopicId = 'default'; 
+    let activeGlobalTopicId = 'default';
     
     let allRoutineTimes = [];
     let allRoutineDrawers = [];
@@ -2449,8 +2513,15 @@ btnSambungFasa2.addEventListener('click', () => {
     let allQuranTimes = [], allQuranDrawers = [], currentQuranTimeId = null, activeGlobalQuranId = 'default';
     let allDoaTimes = [], allDoaDrawers = [], currentDoaTimeId = null, activeGlobalDoaId = 'default';
     let allHadisTimes = [], allHadisDrawers = [], currentHadisTimeId = null, activeGlobalHadisId = 'default';
+
 let doaReadAllMode = false;
     let doaReadAllIndex = 0;
+
+    // ── BAHASA VARIABLES ──
+    let allBahasaList = [], allJenisKata = [], allBahasaDrawers = [];
+    let currentBahasaId = null, currentJenisKataId = null;
+    let activeGlobalBahasaId = 'default';
+    let bahasaMode = false;
 let hadisReadAllMode = false;
     let hadisReadAllIndex = 0;
 // ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
@@ -2730,8 +2801,12 @@ function showSection(section) {
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
   
-if (sectionAmtAk) sectionAmtAk.classList.remove("active");
-          section.classList.add("active");      
+  if (sectionAmtAk) sectionAmtAk.classList.remove("active");
+      if (sectionSem) sectionSem.classList.remove("active");
+      if (sectionBahasa) sectionBahasa.classList.remove("active");
+      if (sectionJenisKata) sectionJenisKata.classList.remove("active");
+      if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
+          section.classList.add("active");
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
               tm_canvas.width = tm_canvas.parentElement.clientWidth;
@@ -4033,7 +4108,13 @@ else if (learningMode === 2) { // Rest Mode
     // ==========================================
     // RENDER & HIERARCHY 
     // ==========================================
-    function subscribeAllHierarchyData() {
+
+function subscribeAllHierarchyData() {
+      onSnapshot(query(collection(db, "users", currentUser.uid, "sems")), snap => {
+        allSems = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        if(sectionSem && sectionSem.classList.contains('active')) renderSems();
+      });
+
       onSnapshot(query(collection(db, "users", currentUser.uid, "subjects")), snap => {
         allSubjects = snap.docs.map(d => ({id: d.id, ...d.data()}));
         if(sectionSubjects.classList.contains('active')) renderSubjects();
@@ -4106,9 +4187,61 @@ else if (learningMode === 2) { // Rest Mode
       });
     }
 
-    function renderSubjects() {
+function renderSems() {
+      const semList = document.getElementById('sem-list');
+      semList.innerHTML = "";
+      const sorted = [...allSems].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
+      if (!sorted.length) {
+        semList.innerHTML = '<div class="empty-state">Belum ada Sem/Tahun. Tekan Tambah.</div>';
+        return;
+      }
+      sorted.forEach(data => {
+        const div = document.createElement("div");
+        div.className = "drawer-card";
+        div.style.cssText = "display:flex; gap:8px; align-items:center;";
+        div.innerHTML = `
+          <input class="sem-title" value="${data.name||''}" placeholder="Cth: Sem 1 2025..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px; font-size:1rem;">
+          <button class="btn btn-secondary btn-sm btn-buka-sem" data-id="${data.id}">Buka</button>
+          <button class="btn btn-secondary btn-sm btn-del-sem" data-id="${data.id}" style="color:var(--danger); border-color:var(--danger);">X</button>
+        `;
+        div.querySelector(".sem-title").addEventListener("change", e => {
+          updateDoc(doc(db, "users", currentUser.uid, "sems", data.id), { name: e.target.value });
+        });
+        div.querySelector(".btn-buka-sem").addEventListener("click", () => {
+          currentSemId = data.id;
+          document.getElementById("parent-subject-name").textContent = `Sem: ${data.name||''}`;
+          showSection(sectionSubjects);
+          renderSubjects();
+        });
+        div.querySelector(".btn-del-sem").addEventListener("click", async () => {
+          if (!confirm("Padam Sem/Tahun ini?\n\nSemua subjek, topik dan laci di dalamnya akan turut dipadam.")) return;
+          const subjToDelete = allSubjects.filter(s => s.semId === data.id);
+          for (const subj of subjToDelete) {
+            const topsToDelete = allTopics.filter(t => t.subjectId === subj.id);
+            for (const topic of topsToDelete) {
+              const drawersToDelete = allDrawers.filter(d => d.topicId === topic.id);
+              let i = 0;
+              while (i < drawersToDelete.length) {
+                const batch = writeBatch(db);
+                const end = Math.min(i + 499, drawersToDelete.length);
+                for (let j = i; j < end; j++)
+                  batch.delete(doc(db,"users",currentUser.uid,"drawer",drawersToDelete[j].id));
+                await batch.commit(); i = end;
+              }
+              await deleteDoc(doc(db,"users",currentUser.uid,"topics",topic.id));
+            }
+            await deleteDoc(doc(db,"users",currentUser.uid,"subjects",subj.id));
+          }
+          await deleteDoc(doc(db,"users",currentUser.uid,"sems",data.id));
+        });
+        semList.appendChild(div);
+      });
+    }
+
+function renderSubjects() {
       subjectsList.innerHTML = "";
-      const sortedSubjects = [...allSubjects].sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, {numeric: true}));
+      const filtered = currentSemId ? allSubjects.filter(s => s.semId === currentSemId) : allSubjects;
+      const sortedSubjects = [...filtered].sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, {numeric: true}));
       
       sortedSubjects.forEach(data => {
         const div = document.createElement("div");
@@ -4760,6 +4893,7 @@ showSection(secToShow);
         subscribeMyLaw(); // KOD BARU: Subscribe My Law dari Firestore
         subscribeToVideoRehat(); // KOD BARU: Subscribe video rehat (dah ada fungsi, tapi belum dipanggil)
         subscribeNewModes();
+        subscribeBahasa();
         loadQuranKhatam().then(() => semakStatusKeluar());
         
       } else {
@@ -4787,20 +4921,26 @@ showSection(secToShow);
     btnBackTasbihFromHistory.addEventListener("click", () => showSection(sectionTasbih));
 
     // Navigasi Fakta
-    btnGoSubjects.addEventListener("click", () => { showSection(sectionSubjects); renderSubjects(); });
-    btnBackTasbihSubj.addEventListener("click", () => showSection(sectionTasbih));
+btnGoSubjects.addEventListener("click", () => { showSection(sectionSem); renderSems(); });
+    document.getElementById('btn-back-tasbih-sem').addEventListener("click", () => showSection(sectionTasbih));
+    btnBackTasbihSubj.addEventListener("click", () => { showSection(sectionSem); renderSems(); });
     btnBackSubjTopics.addEventListener("click", () => { showSection(sectionSubjects); renderSubjects(); });
     btnBackTopicsDrawer.addEventListener("click", () => { showSection(sectionTopics); renderTopics(); });
-
     // Navigasi Rutin
     btnGoRoutineTimes.addEventListener("click", () => { showSection(sectionRoutineTimes); renderRoutineTimes(); });
     btnBackTasbihRoutine.addEventListener("click", () => showSection(sectionTasbih));
     btnBackRoutineDrawer.addEventListener("click", () => { showSection(sectionRoutineTimes); renderRoutineTimes(); });
 
     // Tambah Data Fakta
-    btnAddSubject.addEventListener("click", () => {
-      addDoc(collection(db, "users", currentUser.uid, "subjects"), { name: "", createdAt: Date.now() });
+btnAddSubject.addEventListener("click", () => {
+      if(currentSemId) {
+        addDoc(collection(db, "users", currentUser.uid, "subjects"), { name: "", semId: currentSemId, createdAt: Date.now() });
+      }
     });
+    document.getElementById('btn-add-sem').addEventListener("click", () => {
+      addDoc(collection(db, "users", currentUser.uid, "sems"), { name: "", createdAt: Date.now() });
+    });
+    
     btnAddTopic.addEventListener("click", () => { 
       if(currentSubjectId) {
         addDoc(collection(db, "users", currentUser.uid, "topics"), { name: "", subjectId: currentSubjectId, isActive: false, createdAt: Date.now() }); 
@@ -7372,7 +7512,233 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
           if(routineMode && routineModeSource === mode) rebuildRoutines();
     }
 
-// ── DARK MODE ──
+// ── LACI BAHASA ──
+    document.getElementById('btn-go-bahasa').addEventListener('click', () => showSection(sectionBahasa));
+    document.getElementById('btn-back-home-bahasa').addEventListener('click', () => showSection(sectionHome));
+    document.getElementById('btn-back-bahasa-jenis').addEventListener('click', () => { showSection(sectionBahasa); renderBahasaList(); });
+    document.getElementById('btn-back-jenis-drawer').addEventListener('click', () => { showSection(sectionJenisKata); renderJenisKata(); });
+
+    document.getElementById('btn-add-bahasa').addEventListener('click', () => {
+      if (!currentUser) return;
+      addDoc(collection(db, "users", currentUser.uid, "bahasa_list"), { name: "", createdAt: Date.now() });
+    });
+
+    document.getElementById('btn-add-jenis-kata').addEventListener('click', () => {
+      if (!currentUser || !currentBahasaId) return;
+      addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
+    });
+
+    document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
+      if (!currentUser || !currentJenisKataId) return;
+      addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "", notes: "", repeatCount: 0, jenisId: currentJenisKataId, createdAt: Date.now() });
+    });
+
+    // Toggle Bahasa ON/OFF dalam countdown
+    const btnToggleBahasa = document.getElementById('btn-toggle-bahasa');
+    if (btnToggleBahasa) {
+      btnToggleBahasa.addEventListener('click', () => {
+        bahasaMode = !bahasaMode;
+        btnToggleBahasa.textContent = `📝 Bahasa: ${bahasaMode ? 'ON' : 'OFF'}`;
+        btnToggleBahasa.classList.toggle('btn-active', bahasaMode);
+        const cbEl = document.getElementById('btn-toggle-bahasa-cb');
+        if (cbEl) cbEl.checked = bahasaMode;
+        if (bahasaMode) {
+          // Matikan fakta/rutin lain
+          factMode = false; routineMode = false;
+          btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
+          btnToggleRutin.textContent = "Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
+          factDisplayBox.classList.add("show");
+          rebuildBahasa();
+        } else {
+          factDisplayBox.classList.remove("show");
+        }
+        updateTasbihUI();
+      });
+    }
+
+    document.getElementById('btn-toggle-bahasa-cb').addEventListener('change', (e) => {
+      if (btnToggleBahasa) btnToggleBahasa.click();
+    });
+
+    function renderBahasaList() {
+      const list = document.getElementById('bahasa-list');
+      list.innerHTML = "";
+      const sorted = [...allBahasaList].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada bahasa. Tekan Tambah.</div>';
+        return;
+      }
+      sorted.forEach(data => {
+        const div = document.createElement("div");
+        div.className = "drawer-card";
+        div.style.cssText = "display:flex; gap:8px; align-items:center;";
+        div.innerHTML = `
+          <input value="${data.name||''}" placeholder="Cth: Bahasa Melayu, English..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
+          <button class="btn btn-secondary btn-sm">Buka</button>
+          <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
+        `;
+        div.querySelectorAll('input')[0].addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id), {name: e.target.value}));
+        div.querySelectorAll('button')[0].addEventListener('click', () => {
+          currentBahasaId = data.id;
+          document.getElementById('parent-bahasa-name').textContent = data.name||'';
+          showSection(sectionJenisKata);
+          renderJenisKata();
+        });
+        div.querySelectorAll('button')[1].addEventListener('click', async () => {
+          if (!confirm(`Padam "${data.name}"?\n\nSemua jenis kata dan nota akan turut dipadam.`)) return;
+          const jenis = allJenisKata.filter(j => j.bahasaId === data.id);
+          for (const j of jenis) {
+            const drawers = allBahasaDrawers.filter(d => d.jenisId === j.id);
+            let i = 0;
+            while (i < drawers.length) {
+              const batch = writeBatch(db);
+              const end = Math.min(i+499, drawers.length);
+              for (let k = i; k < end; k++)
+                batch.delete(doc(db,"users",currentUser.uid,"bahasa_drawers",drawers[k].id));
+              await batch.commit(); i = end;
+            }
+            await deleteDoc(doc(db,"users",currentUser.uid,"jenis_kata",j.id));
+          }
+          await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id));
+        });
+        list.appendChild(div);
+      });
+    }
+
+    function renderJenisKata() {
+      const list = document.getElementById('jenis-kata-list');
+      list.innerHTML = "";
+      const filtered = allJenisKata.filter(j => j.bahasaId === currentBahasaId);
+      const sorted = [...filtered].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada jenis kata. Tekan Tambah.</div>';
+        return;
+      }
+      sorted.forEach(data => {
+        const div = document.createElement("div");
+        div.className = "drawer-card";
+        div.style.cssText = "display:flex; gap:8px; align-items:center;";
+        div.innerHTML = `
+          <input type="checkbox" class="jenis-active" ${data.isActive?'checked':''} style="width:18px;height:18px;accent-color:#06b6d4;">
+          <input value="${data.name||''}" placeholder="Cth: Kata Kerja, Kata Nama..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
+          <button class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
+          <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
+        `;
+        div.querySelector('.jenis-active').addEventListener('change', async (e) => {
+          const checked = e.target.checked;
+          if (checked) {
+            for (const j of allJenisKata.filter(j => j.isActive && j.id !== data.id))
+              await updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",j.id), {isActive: false});
+          }
+          await updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id), {isActive: checked});
+        });
+        div.querySelectorAll('input')[1].addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id), {name: e.target.value}));
+        div.querySelectorAll('button')[0].addEventListener('click', () => {
+          currentJenisKataId = data.id;
+          document.getElementById('parent-jenis-name').textContent = data.name||'';
+          showSection(sectionBahasaDrawer);
+          renderBahasaDrawers();
+        });
+        div.querySelectorAll('button')[1].addEventListener('click', async () => {
+          if (!confirm(`Padam "${data.name}"?`)) return;
+          const drawers = allBahasaDrawers.filter(d => d.jenisId === data.id);
+          let i = 0;
+          while (i < drawers.length) {
+            const batch = writeBatch(db);
+            const end = Math.min(i+499, drawers.length);
+            for (let k = i; k < end; k++)
+              batch.delete(doc(db,"users",currentUser.uid,"bahasa_drawers",drawers[k].id));
+            await batch.commit(); i = end;
+          }
+          await deleteDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id));
+        });
+        list.appendChild(div);
+      });
+    }
+
+    function renderBahasaDrawers() {
+      const list = document.getElementById('bahasa-drawer-list');
+      list.innerHTML = "";
+      const filtered = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
+      const sorted = [...filtered].sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada perkataan. Tekan Tambah.</div>';
+        return;
+      }
+      sorted.forEach(data => {
+        const div = document.createElement("div");
+        div.className = "drawer-card";
+        div.innerHTML = `
+          <div class="drawer-title-wrapper">
+            <input class="drawer-title" value="${data.title||''}" placeholder="Perkataan / Tajuk">
+            <span class="badge-status badge-done">Ulang: ${data.repeatCount||0}</span>
+          </div>
+          <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan / Contoh ayat">${data.notes||''}</textarea>
+          <div style="text-align:right; margin-top:8px;">
+            <button class="btn btn-secondary btn-sm btn-del-bd" style="color:var(--danger);border-color:var(--danger);">Padam</button>
+          </div>
+        `;
+        div.querySelector('.drawer-title').addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id), {title: e.target.value}));
+        div.querySelector('.drawer-notes').addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id), {notes: e.target.value, repeatCount: 0}));
+        div.querySelector('.btn-del-bd').addEventListener('click', () => {
+          if (!confirm("Padam?")) return;
+          deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
+        });
+        list.appendChild(div);
+      });
+    }
+
+    function rebuildBahasa() {
+      if (!bahasaMode) return;
+      const activeJenis = allJenisKata.find(j => j.isActive);
+      if (!activeJenis) {
+        factTitleEl.textContent = "";
+        factContentEl.textContent = "Tiada jenis kata aktif. Sila tick SATU jenis kata dalam Laci Bahasa.";
+        return;
+      }
+      activeGlobalBahasaId = activeJenis.id;
+      const activeDrawers = allBahasaDrawers
+        .filter(d => d.jenisId === activeJenis.id)
+        .sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
+      allFacts = [];
+      activeDrawers.forEach(data => {
+        if (data.notes) {
+          const lines = data.notes.split('\n').filter(l => l.trim());
+          lines.forEach(line => {
+            const parts = line.split('=');
+            allFacts.push({ drawerId: data.id, title: data.title||'Bahasa', text: parts[0].trim(), translation: parts.length>1?parts[1].trim():null, isTamat: false });
+          });
+          allFacts.push({ drawerId: data.id, title: data.title||'Bahasa', text: "✅ Laci Tamat.", isTamat: true });
+        }
+      });
+      currentFactIndex = 0; comboStep = 0; isFlipped = false;
+      if (allFacts.length > 0) renderCurrentFact();
+    }
+
+    // Subscribe collections bahasa
+    function subscribeBahasa() {
+      if (!currentUser) return;
+      onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_list")), snap => {
+        allBahasaList = snap.docs.map(d => ({id:d.id,...d.data()}));
+        if (sectionBahasa && sectionBahasa.classList.contains('active')) renderBahasaList();
+      });
+      onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
+        allJenisKata = snap.docs.map(d => ({id:d.id,...d.data()}));
+        if (sectionJenisKata && sectionJenisKata.classList.contains('active')) renderJenisKata();
+        if (bahasaMode) rebuildBahasa();
+      });
+      onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
+        allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
+        if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
+        if (bahasaMode) rebuildBahasa();
+      });
+    }
+
+    // ── DARK MODE ──
     const btnDarkMode = document.getElementById('btn-dark-mode');
     let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
