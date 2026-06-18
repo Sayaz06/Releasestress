@@ -1379,9 +1379,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
         </div>
 <div style="display:flex;gap:8px;margin-top:8px;">
+<div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-journal-entry" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#db2777,#9d174d);border:none;">
             + Tulis Journal Hari Ini
           </button>
+          <button id="btn-trash-journal" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
+  
           <button id="btn-trash-journal" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
         </div>
         
@@ -1472,9 +1476,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
 
 <div style="display:flex;gap:8px;">
+<div style="display:flex;gap:8px;">
           <button id="btn-add-contact" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#db2777,#9d174d);border:none;">
             + Tambah Kenalan
           </button>
+          <button id="btn-trash-contact" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
+  
           <button id="btn-trash-contact" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
         </div>
 
@@ -9543,9 +9551,10 @@ const lainnya = allQuranTimes
     const ADMIN_EMAIL = 'adha86614@gmail.com';
 
     // Tunjuk butang Setup PIN hanya kepada admin
-    function checkShowAdminPinBtn() {
+function checkShowAdminPinBtn() {
+      const ADMIN = 'adha86614@gmail.com';
       const btn = document.getElementById('btn-setup-admin-pin');
-      if (btn) btn.style.display = (currentUser && currentUser.email === ADMIN_EMAIL) ? 'inline-flex' : 'none';
+      if (btn) btn.style.display = (currentUser && currentUser.email === ADMIN) ? 'inline-flex' : 'none';
     }
 
     // Butang toggle PIN input box
@@ -10698,9 +10707,10 @@ bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa',
     document.getElementById('btn-trash-rutin').addEventListener('click', () => bukaTrashUniversal('rutin'));
     document.getElementById('btn-trash-doa').addEventListener('click',   () => bukaTrashUniversal('doa'));
     document.getElementById('btn-trash-hadis').addEventListener('click', () => bukaTrashUniversal('hadis'));
-    document.getElementById('btn-trash-bahasa').addEventListener('click', () => bukaTrashUniversal('bahasa'));
-    document.getElementById('btn-trash-journal').addEventListener('click',  () => bukaTrashUniversal('journal'));
-    document.getElementById('btn-trash-contact').addEventListener('click',  () => bukaTrashUniversal('journal'));
+    document.getElementById('btn-trash-bahasa')?.addEventListener('click', () => bukaTrashUniversal('bahasa'));
+    document.getElementById('btn-trash-journal')?.addEventListener('click', () => bukaTrashUniversal('journal'));
+    document.getElementById('btn-trash-contact')?.addEventListener('click', () => bukaTrashUniversal('journal'));
+    
     
     // ── NAVIGASI LACI BAHASA DARI TASBIH ──
     document.getElementById('btn-go-bahasa-times').addEventListener('click', () => {
