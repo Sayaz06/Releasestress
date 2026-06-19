@@ -5868,6 +5868,7 @@ document.addEventListener("click", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
       if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
+      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) return;
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container') || isSwiping) return;
       decrementTasbih();
     });
