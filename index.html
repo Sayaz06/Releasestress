@@ -1214,8 +1214,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
 <!-- TOPBAR — NAMA SURAH + PROGRESS RING -->
-    <div id="fs-topbar" style="width:100%;flex-shrink:0;min-height:240px;max-height:320px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;position:relative;">
-      
+    <div id="fs-topbar" style="width:100%;flex-shrink:0;min-height:240px;max-height:320px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;position:relative;pointer-events:none;user-select:none;touch-action:none;">
+    
       <!-- Progress Ring -->
       <div style="position:relative;width:100px;height:100px;flex-shrink:0;">
         <svg width="100" height="100" viewBox="0 0 100 100" style="transform:rotate(-90deg);">
@@ -5716,11 +5716,13 @@ let fsTouchStartY = 0;
     let fsIsSwiping = false;
 
 fullscreenOverlay.addEventListener('touchstart', (e) => {
+      if (e.target.closest('#fs-topbar')) { e.stopPropagation(); return; }
       fsTouchStartY = e.touches[0].clientY;
       fsIsSwiping = false;
     }, {passive: true});
-
-    fullscreenOverlay.addEventListener('touchmove', (e) => {
+    
+fullscreenOverlay.addEventListener('touchmove', (e) => {
+      if (e.target.closest('#fs-topbar')) { e.stopPropagation(); return; }
       // Kalau dalam content area — biar scroll jalan, tandakan swiping
       if (e.target.closest('#fullscreen-fact-content')) {
         fsIsSwiping = true;
@@ -5740,6 +5742,7 @@ fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target === document.getElementById('btn-close-fullscreen-fact')) return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
       if (e.target.closest('#fullscreen-fact-content')) return;
+      if (e.target.closest('#fs-topbar')) return;
       if (fsIsSwiping) return;
 
       const fsContent = document.getElementById('fullscreen-fact-content');
