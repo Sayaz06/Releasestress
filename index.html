@@ -5740,6 +5740,7 @@ fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target === document.getElementById('btn-close-fullscreen-fact')) return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
       if (e.target.closest('#fullscreen-fact-content')) return;
+      if (e.target.closest('#fs-topbar')) return;
       if (fsIsSwiping) return;
 
       const fsContent = document.getElementById('fullscreen-fact-content');
