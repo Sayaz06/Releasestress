@@ -5715,6 +5715,27 @@ document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (
 let fsTouchStartY = 0;
     let fsIsSwiping = false;
 
+    // BLOCK SEMUA TOUCH DI TOPBAR FULLSCREEN
+    const fsTopbar = document.getElementById('fs-topbar');
+    fsTopbar.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fsTouchStartY = e.touches[0].clientY; // set Y supaya swipe detection tak tercemar
+      fsIsSwiping = true; // paksa isSwiping = true supaya click/swipe tak trigger
+    }, { passive: false });
+    fsTopbar.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+    fsTopbar.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+    fsTopbar.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
 fullscreenOverlay.addEventListener('touchstart', (e) => {
       if (e.target.closest('#fs-topbar')) { e.stopPropagation(); return; }
       fsTouchStartY = e.touches[0].clientY;
