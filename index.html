@@ -1213,11 +1213,12 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <!-- FULLSCREEN FACT OVERLAY -->
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
-<div id="fs-topbar-touch-blocker" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999999;background:transparent;touch-action:none;pointer-events:all;"></div>
+
+    <div id="fs-topbar-touch-blocker" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999999;background:transparent;touch-action:none;pointer-events:all;"></div>
 
 <!-- TOPBAR — NAMA SURAH + PROGRESS RING -->
-    <div id="fs-topbar" style="width:100%;flex-shrink:0;min-height:240px;max-height:320px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;position:relative;pointer-events:none;user-select:none;touch-action:none;">
-    
+    <div id="fs-topbar" style="width:100%;flex-shrink:0;min-height:240px;max-height:320px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;position:relative;">
+      
       <!-- Progress Ring -->
       <div style="position:relative;width:100px;height:100px;flex-shrink:0;">
         <svg width="100" height="100" viewBox="0 0 100 100" style="transform:rotate(-90deg);">
@@ -5726,42 +5727,12 @@ document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (
 let fsTouchStartY = 0;
     let fsIsSwiping = false;
 
-    // BLOCK SEMUA TOUCH DI TOPBAR FULLSCREEN
-    const fsTopbar = document.getElementById('fs-topbar');
-    fsTopbar.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      fsTouchStartY = e.touches[0].clientY; // set Y supaya swipe detection tak tercemar
-      fsIsSwiping = true; // paksa isSwiping = true supaya click/swipe tak trigger
-    }, { passive: false });
-    fsTopbar.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    }, { passive: false });
-    fsTopbar.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    }, { passive: false });
-    fsTopbar.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
 fullscreenOverlay.addEventListener('touchstart', (e) => {
-      const fsTopbarEl = document.getElementById('fs-topbar');
-      if (fsTopbarEl) {
-        const rect = fsTopbarEl.getBoundingClientRect();
-        if (e.touches[0].clientY <= rect.bottom) {
-          fsIsSwiping = true; // paksa block — touch di kawasan topbar
-          return;
-        }
-      }
       fsTouchStartY = e.touches[0].clientY;
       fsIsSwiping = false;
     }, {passive: true});
-    
-fullscreenOverlay.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#fs-topbar')) { e.stopPropagation(); return; }
+
+    fullscreenOverlay.addEventListener('touchmove', (e) => {
       // Kalau dalam content area — biar scroll jalan, tandakan swiping
       if (e.target.closest('#fullscreen-fact-content')) {
         fsIsSwiping = true;
@@ -5772,7 +5743,7 @@ fullscreenOverlay.addEventListener('touchmove', (e) => {
       }
     }, {passive: true});
 
-fullscreenOverlay.addEventListener('touchend', (e) => {
+    fullscreenOverlay.addEventListener('touchend', () => {
       // Reset swiping selepas 100ms — bagi masa scroll settle
       setTimeout(() => { fsIsSwiping = false; }, 100);
     }, {passive: true});
@@ -5781,12 +5752,6 @@ fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target === document.getElementById('btn-close-fullscreen-fact')) return;
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
       if (e.target.closest('#fullscreen-fact-content')) return;
-      if (e.target.closest('#fs-topbar')) return;
-      const fsTopbarEl = document.getElementById('fs-topbar');
-      if (fsTopbarEl) {
-        const rect = fsTopbarEl.getBoundingClientRect();
-        if (e.clientY <= rect.bottom) return;
-      }
       if (fsIsSwiping) return;
 
       const fsContent = document.getElementById('fullscreen-fact-content');
@@ -5855,13 +5820,7 @@ document.addEventListener("touchmove", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
       if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
-      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
-        const fsTopbarEl = document.getElementById('fs-topbar');
-        if (!fsTopbarEl) return;
-        const rect = fsTopbarEl.getBoundingClientRect();
-        if (e.touches[0].clientY <= rect.bottom) return;
-        return;
-      }
+      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) return;
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       // Matikan swipe untuk next ayat kalau mode quran aktif
       if(routineMode && routineModeSource === 'quran') return;
@@ -5885,17 +5844,9 @@ document.addEventListener("click", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
       if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
-      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
-        const fsTopbarEl = document.getElementById('fs-topbar');
-        if (!fsTopbarEl) return;
-        const rect = fsTopbarEl.getBoundingClientRect();
-        if (e.clientY <= rect.bottom) return; // block kalau tap di kawasan topbar
-        // kalau tap di bawah topbar, biar fullscreenOverlay click handler yang handle
-        return;
-      }
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container') || isSwiping) return;
       decrementTasbih();
-    });    
+    });
 
     // KAWALAN KEYBOARD BERSEPADU
     document.addEventListener("keydown", (e) => {
