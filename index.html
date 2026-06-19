@@ -5844,7 +5844,13 @@ document.addEventListener("touchmove", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
       if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
-      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) return;
+      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+        const fsTopbarEl = document.getElementById('fs-topbar');
+        if (!fsTopbarEl) return;
+        const rect = fsTopbarEl.getBoundingClientRect();
+        if (e.touches[0].clientY <= rect.bottom) return;
+        return;
+      }
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       // Matikan swipe untuk next ayat kalau mode quran aktif
       if(routineMode && routineModeSource === 'quran') return;
@@ -5868,10 +5874,17 @@ document.addEventListener("click", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
       if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
       if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
-      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) return;
+      if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+        const fsTopbarEl = document.getElementById('fs-topbar');
+        if (!fsTopbarEl) return;
+        const rect = fsTopbarEl.getBoundingClientRect();
+        if (e.clientY <= rect.bottom) return; // block kalau tap di kawasan topbar
+        // kalau tap di bawah topbar, biar fullscreenOverlay click handler yang handle
+        return;
+      }
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container') || isSwiping) return;
       decrementTasbih();
-    });
+    });    
 
     // KAWALAN KEYBOARD BERSEPADU
     document.addEventListener("keydown", (e) => {
