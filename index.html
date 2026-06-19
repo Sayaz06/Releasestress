@@ -1213,6 +1213,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <!-- FULLSCREEN FACT OVERLAY -->
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
+<div id="fs-topbar-touch-blocker" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999999;background:transparent;touch-action:none;pointer-events:all;"></div>
+
 <!-- TOPBAR — NAMA SURAH + PROGRESS RING -->
     <div id="fs-topbar" style="width:100%;flex-shrink:0;min-height:240px;max-height:320px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;position:relative;pointer-events:none;user-select:none;touch-action:none;">
     
@@ -5530,6 +5532,13 @@ if (sudahSelari || tiadaAyat || cuba >= maksimumCuba) {
 
 function syncFullscreenFact() {
       if (!fullscreenOverlay.classList.contains('show')) return;
+      const blocker = document.getElementById('fs-topbar-touch-blocker');
+      const topbarEl = document.getElementById('fs-topbar');
+      if (blocker && topbarEl) {
+        const rect = topbarEl.getBoundingClientRect();
+        blocker.style.height = rect.height + 'px';
+        blocker.style.display = 'block';
+      }
       // Kalau sedang tunjuk maksud, jangan overwrite
       if (fsShowingMaksud) return;
 
@@ -5709,6 +5718,8 @@ document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (
       fullscreenOverlay.classList.remove('show');
       fsShowingMaksud = false;
       fsAyatCount = 0;
+      const blocker = document.getElementById('fs-topbar-touch-blocker');
+      if (blocker) blocker.style.display = 'none';
     });
     
 // Tap overlay fullscreen = trigger decrementTasbih (combo jalan seperti biasa)
