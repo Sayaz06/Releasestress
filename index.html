@@ -5737,7 +5737,14 @@ let fsTouchStartY = 0;
     });
 
 fullscreenOverlay.addEventListener('touchstart', (e) => {
-      if (e.target.closest('#fs-topbar')) { e.stopPropagation(); return; }
+      const fsTopbarEl = document.getElementById('fs-topbar');
+      if (fsTopbarEl) {
+        const rect = fsTopbarEl.getBoundingClientRect();
+        if (e.touches[0].clientY <= rect.bottom) {
+          fsIsSwiping = true; // paksa block — touch di kawasan topbar
+          return;
+        }
+      }
       fsTouchStartY = e.touches[0].clientY;
       fsIsSwiping = false;
     }, {passive: true});
@@ -5754,7 +5761,7 @@ fullscreenOverlay.addEventListener('touchmove', (e) => {
       }
     }, {passive: true});
 
-    fullscreenOverlay.addEventListener('touchend', () => {
+fullscreenOverlay.addEventListener('touchend', (e) => {
       // Reset swiping selepas 100ms — bagi masa scroll settle
       setTimeout(() => { fsIsSwiping = false; }, 100);
     }, {passive: true});
@@ -5764,6 +5771,11 @@ fullscreenOverlay.addEventListener('click', (e) => {
       if (e.target.closest('#btn-close-fullscreen-fact')) return;
       if (e.target.closest('#fullscreen-fact-content')) return;
       if (e.target.closest('#fs-topbar')) return;
+      const fsTopbarEl = document.getElementById('fs-topbar');
+      if (fsTopbarEl) {
+        const rect = fsTopbarEl.getBoundingClientRect();
+        if (e.clientY <= rect.bottom) return;
+      }
       if (fsIsSwiping) return;
 
       const fsContent = document.getElementById('fullscreen-fact-content');
