@@ -8706,22 +8706,24 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       const contentEl = document.getElementById('cm-content');
       const hintEl = document.getElementById('cm-hint');
 
-      if (!cmFlipped) {
+if (!cmFlipped) {
         titleEl.textContent = `[ ${data.title} ]`;
         contentEl.style.fontSize = `${quranFontSize}rem`;
         contentEl.style.fontFamily = "'UthmanicHafs','Traditional Arabic',serif";
         contentEl.style.direction = 'rtl';
         contentEl.style.textAlign = 'right';
-        contentEl.textContent = data.zikir || '';
-        hintEl.textContent = '(Sapu / Tap skrin untuk papar maksud)';
+        contentEl.style.lineHeight = '3';
+        contentEl.textContent = data.zikir || '(Tiada teks Arab)';
+        hintEl.textContent = '(Tap skrin untuk papar maksud)';
       } else {
         titleEl.textContent = `[ ${data.title} ] — Maksud`;
         contentEl.style.fontSize = '1rem';
         contentEl.style.fontFamily = 'inherit';
         contentEl.style.direction = 'ltr';
         contentEl.style.textAlign = 'left';
+        contentEl.style.lineHeight = '1.6';
         contentEl.textContent = data.maksud || 'Tiada maksud diisi.';
-        hintEl.textContent = '(Sapu / Tap skrin untuk ayat seterusnya)';
+        hintEl.textContent = '(Tap skrin untuk ayat seterusnya)';
       }
     }
 
