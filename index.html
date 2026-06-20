@@ -8607,9 +8607,12 @@ function renderModeHistory() {
     const sectionCmHistory = document.getElementById('section-cm-history');
 
     // Tambah dalam showSection
-    document.getElementById('btn-buka-countdown-mini').addEventListener('click', async () => {
-      if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
-      await bukaCountdownMini(currentQuranTimeId);
+document.getElementById('btn-buka-countdown-mini').addEventListener('click', async () => {
+      const timeId = currentQuranSurahNum || currentQuranTimeId;
+      if (!timeId) { showToast('Sila buka surah dahulu.'); return; }
+      // Set currentQuranTimeId supaya fungsi bukaCountdownMini boleh pakai
+      if (currentQuranSurahNum) currentQuranTimeId = currentQuranSurahNum;
+      await bukaCountdownMini(timeId);
     });
 
     document.getElementById('btn-back-countdown-mini').addEventListener('click', () => {
@@ -8639,10 +8642,17 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       showSection(sectionCmHistory);
     });
 
-    async function bukaCountdownMini(timeId) {
+async function bukaCountdownMini(timeId) {
       cmTimeId = timeId;
-      const cat = allQuranTimes.find(t => t.id === timeId);
-      cmSurahName = cat ? cat.name : '';
+      // Sokong timeId sebagai nombor surah (permanent) atau string ID lama
+      const isNumericId = typeof timeId === 'number' || (typeof timeId === 'string' && !isNaN(parseInt(timeId)) && allQuranTimes.every(t => t.id !== timeId));
+      if (isNumericId) {
+        const surahNum = parseInt(timeId);
+        cmSurahName = `${surahNum}. ${QURAN_SURAH_NAMES[surahNum - 1] || ''}`;
+      } else {
+        const cat = allQuranTimes.find(t => t.id === timeId);
+        cmSurahName = cat ? cat.name : '';
+      }
       document.getElementById('countdown-mini-surah-name').textContent = cmSurahName;
 
       cmDrawers = allQuranDrawers
