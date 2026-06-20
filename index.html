@@ -8758,11 +8758,6 @@ async function cmTap() {
       }
     }
 
-if (!cmFlipped) {
-  console.log('Papar Arab:', cmDrawers[cmIndex]?.zikir);
-  cmFlipped = true;
-  renderCm();
-}
     async function simpanCmKhatam(minitDiambil) {
       if (!currentUser || !cmTimeId) return;
       await addDoc(collection(db, "users", currentUser.uid, "countdown_mini_history"), {
