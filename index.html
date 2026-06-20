@@ -8727,13 +8727,15 @@ if (!cmFlipped) {
       }
     }
 
-    async function cmTap() {
+async function cmTap() {
       if (!cmDrawers.length) return;
 
       if (!cmFlipped) {
+        // Tap pertama — papar maksud
         cmFlipped = true;
         renderCm();
       } else {
+        // Tap kedua — next ayat, reset ke Arab
         cmFlipped = false;
         cmSesiDibaca++;
         if (!cmMulaTs) cmMulaTs = Date.now();
@@ -8747,7 +8749,7 @@ if (!cmFlipped) {
           showToast(`🕌 Tahniah! ${cmSurahName} selesai! الحمد لله`, 5000);
         }
 
-        await setDoc(doc(db, "users", currentUser.uid, "countdown_mini", cmTimeId), {
+        await setDoc(doc(db, "users", currentUser.uid, "countdown_mini", String(cmTimeId)), {
           lastIndex: cmIndex,
           updatedAt: Date.now()
         }, { merge: true });
@@ -8756,6 +8758,11 @@ if (!cmFlipped) {
       }
     }
 
+if (!cmFlipped) {
+  console.log('Papar Arab:', cmDrawers[cmIndex]?.zikir);
+  cmFlipped = true;
+  renderCm();
+}
     async function simpanCmKhatam(minitDiambil) {
       if (!currentUser || !cmTimeId) return;
       await addDoc(collection(db, "users", currentUser.uid, "countdown_mini_history"), {
