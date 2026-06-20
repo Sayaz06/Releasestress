@@ -8608,11 +8608,32 @@ function renderModeHistory() {
 
     // Tambah dalam showSection
 document.getElementById('btn-buka-countdown-mini').addEventListener('click', async () => {
-      const timeId = currentQuranSurahNum || currentQuranTimeId;
-      if (!timeId) { showToast('Sila buka surah dahulu.'); return; }
-      // Set currentQuranTimeId supaya fungsi bukaCountdownMini boleh pakai
-      if (currentQuranSurahNum) currentQuranTimeId = currentQuranSurahNum;
-      await bukaCountdownMini(timeId);
+      const surahNum = currentQuranSurahNum || 1;
+      const surahName = `${surahNum}. ${QURAN_SURAH_NAMES[surahNum - 1] || ''}`;
+      cmTimeId = surahNum;
+      cmSurahName = surahName;
+      document.getElementById('countdown-mini-surah-name').textContent = surahName;
+
+      cmDrawers = allQuranDrawers
+        .filter(d => d.timeId === surahNum && d.zikir && d.zikir.trim())
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+      if (!cmDrawers.length) {
+        showToast('Tiada laci dengan teks Arab dalam surah ini.');
+        return;
+      }
+
+      const refProg = doc(db, "users", currentUser.uid, "countdown_mini", String(surahNum));
+      const snap = await getDoc(refProg);
+      cmIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
+      if (cmIndex >= cmDrawers.length) cmIndex = 0;
+
+      cmFlipped = false;
+      cmSesiDibaca = 0;
+      cmMulaTs = null;
+
+      renderCm();
+      showSection(sectionCountdownMini);
     });
 
     document.getElementById('btn-back-countdown-mini').addEventListener('click', () => {
@@ -8642,17 +8663,10 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       showSection(sectionCmHistory);
     });
 
-async function bukaCountdownMini(timeId) {
+    async function bukaCountdownMini(timeId) {
       cmTimeId = timeId;
-      // Sokong timeId sebagai nombor surah (permanent) atau string ID lama
-      const isNumericId = typeof timeId === 'number' || (typeof timeId === 'string' && !isNaN(parseInt(timeId)) && allQuranTimes.every(t => t.id !== timeId));
-      if (isNumericId) {
-        const surahNum = parseInt(timeId);
-        cmSurahName = `${surahNum}. ${QURAN_SURAH_NAMES[surahNum - 1] || ''}`;
-      } else {
-        const cat = allQuranTimes.find(t => t.id === timeId);
-        cmSurahName = cat ? cat.name : '';
-      }
+      const cat = allQuranTimes.find(t => t.id === timeId);
+      cmSurahName = cat ? cat.name : '';
       document.getElementById('countdown-mini-surah-name').textContent = cmSurahName;
 
       cmDrawers = allQuranDrawers
