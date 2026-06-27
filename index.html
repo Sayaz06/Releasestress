@@ -3112,9 +3112,13 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       }
     }
 
-    function formatTextToHtmlList(text) {
+function formatTextToHtmlList(text) {
       if (!text) return "";
-      return text.replace(/(?:\s+|^)(\d+\.)/g, '<br>$1').replace(/^(<br>)+/, '');
+      return text
+        .replace(/\n/g, '<br>')
+        .replace(/(?:^|<br>)\s*(\d+\.)/g, '<br>$1')
+        .replace(/(?:^|<br>)\s*(k\d+\s)/g, '<br>$1')
+        .replace(/^(<br>)+/, '');
     }
 
     // ==========================================
@@ -4727,16 +4731,25 @@ div.querySelector(".btn-del-laci").addEventListener("click", async () => {
         
         activeDrawers.forEach(data => {
           const tajukLaci = data.title || "Tiada Tajuk";
-          if(data.notes) {
+if(data.notes) {
             const lines = data.notes.split('\n').filter(l => l.trim() !== "");
             if (lines.length > 0) {
               lines.forEach(line => {
                 const parts = line.split('=');
+                const perkataan = parts[0].trim();
+                const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
+                // Support format k1, k2 DAN 1., 2. sebagai line break dalam maksud
+                const maksudFormatted = maksudRaw
+                  ? maksudRaw
+                      .replace(/\s+k(\d+)\s*/g, '\nk$1 ')
+                      .replace(/\s+(\d+)\.\s*/g, '\n$1. ')
+                      .trim()
+                  : null;
                 allFacts.push({ 
                   drawerId: data.id, 
                   title: tajukLaci, 
-                  text: parts[0].trim(), 
-                  translation: parts.length > 1 ? parts[1].trim() : null, 
+                  text: perkataan, 
+                  translation: maksudFormatted, 
                   isTamat: false 
                 });
               });
@@ -8068,15 +8081,23 @@ function rebuildBahasa() {
       activeDrawers.forEach(data => {
         const tajukLaci = data.title || 'Tiada Tajuk';
         if (data.notes) {
-          const lines = data.notes.split('\n').filter(l => l.trim() !== "");
+const lines = data.notes.split('\n').filter(l => l.trim() !== "");
           if (lines.length > 0) {
             lines.forEach(line => {
               const parts = line.split('=');
+              const perkataan = parts[0].trim();
+              const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
+              const maksudFormatted = maksudRaw
+                ? maksudRaw
+                    .replace(/\s+k(\d+)\s*/g, '\nk$1 ')
+                    .replace(/\s+(\d+)\.\s*/g, '\n$1. ')
+                    .trim()
+                : null;
               allFacts.push({
                 drawerId: data.id,
                 title: tajukLaci,
-                text: parts[0].trim(),
-                translation: parts.length > 1 ? parts.slice(1).join('=').trim() : null,
+                text: perkataan,
+                translation: maksudFormatted,
                 isTamat: false
               });
             });
