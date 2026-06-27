@@ -1652,11 +1652,11 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button id="btn-back-home-from-tasbih" class="btn btn-secondary btn-sm">← Menu</button>
             <button id="btn-toggle-fact" class="btn btn-secondary btn-sm">Fakta: OFF</button>
-<button id="btn-toggle-rutin" class="btn btn-secondary btn-sm">Rutin: OFF</button>
-<button id="btn-toggle-quran" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Quran: OFF</button>
-<button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
-<button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
-<button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
+            <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
+            <button id="btn-toggle-rutin" class="btn btn-secondary btn-sm">Rutin: OFF</button>
+            <button id="btn-toggle-quran" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Quran: OFF</button>
+            <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
+            <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 33</button>
@@ -1668,11 +1668,11 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <div style="text-align:right; display:flex; gap:6px; flex-direction:column; align-items:flex-end;">
             <div style="display:flex; gap:6px;">
               <button id="btn-go-subjects" class="btn btn-secondary btn-sm">Laci Fakta</button>
+              <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
               <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Rutin</button>
               <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
               <button id="btn-go-doa-times" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Laci Doa</button>
               <button id="btn-go-hadis-times" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Laci Hadis</button>
-              <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
                           </div>
             <div class="topbar-sub" id="tasbih-date-label" style="margin-top: 4px;"></div>
           </div>
@@ -2859,10 +2859,14 @@ function activateRoutineMode(src) {
         showToast('↩ Dikembalikan ke Arab ayat semasa.');
       }
 
-      // Reset semua
-      factMode = false; routineMode = false;
+// Reset semua
+      factMode = false; routineMode = false; bahasaMode = false;
       btnToggleFact.textContent="Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
       btnToggleRutin.textContent="Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
+      const btnBahasaToggle = document.getElementById('btn-toggle-bahasa');
+      if (btnBahasaToggle) { btnBahasaToggle.textContent="📝 Bahasa: OFF"; btnBahasaToggle.classList.remove("btn-active"); }
+      const cbBahasa = document.getElementById('btn-toggle-bahasa-cb');
+      if (cbBahasa) cbBahasa.checked = false;
       ['quran','doa','hadis'].forEach(s => {
         const b = document.getElementById(`btn-toggle-${s}`);
         if(b){b.textContent=`${getModeLabel(s)}: OFF`; b.classList.remove("btn-active");}
@@ -5370,16 +5374,21 @@ const ref = doc(collection(db, "users", currentUser.uid, janaPukalConfig.coll));
 
 btnToggleFact.addEventListener("click", () => {
       factMode = !factMode;
-      if (factMode && routineMode) {
-         routineMode = false; 
+if (factMode && (routineMode || bahasaMode)) {
+         routineMode = false;
+         bahasaMode = false;
          btnToggleRutin.textContent = "Rutin: OFF";
          btnToggleRutin.classList.remove("btn-active");
+         const btnBhs = document.getElementById('btn-toggle-bahasa');
+         if (btnBhs) { btnBhs.textContent="📝 Bahasa: OFF"; btnBhs.classList.remove("btn-active"); }
+         const cbBhs = document.getElementById('btn-toggle-bahasa-cb');
+         if (cbBhs) cbBhs.checked = false;
          ['quran','doa','hadis'].forEach(s => {
            const b=document.getElementById(`btn-toggle-${s}`);
            if(b){b.textContent=`${getModeLabel(s)}: OFF`;b.classList.remove("btn-active");}
          });
       }
-
+  
       btnToggleFact.textContent = `Fakta: ${factMode ? 'ON' : 'OFF'}`;
       btnToggleFact.classList.toggle("btn-active", factMode);
       
@@ -7862,11 +7871,15 @@ document.getElementById('btn-go-bahasa')?.addEventListener('click', () => {
         btnToggleBahasa.classList.toggle('btn-active', bahasaMode);
         const cbEl = document.getElementById('btn-toggle-bahasa-cb');
         if (cbEl) cbEl.checked = bahasaMode;
-        if (bahasaMode) {
+if (bahasaMode) {
           // Matikan fakta/rutin lain
           factMode = false; routineMode = false;
           btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
           btnToggleRutin.textContent = "Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
+          ['quran','doa','hadis'].forEach(s => {
+            const b = document.getElementById(`btn-toggle-${s}`);
+            if(b){b.textContent=`${getModeLabel(s)}: OFF`;b.classList.remove("btn-active");}
+          });
           factDisplayBox.classList.add("show");
           rebuildBahasa();
         } else {
