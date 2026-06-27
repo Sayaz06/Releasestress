@@ -8159,10 +8159,13 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           try {
             await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
+          } catch(trashErr) {
+            console.log("Gagal simpan ke trash, teruskan padam:", trashErr);
+          }
+          try {
             await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
             showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
-          } catch(err) {
-            // Dokumen mungkin tak wujud dalam Firestore lagi — buang dari UI sahaja
+          } catch(delErr) {
             showToast('🗑️ Dibuang dari senarai.');
             div.remove();
             allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
