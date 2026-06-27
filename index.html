@@ -11016,13 +11016,15 @@ document.getElementById('btn-go-bahasa-times')?.addEventListener('click', () => 
       doa_drawers: 'Laci Doa', hadis_drawers: 'Laci Hadis'
     };
 
-    function cariYatim() {
+function cariYatim() {
       const yatim = [];
-      const topicIds  = new Set(allTopics.map(t => t.id));
+      const topicIds   = new Set(allTopics.map(t => t.id));
       const subjectIds = new Set(allSubjects.map(s => s.id));
       const routineIds = new Set(allRoutineTimes.map(t => t.id));
       const doaIds     = new Set(allDoaTimes.map(t => t.id));
       const hadisIds   = new Set(allHadisTimes.map(t => t.id));
+      const jenisIds   = new Set(allJenisKata.map(j => j.id));
+      const bahasaIds  = new Set(allBahasaList.map(b => b.id));
 
       allDrawers.forEach(d => {
         if (!topicIds.has(d.topicId))
@@ -11047,6 +11049,14 @@ document.getElementById('btn-go-bahasa-times')?.addEventListener('click', () => 
       allHadisDrawers.forEach(d => {
         if (!hadisIds.has(d.timeId))
           yatim.push({ coll:'hadis_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+      });
+      allBahasaDrawers.forEach(d => {
+        if (!jenisIds.has(d.jenisId))
+          yatim.push({ coll:'bahasa_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+      });
+      allJenisKata.forEach(j => {
+        if (!bahasaIds.has(j.bahasaId))
+          yatim.push({ coll:'jenis_kata', id:j.id, data:j, label:j.name||'Tiada Nama' });
       });
       return yatim;
     }
