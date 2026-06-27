@@ -3338,9 +3338,9 @@ function updateTasbihUI() {
       const { label } = formatDateLabel(now);
       tasbihDateLabel.textContent = label;
 
-      // ── Tentukan sama ada perlu sembunyikan bulatan ──
+// ── Tentukan sama ada perlu sembunyikan bulatan ──
       const isNewMode = routineMode && ['quran','doa','hadis'].includes(routineModeSource);
-      const hideCircle = factMode || isNewMode;
+      const hideCircle = factMode || bahasaMode || isNewMode;
       const modeBar = document.getElementById('tasbih-mode-bar');
       const modeBarText = document.getElementById('tasbih-mode-bar-text');
       const modeBarSub = document.getElementById('tasbih-mode-bar-sub');
@@ -3353,9 +3353,9 @@ if (hideCircle) {
         const counterArea = document.getElementById('tasbih-mode-counter-area');
         const modeRemainingEl = document.getElementById('tasbih-mode-remaining');
 
-if (factMode) {
-          modeBarText.textContent = '📚 Mode Fakta';
-          tasbihStatusChip.textContent = 'Mode: Fakta';
+if (factMode || bahasaMode) {
+          modeBarText.textContent = factMode ? '📚 Mode Fakta' : '📝 Mode Bahasa';
+          tasbihStatusChip.textContent = factMode ? 'Mode: Fakta' : 'Mode: Bahasa';
           if (counterArea) counterArea.style.display = 'none';
 
           // Tunjuk countdown rest dalam modeBarSub
@@ -3369,7 +3369,9 @@ if (factMode) {
             modeBarSub.innerHTML = `Fasa ${mainRestPhase}: <strong style="color:#a78bfa;font-size:1.1rem;">${mainRestCount}</strong> / ${targetSekarang} &nbsp;${labelSeterusnya}`;
             modeBarSub.style.color = mainRestCount <= 5 ? '#fbbf24' : 'var(--subtext)';
           } else {
-            modeBarSub.textContent = 'Mode Fakta tidak mengurangkan countdown tasbih harian';
+            modeBarSub.textContent = factMode
+              ? 'Mode Fakta tidak mengurangkan countdown tasbih harian'
+              : 'Mode Bahasa tidak mengurangkan countdown tasbih harian';
             modeBarSub.style.color = '';
           }
         } else {
@@ -3469,12 +3471,16 @@ if (counterArea) counterArea.style.display = 'flex';
           }
 
         }
-        return;
+return;
       }
 
       // ── Mode biasa: tunjuk semula bulatan ──
       if (modeBar) modeBar.style.display = 'none';
-      if (!isTasbihMemanahActive) tasbihCircle.style.display = 'flex';
+      if (!isTasbihMemanahActive && !bahasaMode && !factMode) tasbihCircle.style.display = 'flex';
+      if (bahasaMode || factMode) {
+        tasbihCircle.style.display = 'none';
+        tasbihMemanahContainer.style.display = 'none';
+      }
 
       if (routineMode && allRoutines.length > 0) {
         const curRtn = allRoutines[currentRoutineIndex];
