@@ -1554,9 +1554,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
       </section>
 
 <!-- LACI BAHASA -->
-      <section id="section-bahasa" class="section">
+<section id="section-bahasa" class="section">
         <div class="topbar">
-          <button id="btn-back-home-bahasa" class="btn btn-secondary btn-sm">← Menu</button>
+          <button id="btn-back-home-bahasa" class="btn btn-secondary btn-sm">← Tasbih</button>
           <div style="text-align: right;">
             <div class="topbar-title" style="color: #22d3ee;">📝 Laci Bahasa</div>
             <div class="topbar-sub">Koleksi kamus bahasa anda</div>
@@ -7931,8 +7931,8 @@ document.getElementById('btn-go-bahasa')?.addEventListener('click', () => {
       const sec = document.getElementById('section-bahasa');
       if (sec) { showSection(sec); renderBahasaList(); }
     });
-    document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => showSection(sectionHome));
-    document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
+document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => showSection(sectionTasbih));
+        document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
       const sec = document.getElementById('section-bahasa');
       if (sec) { showSection(sec); renderBahasaList(); }
     });
@@ -8157,9 +8157,17 @@ div.querySelector('.drawer-title').addEventListener('change', async e => {
         
 div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
-          await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
-          await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
-          showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
+          try {
+            await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
+            await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
+            showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
+          } catch(err) {
+            // Dokumen mungkin tak wujud dalam Firestore lagi — buang dari UI sahaja
+            showToast('🗑️ Dibuang dari senarai.');
+            div.remove();
+            allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
+            if (bahasaMode) rebuildBahasa();
+          }
         });
         
         list.appendChild(div);
