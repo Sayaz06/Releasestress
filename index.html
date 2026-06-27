@@ -8157,16 +8157,17 @@ div.querySelector('.drawer-title').addEventListener('change', async e => {
         
 div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          showToast(`Debug: ID=${data.id} | jenisId=${data.jenisId || 'KOSONG'}`, 6000);
           try {
             await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
           } catch(trashErr) {
-            console.log("Gagal simpan ke trash, teruskan padam:", trashErr);
+            showToast('Trash fail: ' + trashErr.message, 6000);
           }
           try {
             await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
-            showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
+            showToast('✅ Padam berjaya dari Firestore');
           } catch(delErr) {
-            showToast('🗑️ Dibuang dari senarai.');
+            showToast('❌ Delete fail: ' + delErr.message, 6000);
             div.remove();
             allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
             if (bahasaMode) rebuildBahasa();
