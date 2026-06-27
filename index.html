@@ -7247,7 +7247,8 @@ document.getElementById('hadis-read-all-toggle').addEventListener('change', asyn
       const el = document.getElementById('hadis-read-all-progress');
       if (el) el.textContent = `${index + 1} / ${total}`;
     }
-document.getElementById('doa-read-all-toggle').addEventListener('change', async (e) => {
+document.addEventListener('change', async (e) => {
+      if (!e.target || e.target.id !== 'doa-read-all-toggle') return;
       doaReadAllMode = e.target.checked;
       if (doaReadAllMode && currentUser) {
         const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
