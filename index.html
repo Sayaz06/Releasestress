@@ -4172,14 +4172,20 @@ if (routineMode && routineModeSource === 'quran') {
         factHintEl.textContent = routineMode ? "(Super Combo: Sapu/Enter audio & maksud)" : "(Super Combo: Sapu/Enter untuk Audio & Maksud)";
       } else if (learningMode === 3) { // Combo
         factHintEl.textContent = routineMode ? "(Combo: Sapu/Enter untuk Maksud)" : "(Combo: Sapu/Enter untuk Maksud)";
-      } else if (learningMode === 2) { // Rest Mode
+} else if (learningMode === 2) { // Rest Mode
         const barisLagi = getRemainingInLaci();
         if (barisLagi > 0 && barisLagi <= 5) {
           factHintEl.textContent = `⚠️ ${barisLagi} ayat lagi sebelum laci ini habis! Tambah helaian baharu supaya hafalan tidak berulang ke laci pertama.`;
           factHintEl.style.color = barisLagi <= 2 ? '#f87171' : '#fbbf24';
         } else {
-          factHintEl.textContent = `(Rest - Fasa ${mainRestPhase}: Baki ${mainRestCount} - Sapu/Enter)`;
-          factHintEl.style.color = '';
+          const targetFasa1 = mainRestMax;
+          const targetFasa2 = mainRestMax === 33 ? 17 : 33;
+          const targetSekarang = mainRestPhase === 1 ? targetFasa1 : targetFasa2;
+          const labelFasa2 = mainRestPhase === 1
+            ? ` → rehat → Fasa 2: ${targetFasa2}`
+            : ` → laci seterusnya`;
+          factHintEl.textContent = `Fasa ${mainRestPhase}: ${mainRestCount} / ${targetSekarang}${labelFasa2}`;
+          factHintEl.style.color = mainRestCount <= 5 ? '#fbbf24' : '';
         }
       } else if (learningMode === 1) { // Repeat
         factHintEl.textContent = routineMode ? "(Normal: Klik kotak untuk Maksud)" : `(Repeat: Baki ${currentRepeatCount} - Sapu/Enter)`;
@@ -7981,10 +7987,21 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
             <button class="btn btn-secondary btn-sm btn-del-bd" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
         `;
-        div.querySelector('.drawer-title').addEventListener('change', e =>
-          updateDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id), {title: e.target.value}));
-        div.querySelector('.drawer-notes').addEventListener('change', e =>
-          updateDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id), {notes: e.target.value, repeatCount: 0}));
+
+div.querySelector('.drawer-title').addEventListener('change', async e => {
+          if (!data.id) return;
+          try {
+            await setDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id),
+              {title: e.target.value}, {merge: true});
+          } catch(err) { showToast('Gagal simpan tajuk: ' + err.message); }
+        });
+        div.querySelector('.drawer-notes').addEventListener('change', async e => {
+          if (!data.id) return;
+          try {
+            await setDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id),
+              {notes: e.target.value, repeatCount: 0}, {merge: true});
+          } catch(err) { showToast('Gagal simpan nota: ' + err.message); }
+        });        
 div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
