@@ -3034,6 +3034,12 @@ let myLawText = "";
     // UTILITIES & VIBRATION HANDLER
     // ==========================================
 function showSection(section) {
+      // Buang floating buttons bila tukar page
+      const floatFakta = document.getElementById('btn-float-countdown-fakta');
+      if (floatFakta) floatFakta.remove();
+      const floatBahasa = document.getElementById('btn-float-countdown-bahasa');
+      if (floatBahasa) floatBahasa.remove();
+
       sectionLogin.classList.remove("active");
       sectionHome.classList.remove("active");
       sectionTasbih.classList.remove("active");
@@ -4704,9 +4710,32 @@ div.querySelector(".btn-del-topik").addEventListener("click", async () => {
       });
     }
 
-    function renderDrawers() {
+function renderDrawers() {
       const topic = allTopics.find(t => t.id === currentTopicId);
       document.getElementById("parent-topic-name").textContent = topic && topic.name ? `Topik: ${topic.name}` : "";
+
+      // Floating button ke countdown — tunjuk bila ada topik aktif
+      const existingFloat = document.getElementById('btn-float-countdown-fakta');
+      if (existingFloat) existingFloat.remove();
+      const activeTopic = allTopics.find(t => t.isActive);
+      if (activeTopic) {
+        const floatBtn = document.createElement('button');
+        floatBtn.id = 'btn-float-countdown-fakta';
+        floatBtn.innerHTML = '⚡ Countdown';
+        floatBtn.style.cssText = `
+          position:fixed; bottom:24px; right:24px; z-index:9999;
+          background:linear-gradient(135deg,#6366f1,#8b5cf6);
+          border:none; color:white; font-weight:700; font-size:0.82rem;
+          padding:12px 18px; border-radius:999px;
+          box-shadow:0 6px 20px rgba(99,102,241,0.5);
+          cursor:pointer; display:flex; align-items:center; gap:6px;
+        `;
+        floatBtn.addEventListener('click', () => {
+          floatBtn.remove();
+          showSection(sectionTasbih);
+        });
+        document.body.appendChild(floatBtn);
+      }
 
       drawerList.innerHTML = "";
       const filteredDrawers = allDrawers.filter(d => d.topicId === currentTopicId);
@@ -8064,8 +8093,32 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
       });
     }
 
-    function renderBahasaDrawers() {
+function renderBahasaDrawers() {
       const list = document.getElementById('bahasa-drawer-list');
+
+      // Floating button ke countdown — tunjuk bila ada jenis kata aktif
+      const existingFloat = document.getElementById('btn-float-countdown-bahasa');
+      if (existingFloat) existingFloat.remove();
+      const activeJenis = allJenisKata.find(j => j.isActive);
+      if (activeJenis) {
+        const floatBtn = document.createElement('button');
+        floatBtn.id = 'btn-float-countdown-bahasa';
+        floatBtn.innerHTML = '⚡ Countdown';
+        floatBtn.style.cssText = `
+          position:fixed; bottom:24px; right:24px; z-index:9999;
+          background:linear-gradient(135deg,#06b6d4,#0891b2);
+          border:none; color:white; font-weight:700; font-size:0.82rem;
+          padding:12px 18px; border-radius:999px;
+          box-shadow:0 6px 20px rgba(6,182,212,0.5);
+          cursor:pointer; display:flex; align-items:center; gap:6px;
+        `;
+        floatBtn.addEventListener('click', () => {
+          floatBtn.remove();
+          showSection(sectionTasbih);
+        });
+        document.body.appendChild(floatBtn);
+      }
+
       list.innerHTML = "";
       const filtered = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
       const sorted = [...filtered].sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
