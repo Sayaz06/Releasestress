@@ -3366,6 +3366,54 @@ if (factMode || bahasaMode) {
           tasbihStatusChip.textContent = factMode ? 'Mode: Fakta' : 'Mode: Bahasa';
           if (counterArea) counterArea.style.display = 'none';
 
+          // Shortcut button ke laci aktif
+          const existingShortcut = document.getElementById('btn-shortcut-laci-aktif');
+          if (!existingShortcut) {
+            const btnShortcut = document.createElement('button');
+            btnShortcut.id = 'btn-shortcut-laci-aktif';
+            btnShortcut.className = 'btn btn-secondary btn-sm';
+            btnShortcut.style.cssText = 'margin-top:8px;width:100%;border-color:#fcd34d;color:#fcd34d;font-size:0.72rem;';
+            btnShortcut.addEventListener('click', () => {
+              if (factMode) {
+                // Pergi ke laci fakta yang aktif
+                const activeTopic = allTopics.find(t => t.isActive);
+                if (!activeTopic) { showToast('Tiada topik aktif.'); return; }
+                const activeSubject = allSubjects.find(s => s.id === activeTopic.subjectId);
+                const activeSem = activeSubject ? allSems.find(sm => sm.id === activeSubject.semId) : null;
+                currentSemId = activeSem ? activeSem.id : null;
+                currentSubjectId = activeTopic.subjectId;
+                currentTopicId = activeTopic.id;
+                showSection(sectionDrawer);
+                renderDrawers();
+              } else if (bahasaMode) {
+                // Pergi ke laci bahasa yang aktif
+                const activeJenis = allJenisKata.find(j => j.isActive);
+                if (!activeJenis) { showToast('Tiada jenis kata aktif.'); return; }
+                currentJenisKataId = activeJenis.id;
+                document.getElementById('parent-jenis-name').textContent = activeJenis.name || '';
+                showSection(sectionBahasaDrawer);
+                renderBahasaDrawers();
+              }
+            });
+            modeBar.appendChild(btnShortcut);
+          }
+
+          // Update label shortcut button
+          const shortcutBtn = document.getElementById('btn-shortcut-laci-aktif');
+          if (shortcutBtn) {
+            if (factMode) {
+              const activeTopic = allTopics.find(t => t.isActive);
+              shortcutBtn.textContent = activeTopic
+                ? `✏️ Edit Laci: ${activeTopic.name || 'Tiada Nama'}`
+                : '✏️ Edit Laci Aktif';
+            } else if (bahasaMode) {
+              const activeJenis = allJenisKata.find(j => j.isActive);
+              shortcutBtn.textContent = activeJenis
+                ? `✏️ Edit Laci: ${activeJenis.name || 'Tiada Nama'}`
+                : '✏️ Edit Laci Bahasa Aktif';
+            }
+          }
+
           // Tunjuk countdown rest dalam modeBarSub
           if (learningMode === 2) {
             const targetFasa1 = mainRestMax;
@@ -3482,8 +3530,11 @@ if (counterArea) counterArea.style.display = 'flex';
 return;
       }
 
-      // ── Mode biasa: tunjuk semula bulatan ──
+// ── Mode biasa: tunjuk semula bulatan ──
       if (modeBar) modeBar.style.display = 'none';
+      // Buang shortcut button bila mode off
+      const oldShortcut = document.getElementById('btn-shortcut-laci-aktif');
+      if (oldShortcut) oldShortcut.remove();
       if (!isTasbihMemanahActive && !bahasaMode && !factMode) tasbihCircle.style.display = 'flex';
       if (bahasaMode || factMode) {
         tasbihCircle.style.display = 'none';
