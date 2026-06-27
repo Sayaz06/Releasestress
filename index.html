@@ -2104,11 +2104,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <input id="doa-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
           <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="doa" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:8px 12px;">
-          <input type="checkbox" id="doa-read-all-toggle" style="width:18px;height:18px;accent-color:#f59e0b;cursor:pointer;">
-          <span style="font-size:0.78rem;color:#fcd34d;font-weight:600;">🤲 Baca Semua Doa (Semua Kategori, ikut urutan)</span>
-          <span id="doa-read-all-progress" style="font-size:0.7rem;color:var(--subtext);margin-left:auto;"></span>
-        </div>
+
         <div class="list mt-8" id="doa-drawers-list" style="padding:10px;"></div>
       </section>
 
@@ -3452,11 +3448,40 @@ let progressText;
               .filter(h => (h.dateKey || dateKeyQ(h.ts)) === todayKeyNow && !h.takBaca)
               .reduce((sum, h) => sum + (h.ayatSesi || 0), 0) : 0;
 progressText = '';
-          } else {
-            progressText = tambahan > 0
-              ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
-              : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
-          }
+} else {
+              progressText = tambahan > 0
+                ? `🎯 Harian: ${target.toLocaleString()} ✅ | ➕ Tambahan: ${tambahan.toLocaleString()}`
+                : `🎯 Harian: ${harian.toLocaleString()} / ${target.toLocaleString()}`;
+            }
+
+            // Button Baca Semua Doa dalam bar countdown
+            if (routineModeSource === 'doa') {
+              const existingReadAll = document.getElementById('btn-doa-read-all-bar');
+              if (!existingReadAll && counterArea) {
+                const btnReadAll = document.createElement('div');
+                btnReadAll.id = 'btn-doa-read-all-bar';
+                btnReadAll.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:8px;cursor:pointer;';
+                btnReadAll.innerHTML = `
+                  <input type="checkbox" id="doa-read-all-toggle" ${doaReadAllMode ? 'checked' : ''} style="width:18px;height:18px;accent-color:#f59e0b;cursor:pointer;">
+                  <span style="font-size:0.78rem;color:#fcd34d;font-weight:600;">🤲 Baca Semua Doa (ikut urutan)</span>
+                  <span id="doa-read-all-progress" style="font-size:0.7rem;color:var(--subtext);margin-left:auto;"></span>
+                `;
+                btnReadAll.querySelector('#doa-read-all-toggle').addEventListener('change', async (e) => {
+                  doaReadAllMode = e.target.checked;
+                  if (doaReadAllMode && currentUser) {
+                    const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
+                    const snap = await getDoc(refProg);
+                    doaReadAllIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
+                  }
+                  if (routineMode && routineModeSource === 'doa') rebuildRoutines();
+                  showToast(doaReadAllMode ? '🤲 Mod Baca Semua Doa: ON' : 'Mod Baca Semua: OFF');
+                });
+                counterArea.appendChild(btnReadAll);
+              }
+            } else {
+              const oldReadAll = document.getElementById('btn-doa-read-all-bar');
+              if (oldReadAll) oldReadAll.remove();
+            }
 
 if (routineModeSource === 'quran') {
 const qd = quranKhatamData;
