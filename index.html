@@ -11125,7 +11125,33 @@ function cariYatim() {
         showToast(`🗑️ ${expired.length} item padam kekal (dah > 1 tahun)`);
       }
 
-      list.innerHTML = '';
+list.innerHTML = '';
+
+      // Button padam semua kekal
+      const aktifDocs = snap.docs.filter(d => (Date.now() - (d.data().deletedAt||0)) <= SATU_TAHUN);
+      if (aktifDocs.length > 0) {
+        const btnPadamSemua = document.createElement('button');
+        btnPadamSemua.style.cssText = 'width:100%;padding:10px;border-radius:999px;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;margin-bottom:12px;';
+        btnPadamSemua.textContent = `🗑️ Padam Kekal Semua (${aktifDocs.length} item)`;
+        btnPadamSemua.addEventListener('click', async () => {
+          if (!confirm(`Padam kekal SEMUA ${aktifDocs.length} item dalam tong sampah?\n\nTindakan ini tidak boleh diundur!`)) return;
+          try {
+            let i = 0;
+            while (i < aktifDocs.length) {
+              const batch = writeBatch(db);
+              const end = Math.min(i + 499, aktifDocs.length);
+              for (let j = i; j < end; j++)
+                batch.delete(doc(db,"users",currentUser.uid,"trash",aktifDocs[j].id));
+              await batch.commit();
+              i = end;
+            }
+            showToast(`✅ ${aktifDocs.length} item dipadam kekal.`);
+            muatTongSampah();
+          } catch(e) { showToast('❌ Gagal: ' + e.message); }
+        });
+        list.appendChild(btnPadamSemua);
+      }
+
       snap.docs.forEach(docSnap => {
         if ((Date.now() - (docSnap.data().deletedAt||0)) > SATU_TAHUN) return;
         const item = docSnap.data();
