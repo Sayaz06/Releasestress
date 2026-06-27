@@ -2893,8 +2893,16 @@ if (src === 'quran') {
           btnToggleMainRestMax.style.display="inline-flex";
         }
         rebuildRoutines();
-        // Pastikan countdown harian wujud untuk mode baru
+// Pastikan countdown harian wujud untuk mode baru
         if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
+
+        // Load lastIndex untuk doa kalau doaReadAllMode on
+        if (src === 'doa' && doaReadAllMode && currentUser) {
+          getDoc(doc(db, "users", currentUser.uid, "settings", "doaReadAll")).then(snap => {
+            doaReadAllIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
+            rebuildRoutines();
+          });
+        }
       }
       updateTasbihUI();
     }
