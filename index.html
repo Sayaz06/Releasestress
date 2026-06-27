@@ -3353,11 +3353,25 @@ if (hideCircle) {
         const counterArea = document.getElementById('tasbih-mode-counter-area');
         const modeRemainingEl = document.getElementById('tasbih-mode-remaining');
 
-        if (factMode) {
+if (factMode) {
           modeBarText.textContent = '📚 Mode Fakta';
-          modeBarSub.textContent = 'Mode Fakta tidak mengurangkan countdown tasbih harian';
           tasbihStatusChip.textContent = 'Mode: Fakta';
           if (counterArea) counterArea.style.display = 'none';
+
+          // Tunjuk countdown rest dalam modeBarSub
+          if (learningMode === 2) {
+            const targetFasa1 = mainRestMax;
+            const targetFasa2 = mainRestMax === 33 ? 17 : 33;
+            const targetSekarang = mainRestPhase === 1 ? targetFasa1 : targetFasa2;
+            const labelSeterusnya = mainRestPhase === 1
+              ? `→ rehat → Fasa 2: ${targetFasa2} kali`
+              : `→ laci seterusnya`;
+            modeBarSub.innerHTML = `Fasa ${mainRestPhase}: <strong style="color:#a78bfa;font-size:1.1rem;">${mainRestCount}</strong> / ${targetSekarang} &nbsp;${labelSeterusnya}`;
+            modeBarSub.style.color = mainRestCount <= 5 ? '#fbbf24' : 'var(--subtext)';
+          } else {
+            modeBarSub.textContent = 'Mode Fakta tidak mengurangkan countdown tasbih harian';
+            modeBarSub.style.color = '';
+          }
         } else {
           const mc = getActiveModeCountdown();
           const mRem = mc.data ? mc.data.remaining : MODE_DAILY_DEFAULTS[routineModeSource];
@@ -4178,14 +4192,8 @@ if (routineMode && routineModeSource === 'quran') {
           factHintEl.textContent = `⚠️ ${barisLagi} ayat lagi sebelum laci ini habis! Tambah helaian baharu supaya hafalan tidak berulang ke laci pertama.`;
           factHintEl.style.color = barisLagi <= 2 ? '#f87171' : '#fbbf24';
         } else {
-          const targetFasa1 = mainRestMax;
-          const targetFasa2 = mainRestMax === 33 ? 17 : 33;
-          const targetSekarang = mainRestPhase === 1 ? targetFasa1 : targetFasa2;
-          const labelFasa2 = mainRestPhase === 1
-            ? ` → rehat → Fasa 2: ${targetFasa2}`
-            : ` → laci seterusnya`;
-          factHintEl.textContent = `Fasa ${mainRestPhase}: ${mainRestCount} / ${targetSekarang}${labelFasa2}`;
-          factHintEl.style.color = mainRestCount <= 5 ? '#fbbf24' : '';
+          factHintEl.textContent = `(Rest - Fasa ${mainRestPhase}: Baki ${mainRestCount} - Sapu/Enter)`;
+          factHintEl.style.color = '';
         }
       } else if (learningMode === 1) { // Repeat
         factHintEl.textContent = routineMode ? "(Normal: Klik kotak untuk Maksud)" : `(Repeat: Baki ${currentRepeatCount} - Sapu/Enter)`;
@@ -4207,6 +4215,14 @@ function syncIndexToFirestore(newIndex) {
         return;
       }
 
+      // Bahasa mode — sync ke jenis_kata lastIndex
+      if (bahasaMode && activeGlobalBahasaId !== 'default') {
+        updateDoc(doc(db, "users", currentUser.uid, "jenis_kata", activeGlobalBahasaId), {
+          lastIndex: newIndex
+        }).catch(err => console.log("Gagal sync index Bahasa ke Firestore:", err));
+        return;
+      }
+
       if (!routineMode && activeGlobalTopicId !== 'default') {
         updateDoc(doc(db, "users", currentUser.uid, "topics", activeGlobalTopicId), {
           lastIndex: newIndex
@@ -4224,10 +4240,10 @@ function syncIndexToFirestore(newIndex) {
       }
     }
 
-    function cycleFact() {
+function cycleFact() {
       if (routineMode) return; 
 
-      if (!factMode || allFacts.length === 0) return;
+      if ((!factMode && !bahasaMode) || allFacts.length === 0) return;
       const currentData = allFacts[currentFactIndex];
 
       if (currentData.isTamat) {
@@ -8001,7 +8017,8 @@ div.querySelector('.drawer-title').addEventListener('change', async e => {
             await setDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id),
               {notes: e.target.value, repeatCount: 0}, {merge: true});
           } catch(err) { showToast('Gagal simpan nota: ' + err.message); }
-        });        
+        });
+        
 div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
@@ -8013,32 +8030,65 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
       });
     }
 
-    function rebuildBahasa() {
+function rebuildBahasa() {
       if (!bahasaMode) return;
       const activeJenis = allJenisKata.find(j => j.isActive);
       if (!activeJenis) {
         factTitleEl.textContent = "";
         factContentEl.textContent = "Tiada jenis kata aktif. Sila tick SATU jenis kata dalam Laci Bahasa.";
+        factHintEl.style.display = 'none';
+        btnSpeak.style.display = 'none';
         return;
       }
       activeGlobalBahasaId = activeJenis.id;
       const activeDrawers = allBahasaDrawers
         .filter(d => d.jenisId === activeJenis.id)
         .sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
+
       allFacts = [];
       activeDrawers.forEach(data => {
+        const tajukLaci = data.title || 'Tiada Tajuk';
         if (data.notes) {
-          const lines = data.notes.split('\n').filter(l => l.trim());
-          lines.forEach(line => {
-            const parts = line.split('=');
-            allFacts.push({ drawerId: data.id, title: data.title||'Bahasa', text: parts[0].trim(), translation: parts.length>1?parts[1].trim():null, isTamat: false });
-          });
-          allFacts.push({ drawerId: data.id, title: data.title||'Bahasa', text: "✅ Laci Tamat.", isTamat: true });
+          const lines = data.notes.split('\n').filter(l => l.trim() !== "");
+          if (lines.length > 0) {
+            lines.forEach(line => {
+              const parts = line.split('=');
+              allFacts.push({
+                drawerId: data.id,
+                title: tajukLaci,
+                text: parts[0].trim(),
+                translation: parts.length > 1 ? parts.slice(1).join('=').trim() : null,
+                isTamat: false
+              });
+            });
+            allFacts.push({
+              drawerId: data.id,
+              title: tajukLaci,
+              text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.",
+              isTamat: true
+            });
+          }
         }
       });
-      currentFactIndex = 0; comboStep = 0; isFlipped = false;
-      if (allFacts.length > 0) renderCurrentFact();
-    }
+
+      // Sync lastIndex dari Firestore — sama macam rebuildFacts()
+      let savedIndex = activeJenis.lastIndex || 0;
+      if (savedIndex >= allFacts.length) savedIndex = 0;
+      currentFactIndex = savedIndex;
+      comboStep = 0;
+      isFlipped = false;
+      currentRepeatCount = 33;
+      mainRestCount = mainRestMax;
+      mainRestPhase = 1;
+
+      if (bahasaMode && allFacts.length > 0) {
+        renderCurrentFact();
+      } else if (allFacts.length === 0) {
+        factTitleEl.textContent = "";
+        factContentEl.textContent = "Tiada perkataan dalam jenis kata ini. Tambah perkataan dahulu.";
+        factHintEl.style.display = 'none';
+      }
+    }  
 
     // Subscribe collections bahasa
     function subscribeBahasa() {
@@ -8047,11 +8097,26 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
         allBahasaList = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionBahasa && sectionBahasa.classList.contains('active')) renderBahasaList();
       });
-      onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
+
+onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         allJenisKata = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionJenisKata && sectionJenisKata.classList.contains('active')) renderJenisKata();
+
+        // Sync lastIndex macam topics — bila Firestore update, check index
+        const activeJenis = allJenisKata.find(j => j.isActive);
+        if (activeJenis && activeGlobalBahasaId !== 'default') {
+          const dbIndex = activeJenis.lastIndex || 0;
+          if (currentFactIndex !== dbIndex && bahasaMode) {
+            currentFactIndex = dbIndex;
+            comboStep = 0;
+            isFlipped = false;
+            if (bahasaMode && allFacts.length > 0) renderCurrentFact();
+          }
+        }
+
         if (bahasaMode) rebuildBahasa();
       });
+    
       onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
         allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
