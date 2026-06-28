@@ -4788,6 +4788,8 @@ function renderDrawers() {
       drawerList.innerHTML = "";
       const filteredDrawers = allDrawers.filter(d => d.topicId === currentTopicId);
 const sortedDrawers = filteredDrawers.sort((a, b) => {
+  if ((a.title || "") === "~") return 1;
+  if ((b.title || "") === "~") return -1;
   const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
   return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
 });
@@ -4990,6 +4992,8 @@ div.querySelector(".btn-del-rtn").addEventListener("click", async () => {
 const searchTerm = (document.getElementById('routine-drawer-search')?.value || '').toLowerCase().trim();
       const filteredDrawers = allRoutineDrawers.filter(d => d.timeId === currentRoutineTimeId);
 let sortedDrawers = filteredDrawers.sort((a, b) => {
+  if ((a.title || "") === "~") return 1;
+  if ((b.title || "") === "~") return -1;
   const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
   return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
 });
@@ -6961,6 +6965,8 @@ const zikirMinHeight = mode === 'quran' ? `calc(${quranFontSize * 3}rem + 16px)`
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
 const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
   .sort((a, b) => {
+    if ((a.title || "") === "~") return 1;
+    if ((b.title || "") === "~") return -1;
     const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
     return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
   });
@@ -8253,6 +8259,8 @@ function renderBahasaDrawers() {
       list.innerHTML = "";
      const filtered = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
 const sorted = [...filtered].sort((a, b) => {
+  if ((a.title || "") === "~") return 1;
+  if ((b.title || "") === "~") return -1;
   const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
   return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
 });
