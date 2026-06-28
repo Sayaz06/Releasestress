@@ -8338,8 +8338,8 @@ const lines = data.notes.split('\n').filter(l => l.trim() !== "");
         }
       });
 
-      // Sync lastIndex dari Firestore — sama macam rebuildFacts()
-      let savedIndex = activeJenis.lastIndex || 0;
+// Sync lastIndex dari Firestore — ikut perkataan aktif
+      let savedIndex = activePerkataan.lastIndex || 0;
       if (savedIndex >= allFacts.length) savedIndex = 0;
       currentFactIndex = savedIndex;
       comboStep = 0;
