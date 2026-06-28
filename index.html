@@ -8019,7 +8019,7 @@ document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () =
       addDoc(collection(db, "users", currentUser.uid, "bahasa_list"), { name: "", createdAt: Date.now() });
     });
 
-    document.getElementById('btn-add-jenis-kata').addEventListener('click', () => {
+document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
       if (!currentUser || !currentBahasaId) return;
       addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
     });
@@ -8081,8 +8081,12 @@ if (bahasaMode) {
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id), {name: e.target.value}));
 div.querySelectorAll('button')[0].addEventListener('click', () => {
           currentJenisKataId = data.id;
-          document.getElementById('parent-perkataan-jenis-name').textContent = data.name||'';
-          if (sectionBahasaPerkataan) { showSection(sectionBahasaPerkataan); renderPerkataan(); }
+          const jenisName = data.name || '';
+          document.getElementById('parent-perkataan-jenis-name').textContent = jenisName;
+          if (sectionBahasaPerkataan) {
+            showSection(sectionBahasaPerkataan);
+            renderPerkataan();
+          }
         });
 div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
@@ -8186,11 +8190,13 @@ function renderPerkataan() {
         `;
         div.querySelectorAll('input')[0].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {name: e.target.value}));
-        div.querySelectorAll('button')[0].addEventListener('click', () => {
+div.querySelectorAll('button')[0].addEventListener('click', () => {
           currentPerkataanId = data.id;
-          document.getElementById('parent-perkataan-name').textContent = data.name||'';
-          showSection(sectionBahasaDrawer);
-          renderBahasaDrawers();
+          document.getElementById('parent-perkataan-name').textContent = data.name || '';
+          if (sectionBahasaDrawer) {
+            showSection(sectionBahasaDrawer);
+            renderBahasaDrawers();
+          }
         });
         div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?`)) return;
@@ -8312,8 +8318,10 @@ function rebuildBahasa() {
         return;
       }
       activeGlobalBahasaId = activeJenis.id;
+const semuaPerkataan = allBahasaPerkataan.filter(p => p.jenisId === activeJenis.id);
+      const perkataanIds = new Set(semuaPerkataan.map(p => p.id));
       const activeDrawers = allBahasaDrawers
-        .filter(d => d.jenisId === activeJenis.id)
+        .filter(d => perkataanIds.has(d.perkataanId))
         .sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
 
       allFacts = [];
