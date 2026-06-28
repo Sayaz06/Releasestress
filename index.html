@@ -7995,8 +7995,11 @@ document.getElementById('btn-go-bahasa')?.addEventListener('click', () => {
       const sec = document.getElementById('section-bahasa');
       if (sec) { showSection(sec); renderBahasaList(); }
     });
-document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => showSection(sectionTasbih));
-document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
+document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => {
+      const sec = document.getElementById('section-bahasa');
+      if (sec) { showSection(sec); renderBahasaList(); }
+    });
+    document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
       if (sectionJenisKata) { showSection(sectionJenisKata); renderJenisKata(); }
     });
 document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { 
@@ -8126,21 +8129,13 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
         const div = document.createElement("div");
         div.className = "drawer-card";
         div.style.cssText = "display:flex; gap:8px; align-items:center;";
-        div.innerHTML = `
-          <input type="checkbox" class="jenis-active" ${data.isActive?'checked':''} style="width:18px;height:18px;accent-color:#06b6d4;">
+div.innerHTML = `
           <input value="${data.name||''}" placeholder="Cth: Kata Kerja, Kata Nama..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
           <button class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
           <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
         `;
-        div.querySelector('.jenis-active').addEventListener('change', async (e) => {
-          const checked = e.target.checked;
-          if (checked) {
-            for (const j of allJenisKata.filter(j => j.isActive && j.id !== data.id))
-              await updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",j.id), {isActive: false});
-          }
-          await updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id), {isActive: checked});
-        });
-        div.querySelectorAll('input')[1].addEventListener('change', e =>
+
+        div.querySelectorAll('input')[0].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id), {name: e.target.value}));
 div.querySelectorAll('button')[0].addEventListener('click', () => {
           currentJenisKataId = data.id;
@@ -8184,12 +8179,22 @@ function renderPerkataan() {
         const div = document.createElement("div");
         div.className = "drawer-card";
         div.style.cssText = "display:flex; gap:8px; align-items:center;";
-        div.innerHTML = `
+div.innerHTML = `
+          <input type="checkbox" class="perkataan-active" ${data.isActive?'checked':''} style="width:20px;height:20px;accent-color:#06b6d4;flex-shrink:0;">
           <input value="${data.name||''}" placeholder="Cth: kata kerja, kata nama..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
           <button class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
           <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
         `;
-        div.querySelectorAll('input')[0].addEventListener('change', e =>
+
+        div.querySelector('.perkataan-active').addEventListener('change', async (e) => {
+          const checked = e.target.checked;
+          if (checked) {
+            for (const p of allBahasaPerkataan.filter(p => p.isActive && p.id !== data.id))
+              await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",p.id), {isActive: false});
+          }
+          await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: checked});
+        });
+        div.querySelectorAll('input')[1].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {name: e.target.value}));
 div.querySelectorAll('button')[0].addEventListener('click', () => {
           currentPerkataanId = data.id;
@@ -8310,19 +8315,17 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
 
 function rebuildBahasa() {
       if (!bahasaMode) return;
-      const activeJenis = allJenisKata.find(j => j.isActive);
-      if (!activeJenis) {
+      const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
+      if (!activePerkataan) {
         factTitleEl.textContent = "";
-        factContentEl.textContent = "Tiada jenis kata aktif. Sila tick SATU jenis kata dalam Laci Bahasa.";
+        factContentEl.textContent = "Tiada perkataan aktif. Sila tick SATU perkataan dalam Laci Bahasa.";
         factHintEl.style.display = 'none';
         btnSpeak.style.display = 'none';
         return;
       }
-      activeGlobalBahasaId = activeJenis.id;
-const semuaPerkataan = allBahasaPerkataan.filter(p => p.jenisId === activeJenis.id);
-      const perkataanIds = new Set(semuaPerkataan.map(p => p.id));
+      activeGlobalBahasaId = activePerkataan.id;
       const activeDrawers = allBahasaDrawers
-        .filter(d => perkataanIds.has(d.perkataanId))
+        .filter(d => d.perkataanId === activePerkataan.id)
         .sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
 
       allFacts = [];
@@ -8389,11 +8392,17 @@ const lines = data.notes.split('\n').filter(l => l.trim() !== "");
 onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         allJenisKata = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionJenisKata && sectionJenisKata.classList.contains('active')) renderJenisKata();
+        if (bahasaMode) rebuildBahasa();
+      });
 
-        // Sync lastIndex macam topics — bila Firestore update, check index
-        const activeJenis = allJenisKata.find(j => j.isActive);
-        if (activeJenis && activeGlobalBahasaId !== 'default') {
-          const dbIndex = activeJenis.lastIndex || 0;
+      onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_perkataan")), snap => {
+        allBahasaPerkataan = snap.docs.map(d => ({id:d.id,...d.data()}));
+        if (sectionBahasaPerkataan && sectionBahasaPerkataan.classList.contains('active')) renderPerkataan();
+
+        // Sync lastIndex dari perkataan aktif
+        const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
+        if (activePerkataan && activeGlobalBahasaId !== 'default') {
+          const dbIndex = activePerkataan.lastIndex || 0;
           if (currentFactIndex !== dbIndex && bahasaMode) {
             currentFactIndex = dbIndex;
             comboStep = 0;
@@ -8403,11 +8412,6 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         }
 
         if (bahasaMode) rebuildBahasa();
-      });
-    
-onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_perkataan")), snap => {
-        allBahasaPerkataan = snap.docs.map(d => ({id:d.id,...d.data()}));
-        if (sectionBahasaPerkataan && sectionBahasaPerkataan.classList.contains('active')) renderPerkataan();
       });
 
       onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
