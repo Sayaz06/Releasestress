@@ -5403,7 +5403,7 @@ btnAddSubject.addEventListener("click", () => {
     });
 btnAddLaci.addEventListener("click", () => { 
   if(currentTopicId) {
-addDoc(collection(db, "users", currentUser.uid, "drawer"), { title: "ZZZ-NEW", notes: "", repeatCount: 0, topicId: currentTopicId, createdAt: Date.now() });
+addDoc(collection(db, "users", currentUser.uid, "drawer"), { title: "~", notes: "", repeatCount: 0, topicId: currentTopicId, createdAt: Date.now() });
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
@@ -5414,7 +5414,7 @@ addDoc(collection(db, "users", currentUser.uid, "drawer"), { title: "ZZZ-NEW", n
     });
 btnAddRoutineDrawer.addEventListener("click", () => { 
   if(currentRoutineTimeId) {
-addDoc(collection(db, "users", currentUser.uid, "routine_drawers"), { title: "ZZZ-NEW", zikir: "", target: "", maksud: "", timeId: currentRoutineTimeId, createdAt: Date.now() });
+addDoc(collection(db, "users", currentUser.uid, "routine_drawers"), { title: "~", zikir: "", target: "", maksud: "", timeId: currentRoutineTimeId, createdAt: Date.now() });
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
@@ -6813,7 +6813,7 @@ document.getElementById('btn-back-quran-drawer').addEventListener('click', () =>
 
 document.getElementById('btn-add-quran-drawer').addEventListener('click', () => {
   if(currentQuranTimeId) {
-addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"ZZZ-NEW",zikir:"",target:"",maksud:"",timeId:currentQuranTimeId,createdAt:Date.now()});
+addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"~",zikir:"",target:"",maksud:"",timeId:currentQuranTimeId,createdAt:Date.now()});
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
@@ -6832,7 +6832,7 @@ addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"ZZZ-NEW",z
     });
 document.getElementById('btn-add-doa-drawer').addEventListener('click', () => {
   if(currentDoaTimeId) {
-addDoc(collection(db,"users",currentUser.uid,"doa_drawers"),{title:"ZZZ-NEW",zikir:"",target:"",maksud:"",timeId:currentDoaTimeId,createdAt:Date.now()});
+addDoc(collection(db,"users",currentUser.uid,"doa_drawers"),{title:"~",zikir:"",target:"",maksud:"",timeId:currentDoaTimeId,createdAt:Date.now()});
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
@@ -6851,7 +6851,7 @@ addDoc(collection(db,"users",currentUser.uid,"doa_drawers"),{title:"ZZZ-NEW",zik
     });
 document.getElementById('btn-add-hadis-drawer').addEventListener('click', () => {
   if(currentHadisTimeId) {
-addDoc(collection(db,"users",currentUser.uid,"hadis_drawers"),{title:"ZZZ-NEW",zikir:"",target:"",maksud:"",timeId:currentHadisTimeId,createdAt:Date.now()});
+addDoc(collection(db,"users",currentUser.uid,"hadis_drawers"),{title:"~",zikir:"",target:"",maksud:"",timeId:currentHadisTimeId,createdAt:Date.now()});
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
@@ -8032,7 +8032,7 @@ document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
 
 document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
   if (!currentUser || !currentPerkataanId) return;
-addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "ZZZ-NEW", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
+addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
     showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
 });
 
