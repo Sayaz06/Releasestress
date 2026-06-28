@@ -3410,12 +3410,22 @@ if (factMode || bahasaMode) {
                 currentTopicId = activeTopic.id;
                 showSection(sectionDrawer);
                 renderDrawers();
-              } else if (bahasaMode) {
+} else if (bahasaMode) {
                 // Pergi ke laci bahasa yang aktif
                 const activeJenis = allJenisKata.find(j => j.isActive);
                 if (!activeJenis) { showToast('Tiada jenis kata aktif.'); return; }
                 currentJenisKataId = activeJenis.id;
-                document.getElementById('parent-jenis-name').textContent = activeJenis.name || '';
+                // Ambil perkataan pertama dalam jenis ini (atau yang terakhir dibuka)
+                const perkataanDlmJenis = allBahasaPerkataan.filter(p => p.jenisId === activeJenis.id)
+                  .sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
+                if (!perkataanDlmJenis.length) {
+                  showToast('Tiada perkataan dalam jenis kata ini. Tambah perkataan dahulu.');
+                  return;
+                }
+                // Guna currentPerkataanId kalau masih dalam jenis sama, kalau tidak guna perkataan pertama
+                const targetPerkataan = perkataanDlmJenis.find(p => p.id === currentPerkataanId) || perkataanDlmJenis[0];
+                currentPerkataanId = targetPerkataan.id;
+                document.getElementById('parent-perkataan-name').textContent = targetPerkataan.name || '';
                 showSection(sectionBahasaDrawer);
                 renderBahasaDrawers();
               }
@@ -3431,9 +3441,12 @@ if (factMode || bahasaMode) {
               shortcutBtn.textContent = activeTopic
                 ? `✏️ Edit Laci: ${activeTopic.name || 'Tiada Nama'}`
                 : '✏️ Edit Laci Aktif';
-            } else if (bahasaMode) {
+} else if (bahasaMode) {
               const activeJenis = allJenisKata.find(j => j.isActive);
-              shortcutBtn.textContent = activeJenis
+              const activePerkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
+              shortcutBtn.textContent = activePerkataan
+                ? `✏️ Edit Laci: ${activePerkataan.name || 'Tiada Nama'}`
+                : activeJenis
                 ? `✏️ Edit Laci: ${activeJenis.name || 'Tiada Nama'}`
                 : '✏️ Edit Laci Bahasa Aktif';
             }
