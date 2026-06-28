@@ -7996,11 +7996,11 @@ document.getElementById('btn-go-bahasa')?.addEventListener('click', () => {
       if (sec) { showSection(sec); renderBahasaList(); }
     });
 document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => {
+      showSection(sectionTasbih);
+    });
+document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
       const sec = document.getElementById('section-bahasa');
       if (sec) { showSection(sec); renderBahasaList(); }
-    });
-    document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
-      if (sectionJenisKata) { showSection(sectionJenisKata); renderJenisKata(); }
     });
 document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { 
       const sec = document.getElementById('section-jenis-kata');
