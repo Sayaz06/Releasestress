@@ -3443,12 +3443,9 @@ if (factMode || bahasaMode) {
                 ? `✏️ Edit Laci: ${activeTopic.name || 'Tiada Nama'}`
                 : '✏️ Edit Laci Aktif';
 } else if (bahasaMode) {
-              const activeJenis = allJenisKata.find(j => j.isActive);
-              const activePerkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
+              const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
               shortcutBtn.textContent = activePerkataan
                 ? `✏️ Edit Laci: ${activePerkataan.name || 'Tiada Nama'}`
-                : activeJenis
-                ? `✏️ Edit Laci: ${activeJenis.name || 'Tiada Nama'}`
                 : '✏️ Edit Laci Bahasa Aktif';
             }
           }
@@ -4349,9 +4346,9 @@ function syncIndexToFirestore(newIndex) {
         return;
       }
 
-      // Bahasa mode — sync ke jenis_kata lastIndex
+// Bahasa mode — sync ke bahasa_perkataan lastIndex
       if (bahasaMode && activeGlobalBahasaId !== 'default') {
-        updateDoc(doc(db, "users", currentUser.uid, "jenis_kata", activeGlobalBahasaId), {
+        updateDoc(doc(db, "users", currentUser.uid, "bahasa_perkataan", activeGlobalBahasaId), {
           lastIndex: newIndex
         }).catch(err => console.log("Gagal sync index Bahasa ke Firestore:", err));
         return;
