@@ -4787,8 +4787,11 @@ function renderDrawers() {
 
       drawerList.innerHTML = "";
       const filteredDrawers = allDrawers.filter(d => d.topicId === currentTopicId);
-      const sortedDrawers = filteredDrawers.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
-      
+const sortedDrawers = filteredDrawers.sort((a, b) => {
+  const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
+  return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
+});
+        
       sortedDrawers.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
@@ -4986,8 +4989,11 @@ div.querySelector(".btn-del-rtn").addEventListener("click", async () => {
       routineDrawersList.innerHTML = "";
 const searchTerm = (document.getElementById('routine-drawer-search')?.value || '').toLowerCase().trim();
       const filteredDrawers = allRoutineDrawers.filter(d => d.timeId === currentRoutineTimeId);
-      let sortedDrawers = filteredDrawers.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
-      if (searchTerm) sortedDrawers = sortedDrawers.filter(d => (d.title || '').toLowerCase().includes(searchTerm));
+let sortedDrawers = filteredDrawers.sort((a, b) => {
+  const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
+  return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
+});
+            if (searchTerm) sortedDrawers = sortedDrawers.filter(d => (d.title || '').toLowerCase().includes(searchTerm));
       
       const emptyCount = filteredDrawers.filter(d => !d.zikir || d.zikir.trim() === '').length;
       const btn = document.getElementById('btn-goto-empty-routine');
@@ -6942,8 +6948,11 @@ const zikirFontSize = mode === 'quran' ? `${quranFontSize}rem` : '1.15rem';
 const zikirMinHeight = mode === 'quran' ? `calc(${quranFontSize * 3}rem + 16px)` : '70px';
       const searchEl = document.getElementById(`${mode}-drawer-search`);
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
-      const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
-        .sort((a,b)=>(a.title||"").localeCompare(b.title||"",undefined,{numeric:true}));
+const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
+  .sort((a, b) => {
+    const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
+    return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
+  });
       const filtered = searchTerm ? allFiltered.filter(d=>(d.title||'').toLowerCase().includes(searchTerm)) : allFiltered;
 
 const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').length;
@@ -8231,8 +8240,11 @@ function renderBahasaDrawers() {
 
       list.innerHTML = "";
      const filtered = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
-            const sorted = [...filtered].sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
-      if (!sorted.length) {
+const sorted = [...filtered].sort((a, b) => {
+  const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
+  return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
+});
+        if (!sorted.length) {
         list.innerHTML = '<div class="empty-state">Belum ada perkataan. Tekan Tambah.</div>';
         return;
       }
