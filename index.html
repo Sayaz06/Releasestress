@@ -3411,23 +3411,24 @@ if (factMode || bahasaMode) {
                 showSection(sectionDrawer);
                 renderDrawers();
 } else if (bahasaMode) {
-                // Pergi ke laci bahasa yang aktif
                 const activeJenis = allJenisKata.find(j => j.isActive);
                 if (!activeJenis) { showToast('Tiada jenis kata aktif.'); return; }
                 currentJenisKataId = activeJenis.id;
-                // Ambil perkataan pertama dalam jenis ini (atau yang terakhir dibuka)
-                const perkataanDlmJenis = allBahasaPerkataan.filter(p => p.jenisId === activeJenis.id)
+                const perkataanDlmJenis = allBahasaPerkataan
+                  .filter(p => p.jenisId === activeJenis.id)
                   .sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
                 if (!perkataanDlmJenis.length) {
                   showToast('Tiada perkataan dalam jenis kata ini. Tambah perkataan dahulu.');
                   return;
                 }
-                // Guna currentPerkataanId kalau masih dalam jenis sama, kalau tidak guna perkataan pertama
                 const targetPerkataan = perkataanDlmJenis.find(p => p.id === currentPerkataanId) || perkataanDlmJenis[0];
                 currentPerkataanId = targetPerkataan.id;
+                currentBahasaId = activeJenis.bahasaId || '';
                 document.getElementById('parent-perkataan-name').textContent = targetPerkataan.name || '';
-                showSection(sectionBahasaDrawer);
-                renderBahasaDrawers();
+                if (sectionBahasaDrawer) {
+                  showSection(sectionBahasaDrawer);
+                  renderBahasaDrawers();
+                }
               }
             });
             modeBar.appendChild(btnShortcut);
@@ -7995,9 +7996,8 @@ document.getElementById('btn-go-bahasa')?.addEventListener('click', () => {
       if (sec) { showSection(sec); renderBahasaList(); }
     });
 document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () => showSection(sectionTasbih));
-        document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
-      const sec = document.getElementById('section-bahasa');
-      if (sec) { showSection(sec); renderBahasaList(); }
+document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
+      if (sectionJenisKata) { showSection(sectionJenisKata); renderJenisKata(); }
     });
 document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { 
       const sec = document.getElementById('section-jenis-kata');
@@ -8080,12 +8080,11 @@ if (bahasaMode) {
         div.querySelectorAll('input')[0].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id), {name: e.target.value}));
 div.querySelectorAll('button')[0].addEventListener('click', () => {
-          currentJenisKataId = data.id;
-          const jenisName = data.name || '';
-          document.getElementById('parent-perkataan-jenis-name').textContent = jenisName;
-          if (sectionBahasaPerkataan) {
-            showSection(sectionBahasaPerkataan);
-            renderPerkataan();
+          currentBahasaId = data.id;
+          document.getElementById('parent-bahasa-name').textContent = data.name || '';
+          if (sectionJenisKata) {
+            showSection(sectionJenisKata);
+            renderJenisKata();
           }
         });
 div.querySelectorAll('button')[1].addEventListener('click', async () => {
@@ -8143,11 +8142,13 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
         });
         div.querySelectorAll('input')[1].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id), {name: e.target.value}));
-        div.querySelectorAll('button')[0].addEventListener('click', () => {
+div.querySelectorAll('button')[0].addEventListener('click', () => {
           currentJenisKataId = data.id;
-          document.getElementById('parent-jenis-name').textContent = data.name||'';
-          showSection(sectionBahasaDrawer);
-          renderBahasaDrawers();
+          document.getElementById('parent-perkataan-jenis-name').textContent = data.name || '';
+          if (sectionBahasaPerkataan) {
+            showSection(sectionBahasaPerkataan);
+            renderPerkataan();
+          }
         });
 div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
