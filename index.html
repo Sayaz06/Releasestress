@@ -3897,9 +3897,10 @@ document.getElementById('btn-video-jogging').addEventListener('click', () => {
         document.getElementById('jogging-phase-label').textContent = "Fasa 1: Baki Hafalan";
     });
 
-    btnBackJogging.addEventListener("click", () => {
-      showSection(sectionDrawer);
-    });
+btnBackJogging.addEventListener("click", () => {
+  showSection(sectionDrawer);
+  renderDrawers();
+});
 
     btnToggleScroll.addEventListener("click", () => {
       isFullScreenJogging = !isFullScreenJogging;
@@ -6150,10 +6151,11 @@ let tmSt = {pat:0, x:0, y:0, vx:3.5, vy:2.5, ang:0, lastChange:0, combo:0};
         document.getElementById('memanah-phase-label').textContent = "Fasa 1";
     });
 
-    btnBackMemanah.addEventListener("click", () => {
-      cancelAnimationFrame(memanahAnimationFrame);
-      showSection(sectionDrawer);
-    });
+btnBackMemanah.addEventListener("click", () => {
+  cancelAnimationFrame(memanahAnimationFrame);
+  showSection(sectionDrawer);
+  renderDrawers();
+});
 
     btnLockMemanahScroll.addEventListener("click", () => {
       isMemanahScrollLocked = !isMemanahScrollLocked;
