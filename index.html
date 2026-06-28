@@ -1562,10 +1562,6 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub">Koleksi kamus bahasa anda</div>
           </div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:8px; align-items:center; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:8px;">
-          <input type="checkbox" id="btn-toggle-bahasa-cb" style="width:18px;height:18px;accent-color:#06b6d4;cursor:pointer;">
-          <span style="font-size:0.82rem;color:#22d3ee;font-weight:600;">Bahasa: OFF (aktifkan untuk countdown fakta)</span>
-        </div>
 
         <div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-bahasa" class="btn btn-sm" style="flex:1;">+ Tambah Bahasa</button>
@@ -1589,15 +1585,14 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         <div class="list mt-8" id="jenis-kata-list" style="padding: 10px;"></div>
       </section>
 
-      <section id="section-bahasa-drawer" class="section">
+<section id="section-bahasa-drawer" class="section">
         <div class="topbar">
-          <button id="btn-back-jenis-drawer" class="btn btn-secondary btn-sm">← Jenis Kata</button>
+          <button id="btn-back-perkataan-drawer" class="btn btn-secondary btn-sm">← Perkataan</button>
           <div style="text-align: right;">
-<div class="topbar-title" style="color: #22d3ee;">📝 Laci Nota</div>
+            <div class="topbar-title" style="color: #22d3ee;">📝 Laci Nota</div>
             <div class="topbar-sub" id="parent-perkataan-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-<button id="btn-back-perkataan-drawer" class="btn btn-secondary btn-sm mt-8" style="border-color:#06b6d4;">← Perkataan</button>
         <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Laci</button>
                 <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
@@ -3411,20 +3406,11 @@ if (factMode || bahasaMode) {
                 showSection(sectionDrawer);
                 renderDrawers();
 } else if (bahasaMode) {
-                const activeJenis = allJenisKata.find(j => j.isActive);
-                if (!activeJenis) { showToast('Tiada jenis kata aktif.'); return; }
-                currentJenisKataId = activeJenis.id;
-                const perkataanDlmJenis = allBahasaPerkataan
-                  .filter(p => p.jenisId === activeJenis.id)
-                  .sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
-                if (!perkataanDlmJenis.length) {
-                  showToast('Tiada perkataan dalam jenis kata ini. Tambah perkataan dahulu.');
-                  return;
-                }
-                const targetPerkataan = perkataanDlmJenis.find(p => p.id === currentPerkataanId) || perkataanDlmJenis[0];
-                currentPerkataanId = targetPerkataan.id;
-                currentBahasaId = activeJenis.bahasaId || '';
-                document.getElementById('parent-perkataan-name').textContent = targetPerkataan.name || '';
+                const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
+                if (!activePerkataan) { showToast('Tiada perkataan aktif. Sila tick SATU perkataan dalam Laci Bahasa.'); return; }
+                currentPerkataanId = activePerkataan.id;
+                currentJenisKataId = activePerkataan.jenisId || '';
+                document.getElementById('parent-perkataan-name').textContent = activePerkataan.name || '';
                 if (sectionBahasaDrawer) {
                   showSection(sectionBahasaDrawer);
                   renderBahasaDrawers();
@@ -7999,10 +7985,7 @@ document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () =
       const sec = document.getElementById('section-bahasa');
       if (sec) { showSection(sec); renderBahasaList(); }
     });
-document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { 
-      const sec = document.getElementById('section-jenis-kata');
-      if (sec) { showSection(sec); renderJenisKata(); }
-    });
+// btn-back-jenis-drawer dibuang dari HTML
     document.getElementById('btn-back-jenis-perkataan')?.addEventListener('click', () => {
       const sec = document.getElementById('section-jenis-kata');
       if (sec) { showSection(sec); renderJenisKata(); }
@@ -8055,10 +8038,6 @@ if (bahasaMode) {
         updateTasbihUI();
       });
     }
-
-    document.getElementById('btn-toggle-bahasa-cb').addEventListener('change', (e) => {
-      if (btnToggleBahasa) btnToggleBahasa.click();
-    });
 
     function renderBahasaList() {
       const list = document.getElementById('bahasa-list');
@@ -8221,14 +8200,14 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
       });
     }
 
-    function renderBahasaDrawers() {
-          const list = document.getElementById('bahasa-drawer-list');
+function renderBahasaDrawers() {
+      const list = document.getElementById('bahasa-drawer-list');
 
-      // Floating button ke countdown — tunjuk bila ada jenis kata aktif
+      // Floating button ke countdown — tunjuk bila ada perkataan aktif
       const existingFloat = document.getElementById('btn-float-countdown-bahasa');
       if (existingFloat) existingFloat.remove();
-      const activeJenis = allJenisKata.find(j => j.isActive);
-      if (activeJenis) {
+      const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
+      if (activePerkataan) {
         const floatBtn = document.createElement('button');
         floatBtn.id = 'btn-float-countdown-bahasa';
         floatBtn.innerHTML = '⚡ Countdown';
