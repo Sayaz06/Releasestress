@@ -1593,16 +1593,29 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         <div class="topbar">
           <button id="btn-back-jenis-drawer" class="btn btn-secondary btn-sm">← Jenis Kata</button>
           <div style="text-align: right;">
-            <div class="topbar-title" style="color: #22d3ee;">📝 Nota Perkataan</div>
-            <div class="topbar-sub" id="parent-jenis-name" style="color:#06b6d4; font-weight:bold;"></div>
+<div class="topbar-title" style="color: #22d3ee;">📝 Laci Nota</div>
+            <div class="topbar-sub" id="parent-perkataan-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Perkataan</button>
-        <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
+<button id="btn-back-perkataan-drawer" class="btn btn-secondary btn-sm mt-8" style="border-color:#06b6d4;">← Perkataan</button>
+        <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Laci</button>
+                <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
+      </section>
+
+<section id="section-bahasa-perkataan" class="section">
+        <div class="topbar">
+          <button id="btn-back-jenis-perkataan" class="btn btn-secondary btn-sm">← Jenis Kata</button>
+          <div style="text-align: right;">
+            <div class="topbar-title" style="color: #22d3ee;">📝 Perkataan</div>
+            <div class="topbar-sub" id="parent-perkataan-jenis-name" style="color:#06b6d4; font-weight:bold;"></div>
+          </div>
+        </div>
+        <button id="btn-add-perkataan" class="btn btn-sm mt-8" style="border-color:#06b6d4;">+ Tambah Perkataan</button>
+        <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
 
       <section id="section-amt-ak" class="section">
-              <div class="topbar">
+                    <div class="topbar">
           <button id="btn-back-home-amt-ak" class="btn btn-secondary btn-sm">← Menu</button>
           <div style="text-align:right;">
             <div class="topbar-title" style="color:#34d399;">🎧 AMT-AK</div>
@@ -2430,8 +2443,9 @@ import {
 const sectionSem = document.getElementById("section-sem");
     const sectionRoutineTimes = document.getElementById("section-routine-times");
     const sectionRoutineDrawers = document.getElementById("section-routine-drawers");
-    const sectionBahasa = document.getElementById("section-bahasa");
+const sectionBahasa = document.getElementById("section-bahasa");
     const sectionJenisKata = document.getElementById("section-jenis-kata");
+    const sectionBahasaPerkataan = document.getElementById("section-bahasa-perkataan");
     const sectionBahasaDrawer = document.getElementById("section-bahasa-drawer");
 
     const terskipOverlay = document.getElementById('terskip-overlay');
@@ -2745,8 +2759,8 @@ let allSems = [];
     let doaReadAllIndex = 0;
 
     // ── BAHASA VARIABLES ──
-    let allBahasaList = [], allJenisKata = [], allBahasaDrawers = [];
-    let currentBahasaId = null, currentJenisKataId = null;
+let allBahasaList = [], allJenisKata = [], allBahasaPerkataan = [], allBahasaDrawers = [];
+    let currentBahasaId = null, currentJenisKataId = null, currentPerkataanId = null;
     let activeGlobalBahasaId = 'default';
     let bahasaMode = false;
 let hadisReadAllMode = false;
@@ -3066,6 +3080,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       if (sectionSem) sectionSem.classList.remove("active");
       if (sectionBahasa) sectionBahasa.classList.remove("active");
       if (sectionJenisKata) sectionJenisKata.classList.remove("active");
+if (sectionBahasaPerkataan) sectionBahasaPerkataan.classList.remove("active");
       if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
       if (sectionJournalHub)     sectionJournalHub.classList.remove("active");
       if (sectionMyJournal)      sectionMyJournal.classList.remove("active");
@@ -7971,9 +7986,20 @@ document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () =>
       const sec = document.getElementById('section-bahasa');
       if (sec) { showSection(sec); renderBahasaList(); }
     });
-    document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { 
+document.getElementById('btn-back-jenis-drawer')?.addEventListener('click', () => { 
       const sec = document.getElementById('section-jenis-kata');
       if (sec) { showSection(sec); renderJenisKata(); }
+    });
+    document.getElementById('btn-back-jenis-perkataan')?.addEventListener('click', () => {
+      const sec = document.getElementById('section-jenis-kata');
+      if (sec) { showSection(sec); renderJenisKata(); }
+    });
+    document.getElementById('btn-back-perkataan-drawer')?.addEventListener('click', () => {
+      if (sectionBahasaPerkataan) { showSection(sectionBahasaPerkataan); renderPerkataan(); }
+    });
+    document.getElementById('btn-add-perkataan')?.addEventListener('click', () => {
+      if (!currentUser || !currentJenisKataId) return;
+      addDoc(collection(db, "users", currentUser.uid, "bahasa_perkataan"), { name: "", jenisId: currentJenisKataId, createdAt: Date.now() });
     });
     document.getElementById('btn-add-bahasa')?.addEventListener('click', () => {
       if (!currentUser) return;
@@ -7985,9 +8011,9 @@ document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () =>
       addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
     });
 
-    document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
-      if (!currentUser || !currentJenisKataId) return;
-      addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "", notes: "", repeatCount: 0, jenisId: currentJenisKataId, createdAt: Date.now() });
+document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
+      if (!currentUser || !currentPerkataanId) return;
+      addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
     });
 
     // Toggle Bahasa ON/OFF dalam countdown
@@ -8040,11 +8066,10 @@ if (bahasaMode) {
         `;
         div.querySelectorAll('input')[0].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id), {name: e.target.value}));
-        div.querySelectorAll('button')[0].addEventListener('click', () => {
-          currentBahasaId = data.id;
-          document.getElementById('parent-bahasa-name').textContent = data.name||'';
-          showSection(sectionJenisKata);
-          renderJenisKata();
+div.querySelectorAll('button')[0].addEventListener('click', () => {
+          currentJenisKataId = data.id;
+          document.getElementById('parent-perkataan-jenis-name').textContent = data.name||'';
+          if (sectionBahasaPerkataan) { showSection(sectionBahasaPerkataan); renderPerkataan(); }
         });
 div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
@@ -8128,8 +8153,54 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
       });
     }
 
-function renderBahasaDrawers() {
-      const list = document.getElementById('bahasa-drawer-list');
+function renderPerkataan() {
+      const list = document.getElementById('perkataan-list');
+      list.innerHTML = "";
+      const filtered = allBahasaPerkataan.filter(p => p.jenisId === currentJenisKataId);
+      const sorted = [...filtered].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada perkataan. Tekan Tambah.</div>';
+        return;
+      }
+      sorted.forEach(data => {
+        const div = document.createElement("div");
+        div.className = "drawer-card";
+        div.style.cssText = "display:flex; gap:8px; align-items:center;";
+        div.innerHTML = `
+          <input value="${data.name||''}" placeholder="Cth: kata kerja, kata nama..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
+          <button class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
+          <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
+        `;
+        div.querySelectorAll('input')[0].addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {name: e.target.value}));
+        div.querySelectorAll('button')[0].addEventListener('click', () => {
+          currentPerkataanId = data.id;
+          document.getElementById('parent-perkataan-name').textContent = data.name||'';
+          showSection(sectionBahasaDrawer);
+          renderBahasaDrawers();
+        });
+        div.querySelectorAll('button')[1].addEventListener('click', async () => {
+          if (!confirm(`Padam "${data.name}"?`)) return;
+          const drawers = allBahasaDrawers.filter(d => d.perkataanId === data.id);
+          for (const dr of drawers)
+            await hantarKeTrashUniversal('bahasa_drawers', dr.id, dr, dr.title || 'Laci Bahasa');
+          let i = 0;
+          while (i < drawers.length) {
+            const batch = writeBatch(db);
+            const end = Math.min(i+499, drawers.length);
+            for (let k = i; k < end; k++)
+              batch.delete(doc(db,"users",currentUser.uid,"bahasa_drawers",drawers[k].id));
+            await batch.commit(); i = end;
+          }
+          await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id));
+          showToast('🗑️ Dipadam.');
+        });
+        list.appendChild(div);
+      });
+    }
+
+    function renderBahasaDrawers() {
+          const list = document.getElementById('bahasa-drawer-list');
 
       // Floating button ke countdown — tunjuk bila ada jenis kata aktif
       const existingFloat = document.getElementById('btn-float-countdown-bahasa');
@@ -8155,8 +8226,8 @@ function renderBahasaDrawers() {
       }
 
       list.innerHTML = "";
-      const filtered = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
-      const sorted = [...filtered].sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
+     const filtered = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
+            const sorted = [...filtered].sort((a,b) => (a.title||"").localeCompare(b.title||"", undefined, {numeric:true}));
       if (!sorted.length) {
         list.innerHTML = '<div class="empty-state">Belum ada perkataan. Tekan Tambah.</div>';
         return;
@@ -8164,10 +8235,10 @@ function renderBahasaDrawers() {
       sorted.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
-        div.innerHTML = `
-          <div class="drawer-title-wrapper">
-            <input class="drawer-title" value="${data.title||''}" placeholder="Perkataan / Tajuk">
-            <span class="badge-status badge-done">Ulang: ${data.repeatCount||0}</span>
+div.innerHTML = `
+          <div class="drawer-title-wrapper" style="align-items:flex-start;">
+            <textarea class="drawer-title" placeholder="Perkataan / Tajuk" rows="1" style="resize:none;overflow:hidden;min-height:28px;line-height:1.4;">${data.title||''}</textarea>
+            <span class="badge-status badge-done" style="flex-shrink:0;">Ulang: ${data.repeatCount||0}</span>
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan / Contoh ayat">${data.notes||''}</textarea>
           <div style="text-align:right; margin-top:8px;">
@@ -8175,7 +8246,11 @@ function renderBahasaDrawers() {
           </div>
         `;
 
-div.querySelector('.drawer-title').addEventListener('change', async e => {
+const tajukEl = div.querySelector('.drawer-title');
+        const autoExpand = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+        tajukEl.addEventListener('input', () => autoExpand(tajukEl));
+        setTimeout(() => autoExpand(tajukEl), 0);
+        tajukEl.addEventListener('change', async e => {
           if (!data.id) return;
           try {
             await setDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id),
@@ -8308,8 +8383,13 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         if (bahasaMode) rebuildBahasa();
       });
     
+onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_perkataan")), snap => {
+        allBahasaPerkataan = snap.docs.map(d => ({id:d.id,...d.data()}));
+        if (sectionBahasaPerkataan && sectionBahasaPerkataan.classList.contains('active')) renderPerkataan();
+      });
+
       onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
-        allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
+              allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
         if (bahasaMode) rebuildBahasa();
       });
