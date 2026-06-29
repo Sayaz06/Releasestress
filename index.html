@@ -1667,9 +1667,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
-            
-            <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 33</button>
-
+            <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 10r5</button>
             <button id="btn-toggle-tasbih-ui" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">UI: Bulatan</button>
             <button id="btn-tm-pattern" class="btn btn-secondary btn-sm" style="display:none; border-color:#3b82f6;color:#60a5fa;">🌑 Bandul</button>
             <button id="btn-music-tasbih" class="btn btn-secondary btn-sm">Muzik: OFF 🎵</button>
@@ -1801,8 +1799,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
 
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button id="btn-toggle-jogging-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 33</button>
-            <button id="btn-video-jogging" class="btn btn-secondary btn-sm btn-active">Video Rehat: ON</button>
+          <button id="btn-toggle-jogging-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 10r5</button>
+          <button id="btn-video-jogging" class="btn btn-secondary btn-sm btn-active">Video Rehat: ON</button>
             <button class="btn btn-secondary btn-sm btn-upload-video" style="border-color: #f59e0b; color: #fcd34d;">🎥 Set Link YouTube</button>
             <button id="btn-toggle-scroll" class="btn btn-secondary btn-sm">Mode Berlari: OFF</button>
           </div>
@@ -1854,8 +1852,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
           
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button id="btn-toggle-memanah-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 33</button>
-            <button id="btn-video-memanah" class="btn btn-secondary btn-sm btn-active">Video Rehat: ON</button>
+          <button id="btn-toggle-memanah-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 10r5</button>
+          <button id="btn-video-memanah" class="btn btn-secondary btn-sm btn-active">Video Rehat: ON</button>
             <button class="btn btn-secondary btn-sm btn-upload-video" style="border-color: #f59e0b; color: #fcd34d;">🎥 Set Link YouTube</button>
             <button id="btn-music-memanah" class="btn btn-secondary btn-sm">Muzik: OFF 🎵</button>
             <button id="btn-lock-memanah-scroll" class="btn btn-secondary btn-sm">Lock Scroll: OFF</button>
@@ -2415,6 +2413,11 @@ import {
     const storage = getStorage(app); // INITIALIZE STORAGE (Masih disimpan)
     window.speechSynthesis.getVoices();
 
+    // Sync label button ikut default cycle
+    document.getElementById('btn-toggle-main-rest-max').textContent = REST_CYCLES[mainRestCycleIdx].label;
+    document.getElementById('btn-toggle-jogging-max').textContent   = REST_CYCLES[joggingCycleIdx].label;
+    document.getElementById('btn-toggle-memanah-max').textContent   = REST_CYCLES[memanahCycleIdx].label;
+    
     // DOM ELEMENTS
     const sectionLogin = document.getElementById("section-login");
     const sectionHome = document.getElementById("section-home");
@@ -4075,10 +4078,10 @@ btnBackJogging.addEventListener("click", () => {
         if (isJoggingVideoRestON && joggingPhase === 1) {
             joggingCount.textContent = "Rehat";
             joggingMiniCount.textContent = "⏸️";
-            showVideoRest(() => {
+showVideoRest(() => {
                 joggingPhase = 2;
                 document.getElementById('jogging-phase-label').textContent = "Fasa 2: Baki Hafalan";
-                joggingTapCount = (maxJoggingCount === 33) ? 17 : 33;
+                joggingTapCount = REST_CYCLES[joggingCycleIdx].fasa2;
                 joggingCount.textContent = joggingTapCount;
                 joggingMiniCount.textContent = joggingTapCount;
                 isJoggingBlocked = false;
@@ -6540,10 +6543,10 @@ if (result.score > 0) {
         if (isMemanahVideoRestON && memanahPhase === 1) {
             memanahMiniCount.textContent = "⏸️";
             memanahBigCount.textContent = "⏸️";
-            showVideoRest(() => {
+showVideoRest(() => {
                 memanahPhase = 2;
                 document.getElementById('memanah-phase-label').textContent = "Fasa 2";
-                memanahTapCount = (maxMemanahCount === 33) ? 17 : 33; 
+                memanahTapCount = REST_CYCLES[memanahCycleIdx].fasa2;
                 memanahMiniCount.textContent = memanahTapCount;
                 memanahBigCount.textContent = memanahTapCount;
                 isJoggingBlocked = false;
