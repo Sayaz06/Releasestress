@@ -2412,11 +2412,6 @@ import {
     const db = getFirestore(app);
     const storage = getStorage(app); // INITIALIZE STORAGE (Masih disimpan)
     window.speechSynthesis.getVoices();
-
-    // Sync label button ikut default cycle
-    document.getElementById('btn-toggle-main-rest-max').textContent = REST_CYCLES[mainRestCycleIdx].label;
-    document.getElementById('btn-toggle-jogging-max').textContent   = REST_CYCLES[joggingCycleIdx].label;
-    document.getElementById('btn-toggle-memanah-max').textContent   = REST_CYCLES[memanahCycleIdx].label;
     
     // DOM ELEMENTS
     const sectionLogin = document.getElementById("section-login");
@@ -3109,7 +3104,17 @@ if (sectionBahasaPerkataan) sectionBahasaPerkataan.classList.remove("active");
           }, 50);
       }
       
-      saveAppState(); 
+saveAppState();
+
+      // Sync semua label button Target ikut cycle semasa
+      const btnMain   = document.getElementById('btn-toggle-main-rest-max');
+      const btnJog    = document.getElementById('btn-toggle-jogging-max');
+      const btnMem    = document.getElementById('btn-toggle-memanah-max');
+      const btnBahasa = document.getElementById('btn-bahasa-rest-cycle');
+      if (btnMain)   btnMain.textContent   = REST_CYCLES[mainRestCycleIdx].label;
+      if (btnJog)    btnJog.textContent    = REST_CYCLES[joggingCycleIdx].label;
+      if (btnMem)    btnMem.textContent    = REST_CYCLES[memanahCycleIdx].label;
+      if (btnBahasa) btnBahasa.textContent = REST_CYCLES[bahasaRestCycleIdx].label;
     }
 
     // TAMBAHAN BARU: Override showToast untuk sokong paparan berterusan masa upload
