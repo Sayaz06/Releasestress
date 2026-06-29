@@ -2703,9 +2703,9 @@ btnSambungFasa2.addEventListener('click', () => {
     let currentRepeatCount = 33; 
 
     // VARIABLES BARU: MODE REST DI MAIN SCREEN (TASBIH)
-    let mainRestMax = 33;
-    let mainRestCount = mainRestMax;
-    let mainRestPhase = 1;
+let mainRestMax = 10;
+let mainRestCount = 10;
+let mainRestPhase = 1;
 
     // ── CYCLE STATES untuk semua mode rest ──
 const REST_CYCLES = [
@@ -2714,12 +2714,12 @@ const REST_CYCLES = [
   { label: 'Target: 10r5',  fasa1: 10, fasa2: 5  },
   { label: 'Target: 5r10',  fasa1: 5,  fasa2: 10 },
 ];
-let mainRestCycleIdx   = 0;
-let joggingCycleIdx    = 0;
-let memanahCycleIdx    = 0;
-let bahasaRestCycleIdx = 0;
-let bahasaRestMax      = 33;
-let bahasaRestCount    = 33;
+let mainRestCycleIdx   = 2;
+let joggingCycleIdx    = 2;
+let memanahCycleIdx    = 2;
+let bahasaRestCycleIdx = 2;
+let bahasaRestMax      = 10;
+let bahasaRestCount    = 10;
 let bahasaRestPhase    = 1;
     
 let allSems = [];
@@ -2748,14 +2748,14 @@ let allSems = [];
 
     // STATE JOGGING & MEMANAH
     let currentJoggingDrawerId = null;
-    let maxJoggingCount = 33;
-    let joggingTapCount = maxJoggingCount;
+    let maxJoggingCount = 10;
+    let joggingTapCount = 10;
     let joggingPhase = 1;
     let isFullScreenJogging = false; 
     let isJoggingBlocked = false; 
     let isJoggingNotaLocked = true; 
 
-    let maxMemanahCount = 33;
+    let maxMemanahCount = 10;
     let memanahPhase = 1;
     let quranFontSize = parseFloat(localStorage.getItem('quranFontSize') || '2.0');
     let isJoggingVideoRestON = true;
