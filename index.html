@@ -3990,14 +3990,50 @@ btnBackJogging.addEventListener("click", () => {
       }
     });
 
-    btnAddJoggingAfter.addEventListener("click", () => {
+btnAddJoggingAfter.addEventListener("click", () => {
       const count = joggingAfterContainer.querySelectorAll('.jogging-input-after').length + 1;
       const input = document.createElement("input");
       input.className = "drawer-input-box jogging-input-after";
       input.placeholder = `Maksud ${count} (Selepas '=')`;
+      input.addEventListener('input', saveJoggingDraft);
       joggingAfterContainer.appendChild(input);
       input.focus();
     });
+
+    joggingInputBefore.addEventListener('input', saveJoggingDraft);
+    joggingAfterContainer.addEventListener('input', saveJoggingDraft);
+
+function saveJoggingDraft() {
+      const beforeVal = joggingInputBefore.value;
+      const afterInputs = Array.from(joggingAfterContainer.querySelectorAll('.jogging-input-after'))
+                               .map(inp => inp.value);
+      localStorage.setItem('joggingDraft_' + currentJoggingDrawerId, JSON.stringify({
+        before: beforeVal,
+        afters: afterInputs
+      }));
+    }
+
+    function loadJoggingDraft(drawerId) {
+      try {
+        const saved = localStorage.getItem('joggingDraft_' + drawerId);
+        if (!saved) return;
+        const draft = JSON.parse(saved);
+        joggingInputBefore.value = draft.before || '';
+        joggingAfterContainer.innerHTML = '';
+        const afters = draft.afters && draft.afters.length > 0 ? draft.afters : [''];
+        afters.forEach((val, idx) => {
+          const input = document.createElement('input');
+          input.className = 'drawer-input-box jogging-input-after';
+          input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
+          input.value = val;
+          joggingAfterContainer.appendChild(input);
+        });
+      } catch(e) {}
+    }
+
+    function clearJoggingDraft(drawerId) {
+      localStorage.removeItem('joggingDraft_' + drawerId);
+    }
 
     function openJoggingMode(data) {
       currentJoggingDrawerId = data.id;
@@ -4017,6 +4053,9 @@ btnBackJogging.addEventListener("click", () => {
       joggingCount.textContent = joggingTapCount;
       joggingMiniCount.textContent = joggingTapCount; 
       joggingMainTextarea.value = data.notes || '';
+
+      // Pulih draft kalau ada
+      loadJoggingDraft(data.id);
       
       showSection(sectionJogging);
       
@@ -4025,7 +4064,7 @@ btnBackJogging.addEventListener("click", () => {
       }, 50);
     }
     
-    function simpanKeLaciJogging() {
+function simpanKeLaciJogging() {
         const beforeVal = joggingInputBefore.value.trim();
         const afterInputs = Array.from(joggingAfterContainer.querySelectorAll('.jogging-input-after'))
                                  .map(inp => inp.value.trim())
@@ -4048,6 +4087,7 @@ btnBackJogging.addEventListener("click", () => {
 
         joggingInputBefore.value = "";
         joggingAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
+        clearJoggingDraft(currentJoggingDrawerId);
     }
 
     function decrementJogging() {
@@ -6269,14 +6309,50 @@ btnBackMemanah.addEventListener("click", () => {
       }
     });
 
-    btnAddMemanahAfter.addEventListener("click", () => {
+btnAddMemanahAfter.addEventListener("click", () => {
       const count = memanahAfterContainer.querySelectorAll('.jogging-input-after').length + 1;
       const input = document.createElement("input");
       input.className = "drawer-input-box jogging-input-after";
       input.placeholder = `Maksud ${count} (Selepas '=')`;
+      input.addEventListener('input', saveMemanahDraft);
       memanahAfterContainer.appendChild(input);
       input.focus();
     });
+
+    memanahInputBefore.addEventListener('input', saveMemanahDraft);
+    memanahAfterContainer.addEventListener('input', saveMemanahDraft);
+
+function saveMemanahDraft() {
+      const beforeVal = memanahInputBefore.value;
+      const afterInputs = Array.from(memanahAfterContainer.querySelectorAll('.jogging-input-after'))
+                               .map(inp => inp.value);
+      localStorage.setItem('memanahDraft_' + currentMemanahDrawerId, JSON.stringify({
+        before: beforeVal,
+        afters: afterInputs
+      }));
+    }
+
+    function loadMemanahDraft(drawerId) {
+      try {
+        const saved = localStorage.getItem('memanahDraft_' + drawerId);
+        if (!saved) return;
+        const draft = JSON.parse(saved);
+        memanahInputBefore.value = draft.before || '';
+        memanahAfterContainer.innerHTML = '';
+        const afters = draft.afters && draft.afters.length > 0 ? draft.afters : [''];
+        afters.forEach((val, idx) => {
+          const input = document.createElement('input');
+          input.className = 'drawer-input-box jogging-input-after';
+          input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
+          input.value = val;
+          memanahAfterContainer.appendChild(input);
+        });
+      } catch(e) {}
+    }
+
+    function clearMemanahDraft(drawerId) {
+      localStorage.removeItem('memanahDraft_' + drawerId);
+    }
 
     function openMemanahMode(data) {
       currentMemanahDrawerId = data.id;
@@ -6297,6 +6373,7 @@ btnBackMemanah.addEventListener("click", () => {
 
       memanahInputBefore.value = '';
       memanahAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
+      loadMemanahDraft(data.id);
       memanahMiniCount.textContent = memanahTapCount;
       memanahBigCount.textContent = memanahTapCount;
       floatingTexts = [];
@@ -6584,12 +6661,12 @@ showVideoRest(() => {
             if (currentMemanahDrawerId && currentUser) {
               updateDoc(doc(db, "users", currentUser.uid, "drawer", currentMemanahDrawerId), { notes: updatedNotes, repeatCount: 0 });
             }
-            memanahInputBefore.value = "";
+memanahInputBefore.value = "";
             memanahAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
+            clearMemanahDraft(currentMemanahDrawerId);
         }
       }
     }
-
 
 
 
