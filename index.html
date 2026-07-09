@@ -2998,8 +2998,9 @@ const sectionMyLaw = document.getElementById("section-my-law");
 
 let myLawText = "";
     let myLawUnsub = null;
-    let myLawSaveTimer = null;
+let myLawSaveTimer = null;
     let peraturanCallback = null;
+    let myLawSentenceIndex = 0;
 
     // ── JOURNAL VARIABLES ──
     let currentJournalEntryId = null;
@@ -3011,20 +3012,25 @@ let myLawText = "";
     let selectedRating = 0;
 
     // SUBSCRIBE MY LAW DARI FIRESTORE
-    function subscribeMyLaw() {
+function subscribeMyLaw() {
         if (!currentUser) return;
         if (myLawUnsub) myLawUnsub();
         const refLaw = doc(db, "users", currentUser.uid, "settings", "myLaw");
         myLawUnsub = onSnapshot(refLaw, (snap) => {
-            if (snap.exists() && snap.data().text !== undefined) {
-                const cloudText = snap.data().text || "";
-                // Hanya update kalau user TIDAK sedang taip (elak gangguan)
+            if (snap.exists()) {
+                const data = snap.data();
+                const cloudText = data.text || "";
                 if (myLawTextarea.value !== cloudText && document.activeElement !== myLawTextarea) {
                     myLawTextarea.value = cloudText;
                 }
                 myLawText = cloudText;
+                // Load kedudukan ayat terakhir dari Firebase
+                if (data.sentenceIndex !== undefined) {
+                    myLawSentenceIndex = data.sentenceIndex;
+                }
             } else {
                 myLawText = "";
+                myLawSentenceIndex = 0;
             }
         });
     }
@@ -3059,15 +3065,67 @@ let myLawText = "";
     btnBackHomeMyLaw.addEventListener("click", () => showSection(sectionHome));
 
     // FUNGSI: TUNJUK OVERLAY PERATURAN
-    function showPeraturanOverlay(buttonText, callback) {
+function showPeraturanOverlay(buttonText, callback) {
         peraturanCallback = callback;
         btnPeraturanContinue.textContent = buttonText;
         
         const lawText = (myLawText || "").trim();
-        if (lawText) {
-            peraturanContent.textContent = lawText;
-        } else {
+        if (!lawText) {
             peraturanContent.innerHTML = '<span style="color: var(--subtext); font-style: italic;">📌 Sila set "My Law" terlebih dahulu di Menu Utama untuk paparkan peraturan anda di sini.</span>';
+            peraturanContent.scrollTop = 0;
+            peraturanOverlay.style.display = "flex";
+            return;
+        }
+
+        // Pecah teks kepada ayat-ayat (setiap baris bukan kosong = 1 ayat)
+        const semuaAyat = lawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        
+        if (semuaAyat.length === 0) {
+            peraturanContent.textContent = lawText;
+            peraturanContent.scrollTop = 0;
+            peraturanOverlay.style.display = "flex";
+            return;
+        }
+
+        // Pastikan index tidak melebihi jumlah ayat
+        if (myLawSentenceIndex >= semuaAyat.length) {
+            myLawSentenceIndex = 0;
+        }
+
+        // Ambil 2 ayat bermula dari kedudukan semasa
+        const ayat1 = semuaAyat[myLawSentenceIndex] || '';
+        const ayat2 = semuaAyat[myLawSentenceIndex + 1] || '';
+        
+        const ayatDipapar = ayat2 ? `${ayat1}\n\n${ayat2}` : ayat1;
+
+        // Papar ayat dengan info kedudukan
+        const jumlah = semuaAyat.length;
+        const mula = myLawSentenceIndex + 1;
+        const tamat = Math.min(myLawSentenceIndex + 2, jumlah);
+
+        peraturanContent.innerHTML = '';
+        
+        // Info kedudukan
+        const infoEl = document.createElement('div');
+        infoEl.style.cssText = 'font-size:0.72rem;color:#a5b4fc;text-align:center;margin-bottom:14px;padding:6px 10px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:8px;';
+        infoEl.textContent = `📖 Ayat ${mula}–${tamat} daripada ${jumlah}`;
+        peraturanContent.appendChild(infoEl);
+
+        // Teks ayat
+        const teksEl = document.createElement('div');
+        teksEl.style.cssText = 'font-size:1.15rem;line-height:1.8;color:#e5e7eb;white-space:pre-wrap;word-wrap:break-word;';
+        teksEl.textContent = ayatDipapar;
+        peraturanContent.appendChild(teksEl);
+
+        // Kemaskini index untuk rest seterusnya (+2 ayat)
+        const nextIndex = myLawSentenceIndex + 2;
+        myLawSentenceIndex = nextIndex >= semuaAyat.length ? 0 : nextIndex;
+
+        // Simpan kedudukan ke Firebase
+        if (currentUser) {
+            const refLaw = doc(db, "users", currentUser.uid, "settings", "myLaw");
+            setDoc(refLaw, { sentenceIndex: myLawSentenceIndex }, { merge: true })
+                .catch(e => console.log("Gagal simpan sentenceIndex:", e));
         }
         
         peraturanContent.scrollTop = 0;
