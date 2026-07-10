@@ -3284,7 +3284,7 @@ function subscribeMyLaw() {
         showToast('📋 Teks disalin (fallback)!');
       });
     });
-
+    
 // ── CARI DALAM TEXTAREA ARAHAN ──
     let arahanSearchMatches = [];
     let arahanSearchIdx = -1;
@@ -3309,19 +3309,19 @@ function subscribeMyLaw() {
       document.getElementById('arahan-search-count').textContent = '';
     });
 
-function arahanCariSemua() {
+    function arahanCariSemua() {
       const textarea = document.getElementById('arahan-editor-textarea');
-      const keyword = document.getElementById('arahan-search-input').value.toLowerCase();
+      const query = document.getElementById('arahan-search-input').value.toLowerCase();
       const countEl = document.getElementById('arahan-search-count');
       arahanSearchMatches = [];
       arahanSearchIdx = -1;
 
-      if (!keyword) { countEl.textContent = ''; return; }
+      if (!query) { countEl.textContent = ''; return; }
 
       const teks = textarea.value.toLowerCase();
       let pos = 0;
       while (true) {
-        const idx = teks.indexOf(keyword, pos);
+        const idx = teks.indexOf(query, pos);
         if (idx === -1) break;
         arahanSearchMatches.push(idx);
         pos = idx + 1;
