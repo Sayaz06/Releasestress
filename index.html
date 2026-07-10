@@ -1570,6 +1570,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <div style="text-align:right;">
             <div class="topbar-title" style="color:#38bdf8;" id="arahan-editor-title">Arahan</div>
 <div style="display:flex;gap:6px;align-items:center;">
+              <button id="btn-arahan-copy-all" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">📋 Copy</button>
               <button id="btn-arahan-search-toggle" class="btn btn-secondary btn-sm" style="border-color:#0ea5e9;color:#38bdf8;">🔍 Cari</button>
               <span class="chip" id="arahan-save-indicator" style="border-color:#0ea5e9;color:#38bdf8;">✓ Tersimpan</span>
             </div>
@@ -3262,6 +3263,26 @@ function subscribeMyLaw() {
         });
         if (indicator) { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#38bdf8'; indicator.style.borderColor = '#0ea5e9'; }
       }, 600);
+    });
+
+// ── COPY SEMUA TEKS ARAHAN ──
+    document.getElementById('btn-arahan-copy-all').addEventListener('click', () => {
+      const textarea = document.getElementById('arahan-editor-textarea');
+      const teks = textarea.value.trim();
+      if (!teks) { showToast('⚠️ Tiada teks untuk disalin.'); return; }
+      navigator.clipboard.writeText(teks).then(() => {
+        const btn = document.getElementById('btn-arahan-copy-all');
+        btn.textContent = '✅ Copied!';
+        btn.style.borderColor = '#10b981';
+        showToast('📋 Semua teks berjaya disalin!');
+        setTimeout(() => { btn.textContent = '📋 Copy'; btn.style.borderColor = '#34d399'; }, 2000);
+      }).catch(() => {
+        // Fallback untuk browser lama / phone yang tak sokong clipboard API
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        document.execCommand('copy');
+        showToast('📋 Teks disalin (fallback)!');
+      });
     });
 
 // ── CARI DALAM TEXTAREA ARAHAN ──
