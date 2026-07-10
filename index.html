@@ -1278,7 +1278,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
       </section>
 
-      <section id="section-home" class="section">
+<section id="section-home" class="section">
         <div class="topbar">
           <div>
             <div class="topbar-title">Menu Utama</div>
@@ -1289,6 +1289,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-logout" class="btn btn-secondary btn-sm">Logout</button>
           </div>
         </div>
+<div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
 <div class="stack mt-8">
           <button id="btn-go-tasbih" class="btn">
             <span>Tasbih Countdown</span>
@@ -1305,7 +1306,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-go-my-law" class="btn btn-secondary" style="border-color: var(--grad2); color: var(--grad2);">
             <span>📜 My Law</span>
           </button>
-  
+  <button id="btn-go-arahan" class="btn btn-secondary" style="border-color: #0ea5e9; color: #38bdf8;">
+            <span>🤖 Arahan AI</span>
+          </button>
 
           <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
@@ -1329,6 +1332,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-tong-sampah-quran" class="btn btn-secondary" style="border-color:#f59e0b;color:#fcd34d;">
             ♻️ Pulih History Quran
           </button>
+        </div>
         </div>
         <div class="footer mt-16">
           Repo: <span class="small">Stressbetul / Istigfar</span>
@@ -1532,6 +1536,49 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-delete-contact" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">
             🗑️ Padam Kenalan Ini
           </button>
+        </div>
+      </section>
+
+<!-- ══ ARAHAN AI ══ -->
+      <section id="section-arahan-list" class="section">
+        <div class="topbar">
+          <button id="btn-back-home-arahan" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#38bdf8;">🤖 Arahan AI</div>
+            <div class="topbar-sub">Simpanan arahan & instruksi AI</div>
+          </div>
+        </div>
+        <button id="btn-add-arahan-tajuk" class="btn btn-sm mt-8" style="width:100%;">+ Tambah Tajuk Arahan</button>
+        <div class="list mt-8" id="arahan-tajuk-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-arahan-versi" class="section">
+        <div class="topbar">
+          <button id="btn-back-arahan-list" class="btn btn-secondary btn-sm">← Tajuk</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#38bdf8;">📋 Versi Arahan</div>
+            <div class="topbar-sub" id="parent-arahan-tajuk-name" style="color:#0ea5e9;font-weight:bold;"></div>
+          </div>
+        </div>
+        <button id="btn-add-arahan-versi" class="btn btn-sm mt-8" style="width:100%;">+ Tambah Versi</button>
+        <div class="list mt-8" id="arahan-versi-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-arahan-editor" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-arahan-versi" class="btn btn-secondary btn-sm">← Versi</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#38bdf8;" id="arahan-editor-title">Arahan</div>
+            <span class="chip" id="arahan-save-indicator" style="border-color:#0ea5e9;color:#38bdf8;">✓ Tersimpan</span>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;flex-shrink:0;">
+          Tulis arahan AI anda. Auto-save ke Firestore.
+        </div>
+        <textarea id="arahan-editor-textarea" placeholder="Tulis arahan AI anda di sini...&#10;&#10;Contoh:&#10;- Prompt untuk coding&#10;- Instruksi format output&#10;- Peraturan AI behavior" style="flex:1;width:100%;min-height:300px;resize:none;border-radius:12px;border:2px solid #0ea5e9;background:rgba(15,23,42,0.9);color:var(--text);padding:14px;font-size:1rem;line-height:1.6;outline:none;box-shadow:inset 0 0 20px rgba(14,165,233,0.1);"></textarea>
+        <div class="row" style="margin-top:10px;flex-shrink:0;">
+          <span class="chip">Auto-save ke Firestore</span>
+          <button id="btn-delete-arahan-versi" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">🗑️ Padam Versi</button>
         </div>
       </section>
 
@@ -3002,6 +3049,13 @@ let myLawSaveTimer = null;
     let peraturanCallback = null;
     let myLawSentenceIndex = 0;
 
+   // ── ARAHAN AI VARIABLES ──
+    let allArahanTajuk = [];
+    let allArahanVersi = [];
+    let currentArahanTajukId = null;
+    let currentArahanVersiId = null;
+    let arahanSaveTimer = null;
+    
     // ── JOURNAL VARIABLES ──
     let currentJournalEntryId = null;
     let currentContactId = null;
@@ -3060,6 +3114,178 @@ function subscribeMyLaw() {
         }, 600);
     });
 
+// ══════════════════════════════════════════
+    // ARAHAN AI SYSTEM
+    // ══════════════════════════════════════════
+
+    // ── NAVIGATION ──
+    document.getElementById('btn-go-arahan').addEventListener('click', () => {
+      showSection(document.getElementById('section-arahan-list'));
+      renderArahanTajuk();
+    });
+
+    document.getElementById('btn-back-home-arahan').addEventListener('click', () => showSection(sectionHome));
+
+    document.getElementById('btn-back-arahan-list').addEventListener('click', () => {
+      showSection(document.getElementById('section-arahan-list'));
+      renderArahanTajuk();
+    });
+
+    document.getElementById('btn-back-arahan-versi').addEventListener('click', () => {
+      showSection(document.getElementById('section-arahan-versi'));
+      renderArahanVersi();
+    });
+
+    // ── TAMBAH TAJUK ──
+    document.getElementById('btn-add-arahan-tajuk').addEventListener('click', async () => {
+      if (!currentUser) return;
+      await addDoc(collection(db, "users", currentUser.uid, "arahan_tajuk"), {
+        name: "", createdAt: Date.now()
+      });
+    });
+
+    // ── TAMBAH VERSI ──
+    document.getElementById('btn-add-arahan-versi').addEventListener('click', async () => {
+      if (!currentUser || !currentArahanTajukId) return;
+      await addDoc(collection(db, "users", currentUser.uid, "arahan_versi"), {
+        name: "", text: "", tajukId: currentArahanTajukId, createdAt: Date.now()
+      });
+    });
+
+    // ── RENDER TAJUK LIST ──
+    function renderArahanTajuk() {
+      const list = document.getElementById('arahan-tajuk-list');
+      list.innerHTML = "";
+      const sorted = [...allArahanTajuk].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada tajuk arahan. Tekan Tambah.</div>';
+        return;
+      }
+      sorted.forEach(data => {
+        const div = document.createElement("div");
+        div.className = "drawer-card";
+        div.style.cssText = "display:flex;gap:8px;align-items:center;";
+        div.innerHTML = `
+          <input value="${data.name || ''}" placeholder="Nama tajuk arahan..." style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:1rem;">
+          <button class="btn btn-secondary btn-sm" style="border-color:#0ea5e9;color:#38bdf8;">Buka</button>
+          <button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">X</button>
+        `;
+        div.querySelectorAll('input')[0].addEventListener('change', e => {
+          updateDoc(doc(db, "users", currentUser.uid, "arahan_tajuk", data.id), { name: e.target.value });
+        });
+        div.querySelectorAll('button')[0].addEventListener('click', () => {
+          currentArahanTajukId = data.id;
+          document.getElementById('parent-arahan-tajuk-name').textContent = data.name || 'Tanpa Nama';
+          showSection(document.getElementById('section-arahan-versi'));
+          renderArahanVersi();
+        });
+        div.querySelectorAll('button')[1].addEventListener('click', async () => {
+          if (!confirm("Padam tajuk ini dan semua versi di dalamnya?")) return;
+          const versiToDelete = allArahanVersi.filter(v => v.tajukId === data.id);
+          let i = 0;
+          while (i < versiToDelete.length) {
+            const batch = writeBatch(db);
+            const end = Math.min(i + 499, versiToDelete.length);
+            for (let j = i; j < end; j++)
+              batch.delete(doc(db, "users", currentUser.uid, "arahan_versi", versiToDelete[j].id));
+            await batch.commit(); i = end;
+          }
+          await deleteDoc(doc(db, "users", currentUser.uid, "arahan_tajuk", data.id));
+          showToast('🗑️ Tajuk dan semua versi dipadam.');
+        });
+        list.appendChild(div);
+      });
+    }
+
+    // ── RENDER VERSI LIST ──
+    function renderArahanVersi() {
+      const list = document.getElementById('arahan-versi-list');
+      list.innerHTML = "";
+      const filtered = allArahanVersi.filter(v => v.tajukId === currentArahanTajukId);
+      const sorted = [...filtered].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada versi. Tekan Tambah.</div>';
+        return;
+      }
+      sorted.forEach(data => {
+        const preview = (data.text || '').substring(0, 80);
+        const div = document.createElement("div");
+        div.className = "drawer-card";
+        div.style.cursor = "pointer";
+        div.innerHTML = `
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input value="${data.name || ''}" placeholder="Nama versi (Cth: v1, v2...)" style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;" onclick="event.stopPropagation();">
+            <button class="btn btn-secondary btn-sm" style="border-color:#0ea5e9;color:#38bdf8;">Buka</button>
+            <button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">X</button>
+          </div>
+          ${preview ? `<div style="font-size:0.72rem;color:var(--subtext);margin-top:6px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${preview}${data.text && data.text.length > 80 ? '...' : ''}</div>` : ''}
+        `;
+        div.querySelectorAll('input')[0].addEventListener('change', e => {
+          e.stopPropagation();
+          updateDoc(doc(db, "users", currentUser.uid, "arahan_versi", data.id), { name: e.target.value });
+        });
+        div.querySelectorAll('button')[0].addEventListener('click', (e) => {
+          e.stopPropagation();
+          openArahanEditor(data);
+        });
+        div.querySelectorAll('button')[1].addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm("Padam versi ini?")) return;
+          await deleteDoc(doc(db, "users", currentUser.uid, "arahan_versi", data.id));
+          showToast('🗑️ Versi dipadam.');
+        });
+        list.appendChild(div);
+      });
+    }
+
+    // ── OPEN EDITOR ──
+    function openArahanEditor(data) {
+      currentArahanVersiId = data.id;
+      const tajuk = allArahanTajuk.find(t => t.id === currentArahanTajukId);
+      document.getElementById('arahan-editor-title').textContent = `${tajuk ? tajuk.name : 'Arahan'} — ${data.name || 'Tanpa Nama'}`;
+      document.getElementById('arahan-editor-textarea').value = data.text || '';
+      const indicator = document.getElementById('arahan-save-indicator');
+      if (indicator) { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#38bdf8'; indicator.style.borderColor = '#0ea5e9'; }
+      showSection(document.getElementById('section-arahan-editor'));
+    }
+
+    // ── AUTO-SAVE ARAHAN (DEBOUNCED 600ms) ──
+    document.getElementById('arahan-editor-textarea').addEventListener('input', (e) => {
+      const indicator = document.getElementById('arahan-save-indicator');
+      if (indicator) { indicator.textContent = '⏳ Menyimpan...'; indicator.style.color = '#fcd34d'; indicator.style.borderColor = '#fcd34d'; }
+      if (arahanSaveTimer) clearTimeout(arahanSaveTimer);
+      arahanSaveTimer = setTimeout(async () => {
+        if (!currentUser || !currentArahanVersiId) return;
+        await updateDoc(doc(db, "users", currentUser.uid, "arahan_versi", currentArahanVersiId), {
+          text: e.target.value, updatedAt: Date.now()
+        });
+        if (indicator) { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#38bdf8'; indicator.style.borderColor = '#0ea5e9'; }
+      }, 600);
+    });
+
+    // ── PADAM VERSI DARI EDITOR ──
+    document.getElementById('btn-delete-arahan-versi').addEventListener('click', async () => {
+      if (!currentUser || !currentArahanVersiId) return;
+      if (!confirm("Padam versi arahan ini?")) return;
+      await deleteDoc(doc(db, "users", currentUser.uid, "arahan_versi", currentArahanVersiId));
+      showToast('🗑️ Versi dipadam.');
+      showSection(document.getElementById('section-arahan-versi'));
+      renderArahanVersi();
+    });
+
+    // ── SUBSCRIBE ARAHAN FIRESTORE ──
+    function subscribeArahan() {
+      if (!currentUser) return;
+      onSnapshot(query(collection(db, "users", currentUser.uid, "arahan_tajuk")), snap => {
+        allArahanTajuk = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (document.getElementById('section-arahan-list')?.classList.contains('active')) renderArahanTajuk();
+      });
+      onSnapshot(query(collection(db, "users", currentUser.uid, "arahan_versi")), snap => {
+        allArahanVersi = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (document.getElementById('section-arahan-versi')?.classList.contains('active')) renderArahanVersi();
+      });
+    }
+    
     // NAVIGATION MY LAW
     btnGoMyLaw.addEventListener("click", () => showSection(sectionMyLaw));
     btnBackHomeMyLaw.addEventListener("click", () => showSection(sectionHome));
@@ -3195,6 +3421,9 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       if (sectionJenisKata) sectionJenisKata.classList.remove("active");
 if (sectionBahasaPerkataan) sectionBahasaPerkataan.classList.remove("active");
       if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
+      document.getElementById('section-arahan-list')?.classList.remove("active");
+      document.getElementById('section-arahan-versi')?.classList.remove("active");
+      document.getElementById('section-arahan-editor')?.classList.remove("active");
       if (sectionJournalHub)     sectionJournalHub.classList.remove("active");
       if (sectionMyJournal)      sectionMyJournal.classList.remove("active");
       if (sectionJournalEditor)  sectionJournalEditor.classList.remove("active");
@@ -5559,7 +5788,7 @@ showSection(secToShow);
         subscribeMyLaw(); // KOD BARU: Subscribe My Law dari Firestore
         subscribeToVideoRehat(); // KOD BARU: Subscribe video rehat (dah ada fungsi, tapi belum dipanggil)
         subscribeNewModes();
-        subscribeBahasa();
+        subscribeArahan();
         loadQuranKhatam().then(() => semakStatusKeluar());
         
       } else {
