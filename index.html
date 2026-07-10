@@ -3313,20 +3313,26 @@ let arahanSearchMatches = [];
       }
     });
 
-    function arahanBuangHighlight() {
+function arahanBuangHighlight() {
+      // Matikan state highlight dulu sebelum buang selection
+      arahanHighlightAktif = false;
+      arahanHighlightPos = null;
       const textarea = document.getElementById('arahan-editor-textarea');
-      // Buang selection dengan set caret ke kedudukan semasa tanpa selection
       const pos = textarea.selectionStart;
       textarea.setSelectionRange(pos, pos);
     }
 
     // Cari semua kedudukan teks — TIDAK lompat, hanya kemas kini kiraan
-    function arahanCariSemua() {
+function arahanCariSemua() {
       const textarea = document.getElementById('arahan-editor-textarea');
       const queryVal = document.getElementById('arahan-search-input').value.toLowerCase();
       const countEl = document.getElementById('arahan-search-count');
       arahanSearchMatches = [];
       arahanSearchIdx = -1;
+
+      // Reset highlight bila perkataan carian berubah
+      arahanHighlightAktif = false;
+      arahanHighlightPos = null;
 
       if (!queryVal) {
         countEl.textContent = '';
@@ -3430,10 +3436,43 @@ function arahanKiraScrollPosition(textarea, charPos) {
         textarea.scrollTop = targetScrollTop;
       });
 
-      countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
+countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
       countEl.style.color = '#38bdf8';
+
+      // Aktifkan state highlight supaya kekal walaupun textarea blur
+      arahanHighlightAktif = true;
+      arahanHighlightPos = { start: matchPos, end: matchEnd };
     }
 
+
+    // ── KEKALKAN HIGHLIGHT TEXTAREA ARAHAN ──
+    let arahanHighlightAktif = false;
+    let arahanHighlightPos = null; // { start, end }
+
+    document.getElementById('arahan-editor-textarea').addEventListener('blur', (e) => {
+      // Jangan kekalkan highlight bila blur ke search input — biarkan user taip
+      const searchInput = document.getElementById('arahan-search-input');
+      const relatedTarget = e.relatedTarget;
+
+      // Kalau fokus pergi ke search input atau button search, biarkan
+      const searchBar = document.getElementById('arahan-search-bar');
+      if (relatedTarget && searchBar && searchBar.contains(relatedTarget)) return;
+
+      // Kalau highlight aktif, kembalikan fokus dan selection
+      if (arahanHighlightAktif && arahanHighlightPos) {
+        const textarea = document.getElementById('arahan-editor-textarea');
+        // Gunakan timeout kecil supaya blur selesai dulu sebelum focus semula
+        setTimeout(() => {
+          textarea.focus({ preventScroll: true });
+          textarea.setSelectionRange(arahanHighlightPos.start, arahanHighlightPos.end);
+          // Pastikan scroll tidak berubah
+          const pixelY = arahanKiraScrollPosition(textarea, arahanHighlightPos.start);
+          const targetScrollTop = Math.max(0, pixelY - textarea.clientHeight / 2);
+          textarea.scrollTop = targetScrollTop;
+        }, 10);
+      }
+    });
+    
     // Semasa taip: cari sahaja, JANGAN lompat
     document.getElementById('arahan-search-input').addEventListener('input', (e) => {
       arahanCariSemua();
