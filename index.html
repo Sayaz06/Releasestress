@@ -1569,12 +1569,14 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-back-arahan-versi" class="btn btn-secondary btn-sm">← Versi</button>
           <div style="text-align:right;">
             <div class="topbar-title" style="color:#38bdf8;" id="arahan-editor-title">Arahan</div>
-            <span class="chip" id="arahan-save-indicator" style="border-color:#0ea5e9;color:#38bdf8;">✓ Tersimpan</span>
+<div style="display:flex;gap:6px;align-items:center;">
+              <button id="btn-arahan-search-toggle" class="btn btn-secondary btn-sm" style="border-color:#0ea5e9;color:#38bdf8;">🔍 Cari</button>
+              <span class="chip" id="arahan-save-indicator" style="border-color:#0ea5e9;color:#38bdf8;">✓ Tersimpan</span>
+            </div>
           </div>
         </div>
-        <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;flex-shrink:0;">
-          Tulis arahan AI anda. Auto-save ke Firestore.
-        </div>
+
+  
         <textarea id="arahan-editor-textarea" placeholder="Tulis arahan AI anda di sini...&#10;&#10;Contoh:&#10;- Prompt untuk coding&#10;- Instruksi format output&#10;- Peraturan AI behavior" style="flex:1;width:100%;min-height:300px;resize:none;border-radius:12px;border:2px solid #0ea5e9;background:rgba(15,23,42,0.9);color:var(--text);padding:14px;font-size:1rem;line-height:1.6;outline:none;box-shadow:inset 0 0 20px rgba(14,165,233,0.1);"></textarea>
         <div class="row" style="margin-top:10px;flex-shrink:0;">
           <span class="chip">Auto-save ke Firestore</span>
@@ -3262,6 +3264,103 @@ function subscribeMyLaw() {
       }, 600);
     });
 
+// ── CARI DALAM TEXTAREA ARAHAN ──
+    let arahanSearchMatches = [];
+    let arahanSearchIdx = -1;
+
+    document.getElementById('btn-arahan-search-toggle').addEventListener('click', () => {
+      const bar = document.getElementById('arahan-search-bar');
+      const isOpen = bar.style.display === 'flex';
+      bar.style.display = isOpen ? 'none' : 'flex';
+      if (!isOpen) {
+        document.getElementById('arahan-search-input').value = '';
+        document.getElementById('arahan-search-count').textContent = '';
+        arahanSearchMatches = [];
+        arahanSearchIdx = -1;
+        setTimeout(() => document.getElementById('arahan-search-input').focus(), 80);
+      }
+    });
+
+    document.getElementById('btn-arahan-search-close').addEventListener('click', () => {
+      document.getElementById('arahan-search-bar').style.display = 'none';
+      arahanSearchMatches = [];
+      arahanSearchIdx = -1;
+      document.getElementById('arahan-search-count').textContent = '';
+    });
+
+    function arahanCariSemua() {
+      const textarea = document.getElementById('arahan-editor-textarea');
+      const query = document.getElementById('arahan-search-input').value.toLowerCase();
+      const countEl = document.getElementById('arahan-search-count');
+      arahanSearchMatches = [];
+      arahanSearchIdx = -1;
+
+      if (!query) { countEl.textContent = ''; return; }
+
+      const teks = textarea.value.toLowerCase();
+      let pos = 0;
+      while (true) {
+        const idx = teks.indexOf(query, pos);
+        if (idx === -1) break;
+        arahanSearchMatches.push(idx);
+        pos = idx + 1;
+      }
+
+      if (arahanSearchMatches.length === 0) {
+        countEl.textContent = '0/0';
+        countEl.style.color = '#f87171';
+      } else {
+        arahanSearchIdx = 0;
+        arahanLompatKe(0);
+        countEl.style.color = 'var(--subtext)';
+      }
+    }
+
+    function arahanLompatKe(idx) {
+      const textarea = document.getElementById('arahan-editor-textarea');
+      const countEl = document.getElementById('arahan-search-count');
+      const query = document.getElementById('arahan-search-input').value;
+
+      if (!arahanSearchMatches.length) return;
+      if (idx < 0) idx = arahanSearchMatches.length - 1;
+      if (idx >= arahanSearchMatches.length) idx = 0;
+      arahanSearchIdx = idx;
+
+      const matchPos = arahanSearchMatches[idx];
+      textarea.focus();
+      textarea.setSelectionRange(matchPos, matchPos + query.length);
+
+      // Scroll textarea supaya selection nampak
+      const teksSebelum = textarea.value.substring(0, matchPos);
+      const barisSebelum = teksSebelum.split('\n').length;
+      const anggaran = barisSebelum * 20;
+      textarea.scrollTop = Math.max(0, anggaran - textarea.clientHeight / 2);
+
+      countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
+      countEl.style.color = '#38bdf8';
+    }
+
+    document.getElementById('arahan-search-input').addEventListener('input', arahanCariSemua);
+
+    document.getElementById('arahan-search-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          arahanLompatKe(arahanSearchIdx - 1);
+        } else {
+          arahanLompatKe(arahanSearchIdx + 1);
+        }
+      }
+    });
+
+    document.getElementById('btn-arahan-search-next').addEventListener('click', () => {
+      arahanLompatKe(arahanSearchIdx + 1);
+    });
+
+    document.getElementById('btn-arahan-search-prev').addEventListener('click', () => {
+      arahanLompatKe(arahanSearchIdx - 1);
+    });
+    
     // ── PADAM VERSI DARI EDITOR ──
     document.getElementById('btn-delete-arahan-versi').addEventListener('click', async () => {
       if (!currentUser || !currentArahanVersiId) return;
