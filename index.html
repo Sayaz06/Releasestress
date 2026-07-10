@@ -3078,8 +3078,8 @@ function showPeraturanOverlay(buttonText, callback) {
         }
 
         // Pecah teks kepada ayat-ayat (setiap baris bukan kosong = 1 ayat)
-        const semuaAyat = lawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        
+      const semuaAyat = lawText.split('.').map(l => l.trim()).filter(l => l.length > 0);
+          
         if (semuaAyat.length === 0) {
             peraturanContent.textContent = lawText;
             peraturanContent.scrollTop = 0;
