@@ -3294,7 +3294,7 @@ function subscribeMyLaw() {
     });
     
 // ── CARI DALAM TEXTAREA ARAHAN ──
-    let arahanSearchMatches = [];
+let arahanSearchMatches = [];
     let arahanSearchIdx = -1;
 
     document.getElementById('btn-arahan-search-toggle').addEventListener('click', () => {
@@ -3307,23 +3307,37 @@ function subscribeMyLaw() {
         arahanSearchMatches = [];
         arahanSearchIdx = -1;
         setTimeout(() => document.getElementById('arahan-search-input').focus(), 80);
+      } else {
+        // Bila tutup, buang highlight
+        arahanBuangHighlight();
       }
     });
 
+    function arahanBuangHighlight() {
+      const textarea = document.getElementById('arahan-editor-textarea');
+      // Buang selection dengan set caret ke kedudukan semasa tanpa selection
+      const pos = textarea.selectionStart;
+      textarea.setSelectionRange(pos, pos);
+    }
 
+    // Cari semua kedudukan teks — TIDAK lompat, hanya kemas kini kiraan
     function arahanCariSemua() {
       const textarea = document.getElementById('arahan-editor-textarea');
-      const query = document.getElementById('arahan-search-input').value.toLowerCase();
+      const queryVal = document.getElementById('arahan-search-input').value.toLowerCase();
       const countEl = document.getElementById('arahan-search-count');
       arahanSearchMatches = [];
       arahanSearchIdx = -1;
 
-      if (!query) { countEl.textContent = ''; return; }
+      if (!queryVal) {
+        countEl.textContent = '';
+        countEl.style.color = 'var(--subtext)';
+        return;
+      }
 
       const teks = textarea.value.toLowerCase();
       let pos = 0;
       while (true) {
-        const idx = teks.indexOf(query, pos);
+        const idx = teks.indexOf(queryVal, pos);
         if (idx === -1) break;
         arahanSearchMatches.push(idx);
         pos = idx + 1;
@@ -3333,64 +3347,99 @@ function subscribeMyLaw() {
         countEl.textContent = '0/0';
         countEl.style.color = '#f87171';
       } else {
-        arahanSearchIdx = 0;
-        arahanLompatKe(0);
-        countEl.style.color = 'var(--subtext)';
+        // Kemas kini kiraan sahaja — TIDAK lompat semasa taip
+        countEl.textContent = `?/${arahanSearchMatches.length}`;
+        countEl.style.color = '#fcd34d';
       }
     }
 
-function arahanLompatKe(idx) {
+    function arahanLompatKe(idx) {
       const textarea = document.getElementById('arahan-editor-textarea');
       const countEl = document.getElementById('arahan-search-count');
-      const queryStr = document.getElementById('arahan-search-input').value;
+      const queryVal = document.getElementById('arahan-search-input').value;
 
-      if (!arahanSearchMatches.length) return;
+      if (!arahanSearchMatches.length) {
+        // Cuba cari dulu kalau belum cari
+        arahanCariSemua();
+        if (!arahanSearchMatches.length) return;
+      }
+
       if (idx < 0) idx = arahanSearchMatches.length - 1;
       if (idx >= arahanSearchMatches.length) idx = 0;
       arahanSearchIdx = idx;
 
       const matchPos = arahanSearchMatches[idx];
+      const matchEnd = matchPos + queryVal.length;
 
-      // Kira kedudukan scroll berdasarkan bilangan baris sebelum match
+      // Kira scroll position berdasarkan bilangan baris
       const teksSebelum = textarea.value.substring(0, matchPos);
       const barisSebelum = teksSebelum.split('\n').length;
-      // Dapatkan tinggi satu baris dari lineHeight sebenar
-      const computedStyle = window.getComputedStyle(textarea);
-      const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
-      const targetScrollTop = Math.max(0, (barisSebelum - 1) * lineHeight - (textarea.clientHeight / 2));
+      const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || 22;
+      const targetScrollTop = Math.max(0, (barisSebelum - 1) * lineHeight - textarea.clientHeight / 2);
 
-      // Set selection dulu, kemudian scroll, kemudian focus — susunan penting
-      textarea.setSelectionRange(matchPos, matchPos + queryStr.length);
+      // Scroll dulu sebelum focus supaya position betul
       textarea.scrollTop = targetScrollTop;
-      textarea.focus();
-      // Re-set selection selepas focus kerana focus boleh reset selection pada sesetengah browser
-      textarea.setSelectionRange(matchPos, matchPos + queryStr.length);
+
+      // Focus dan highlight — gunakan requestAnimationFrame untuk pastikan scroll settle dulu
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(matchPos, matchEnd);
+        // Scroll sekali lagi selepas focus kerana focus kadang reset scroll
+        textarea.scrollTop = targetScrollTop;
+      });
 
       countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
       countEl.style.color = '#38bdf8';
     }
 
-document.getElementById('arahan-search-input').addEventListener('input', arahanCariSemua);
+    // Semasa taip: cari sahaja, JANGAN lompat
+    document.getElementById('arahan-search-input').addEventListener('input', (e) => {
+      arahanCariSemua();
+    });
 
+    // Semua keydown dalam search input — elak bubble ke document
     document.getElementById('arahan-search-input').addEventListener('keydown', (e) => {
+      e.stopPropagation();
       if (e.key === 'Enter') {
         e.preventDefault();
         if (e.shiftKey) {
           arahanLompatKe(arahanSearchIdx - 1);
         } else {
-          arahanLompatKe(arahanSearchIdx + 1);
+          // Enter pertama: lompat ke hasil pertama
+          if (arahanSearchIdx === -1 && arahanSearchMatches.length > 0) {
+            arahanLompatKe(0);
+          } else {
+            arahanLompatKe(arahanSearchIdx + 1);
+          }
         }
       }
-      // Elak event bubble ke document listener
+      if (e.key === 'Escape') {
+        document.getElementById('arahan-search-bar').style.display = 'none';
+        arahanSearchMatches = [];
+        arahanSearchIdx = -1;
+        document.getElementById('arahan-search-count').textContent = '';
+      }
+    });
+
+    // Juga elak keyup bubble
+    document.getElementById('arahan-search-input').addEventListener('keyup', (e) => {
       e.stopPropagation();
     });
 
     document.getElementById('arahan-search-prev').addEventListener('click', () => {
-      arahanLompatKe(arahanSearchIdx - 1);
+      if (arahanSearchIdx === -1 && arahanSearchMatches.length > 0) {
+        arahanLompatKe(arahanSearchMatches.length - 1);
+      } else {
+        arahanLompatKe(arahanSearchIdx - 1);
+      }
     });
 
     document.getElementById('arahan-search-next').addEventListener('click', () => {
-      arahanLompatKe(arahanSearchIdx + 1);
+      if (arahanSearchIdx === -1 && arahanSearchMatches.length > 0) {
+        arahanLompatKe(0);
+      } else {
+        arahanLompatKe(arahanSearchIdx + 1);
+      }
     });
 
     document.getElementById('arahan-search-close').addEventListener('click', () => {
@@ -3398,6 +3447,7 @@ document.getElementById('arahan-search-input').addEventListener('input', arahanC
       arahanSearchMatches = [];
       arahanSearchIdx = -1;
       document.getElementById('arahan-search-count').textContent = '';
+      arahanBuangHighlight();
     });
     
     // ── PADAM VERSI DARI EDITOR ──
