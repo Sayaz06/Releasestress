@@ -3339,10 +3339,10 @@ function subscribeMyLaw() {
       }
     }
 
-    function arahanLompatKe(idx) {
+function arahanLompatKe(idx) {
       const textarea = document.getElementById('arahan-editor-textarea');
       const countEl = document.getElementById('arahan-search-count');
-      const query = document.getElementById('arahan-search-input').value;
+      const queryStr = document.getElementById('arahan-search-input').value;
 
       if (!arahanSearchMatches.length) return;
       if (idx < 0) idx = arahanSearchMatches.length - 1;
@@ -3350,20 +3350,27 @@ function subscribeMyLaw() {
       arahanSearchIdx = idx;
 
       const matchPos = arahanSearchMatches[idx];
-      textarea.focus();
-      textarea.setSelectionRange(matchPos, matchPos + query.length);
 
-      // Scroll textarea supaya selection nampak
+      // Kira kedudukan scroll berdasarkan bilangan baris sebelum match
       const teksSebelum = textarea.value.substring(0, matchPos);
       const barisSebelum = teksSebelum.split('\n').length;
-      const anggaran = barisSebelum * 20;
-      textarea.scrollTop = Math.max(0, anggaran - textarea.clientHeight / 2);
+      // Dapatkan tinggi satu baris dari lineHeight sebenar
+      const computedStyle = window.getComputedStyle(textarea);
+      const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
+      const targetScrollTop = Math.max(0, (barisSebelum - 1) * lineHeight - (textarea.clientHeight / 2));
+
+      // Set selection dulu, kemudian scroll, kemudian focus — susunan penting
+      textarea.setSelectionRange(matchPos, matchPos + queryStr.length);
+      textarea.scrollTop = targetScrollTop;
+      textarea.focus();
+      // Re-set selection selepas focus kerana focus boleh reset selection pada sesetengah browser
+      textarea.setSelectionRange(matchPos, matchPos + queryStr.length);
 
       countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
       countEl.style.color = '#38bdf8';
     }
 
-    document.getElementById('arahan-search-input').addEventListener('input', arahanCariSemua);
+document.getElementById('arahan-search-input').addEventListener('input', arahanCariSemua);
 
     document.getElementById('arahan-search-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -3374,6 +3381,23 @@ function subscribeMyLaw() {
           arahanLompatKe(arahanSearchIdx + 1);
         }
       }
+      // Elak event bubble ke document listener
+      e.stopPropagation();
+    });
+
+    document.getElementById('arahan-search-prev').addEventListener('click', () => {
+      arahanLompatKe(arahanSearchIdx - 1);
+    });
+
+    document.getElementById('arahan-search-next').addEventListener('click', () => {
+      arahanLompatKe(arahanSearchIdx + 1);
+    });
+
+    document.getElementById('arahan-search-close').addEventListener('click', () => {
+      document.getElementById('arahan-search-bar').style.display = 'none';
+      arahanSearchMatches = [];
+      arahanSearchIdx = -1;
+      document.getElementById('arahan-search-count').textContent = '';
     });
     
     // ── PADAM VERSI DARI EDITOR ──
@@ -6581,7 +6605,7 @@ document.addEventListener("click", (e) => {
     });
 
     // KAWALAN KEYBOARD BERSEPADU
-    document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", (e) => {
       if (isPrompterActive) {
         if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
            e.preventDefault();
@@ -6596,7 +6620,10 @@ document.addEventListener("click", (e) => {
         return; 
       }
 
-if (sectionTasbih.classList.contains('active')) {
+      // Jangan trigger apa-apa bila fokus dalam search bar arahan
+      if (document.activeElement && document.activeElement.id === 'arahan-search-input') return;
+
+      if (sectionTasbih.classList.contains('active')) {
         if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
         if (e.code === "NumpadEnter" || e.key === "Enter" || e.key === "Control") {
           e.preventDefault();
