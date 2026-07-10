@@ -3156,8 +3156,7 @@ function subscribeMyLaw() {
     function renderArahanTajuk() {
       const list = document.getElementById('arahan-tajuk-list');
       list.innerHTML = "";
-      const sorted = [...allArahanTajuk].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      if (!sorted.length) {
+      const sorted = [...allArahanTajuk].sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, {numeric: true}));      if (!sorted.length) {
         list.innerHTML = '<div class="empty-state">Belum ada tajuk arahan. Tekan Tambah.</div>';
         return;
       }
@@ -3202,7 +3201,7 @@ function subscribeMyLaw() {
       const list = document.getElementById('arahan-versi-list');
       list.innerHTML = "";
       const filtered = allArahanVersi.filter(v => v.tajukId === currentArahanTajukId);
-      const sorted = [...filtered].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      const sorted = [...filtered].sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, {numeric: true}));
       if (!sorted.length) {
         list.innerHTML = '<div class="empty-state">Belum ada versi. Tekan Tambah.</div>';
         return;
