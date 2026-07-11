@@ -932,7 +932,8 @@ body.dark-mode {
       <input id="peraturan-taip-input" type="text" 
         placeholder='Taip "saya sudah baca" untuk sambung...' 
         style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--grad1);border-radius:10px;color:#fff;padding:12px;font-size:0.95rem;text-align:center;outline:none;margin-top:14px;letter-spacing:0.05em;">
-      <div id="peraturan-pesan" style="font-size:0.75rem;color:#f87171;min-height:18px;text-align:center;margin-top:6px;"></div>
+<div id="peraturan-pesan" style="font-size:0.75rem;color:#f87171;min-height:18px;text-align:center;margin-top:6px;"></div>
+      <button id="btn-peraturan-go-mylaw" style="width:100%;padding:10px;border-radius:999px;background:rgba(139,92,246,0.15);border:1px solid var(--grad2);color:var(--grad2);font-size:0.82rem;font-weight:600;cursor:pointer;margin-top:8px;">✏️ Edit My Law</button>
     </div>
     <button id="btn-peraturan-continue" class="btn" style="display:none;" aria-hidden="true"></button>
 </div>
@@ -3561,8 +3562,26 @@ countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
     
     // NAVIGATION MY LAW
     btnGoMyLaw.addEventListener("click", () => showSection(sectionMyLaw));
-    btnBackHomeMyLaw.addEventListener("click", () => showSection(sectionHome));
+btnBackHomeMyLaw.addEventListener("click", () => {
+        if (localStorage.getItem('peraturanReturnPending') === 'true') {
+            localStorage.removeItem('peraturanReturnPending');
+            const inputTaip = document.getElementById('peraturan-taip-input');
+            const pesanEl = document.getElementById('peraturan-pesan');
+            if (inputTaip) inputTaip.value = '';
+            if (pesanEl) pesanEl.textContent = '';
+            peraturanOverlay.style.display = "flex";
+            setTimeout(() => { if (inputTaip) inputTaip.focus(); }, 300);
+        } else {
+            showSection(sectionHome);
+        }
+    });
 
+    document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () => {
+        peraturanOverlay.style.display = "none";
+        showSection(sectionMyLaw);
+        localStorage.setItem('peraturanReturnPending', 'true');
+    });
+    
     // FUNGSI: TUNJUK OVERLAY PERATURAN
 function showPeraturanOverlay(buttonText, callback) {
         peraturanCallback = callback;
