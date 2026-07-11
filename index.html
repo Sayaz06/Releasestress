@@ -3561,25 +3561,42 @@ countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
     }
     
 // NAVIGATION MY LAW
-    btnGoMyLaw.addEventListener("click", () => showSection(sectionMyLaw));
+    // Status: 1 = masuk dari Menu biasa, 0 = masuk dari button Rest
+    let myLawFromRest = 1;
+
+    btnGoMyLaw.addEventListener("click", () => {
+        myLawFromRest = 1;
+        updateMyLawBackButton();
+        showSection(sectionMyLaw);
+    });
+
+    function updateMyLawBackButton() {
+        if (myLawFromRest === 0) {
+            btnBackHomeMyLaw.textContent = "← Rest";
+            btnBackHomeMyLaw.style.borderColor = "var(--grad1)";
+            btnBackHomeMyLaw.style.color = "var(--grad2)";
+        } else {
+            btnBackHomeMyLaw.textContent = "← Menu";
+            btnBackHomeMyLaw.style.borderColor = "";
+            btnBackHomeMyLaw.style.color = "";
+        }
+    }
+
     btnBackHomeMyLaw.addEventListener("click", () => {
-        if (localStorage.getItem('peraturanReturnPending') === 'true') {
-            localStorage.removeItem('peraturanReturnPending');
-            const inputTaip = document.getElementById('peraturan-taip-input');
-            const pesanEl = document.getElementById('peraturan-pesan');
-            if (inputTaip) inputTaip.value = '';
-            if (pesanEl) pesanEl.textContent = '';
+        if (myLawFromRest === 0) {
+            myLawFromRest = 1;
+            updateMyLawBackButton();
             peraturanOverlay.style.display = "flex";
-            setTimeout(() => { if (inputTaip) inputTaip.focus(); }, 300);
         } else {
             showSection(sectionHome);
         }
     });
 
     document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () => {
+        myLawFromRest = 0;
+        updateMyLawBackButton();
         peraturanOverlay.style.display = "none";
         showSection(sectionMyLaw);
-        localStorage.setItem('peraturanReturnPending', 'true');
     });
 
     document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () => {
@@ -3676,7 +3693,7 @@ btnPeraturanContinue.addEventListener("click", () => {
     });
 
     // ── SISTEM TAIP UNTUK SAMBUNG PERATURAN ──
-    function cubasambungPeraturan() {
+function cubaSambungPeraturan() {
         const inputTaip = document.getElementById('peraturan-taip-input');
         const pesanEl = document.getElementById('peraturan-pesan');
         if (!inputTaip) return;
@@ -3685,6 +3702,8 @@ btnPeraturanContinue.addEventListener("click", () => {
             peraturanOverlay.style.display = "none";
             inputTaip.value = '';
             if (pesanEl) pesanEl.textContent = '';
+            myLawFromRest = 1;
+            updateMyLawBackButton();
             if (peraturanCallback) {
                 const cb = peraturanCallback;
                 peraturanCallback = null;
