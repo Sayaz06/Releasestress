@@ -3679,17 +3679,14 @@ function showPeraturanOverlay(buttonText, callback) {
         
 peraturanContent.scrollTop = 0;
 
-        // Reset input dan pesan
+// Reset input dan pesan
         const inputTaip = document.getElementById('peraturan-taip-input');
         const pesanEl = document.getElementById('peraturan-pesan');
         if (inputTaip) inputTaip.value = '';
         if (pesanEl) pesanEl.textContent = '';
-
+        pilikhFrasaRandom();
         peraturanOverlay.style.display = "flex";
-
-peraturanOverlay.style.display = "flex";
     }
-
     // EVENT LISTENER UNTUK BUTTON CONTINUE
 btnPeraturanContinue.addEventListener("click", () => {
         peraturanOverlay.style.display = "none";
@@ -3701,12 +3698,33 @@ btnPeraturanContinue.addEventListener("click", () => {
     });
 
     // ── SISTEM TAIP UNTUK SAMBUNG PERATURAN ──
-function cubaSambungPeraturan() {
+const PERATURAN_FRASA = [
+        'saya sudah baca',
+        'saya faham dan akan amalkan',
+        'saya berjanji akan ikut',
+        'saya sedar dan ingat',
+        'saya akan laksanakan',
+        'saya tidak akan lupa',
+        'ini peraturan hidup saya',
+        'saya komited dengan ini',
+        'saya akan patuhi peraturan ini',
+        'saya bertanggungjawab atas diri saya',
+    ];
+    let peraturanFrasaSemasa = PERATURAN_FRASA[0];
+
+    function pilikhFrasaRandom() {
+        const idx = Math.floor(Math.random() * PERATURAN_FRASA.length);
+        peraturanFrasaSemasa = PERATURAN_FRASA[idx];
+        const inputTaip = document.getElementById('peraturan-taip-input');
+        if (inputTaip) inputTaip.placeholder = `Taip "${peraturanFrasaSemasa}" untuk sambung...`;
+    }
+
+    function cubaSambungPeraturan() {
         const inputTaip = document.getElementById('peraturan-taip-input');
         const pesanEl = document.getElementById('peraturan-pesan');
         if (!inputTaip) return;
         const nilai = inputTaip.value.trim().toLowerCase();
-        if (nilai === 'saya sudah baca') {
+        if (nilai === peraturanFrasaSemasa) {
             peraturanOverlay.style.display = "none";
             inputTaip.value = '';
             if (pesanEl) pesanEl.textContent = '';
@@ -3718,7 +3736,7 @@ function cubaSambungPeraturan() {
                 cb();
             }
         } else {
-            if (pesanEl) pesanEl.textContent = '⚠️ Sila taip "saya sudah baca" dengan tepat untuk sambung.';
+            if (pesanEl) pesanEl.textContent = `⚠️ Sila taip "${peraturanFrasaSemasa}" dengan tepat untuk sambung.`;
             if (inputTaip) inputTaip.focus();
         }
     }
