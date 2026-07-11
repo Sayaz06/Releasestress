@@ -3582,20 +3582,28 @@ countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
         }
     }
 
-    btnBackHomeMyLaw.addEventListener("click", () => {
+btnBackHomeMyLaw.addEventListener("click", () => {
         if (myLawFromRest === 0) {
             myLawFromRest = 1;
             updateMyLawBackButton();
+            // Balik ke section yang disimpan sebelum masuk My Law
+            const returnSectionId = localStorage.getItem('peraturanReturnSection');
+            localStorage.removeItem('peraturanReturnSection');
+            const returnSection = returnSectionId ? document.getElementById(returnSectionId) : sectionTasbih;
+            showSection(returnSection || sectionTasbih);
             peraturanOverlay.style.display = "flex";
         } else {
             showSection(sectionHome);
         }
     });
 
-    document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () => {
+document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () => {
         myLawFromRest = 0;
         updateMyLawBackButton();
         peraturanOverlay.style.display = "none";
+        // Simpan section semasa sebelum masuk My Law
+        const activeSection = document.querySelector('.section.active');
+        if (activeSection) localStorage.setItem('peraturanReturnSection', activeSection.id);
         showSection(sectionMyLaw);
     });
 
