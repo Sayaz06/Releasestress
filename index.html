@@ -3560,9 +3560,9 @@ countEl.textContent = `${idx + 1}/${arahanSearchMatches.length}`;
       });
     }
     
-    // NAVIGATION MY LAW
+// NAVIGATION MY LAW
     btnGoMyLaw.addEventListener("click", () => showSection(sectionMyLaw));
-btnBackHomeMyLaw.addEventListener("click", () => {
+    btnBackHomeMyLaw.addEventListener("click", () => {
         if (localStorage.getItem('peraturanReturnPending') === 'true') {
             localStorage.removeItem('peraturanReturnPending');
             const inputTaip = document.getElementById('peraturan-taip-input');
@@ -3574,6 +3574,12 @@ btnBackHomeMyLaw.addEventListener("click", () => {
         } else {
             showSection(sectionHome);
         }
+    });
+
+    document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () => {
+        peraturanOverlay.style.display = "none";
+        showSection(sectionMyLaw);
+        localStorage.setItem('peraturanReturnPending', 'true');
     });
 
     document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () => {
