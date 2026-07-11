@@ -4086,10 +4086,10 @@ if (factMode || bahasaMode) {
           // Shortcut button ke laci aktif
           const existingShortcut = document.getElementById('btn-shortcut-laci-aktif');
           if (!existingShortcut) {
-            const btnShortcut = document.createElement('button');
+const btnShortcut = document.createElement('button');
             btnShortcut.id = 'btn-shortcut-laci-aktif';
             btnShortcut.className = 'btn btn-secondary btn-sm';
-            btnShortcut.style.cssText = 'margin-top:8px;width:100%;border-color:#fcd34d;color:#fcd34d;font-size:0.72rem;';
+            btnShortcut.style.cssText = 'border-color:#fcd34d;color:#fcd34d;font-size:0.72rem;';
             btnShortcut.addEventListener('click', () => {
               if (factMode) {
                 // Pergi ke laci fakta yang aktif
@@ -4114,7 +4114,10 @@ if (factMode || bahasaMode) {
                 }
               }
             });
-            modeBar.appendChild(btnShortcut);
+  // Alih button ke topbar
+            const topbarDiv = document.querySelector('#section-tasbih .topbar > div:first-child');
+            if (topbarDiv) topbarDiv.appendChild(btnShortcut);
+            else modeBar.appendChild(btnShortcut);
           }
 
 // Update label shortcut button
@@ -4140,7 +4143,7 @@ if (factMode || bahasaMode) {
               btnBahasaRest = document.createElement('button');
               btnBahasaRest.id = 'btn-bahasa-rest-cycle';
               btnBahasaRest.className = 'btn btn-secondary btn-sm';
-              btnBahasaRest.style.cssText = 'margin-top:6px;width:100%;border-color:#06b6d4;color:#22d3ee;font-size:0.72rem;';
+              btnBahasaRest.style.cssText = 'border-color:#06b6d4;color:#22d3ee;font-size:0.72rem;';
               btnBahasaRest.textContent = REST_CYCLES[bahasaRestCycleIdx].label;
               btnBahasaRest.addEventListener('click', () => {
                 bahasaRestCycleIdx = (bahasaRestCycleIdx + 1) % REST_CYCLES.length;
@@ -4152,7 +4155,9 @@ if (factMode || bahasaMode) {
                 showToast(`Bahasa Rest: Fasa 1 = ${cyc.fasa1}, Fasa 2 = ${cyc.fasa2}`);
                 renderCurrentFact();
               });
-              modeBar.appendChild(btnBahasaRest);
+const topbarDivB = document.querySelector('#section-tasbih .topbar > div:first-child');
+              if (topbarDivB) topbarDivB.appendChild(btnBahasaRest);
+              else modeBar.appendChild(btnBahasaRest);              
             } else {
               btnBahasaRest.textContent = REST_CYCLES[bahasaRestCycleIdx].label;
             }
