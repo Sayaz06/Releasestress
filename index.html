@@ -3723,8 +3723,8 @@ const PERATURAN_FRASA = [
         const inputTaip = document.getElementById('peraturan-taip-input');
         const pesanEl = document.getElementById('peraturan-pesan');
         if (!inputTaip) return;
-        const nilai = inputTaip.value.trim().toLowerCase();
-        if (nilai === peraturanFrasaSemasa) {
+const nilai = inputTaip.value.trim().toLowerCase();
+        if (nilai === peraturanFrasaSemasa.toLowerCase()) {
             peraturanOverlay.style.display = "none";
             inputTaip.value = '';
             if (pesanEl) pesanEl.textContent = '';
@@ -3741,15 +3741,15 @@ const PERATURAN_FRASA = [
         }
     }
 
-    document.getElementById('peraturan-taip-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') cubasambungPeraturan();
+document.getElementById('peraturan-taip-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') cubaSambungPeraturan();
     });
 
-document.getElementById('peraturan-taip-input').addEventListener('input', (e) => {
+    document.getElementById('peraturan-taip-input').addEventListener('input', (e) => {
         const nilai = e.target.value.trim().toLowerCase();
-        if (nilai === 'saya sudah baca') cubaSambungPeraturan();
+        if (nilai === peraturanFrasaSemasa.toLowerCase()) cubaSambungPeraturan();
     });
-
+    
     // ==========================================
     // PERSISTENCE (STATE MEMORY) 
     // ==========================================
