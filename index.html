@@ -125,8 +125,8 @@
     }
 .btn-sm {
       width: auto;
-      padding: 3px 6px;
-      font-size: 0.65rem;
+      padding: 2px 5px;
+      font-size: 0.6rem;
       border-radius: 999px;
     }
     .btn-active { 
@@ -1720,10 +1720,41 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
       </section>
 
-      <section id="section-tasbih" class="section">
-        <div class="topbar">
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+<section id="section-tasbih" class="section">
+        <!-- BUTTON KERANGKA APP -->
+        <div style="margin-bottom:8px;">
+          <button id="btn-go-kerangka" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#0f766e,#0d9488);border:none;color:white;font-weight:700;font-size:0.72rem;padding:7px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(13,148,136,0.3);">
+            🗂️ Kerangka App
+          </button>
+        </div>
+
+        <div class="topbar" style="margin-top:4px;">
+          <div style="display: flex; gap: 4px; flex-wrap: wrap;">
             <button id="btn-back-home-from-tasbih" class="btn btn-secondary btn-sm">← Menu</button>
+            <button id="btn-toggle-fact" class="btn btn-secondary btn-sm">Fakta: OFF</button>
+            <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
+            <button id="btn-toggle-rutin" class="btn btn-secondary btn-sm">Rutin: OFF</button>
+            <button id="btn-toggle-quran" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Quran: OFF</button>
+            <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
+            <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
+            <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
+            <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 10r5</button>
+            <button id="btn-toggle-tasbih-ui" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">UI: Bulatan</button>
+            <button id="btn-tm-pattern" class="btn btn-secondary btn-sm" style="display:none; border-color:#3b82f6;color:#60a5fa;">🌑 Bandul</button>
+            <button id="btn-music-tasbih" class="btn btn-secondary btn-sm">Muzik: OFF 🎵</button>
+          </div>
+          <div style="text-align:right; display:flex; gap:4px; flex-direction:column; align-items:flex-end;">
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+              <button id="btn-go-subjects" class="btn btn-secondary btn-sm">Laci Fakta</button>
+              <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
+              <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Rutin</button>
+              <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
+              <button id="btn-go-doa-times" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Laci Doa</button>
+              <button id="btn-go-hadis-times" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Laci Hadis</button>
+            </div>
+            <div class="topbar-sub" id="tasbih-date-label" style="margin-top: 2px;"></div>
+          </div>
+        </div>
             <button id="btn-toggle-fact" class="btn btn-secondary btn-sm">Fakta: OFF</button>
             <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
             <button id="btn-toggle-rutin" class="btn btn-secondary btn-sm">Rutin: OFF</button>
@@ -2238,6 +2269,51 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
         <div class="list" id="mode-history-list"></div>
       </section>
+
+  <!-- ══ KERANGKA APP ══ -->
+      <section id="section-kerangka" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-kerangka" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#0d9488;">🗂️ Kerangka App</div>
+            <div class="topbar-sub" id="kerangka-save-status" style="color:#34d399;">✓ Tersimpan</div>
+          </div>
+        </div>
+
+        <!-- INFO BOX -->
+        <div style="background:rgba(13,148,136,0.08);border:1px solid rgba(13,148,136,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#0d9488;margin-bottom:6px;">📌 Apa itu Kerangka App?</div>
+          <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+            Ruang ini menggantikan Google Docs anda untuk <strong>merancang penambahbaikan app</strong>.<br>
+            • Tulis idea, feature baru, atau bug yang perlu dibaiki<br>
+            • Auto-save selepas 2 saat berhenti menaip<br>
+            • <strong>Undo/Redo</strong> sehingga 10 langkah ke belakang/hadapan<br>
+            • History simpan sehingga <strong>10 versi terakhir</strong> — boleh pulihkan bila-bila masa<br>
+            • Tiada perlu padam — semua terurus di sini
+          </div>
+        </div>
+
+        <!-- TOOLBAR UNDO/REDO + SIMPAN VERSI -->
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap;align-items:center;">
+          <button id="btn-kerangka-undo" class="btn btn-secondary btn-sm" style="border-color:#6366f1;color:#a5b4fc;padding:5px 12px;" title="Undo">↩ Undo</button>
+          <button id="btn-kerangka-redo" class="btn btn-secondary btn-sm" style="border-color:#6366f1;color:#a5b4fc;padding:5px 12px;" title="Redo">↪ Redo</button>
+          <span id="kerangka-undo-count" style="font-size:0.65rem;color:var(--subtext);">0/10</span>
+          <div style="flex:1;"></div>
+          <button id="btn-kerangka-simpan-versi" class="btn btn-sm" style="background:linear-gradient(135deg,#0f766e,#0d9488);border:none;color:white;font-size:0.72rem;padding:5px 14px;">💾 Simpan Versi</button>
+        </div>
+
+        <!-- TEXTAREA UTAMA -->
+        <textarea id="kerangka-textarea"
+          placeholder="Tulis kerangka atau rancangan app anda di sini...&#10;&#10;Contoh:&#10;━━━━━━━━━━━━━━━━━━━━━━━━&#10;VERSI: v2.5 — Tarikh: 13/07/2026&#10;━━━━━━━━━━━━━━━━━━━━━━━━&#10;&#10;[FEATURE BARU]&#10;1. Tambah button X dalam page Y&#10;2. Ubah warna topbar&#10;&#10;[BUG FIX]&#10;1. Button Z tidak berfungsi pada mobile&#10;&#10;[SELESAI ✓]&#10;• Kerangka App page"
+          style="flex:1;width:100%;min-height:280px;resize:none;border-radius:12px;border:2px solid #0d9488;background:rgba(15,23,42,0.9);color:var(--text);padding:14px;font-size:0.95rem;line-height:1.7;outline:none;box-shadow:inset 0 0 20px rgba(13,148,136,0.08);font-family:system-ui,monospace;"></textarea>
+
+        <!-- HISTORY VERSI -->
+        <div style="margin-top:10px;flex-shrink:0;">
+          <div style="font-size:0.75rem;font-weight:700;color:#0d9488;margin-bottom:6px;">📋 History Versi (10 Terkini)</div>
+          <div id="kerangka-history-list" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;"></div>
+        </div>
+      </section>
+  
       <section id="section-notes" class="section">
         <div class="topbar">
           <button id="btn-back-home-from-notes" class="btn btn-secondary btn-sm">← Menu</button>
@@ -3082,6 +3158,272 @@ let myLawSaveTimer = null;
     let selectedTags = new Set();
     let selectedRating = 0;
 
+// ══════════════════════════════════════════
+    // KERANGKA APP SYSTEM
+    // ══════════════════════════════════════════
+    let kerangkaUndoStack = [];   // stack langkah ke belakang
+    let kerangkaRedoStack = [];   // stack langkah ke hadapan
+    let kerangkaSaveTimer = null;
+    let kerangkaLastSaved = '';   // untuk detect perubahan sebenar
+    const KERANGKA_MAX_UNDO = 10;
+    const KERANGKA_MAX_VERSI = 10;
+
+    const kerangkaTextarea = document.getElementById('kerangka-textarea');
+    const kerangkaSaveStatus = document.getElementById('kerangka-save-status');
+    const kerangkaUndoCount = document.getElementById('kerangka-undo-count');
+
+    // ── NAVIGATION ──
+    document.getElementById('btn-go-kerangka').addEventListener('click', () => {
+      showSection(document.getElementById('section-kerangka'));
+      loadKerangka();
+    });
+    document.getElementById('btn-back-kerangka').addEventListener('click', () => {
+      showSection(sectionTasbih);
+    });
+
+    // ── UPDATE UNDO/REDO COUNTER ──
+    function updateKerangkaUndoUI() {
+      if (kerangkaUndoCount) {
+        kerangkaUndoCount.textContent = `${kerangkaUndoStack.length}/${KERANGKA_MAX_UNDO}`;
+      }
+      const btnUndo = document.getElementById('btn-kerangka-undo');
+      const btnRedo = document.getElementById('btn-kerangka-redo');
+      if (btnUndo) {
+        btnUndo.style.opacity = kerangkaUndoStack.length > 0 ? '1' : '0.35';
+        btnUndo.style.cursor = kerangkaUndoStack.length > 0 ? 'pointer' : 'not-allowed';
+      }
+      if (btnRedo) {
+        btnRedo.style.opacity = kerangkaRedoStack.length > 0 ? '1' : '0.35';
+        btnRedo.style.cursor = kerangkaRedoStack.length > 0 ? 'pointer' : 'not-allowed';
+      }
+    }
+
+    // ── PUSH KE UNDO STACK ──
+    function kerangkaPushUndo(value) {
+      kerangkaUndoStack.push(value);
+      if (kerangkaUndoStack.length > KERANGKA_MAX_UNDO) {
+        kerangkaUndoStack.shift(); // buang yang paling lama
+      }
+      kerangkaRedoStack = []; // reset redo bila ada perubahan baru
+      updateKerangkaUndoUI();
+    }
+
+    // ── UNDO ──
+    document.getElementById('btn-kerangka-undo').addEventListener('click', () => {
+      if (!kerangkaUndoStack.length) return;
+      const current = kerangkaTextarea.value;
+      kerangkaRedoStack.push(current);
+      if (kerangkaRedoStack.length > KERANGKA_MAX_UNDO) kerangkaRedoStack.shift();
+      const prev = kerangkaUndoStack.pop();
+      kerangkaTextarea.value = prev;
+      updateKerangkaUndoUI();
+      kerangkaAutoSave(false); // save tanpa push undo baru
+    });
+
+    // ── REDO ──
+    document.getElementById('btn-kerangka-redo').addEventListener('click', () => {
+      if (!kerangkaRedoStack.length) return;
+      const current = kerangkaTextarea.value;
+      kerangkaUndoStack.push(current);
+      if (kerangkaUndoStack.length > KERANGKA_MAX_UNDO) kerangkaUndoStack.shift();
+      const next = kerangkaRedoStack.pop();
+      kerangkaTextarea.value = next;
+      updateKerangkaUndoUI();
+      kerangkaAutoSave(false);
+    });
+
+    // ── TEXTAREA INPUT: PUSH UNDO + TRIGGER AUTO-SAVE ──
+    let kerangkaTypingSnapshot = null; // snapshot sebelum user mula taip
+    kerangkaTextarea.addEventListener('focus', () => {
+      // Ambil snapshot masa mula focus — ini akan jadi undo point
+      kerangkaTypingSnapshot = kerangkaTextarea.value;
+    });
+
+    kerangkaTextarea.addEventListener('input', () => {
+      // Trigger auto-save (debounced 2 saat)
+      kerangkaAutoSave(true);
+    });
+
+    kerangkaTextarea.addEventListener('blur', () => {
+      // Bila tinggal textarea — push undo kalau ada perubahan
+      if (kerangkaTypingSnapshot !== null && kerangkaTextarea.value !== kerangkaTypingSnapshot) {
+        kerangkaPushUndo(kerangkaTypingSnapshot);
+        kerangkaTypingSnapshot = null;
+      }
+    });
+
+    // ── AUTO-SAVE (DEBOUNCED 2 SAAT) ──
+    function kerangkaAutoSave(showSaving = true) {
+      if (showSaving && kerangkaSaveStatus) {
+        kerangkaSaveStatus.textContent = '⏳ Menyimpan...';
+        kerangkaSaveStatus.style.color = '#fcd34d';
+      }
+      if (kerangkaSaveTimer) clearTimeout(kerangkaSaveTimer);
+      kerangkaSaveTimer = setTimeout(async () => {
+        if (!currentUser) return;
+        const nilai = kerangkaTextarea.value;
+        if (nilai === kerangkaLastSaved) {
+          // Tiada perubahan — jangan save
+          if (kerangkaSaveStatus) {
+            kerangkaSaveStatus.textContent = '✓ Tersimpan';
+            kerangkaSaveStatus.style.color = '#34d399';
+          }
+          return;
+        }
+        try {
+          await setDoc(doc(db, "users", currentUser.uid, "settings", "kerangkaDraft"), {
+            text: nilai,
+            updatedAt: Date.now()
+          }, { merge: true });
+          kerangkaLastSaved = nilai;
+          if (kerangkaSaveStatus) {
+            kerangkaSaveStatus.textContent = '✓ Auto-saved';
+            kerangkaSaveStatus.style.color = '#34d399';
+          }
+        } catch(e) {
+          if (kerangkaSaveStatus) {
+            kerangkaSaveStatus.textContent = '❌ Gagal simpan';
+            kerangkaSaveStatus.style.color = '#f87171';
+          }
+        }
+      }, 2000); // 2 saat — bagi ruang user taip
+    }
+
+    // ── SIMPAN VERSI MANUAL ──
+    document.getElementById('btn-kerangka-simpan-versi').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const nilai = kerangkaTextarea.value.trim();
+      if (!nilai) { showToast('Tiada kandungan untuk disimpan sebagai versi.'); return; }
+
+      try {
+        // Semak bilangan versi — kalau dah 10, padam yang paling lama
+        const q = query(
+          collection(db, "users", currentUser.uid, "kerangka_versi"),
+          orderBy("savedAt", "asc")
+        );
+        const snap = await getDocs(q);
+        if (snap.size >= KERANGKA_MAX_VERSI) {
+          // Padam versi paling lama
+          const toDelete = snap.docs.slice(0, snap.size - KERANGKA_MAX_VERSI + 1);
+          const batch = writeBatch(db);
+          toDelete.forEach(d => batch.delete(doc(db, "users", currentUser.uid, "kerangka_versi", d.id)));
+          await batch.commit();
+        }
+
+        // Simpan versi baru
+        const now = new Date();
+        const label = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        await addDoc(collection(db, "users", currentUser.uid, "kerangka_versi"), {
+          text: nilai,
+          label: label,
+          savedAt: Date.now(),
+          preview: nilai.substring(0, 80)
+        });
+
+        showToast(`💾 Versi disimpan — ${label}`);
+        renderKerangkaHistory();
+      } catch(e) {
+        showToast('❌ Gagal simpan versi: ' + e.message);
+      }
+    });
+
+    // ── LOAD DRAFT DARI FIRESTORE ──
+    async function loadKerangka() {
+      if (!currentUser) return;
+      try {
+        const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "kerangkaDraft"));
+        if (snap.exists()) {
+          const teks = snap.data().text || '';
+          kerangkaTextarea.value = teks;
+          kerangkaLastSaved = teks;
+        }
+        renderKerangkaHistory();
+        updateKerangkaUndoUI();
+      } catch(e) {
+        console.log("Gagal load kerangka:", e);
+      }
+    }
+
+    // ── RENDER HISTORY VERSI ──
+    async function renderKerangkaHistory() {
+      if (!currentUser) return;
+      const list = document.getElementById('kerangka-history-list');
+      if (!list) return;
+
+      try {
+        const q = query(
+          collection(db, "users", currentUser.uid, "kerangka_versi"),
+          orderBy("savedAt", "desc")
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          list.innerHTML = '<div style="font-size:0.72rem;color:var(--subtext);text-align:center;padding:8px;">Belum ada versi disimpan. Tekan "💾 Simpan Versi" untuk mula.</div>';
+          return;
+        }
+
+        list.innerHTML = '';
+        snap.docs.forEach((docSnap, idx) => {
+          const data = docSnap.data();
+          const isLatest = idx === 0;
+          const card = document.createElement('div');
+          card.style.cssText = `
+            display:flex;align-items:center;gap:8px;
+            background:rgba(13,148,136,0.06);
+            border:1px solid ${isLatest ? 'rgba(13,148,136,0.4)' : 'var(--border-soft)'};
+            border-radius:8px;padding:8px 10px;
+          `;
+          card.innerHTML = `
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                ${isLatest ? '<span style="font-size:0.6rem;background:#0d9488;color:white;padding:1px 6px;border-radius:999px;font-weight:700;">TERKINI</span>' : `<span style="font-size:0.65rem;color:var(--subtext);">v${snap.docs.length - idx}</span>`}
+                <span style="font-size:0.75rem;font-weight:600;color:${isLatest ? '#0d9488' : 'var(--text)'};">${data.label}</span>
+              </div>
+              <div style="font-size:0.68rem;color:var(--subtext);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${data.preview || ''}${data.preview && data.preview.length >= 80 ? '...' : ''}</div>
+            </div>
+            <button class="btn-pulih-kerangka" data-id="${docSnap.id}"
+              style="flex-shrink:0;padding:4px 10px;border-radius:999px;background:rgba(13,148,136,0.15);border:1px solid #0d9488;color:#0d9488;font-size:0.68rem;cursor:pointer;font-weight:600;">
+              Pulih
+            </button>
+            <button class="btn-padam-kerangka-versi" data-id="${docSnap.id}"
+              style="flex-shrink:0;padding:4px 8px;border-radius:999px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);color:#f87171;font-size:0.68rem;cursor:pointer;">
+              ✕
+            </button>
+          `;
+          list.appendChild(card);
+        });
+
+        // Event: Pulihkan versi
+        list.querySelectorAll('.btn-pulih-kerangka').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            const vSnap = await getDoc(doc(db, "users", currentUser.uid, "kerangka_versi", id));
+            if (!vSnap.exists()) return;
+            const teks = vSnap.data().text || '';
+            // Push undo sebelum pulih
+            kerangkaPushUndo(kerangkaTextarea.value);
+            kerangkaTextarea.value = teks;
+            kerangkaAutoSave(false);
+            showToast(`↩ Versi "${vSnap.data().label}" dipulihkan.`);
+          });
+        });
+
+        // Event: Padam versi
+        list.querySelectorAll('.btn-padam-kerangka-versi').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            if (!confirm('Padam versi ini?')) return;
+            await deleteDoc(doc(db, "users", currentUser.uid, "kerangka_versi", id));
+            renderKerangkaHistory();
+            showToast('🗑️ Versi dipadam.');
+          });
+        });
+
+      } catch(e) {
+        list.innerHTML = `<div style="font-size:0.72rem;color:#f87171;padding:8px;">Gagal muatkan history: ${e.message}</div>`;
+      }
+    }
+    
     // SUBSCRIBE MY LAW DARI FIRESTORE
 function subscribeMyLaw() {
         if (!currentUser) return;
@@ -3804,6 +4146,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
 if (sectionBahasaPerkataan) sectionBahasaPerkataan.classList.remove("active");
       if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
       document.getElementById('section-arahan-list')?.classList.remove("active");
+      document.getElementById('section-kerangka')?.classList.remove("active");
       document.getElementById('section-arahan-versi')?.classList.remove("active");
       document.getElementById('section-arahan-editor')?.classList.remove("active");
       if (sectionJournalHub)     sectionJournalHub.classList.remove("active");
