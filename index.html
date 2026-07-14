@@ -6917,7 +6917,7 @@ const ref = doc(collection(db, "users", currentUser.uid, janaPukalConfig.coll));
       }
     });
 
-// ==========================================
+    // ==========================================
     // LOGIK TOGGLE BUTTONS (FAKTA, RUTIN & 5 MODE)
     // ==========================================
 
@@ -6962,34 +6962,6 @@ if(btnToggleMainRestMax) {
         showToast(`Mode Rest: Fasa 1 = ${cyc.fasa1}, Fasa 2 = ${cyc.fasa2}`);
     });
 }
-
-let mainPlus5Used = false;
-
-function updateMainPlus5Btn() {
-    const btnPlus5 = document.getElementById('btn-main-plus5');
-    if (!btnPlus5) return;
-    const cyc = REST_CYCLES[mainRestCycleIdx];
-    const is5r5 = !!cyc.specialPlus5;
-    const showing = is5r5 && mainRestPhase === 1 && btnToggleMainRestMax.style.display !== 'none';
-    btnPlus5.style.display = showing ? 'inline-flex' : 'none';
-    btnPlus5.disabled = mainPlus5Used;
-    btnPlus5.style.opacity = mainPlus5Used ? '0.4' : '1';
-    btnPlus5.style.cursor = mainPlus5Used ? 'not-allowed' : 'pointer';
-    btnPlus5.textContent = mainPlus5Used ? '+5 ✓' : '+5';
-}
-
-document.getElementById('btn-main-plus5')?.addEventListener('click', () => {
-    if (mainPlus5Used) return;
-    const cyc = REST_CYCLES[mainRestCycleIdx];
-    if (!cyc.specialPlus5) return;
-    if (mainRestPhase !== 1) return;
-    mainPlus5Used = true;
-    mainRestCount += 5;
-    mainRestMax += 5;
-    updateMainPlus5Btn();
-    showToast(`+5 ditambah! Countdown sekarang: ${mainRestCount}`);
-    renderCurrentFact();
-});
     
 btnToggleFact.addEventListener("click", () => {
       factMode = !factMode;
