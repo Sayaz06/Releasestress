@@ -1894,7 +1894,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
 
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button id="btn-toggle-jogging-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 10r5</button>
+          <button id="btn-toggle-jogging-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 5r5</button>
+          <button id="btn-jogging-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
           <button id="btn-video-jogging" class="btn btn-secondary btn-sm btn-active">Video Rehat: ON</button>
             <button class="btn btn-secondary btn-sm btn-upload-video" style="border-color: #f59e0b; color: #fcd34d;">🎥 Set Link YouTube</button>
             <button id="btn-toggle-scroll" class="btn btn-secondary btn-sm">Mode Berlari: OFF</button>
@@ -1947,8 +1948,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
           
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button id="btn-toggle-memanah-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 10r5</button>
-          <button id="btn-video-memanah" class="btn btn-secondary btn-sm btn-active">Video Rehat: ON</button>
+            <button id="btn-toggle-memanah-max" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">Target: 5r5</button>
+            <button id="btn-memanah-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
+            <button id="btn-video-memanah" class="btn btn-secondary btn-sm btn-active">Video Rehat: ON</button>
             <button class="btn btn-secondary btn-sm btn-upload-video" style="border-color: #f59e0b; color: #fcd34d;">🎥 Set Link YouTube</button>
             <button id="btn-music-memanah" class="btn btn-secondary btn-sm">Muzik: OFF 🎵</button>
             <button id="btn-lock-memanah-scroll" class="btn btn-secondary btn-sm">Lock Scroll: OFF</button>
@@ -5239,7 +5241,34 @@ document.getElementById('btn-video-jogging').addEventListener('click', () => {
       document.getElementById('btn-video-memanah').classList.toggle('btn-active', isMemanahVideoRestON);
     });
 
- btnToggleJoggingMax.addEventListener("click", () => {
+let joggingPlus5Used = false;
+
+function updateJoggingPlus5Btn() {
+  const btn = document.getElementById('btn-jogging-plus5');
+  if (!btn) return;
+  const cyc = REST_CYCLES[joggingCycleIdx];
+  const is5r5 = !!cyc.specialPlus5;
+  btn.style.display = (is5r5 && joggingPhase === 1) ? 'inline-flex' : 'none';
+  btn.disabled = joggingPlus5Used;
+  btn.style.opacity = joggingPlus5Used ? '0.4' : '1';
+  btn.style.cursor = joggingPlus5Used ? 'not-allowed' : 'pointer';
+  btn.textContent = joggingPlus5Used ? '+5 ✓' : '+5';
+}
+
+document.getElementById('btn-jogging-plus5')?.addEventListener('click', () => {
+  if (joggingPlus5Used) return;
+  if (!REST_CYCLES[joggingCycleIdx].specialPlus5) return;
+  if (joggingPhase !== 1) return;
+  joggingPlus5Used = true;
+  joggingTapCount += 5;
+  maxJoggingCount += 5;
+  joggingCount.textContent = joggingTapCount;
+  joggingMiniCount.textContent = joggingTapCount;
+  updateJoggingPlus5Btn();
+  showToast(`+5 ditambah! Countdown sekarang: ${joggingTapCount}`);
+});
+
+btnToggleJoggingMax.addEventListener("click", () => {
     joggingCycleIdx = (joggingCycleIdx + 1) % REST_CYCLES.length;
     const cyc = REST_CYCLES[joggingCycleIdx];
     maxJoggingCount = cyc.fasa1;
@@ -5247,10 +5276,13 @@ document.getElementById('btn-video-jogging').addEventListener('click', () => {
     joggingCount.textContent = joggingTapCount;
     joggingMiniCount.textContent = joggingTapCount;
     joggingPhase = 1;
+    joggingPlus5Used = false;
     btnToggleJoggingMax.textContent = cyc.label;
     document.getElementById('jogging-phase-label').textContent = "Fasa 1: Baki Hafalan";
+    updateJoggingPlus5Btn();
     showToast(`Jogging: Fasa 1 = ${cyc.fasa1}, Fasa 2 = ${cyc.fasa2}`);
-});   
+});
+
 
 btnBackJogging.addEventListener("click", () => {
   showSection(sectionDrawer);
@@ -5332,11 +5364,13 @@ function saveJoggingDraft() {
     }
 
     function openJoggingMode(data) {
-      currentJoggingDrawerId = data.id;
+currentJoggingDrawerId = data.id;
       joggingPhase = 1;
+      joggingPlus5Used = false;
+      updateJoggingPlus5Btn();
       document.getElementById('jogging-phase-label').textContent = "Fasa 1: Baki Hafalan";
       joggingTapCount = maxJoggingCount;
-      isJoggingBlocked = false; 
+      isJoggingBlocked = false;
       
       isJoggingNotaLocked = true;
       btnLockJoggingNota.textContent = "Lock Nota: ON";
@@ -6928,8 +6962,8 @@ function updateMainPlus5Btn() {
   if (!btnPlus5) return;
   const cyc = REST_CYCLES[mainRestCycleIdx];
   const is5r5 = !!cyc.specialPlus5;
-  const targetVisible = btnToggleMainRestMax && btnToggleMainRestMax.style.display !== 'none';
-  btnPlus5.style.display = (is5r5 && mainRestPhase === 1 && targetVisible) ? 'inline-flex' : 'none';
+  const modeAktif = (factMode || bahasaMode) && learningMode === 2 && mainRestPhase === 1;
+  btnPlus5.style.display = (is5r5 && modeAktif) ? 'inline-flex' : 'none';
   btnPlus5.disabled = mainPlus5Used;
   btnPlus5.style.opacity = mainPlus5Used ? '0.4' : '1';
   btnPlus5.style.cursor = mainPlus5Used ? 'not-allowed' : 'pointer';
@@ -7594,6 +7628,33 @@ function getComboMsg(combo) {
 let mSt  = {pat:0, x:0, y:0, vx:3.5, vy:2.5, ang:0, lastChange:0, combo:0};
 let tmSt = {pat:0, x:0, y:0, vx:3.5, vy:2.5, ang:0, lastChange:0, combo:0};
 
+let memanahPlus5Used = false;
+
+function updateMemanahPlus5Btn() {
+  const btn = document.getElementById('btn-memanah-plus5');
+  if (!btn) return;
+  const cyc = REST_CYCLES[memanahCycleIdx];
+  const is5r5 = !!cyc.specialPlus5;
+  btn.style.display = (is5r5 && memanahPhase === 1) ? 'inline-flex' : 'none';
+  btn.disabled = memanahPlus5Used;
+  btn.style.opacity = memanahPlus5Used ? '0.4' : '1';
+  btn.style.cursor = memanahPlus5Used ? 'not-allowed' : 'pointer';
+  btn.textContent = memanahPlus5Used ? '+5 ✓' : '+5';
+}
+
+document.getElementById('btn-memanah-plus5')?.addEventListener('click', () => {
+  if (memanahPlus5Used) return;
+  if (!REST_CYCLES[memanahCycleIdx].specialPlus5) return;
+  if (memanahPhase !== 1) return;
+  memanahPlus5Used = true;
+  memanahTapCount += 5;
+  maxMemanahCount += 5;
+  memanahMiniCount.textContent = memanahTapCount;
+  memanahBigCount.textContent = memanahTapCount;
+  updateMemanahPlus5Btn();
+  showToast(`+5 ditambah! Countdown sekarang: ${memanahTapCount}`);
+});
+
 btnToggleMemanahMax.addEventListener("click", () => {
     memanahCycleIdx = (memanahCycleIdx + 1) % REST_CYCLES.length;
     const cyc = REST_CYCLES[memanahCycleIdx];
@@ -7602,8 +7663,10 @@ btnToggleMemanahMax.addEventListener("click", () => {
     memanahMiniCount.textContent = memanahTapCount;
     memanahBigCount.textContent = memanahTapCount;
     memanahPhase = 1;
+    memanahPlus5Used = false;
     btnToggleMemanahMax.textContent = cyc.label;
     document.getElementById('memanah-phase-label').textContent = "Fasa 1";
+    updateMemanahPlus5Btn();
     showToast(`Memanah: Fasa 1 = ${cyc.fasa1}, Fasa 2 = ${cyc.fasa2}`);
 });
 
@@ -7689,11 +7752,13 @@ function saveMemanahDraft() {
     }
 
     function openMemanahMode(data) {
-      currentMemanahDrawerId = data.id;
+currentMemanahDrawerId = data.id;
       memanahPhase = 1;
+      memanahPlus5Used = false;
+      updateMemanahPlus5Btn();
       document.getElementById('memanah-phase-label').textContent = "Fasa 1";
       memanahTapCount = maxMemanahCount;
-      memanahTotalScore = 0; 
+      memanahTotalScore = 0;
       memanahTotalPausedTime = 0;
       memanahPaused = false;
       isJoggingBlocked = false; 
