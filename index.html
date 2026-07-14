@@ -13222,8 +13222,8 @@ function renderReminderList() {
   today.setHours(0, 0, 0, 0);
 
   sorted.forEach(data => {
-    const tarikhObj = data.tarikh ? new Date(data.tarikh) : null;
-    const diffHari = tarikhObj ? Math.ceil((tarikhObj - today) / (1000 * 60 * 60 * 24)) : null;
+const tarikhObj = data.tarikh ? new Date(data.tarikh + 'T00:00:00') : null;
+  const diffHari = tarikhObj ? Math.round((tarikhObj - today) / (1000 * 60 * 60 * 24)) : null;
 
     let statusWarna = '#9ca3af';
     let statusLabel = 'Tiada tarikh';
@@ -13337,8 +13337,8 @@ function semakReminderAktif() {
   for (const reminder of allReminders) {
     if (!reminder.tarikh || !reminder.aktif) continue;
 
-    const tarikhReminder = new Date(reminder.tarikh);
-    tarikhReminder.setHours(0, 0, 0, 0);
+const tarikhReminder = new Date(reminder.tarikh + 'T00:00:00');
+  tarikhReminder.setHours(0, 0, 0, 0);
     const diffHari = Math.ceil((tarikhReminder - today) / (1000 * 60 * 60 * 24));
 
     // Tunjuk kalau 0, 1, atau 3 hari lagi
@@ -13359,7 +13359,7 @@ function tunjukReminderOverlay(reminder, diffHari) {
   else if (diffHari === 1) labelHari = '⚠️ ESOK';
   else if (diffHari === 3) labelHari = '📅 3 HARI LAGI';
 
-  const tarikhObj = new Date(reminder.tarikh);
+  const tarikhObj = new Date(reminder.tarikh + 'T00:00:00');
   const tarikhLabel = tarikhObj.toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const masaLabel = reminder.masa ? ` • ${reminder.masa}` : '';
 
