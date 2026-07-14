@@ -1185,7 +1185,21 @@ body.dark-mode {
     <div id="reminder-overlay-countdown" style="font-size:0.7rem;color:#6b7280;text-align:center;"></div>
   </div>
 </div>
-  
+
+<!-- POPUP REHAT BAHASA -->
+<div id="bahasa-rehat-popup" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();">
+  <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #06b6d4;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <div style="font-size:2rem;">🌟</div>
+    <div style="font-size:1.1rem;font-weight:700;color:#22d3ee;text-align:center;">Tahniah! Satu Laci Selesai!</div>
+    <div style="font-size:0.88rem;color:#e5e7eb;text-align:center;line-height:1.7;">
+      Anda telah menguasai satu laci bahasa. Untuk elak burnout dan bagi masa otak proses maklumat baru, pergi ke Al-Quran dahulu sebelum sambung laci seterusnya.<br><br>
+      <span style="color:#9ca3af;font-size:0.78rem;">Taip perkataan di bawah untuk teruskan:</span>
+    </div>
+    <input id="bahasa-rehat-input" type="text" placeholder='Taip "pergi ke quran" untuk teruskan...' style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #06b6d4;border-radius:10px;color:#fff;padding:12px;font-size:1rem;text-align:center;outline:none;">
+    <div id="bahasa-rehat-pesan" style="font-size:0.75rem;color:#f87171;min-height:18px;text-align:center;"></div>
+  </div>
+</div>
+
 <!-- POPUP REHAT GLOBAL -->
       <div id="fs-rehat-popup" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();">
       <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
@@ -2960,6 +2974,43 @@ btnSambungFasa2.addEventListener('click', () => {
         currentRestCallback = null;
         showPeraturanOverlay("Sambung Fasa 2", savedCallback);
     });
+// ── POPUP REHAT BAHASA ──
+    function bukaBahasaRehatPopup(callback) {
+      const popup = document.getElementById('bahasa-rehat-popup');
+      const input = document.getElementById('bahasa-rehat-input');
+      const pesanEl = document.getElementById('bahasa-rehat-pesan');
+      if (!popup) { callback(); return; }
+
+      input.value = '';
+      pesanEl.textContent = '';
+      popup.style.display = 'flex';
+
+      const newInput = input.cloneNode(true);
+      input.parentNode.replaceChild(newInput, input);
+
+      function cuba() {
+        if (newInput.value.trim().toLowerCase() === 'pergi ke quran') {
+          popup.style.display = 'none';
+          newInput.value = '';
+          pesanEl.textContent = '';
+          // OFF bahasa, ON Al-Quran
+          bahasaMode = false;
+          const btnBhs = document.getElementById('btn-toggle-bahasa');
+          if (btnBhs) { btnBhs.textContent = '📝 Bahasa: OFF'; btnBhs.classList.remove('btn-active'); }
+          activateRoutineMode('quran');
+          callback();
+        } else {
+          pesanEl.textContent = '⚠️ Sila taip "pergi ke quran" dengan tepat.';
+          newInput.focus();
+        }
+      }
+
+      newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') cuba(); });
+      newInput.addEventListener('input', () => {
+        if (newInput.value.trim().toLowerCase() === 'pergi ke quran') cuba();
+      });
+    }
+
     // MUZIK GLOBAL
     const bgMusic = new Audio('backgroundmusic.mp3');
     bgMusic.loop = true;
@@ -5885,7 +5936,6 @@ else if (learningMode === 2) { // Rest Mode
           bahasaEjaanCount--;
           if (bahasaEjaanCount <= 0) {
             bahasaEjaanCount = 5;
-            // Terus ke fasa 1 (kandungan pertama laci ini)
             currentFactIndex++;
             if (currentFactIndex >= allFacts.length) currentFactIndex = 0;
             bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
@@ -5921,15 +5971,16 @@ else if (learningMode === 2) { // Rest Mode
                     else     { mainRestPhase   = 1; mainRestCount   = cyc.fasa1; mainPlus5Used = false; }
                     isFlipped = false;
                     updateMainPlus5Btn();
-                    // Laci seterusnya — mula dari fasa ejaan
-                    currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-                    // Skip ke fasa ejaan laci seterusnya
-                    while (currentFactIndex < allFacts.length && !allFacts[currentFactIndex].isFasaEjaan && !allFacts[currentFactIndex].isTamat) {
-                      currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-                    }
                     bahasaEjaanCount = 5;
                     syncIndexToFirestore(currentFactIndex);
-                    triggerFadeAnimation(renderCurrentFact);
+                    // Tunjuk popup rehat bahasa sebelum ke laci seterusnya
+                    bukaBahasaRehatPopup(() => {
+                      currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+                      while (currentFactIndex < allFacts.length && !allFacts[currentFactIndex].isFasaEjaan && !allFacts[currentFactIndex].isTamat) {
+                        currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+                      }
+                      triggerFadeAnimation(renderCurrentFact);
+                    });
                 }, 2600);
             }
         } else {
