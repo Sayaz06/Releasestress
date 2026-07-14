@@ -2975,32 +2975,41 @@ btnSambungFasa2.addEventListener('click', () => {
         showPeraturanOverlay("Sambung Fasa 2", savedCallback);
     });
 // ── POPUP REHAT BAHASA ──
-    function bukaBahasaRehatPopup(callback) {
+function bukaBahasaRehatPopup(callback) {
       const popup = document.getElementById('bahasa-rehat-popup');
-      const input = document.getElementById('bahasa-rehat-input');
-      const pesanEl = document.getElementById('bahasa-rehat-pesan');
       if (!popup) { callback(); return; }
 
-      input.value = '';
-      pesanEl.textContent = '';
+      // Reset input
+      const oldInput = document.getElementById('bahasa-rehat-input');
+      const pesanEl = document.getElementById('bahasa-rehat-pesan');
+      if (pesanEl) pesanEl.textContent = '';
+
+      // Clone input untuk buang event lama
+      const newInput = oldInput.cloneNode(true);
+      newInput.value = '';
+      oldInput.parentNode.replaceChild(newInput, oldInput);
+
       popup.style.display = 'flex';
 
-      const newInput = input.cloneNode(true);
-      input.parentNode.replaceChild(newInput, input);
-
+      // Jangan auto focus — elak keyboard phone keluar sendiri
       function cuba() {
         if (newInput.value.trim().toLowerCase() === 'pergi ke quran') {
           popup.style.display = 'none';
           newInput.value = '';
-          pesanEl.textContent = '';
-          // OFF bahasa, ON Al-Quran
+          if (pesanEl) pesanEl.textContent = '';
+          // OFF bahasa
           bahasaMode = false;
           const btnBhs = document.getElementById('btn-toggle-bahasa');
           if (btnBhs) { btnBhs.textContent = '📝 Bahasa: OFF'; btnBhs.classList.remove('btn-active'); }
+          factDisplayBox.classList.remove('show');
+          // ON Al-Quran — simpan index bahasa semasa dulu
+          const savedBahasaIndex = currentFactIndex;
           activateRoutineMode('quran');
+          // Restore index bahasa untuk bila ON balik nanti
+          localStorage.setItem('bahasaLastIndex', savedBahasaIndex);
           callback();
         } else {
-          pesanEl.textContent = '⚠️ Sila taip "pergi ke quran" dengan tepat.';
+          if (pesanEl) pesanEl.textContent = '⚠️ Sila taip "pergi ke quran" dengan tepat.';
           newInput.focus();
         }
       }
@@ -5727,7 +5736,7 @@ function renderCurrentFact() {
         return;
       }
 
-      // ── FASA EJAAN BAHASA ──
+// ── FASA EJAAN BAHASA ──
       if (bahasaMode && data.isFasaEjaan) {
         factTitleEl.textContent = `[ Fasa Ejaan ]`;
         factContentEl.innerHTML = `<span style="font-size:1.4rem; font-weight:700; color:#22d3ee;">${data.text}</span>`;
@@ -5735,7 +5744,9 @@ function renderCurrentFact() {
         factContentEl.style.lineHeight = '';
         factContentEl.style.fontFamily = '';
         factHintEl.style.display = 'block';
-        factHintEl.textContent = `(Eja dan sebut perkataan ini — ${bahasaEjaanCount} kali sebelum teruskan)`;
+        // Tunjuk countdown semasa — kalau 5 bermakna belum mula lagi
+        const bakinya = bahasaEjaanCount <= 0 ? 5 : bahasaEjaanCount;
+        factHintEl.textContent = `(Eja dan sebut perkataan ini — ${bakinya} kali sebelum teruskan)`;
         factHintEl.style.color = '#22d3ee';
         btnSpeak.style.display = 'flex';
         btnCopyFact.style.display = 'none';
@@ -5972,14 +5983,18 @@ else if (learningMode === 2) { // Rest Mode
                     isFlipped = false;
                     updateMainPlus5Btn();
                     bahasaEjaanCount = 5;
+                    // Pergi ke laci seterusnya dulu
+                    const nextIndex = (currentFactIndex + 1) % allFacts.length;
+                    let targetIndex = nextIndex;
+                    while (targetIndex < allFacts.length && !allFacts[targetIndex].isFasaEjaan && !allFacts[targetIndex].isTamat) {
+                      targetIndex = (targetIndex + 1) % allFacts.length;
+                    }
+                    currentFactIndex = targetIndex;
                     syncIndexToFirestore(currentFactIndex);
-                    // Tunjuk popup rehat bahasa sebelum ke laci seterusnya
-                    bukaBahasaRehatPopup(() => {
-                      currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-                      while (currentFactIndex < allFacts.length && !allFacts[currentFactIndex].isFasaEjaan && !allFacts[currentFactIndex].isTamat) {
-                        currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-                      }
-                      triggerFadeAnimation(renderCurrentFact);
+                    // Render tajuk laci baru dulu, KEMUDIAN popup
+                    triggerFadeAnimation(() => {
+                      renderCurrentFact();
+                      setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
                     });
                 }, 2600);
             }
@@ -9990,6 +10005,8 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
 
 function rebuildBahasa() {
       if (!bahasaMode) return;
+      // Reset ejaan count bila rebuild
+      bahasaEjaanCount = 5;
       const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
       if (!activePerkataan) {
         factTitleEl.textContent = "";
@@ -10048,12 +10065,19 @@ function rebuildBahasa() {
         }
       });
 
-      let savedIndex = activePerkataan.lastIndex || 0;
+// Semak kalau ada saved index dari popup bahasa
+      const bahasaSavedLocal = localStorage.getItem('bahasaLastIndex');
+      let savedIndex = 0;
+      if (bahasaSavedLocal !== null) {
+        savedIndex = parseInt(bahasaSavedLocal);
+        localStorage.removeItem('bahasaLastIndex');
+      } else {
+        savedIndex = activePerkataan.lastIndex || 0;
+      }
       if (savedIndex >= allFacts.length) savedIndex = 0;
       currentFactIndex = savedIndex;
-      // Pastikan mula dari fasa ejaan
+      // Pastikan mula dari fasa ejaan laci semasa
       if (allFacts[currentFactIndex] && !allFacts[currentFactIndex].isFasaEjaan && !allFacts[currentFactIndex].isTamat) {
-        // Cari fasa ejaan laci semasa
         for (let i = currentFactIndex; i >= 0; i--) {
           if (allFacts[i].isFasaEjaan && allFacts[i].drawerId === allFacts[currentFactIndex].drawerId) {
             currentFactIndex = i;
