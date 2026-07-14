@@ -1760,7 +1760,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
-            <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 10r5</button>
+            <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 5r5</button>
+            <button id="btn-main-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
             <button id="btn-main-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
             <button id="btn-toggle-tasbih-ui" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">UI: Bulatan</button>
             <button id="btn-tm-pattern" class="btn btn-secondary btn-sm" style="display:none; border-color:#3b82f6;color:#60a5fa;">🌑 Bandul</button>
@@ -3000,8 +3001,8 @@ btnSambungFasa2.addEventListener('click', () => {
     let currentRepeatCount = 33; 
 
     // VARIABLES BARU: MODE REST DI MAIN SCREEN (TASBIH)
-let mainRestMax = 10;
-let mainRestCount = 10;
+let mainRestMax = 5;
+let mainRestCount = 5;
 let mainRestPhase = 1;
 
     // ── CYCLE STATES untuk semua mode rest ──
@@ -3012,12 +3013,12 @@ const REST_CYCLES = [
   { label: 'Target: 5r10',  fasa1: 5,  fasa2: 10 },
   { label: 'Target: 5r5',   fasa1: 5,  fasa2: 5, specialPlus5: true },
 ];
-let mainRestCycleIdx   = 2;
-let joggingCycleIdx    = 2;
-let memanahCycleIdx    = 2;
-let bahasaRestCycleIdx = 2;
-let bahasaRestMax      = 10;
-let bahasaRestCount    = 10;
+let mainRestCycleIdx   = 4;
+let joggingCycleIdx    = 4;
+let memanahCycleIdx    = 4;
+let bahasaRestCycleIdx = 4;
+let bahasaRestMax      = 5;
+let bahasaRestCount    = 5;
 let bahasaRestPhase    = 1;
     
 let allSems = [];
@@ -3046,14 +3047,14 @@ let allSems = [];
 
     // STATE JOGGING & MEMANAH
     let currentJoggingDrawerId = null;
-    let maxJoggingCount = 10;
-    let joggingTapCount = 10;
+    let maxJoggingCount = 5;
+    let joggingTapCount = 5;
     let joggingPhase = 1;
     let isFullScreenJogging = false; 
     let isJoggingBlocked = false; 
     let isJoggingNotaLocked = true; 
 
-    let maxMemanahCount = 10;
+    let maxMemanahCount = 5;
     let memanahPhase = 1;
     let quranFontSize = parseFloat(localStorage.getItem('quranFontSize') || '2.0');
     let isJoggingVideoRestON = true;
@@ -4790,12 +4791,13 @@ if (learningMode === 2) {
     const cyc    = REST_CYCLES[isB ? bahasaRestCycleIdx : mainRestCycleIdx];
     const targetFasa1 = cyc.fasa1;
     const targetFasa2 = cyc.fasa2;
-    const targetSekarang = rPhase === 1 ? targetFasa1 : targetFasa2;
+    const targetSekarang = rPhase === 1 ? (isB ? bahasaRestMax : mainRestMax) : targetFasa2;
     const labelSeterusnya = rPhase === 1
         ? `→ rehat → Fasa 2: ${targetFasa2} kali`
         : `→ laci seterusnya`;
     modeBarSub.innerHTML = `Fasa ${rPhase}: <strong style="color:#a78bfa;font-size:1.1rem;">${rCount}</strong> / ${targetSekarang} &nbsp;${labelSeterusnya}`;
-    modeBarSub.style.color = rCount <= 5 ? '#fbbf24' : 'var(--subtext)';
+    modeBarSub.style.color = rCount <= 3 ? '#fbbf24' : 'var(--subtext)';
+    updateMainPlus5Btn();
           } else {
             modeBarSub.textContent = factMode
               ? 'Mode Fakta tidak mengurangkan countdown tasbih harian'
@@ -5836,7 +5838,7 @@ else if (learningMode === 2) { // Rest Mode
             if (rPhase === 1) {
 showVideoRest(() => {
     if (isB) { bahasaRestPhase = 2; bahasaRestCount = cyc.fasa2; }
-    else     { mainRestPhase   = 2; mainRestCount   = cyc.fasa2; }
+    else     { mainRestPhase   = 2; mainRestCount   = cyc.fasa2; mainPlus5Used = false; }
     updateMainPlus5Btn();
     renderCurrentFact();
     showToast("Fasa 2 bermula!");
@@ -6919,6 +6921,33 @@ const ref = doc(collection(db, "users", currentUser.uid, janaPukalConfig.coll));
     // LOGIK TOGGLE BUTTONS (FAKTA, RUTIN & 5 MODE)
     // ==========================================
 
+let mainPlus5Used = false;
+
+function updateMainPlus5Btn() {
+  const btnPlus5 = document.getElementById('btn-main-plus5');
+  if (!btnPlus5) return;
+  const cyc = REST_CYCLES[mainRestCycleIdx];
+  const is5r5 = !!cyc.specialPlus5;
+  const targetVisible = btnToggleMainRestMax && btnToggleMainRestMax.style.display !== 'none';
+  btnPlus5.style.display = (is5r5 && mainRestPhase === 1 && targetVisible) ? 'inline-flex' : 'none';
+  btnPlus5.disabled = mainPlus5Used;
+  btnPlus5.style.opacity = mainPlus5Used ? '0.4' : '1';
+  btnPlus5.style.cursor = mainPlus5Used ? 'not-allowed' : 'pointer';
+  btnPlus5.textContent = mainPlus5Used ? '+5 ✓' : '+5';
+}
+
+document.getElementById('btn-main-plus5')?.addEventListener('click', () => {
+  if (mainPlus5Used) return;
+  if (!REST_CYCLES[mainRestCycleIdx].specialPlus5) return;
+  if (mainRestPhase !== 1) return;
+  mainPlus5Used = true;
+  mainRestCount += 5;
+  mainRestMax += 5;
+  updateMainPlus5Btn();
+  showToast(`+5 ditambah! Countdown sekarang: ${mainRestCount}`);
+  renderCurrentFact();
+});
+
 if(btnToggleMainRestMax) {
     btnToggleMainRestMax.addEventListener("click", () => {
         mainRestCycleIdx = (mainRestCycleIdx + 1) % REST_CYCLES.length;
@@ -6926,8 +6955,8 @@ if(btnToggleMainRestMax) {
         mainRestMax   = cyc.fasa1;
         mainRestCount = cyc.fasa1;
         mainRestPhase = 1;
-        btnToggleMainRestMax.textContent = cyc.label;
         mainPlus5Used = false;
+        btnToggleMainRestMax.textContent = cyc.label;
         updateMainPlus5Btn();
         renderCurrentFact();
         showToast(`Mode Rest: Fasa 1 = ${cyc.fasa1}, Fasa 2 = ${cyc.fasa2}`);
