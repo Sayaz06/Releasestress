@@ -1170,6 +1170,22 @@ body.dark-mode {
   </div>
 </div>
 
+<!-- ══ REMINDER OVERLAY ══ -->
+<div id="reminder-overlay" style="display:none;position:fixed;inset:0;z-index:999999999;background:rgba(2,6,23,0.97);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);">
+  <div style="width:100%;max-width:400px;background:rgba(15,23,42,0.98);border:2px solid #f59e0b;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <div style="font-size:2.5rem;">⏰</div>
+    <div id="reminder-overlay-hari" style="font-size:0.75rem;background:rgba(245,158,11,0.2);color:#fcd34d;padding:4px 14px;border-radius:999px;font-weight:700;"></div>
+    <div style="font-size:1.1rem;font-weight:700;color:#fcd34d;text-align:center;">Peringatan Temu Janji</div>
+    <div id="reminder-overlay-nama" style="font-size:1.3rem;font-weight:700;color:white;text-align:center;line-height:1.4;"></div>
+    <div id="reminder-overlay-tarikh" style="font-size:0.85rem;color:#9ca3af;text-align:center;"></div>
+    <div id="reminder-overlay-nota" style="font-size:0.82rem;color:#e5e7eb;text-align:center;line-height:1.6;background:rgba(0,0,0,0.3);border-radius:10px;padding:10px 14px;width:100%;display:none;"></div>
+    <div style="font-size:0.72rem;color:#9ca3af;text-align:center;">Taip di bawah untuk tutup peringatan ini buat sementara</div>
+    <input id="reminder-overlay-input" type="text" placeholder='Taip "saya ingat" untuk tutup...' style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #f59e0b;border-radius:10px;color:#fff;padding:12px;font-size:1rem;text-align:center;outline:none;">
+    <div id="reminder-overlay-pesan" style="font-size:0.72rem;color:#f87171;min-height:16px;text-align:center;"></div>
+    <div id="reminder-overlay-countdown" style="font-size:0.7rem;color:#6b7280;text-align:center;"></div>
+  </div>
+</div>
+  
 <!-- POPUP REHAT GLOBAL -->
       <div id="fs-rehat-popup" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999999;background:rgba(2,6,23,0.96);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);pointer-events:all;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();">
       <div style="width:100%;max-width:380px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
@@ -1724,10 +1740,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
       </section>
 
 <section id="section-tasbih" class="section">
-        <!-- BUTTON KERANGKA APP -->
-        <div style="margin-bottom:8px;">
-          <button id="btn-go-kerangka" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#0f766e,#0d9488);border:none;color:white;font-weight:700;font-size:0.72rem;padding:7px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(13,148,136,0.3);">
+<!-- BUTTON KERANGKA APP + REMINDER -->
+        <div style="margin-bottom:8px;display:flex;gap:6px;">
+          <button id="btn-go-kerangka" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0f766e,#0d9488);border:none;color:white;font-weight:700;font-size:0.72rem;padding:7px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(13,148,136,0.3);">
             🗂️ Kerangka App
+          </button>
+          <button id="btn-go-reminder" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;font-weight:700;font-size:0.72rem;padding:7px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(217,119,6,0.3);">
+            ⏰ Reminder
           </button>
         </div>
 
@@ -2336,6 +2355,74 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
   <div class="row" style="margin-top:10px;flex-shrink:0;">
     <span class="chip" style="border-color:#0d9488;color:#34d399;">Auto-save ke Firestore</span>
     <button id="btn-delete-bacaan-tajuk" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">🗑️ Padam Tajuk</button>
+  </div>
+</section>
+
+<!-- ══ SECTION REMINDER ══ -->
+<section id="section-reminder" class="section">
+  <div class="topbar" style="flex-shrink:0;">
+    <button id="btn-back-home-reminder" class="btn btn-secondary btn-sm">← Tasbih</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#f59e0b;">⏰ Reminder</div>
+      <div class="topbar-sub">Peringatan temu janji</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+    <div style="font-size:0.78rem;font-weight:700;color:#f59e0b;margin-bottom:6px;">📌 Cara Kerja</div>
+    <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+      • Tambah temu janji → tetapkan tarikh & masa<br>
+      • <strong>3 hari sebelum</strong> — peringatan setiap 10 minit<br>
+      • <strong>1 hari sebelum</strong> — peringatan setiap 10 minit<br>
+      • <strong>Hari temu janji</strong> — peringatan setiap 5 minit<br>
+      • Taip <strong>"saya ingat"</strong> untuk tutup buat sementara
+    </div>
+  </div>
+
+  <button id="btn-add-reminder" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+    + Tambah Temu Janji
+  </button>
+
+  <div class="list" id="reminder-list" style="padding:10px;"></div>
+</section>
+
+<!-- ══ SECTION REMINDER EDITOR ══ -->
+<section id="section-reminder-editor" class="section">
+  <div class="topbar" style="flex-shrink:0;">
+    <button id="btn-back-reminder-list" class="btn btn-secondary btn-sm">← Reminder</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#f59e0b;" id="reminder-editor-title">Temu Janji</div>
+      <div class="topbar-sub" id="reminder-editor-save-status" style="color:#34d399;">✓ Tersimpan</div>
+    </div>
+  </div>
+
+  <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;display:flex;flex-direction:column;gap:12px;">
+
+    <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px;">
+      <div style="font-size:0.75rem;font-weight:700;color:#f59e0b;margin-bottom:10px;">📋 Maklumat Temu Janji</div>
+
+      <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Nama / Tajuk</div>
+      <input id="reminder-nama-input" type="text" placeholder="Cth: Temuduga Syarikat ABC, Appointment Doktor..." class="drawer-input-box" style="width:100%;margin-bottom:12px;font-size:1rem;font-weight:600;">
+
+      <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Tarikh</div>
+      <input id="reminder-tarikh-input" type="date" class="drawer-input-box" style="width:100%;margin-bottom:12px;color:var(--text);background:rgba(0,0,0,0.3);">
+
+      <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Masa (Pilihan)</div>
+      <input id="reminder-masa-input" type="time" class="drawer-input-box" style="width:100%;margin-bottom:12px;color:var(--text);background:rgba(0,0,0,0.3);">
+
+      <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Nota Tambahan (Pilihan)</div>
+      <textarea id="reminder-nota-input" class="drawer-notes" style="min-height:80px;resize:none;width:100%;" placeholder="Alamat, perkara yang perlu dibawa, soalan yang nak ditanya..."></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px;">
+      <button id="btn-save-reminder" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">
+        💾 Simpan
+      </button>
+      <button id="btn-delete-reminder" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">
+        🗑️ Padam
+      </button>
+    </div>
+
   </div>
 </section>
       
@@ -4285,6 +4372,8 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-kerangka')?.classList.remove("active");
       document.getElementById('section-bacaan-tambahan')?.classList.remove("active");
       document.getElementById('section-bacaan-laci')?.classList.remove("active");
+      document.getElementById('section-reminder')?.classList.remove("active");
+      document.getElementById('section-reminder-editor')?.classList.remove("active");
       document.getElementById('section-arahan-versi')?.classList.remove("active");
       document.getElementById('section-arahan-editor')?.classList.remove("active");
       if (sectionJournalHub)     sectionJournalHub.classList.remove("active");
@@ -6658,6 +6747,8 @@ showSection(secToShow);
         subscribeNewModes();
         subscribeArahan();
         subscribeBacaanTambahan();
+        subscribeReminders();
+        mulakanReminderCheck();
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
         
@@ -13071,7 +13162,294 @@ function subscribeBacaanTambahan() {
     }
   );
 }
-    
+
+// ══════════════════════════════════════════
+// REMINDER SYSTEM
+// ══════════════════════════════════════════
+let allReminders = [];
+let currentReminderId = null;
+let reminderCheckInterval = null;
+let reminderSnoozedUntil = 0;
+let reminderCountdownInterval = null;
+
+// ── NAVIGATION ──
+document.getElementById('btn-go-reminder').addEventListener('click', () => {
+  const sec = document.getElementById('section-reminder');
+  if (sec) { showSection(sec); renderReminderList(); }
+});
+
+document.getElementById('btn-back-home-reminder').addEventListener('click', () => {
+  showSection(sectionTasbih);
+});
+
+document.getElementById('btn-back-reminder-list').addEventListener('click', () => {
+  const sec = document.getElementById('section-reminder');
+  if (sec) { showSection(sec); renderReminderList(); }
+});
+
+// ── TAMBAH REMINDER ──
+document.getElementById('btn-add-reminder').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const newRef = await addDoc(collection(db, "users", currentUser.uid, "reminders"), {
+    nama: '',
+    tarikh: '',
+    masa: '',
+    nota: '',
+    aktif: true,
+    createdAt: Date.now()
+  });
+  bukaReminderEditor({ id: newRef.id, nama: '', tarikh: '', masa: '', nota: '', aktif: true });
+});
+
+// ── RENDER LIST ──
+function renderReminderList() {
+  const list = document.getElementById('reminder-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const sorted = [...allReminders].sort((a, b) => {
+    if (!a.tarikh) return 1;
+    if (!b.tarikh) return -1;
+    return new Date(a.tarikh) - new Date(b.tarikh);
+  });
+
+  if (!sorted.length) {
+    list.innerHTML = '<div class="empty-state">Belum ada temu janji. Tekan "+ Tambah".</div>';
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  sorted.forEach(data => {
+    const tarikhObj = data.tarikh ? new Date(data.tarikh) : null;
+    const diffHari = tarikhObj ? Math.ceil((tarikhObj - today) / (1000 * 60 * 60 * 24)) : null;
+
+    let statusWarna = '#9ca3af';
+    let statusLabel = 'Tiada tarikh';
+    if (diffHari !== null) {
+      if (diffHari < 0) { statusWarna = '#6b7280'; statusLabel = `${Math.abs(diffHari)} hari lepas`; }
+      else if (diffHari === 0) { statusWarna = '#f87171'; statusLabel = '🔴 HARI INI!'; }
+      else if (diffHari === 1) { statusWarna = '#fb923c'; statusLabel = '🟠 Esok'; }
+      else if (diffHari <= 3) { statusWarna = '#fcd34d'; statusLabel = `🟡 ${diffHari} hari lagi`; }
+      else { statusWarna = '#34d399'; statusLabel = `${diffHari} hari lagi`; }
+    }
+
+    const tarikhLabel = tarikhObj ? tarikhObj.toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const masaLabel = data.masa ? ` — ${data.masa}` : '';
+
+    const div = document.createElement('div');
+    div.className = 'drawer-card';
+    div.style.cssText = `cursor:pointer;border:1px solid ${diffHari === 0 ? 'rgba(248,113,113,0.5)' : diffHari !== null && diffHari <= 3 ? 'rgba(245,158,11,0.4)' : 'var(--border-soft)'};`;
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-size:0.7rem;color:${statusWarna};font-weight:700;">${statusLabel}</span>
+          </div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text);margin-bottom:2px;">${data.nama || '(Tiada nama)'}</div>
+          <div style="font-size:0.75rem;color:var(--subtext);">${tarikhLabel}${masaLabel}</div>
+          ${data.nota ? `<div style="font-size:0.72rem;color:var(--subtext);margin-top:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${data.nota.substring(0, 50)}${data.nota.length > 50 ? '...' : ''}</div>` : ''}
+        </div>
+        <button class="btn btn-secondary btn-sm btn-edit-reminder" style="flex-shrink:0;font-size:0.72rem;" data-id="${data.id}">Edit</button>
+      </div>
+    `;
+
+    div.querySelector('.btn-edit-reminder').addEventListener('click', (e) => {
+      e.stopPropagation();
+      bukaReminderEditor(data);
+    });
+
+    div.addEventListener('click', () => bukaReminderEditor(data));
+    list.appendChild(div);
+  });
+}
+
+// ── BUKA EDITOR ──
+function bukaReminderEditor(data) {
+  currentReminderId = data.id;
+  const titleEl = document.getElementById('reminder-editor-title');
+  const statusEl = document.getElementById('reminder-editor-save-status');
+  if (titleEl) titleEl.textContent = data.nama || 'Temu Janji Baru';
+  if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+  document.getElementById('reminder-nama-input').value = data.nama || '';
+  document.getElementById('reminder-tarikh-input').value = data.tarikh || '';
+  document.getElementById('reminder-masa-input').value = data.masa || '';
+  document.getElementById('reminder-nota-input').value = data.nota || '';
+  const sec = document.getElementById('section-reminder-editor');
+  if (sec) showSection(sec);
+}
+
+// ── SIMPAN REMINDER ──
+document.getElementById('btn-save-reminder').addEventListener('click', async () => {
+  if (!currentUser || !currentReminderId) return;
+  const nama = document.getElementById('reminder-nama-input').value.trim();
+  const tarikh = document.getElementById('reminder-tarikh-input').value;
+  const masa = document.getElementById('reminder-masa-input').value;
+  const nota = document.getElementById('reminder-nota-input').value.trim();
+
+  if (!nama) { showToast('⚠️ Sila masukkan nama temu janji.'); return; }
+  if (!tarikh) { showToast('⚠️ Sila pilih tarikh.'); return; }
+
+  const statusEl = document.getElementById('reminder-editor-save-status');
+  if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
+
+  await setDoc(doc(db, "users", currentUser.uid, "reminders", currentReminderId), {
+    nama, tarikh, masa, nota, aktif: true, updatedAt: Date.now()
+  }, { merge: true });
+
+  if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+  document.getElementById('reminder-editor-title').textContent = nama;
+  showToast(`✅ "${nama}" berjaya disimpan!`);
+
+  const idx = allReminders.findIndex(r => r.id === currentReminderId);
+  if (idx !== -1) {
+    allReminders[idx] = { ...allReminders[idx], nama, tarikh, masa, nota };
+  }
+});
+
+// ── PADAM REMINDER ──
+document.getElementById('btn-delete-reminder').addEventListener('click', async () => {
+  if (!currentUser || !currentReminderId) return;
+  const data = allReminders.find(r => r.id === currentReminderId);
+  if (!confirm(`Padam "${data?.nama || 'temu janji ini'}"?`)) return;
+  await deleteDoc(doc(db, "users", currentUser.uid, "reminders", currentReminderId));
+  showToast('🗑️ Temu janji dipadam.');
+  const sec = document.getElementById('section-reminder');
+  if (sec) { showSection(sec); renderReminderList(); }
+});
+
+// ── SEMAK REMINDER AKTIF ──
+function semakReminderAktif() {
+  if (!allReminders.length) return;
+
+  const now = new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Kalau masih dalam snooze, jangan tunjuk
+  if (Date.now() < reminderSnoozedUntil) return;
+
+  // Kalau overlay dah terbuka, jangan tunjuk lagi
+  const overlay = document.getElementById('reminder-overlay');
+  if (overlay && overlay.style.display === 'flex') return;
+
+  for (const reminder of allReminders) {
+    if (!reminder.tarikh || !reminder.aktif) continue;
+
+    const tarikhReminder = new Date(reminder.tarikh);
+    tarikhReminder.setHours(0, 0, 0, 0);
+    const diffHari = Math.ceil((tarikhReminder - today) / (1000 * 60 * 60 * 24));
+
+    // Tunjuk kalau 0, 1, atau 3 hari lagi
+    if (diffHari === 0 || diffHari === 1 || diffHari === 3) {
+      tunjukReminderOverlay(reminder, diffHari);
+      break;
+    }
+  }
+}
+
+// ── TUNJUK OVERLAY ──
+function tunjukReminderOverlay(reminder, diffHari) {
+  const overlay = document.getElementById('reminder-overlay');
+  if (!overlay) return;
+
+  let labelHari = '';
+  if (diffHari === 0) labelHari = '⏰ HARI INI!';
+  else if (diffHari === 1) labelHari = '⚠️ ESOK';
+  else if (diffHari === 3) labelHari = '📅 3 HARI LAGI';
+
+  const tarikhObj = new Date(reminder.tarikh);
+  const tarikhLabel = tarikhObj.toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const masaLabel = reminder.masa ? ` • ${reminder.masa}` : '';
+
+  document.getElementById('reminder-overlay-hari').textContent = labelHari;
+  document.getElementById('reminder-overlay-nama').textContent = reminder.nama || 'Temu Janji';
+  document.getElementById('reminder-overlay-tarikh').textContent = tarikhLabel + masaLabel;
+
+  const notaEl = document.getElementById('reminder-overlay-nota');
+  if (reminder.nota) {
+    notaEl.textContent = reminder.nota;
+    notaEl.style.display = 'block';
+  } else {
+    notaEl.style.display = 'none';
+  }
+
+  // Reset input
+  const input = document.getElementById('reminder-overlay-input');
+  const pesan = document.getElementById('reminder-overlay-pesan');
+  if (input) input.value = '';
+  if (pesan) pesan.textContent = '';
+
+  overlay.style.display = 'flex';
+
+  // Countdown untuk keluar balik
+  const intervalMinit = diffHari === 0 ? 5 : 10;
+  const snoozeMs = intervalMinit * 60 * 1000;
+
+  if (reminderCountdownInterval) clearInterval(reminderCountdownInterval);
+
+  const countdownEl = document.getElementById('reminder-overlay-countdown');
+  reminderCountdownInterval = setInterval(() => {
+    const baki = Math.max(0, reminderSnoozedUntil - Date.now());
+    if (baki <= 0) {
+      clearInterval(reminderCountdownInterval);
+      if (countdownEl) countdownEl.textContent = '';
+      return;
+    }
+    const minit = Math.floor(baki / 60000);
+    const saat = Math.floor((baki % 60000) / 1000);
+    if (countdownEl) countdownEl.textContent = `Keluar semula dalam ${minit}:${String(saat).padStart(2,'0')} minit`;
+  }, 1000);
+
+  // Setup input
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
+
+  function cubaIngat() {
+    if (newInput.value.trim().toLowerCase() === 'saya ingat') {
+      overlay.style.display = 'none';
+      reminderSnoozedUntil = Date.now() + snoozeMs;
+      newInput.value = '';
+      if (pesan) pesan.textContent = '';
+      if (reminderCountdownInterval) clearInterval(reminderCountdownInterval);
+      showToast(`✅ Peringatan ditutup. Keluar semula dalam ${intervalMinit} minit.`);
+    } else {
+      if (pesan) pesan.textContent = '⚠️ Sila taip "saya ingat" untuk tutup.';
+      newInput.focus();
+    }
+  }
+
+  newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') cubaIngat(); });
+  newInput.addEventListener('input', () => {
+    if (newInput.value.trim().toLowerCase() === 'saya ingat') cubaIngat();
+  });
+}
+
+// ── SUBSCRIBE FIRESTORE ──
+function subscribeReminders() {
+  if (!currentUser) return;
+  onSnapshot(
+    query(collection(db, "users", currentUser.uid, "reminders"), orderBy("createdAt", "asc")),
+    snap => {
+      allReminders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const sec = document.getElementById('section-reminder');
+      if (sec && sec.classList.contains('active')) renderReminderList();
+    }
+  );
+}
+
+// ── START INTERVAL SEMAK REMINDER ──
+function mulakanReminderCheck() {
+  if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+  // Semak setiap 1 minit
+  reminderCheckInterval = setInterval(() => {
+    semakReminderAktif();
+  }, 60 * 1000);
+  // Semak terus masa mula
+  setTimeout(() => semakReminderAktif(), 3000);
+}
+            
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
