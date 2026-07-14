@@ -1612,10 +1612,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           Tulis peraturan hidup anda. Auto-save ke Firestore. Akan dipaparkan masa istirahat fasa.
         </div>
         <textarea id="my-law-textarea" placeholder="Tulis peraturan hidup anda di sini...&#10;&#10;Contoh:&#10;1. Jangan tinggalkan solat&#10;2. Jaga lidah dari kata-kata sia-sia&#10;3. Tidur sebelum jam 11 malam"></textarea>
-        <div class="row" style="margin-top: 10px; flex-shrink: 0;">
+<div class="row" style="margin-top: 10px; flex-shrink: 0;">
           <span class="chip">Auto-save ke Firestore</span>
           <span class="chip" id="my-law-save-indicator" style="border-color: var(--grad2); color: var(--grad2);">✓ Tersimpan</span>
         </div>
+        <button id="btn-go-bacaan-tambahan" class="btn btn-sm" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0f766e,#0d9488);border:none;color:white;font-size:0.82rem;padding:8px 14px;border-radius:10px;">
+          📚 Urus Bacaan Tambahan
+        </button>
       </section>
 
 <!-- LACI BAHASA -->
@@ -2289,7 +2292,53 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <div id="kerangka-history-list" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;"></div>
         </div>
       </section>
-  
+
+<!-- ══ BACAAN TAMBAHAN ══ -->
+<section id="section-bacaan-tambahan" class="section">
+  <div class="topbar" style="flex-shrink:0;">
+    <button id="btn-back-mylaw-bacaan" class="btn btn-secondary btn-sm">← My Law</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#34d399;">📚 Bacaan Tambahan</div>
+      <div class="topbar-sub">Lapisan rest tambahan</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+    <div style="font-size:0.78rem;font-weight:700;color:#34d399;margin-bottom:6px;">📌 Cara Kerja</div>
+    <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+      Setiap tajuk yang anda tambah akan jadi <strong>satu lapisan rest</strong> selepas "Peraturan Saya".<br>
+      • Tambah tajuk → tekan tajuk → taip kandungan<br>
+      • Pengguna mesti taip <strong>"saya sudah baca"</strong> sebelum boleh ke lapisan seterusnya
+    </div>
+  </div>
+
+  <button id="btn-add-bacaan-tajuk" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#0f766e,#0d9488);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+    + Tambah Tajuk Bacaan
+  </button>
+
+  <div class="list" id="bacaan-tajuk-list" style="padding:10px;"></div>
+</section>
+
+<!-- ══ BACAAN LACI EDITOR ══ -->
+<section id="section-bacaan-laci" class="section">
+  <div class="topbar" style="flex-shrink:0;">
+    <button id="btn-back-bacaan-tajuk" class="btn btn-secondary btn-sm">← Bacaan Tambahan</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#34d399;" id="bacaan-laci-title">Bacaan</div>
+      <div class="topbar-sub" id="bacaan-laci-save-status" style="color:#34d399;">✓ Tersimpan</div>
+    </div>
+  </div>
+
+  <textarea id="bacaan-laci-textarea"
+    placeholder="Tulis kandungan bacaan di sini..."
+    style="flex:1;width:100%;min-height:300px;resize:none;border-radius:12px;border:2px solid #0d9488;background:rgba(15,23,42,0.9);color:var(--text);padding:14px;font-size:0.95rem;line-height:1.7;outline:none;"></textarea>
+
+  <div class="row" style="margin-top:10px;flex-shrink:0;">
+    <span class="chip" style="border-color:#0d9488;color:#34d399;">Auto-save ke Firestore</span>
+    <button id="btn-delete-bacaan-tajuk" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">🗑️ Padam Tajuk</button>
+  </div>
+</section>
+      
       <section id="section-notes" class="section">
         <div class="topbar">
           <button id="btn-back-home-from-notes" class="btn btn-secondary btn-sm">← Menu</button>
@@ -3933,78 +3982,189 @@ document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () =
     
     // FUNGSI: TUNJUK OVERLAY PERATURAN
 function showPeraturanOverlay(buttonText, callback) {
-        peraturanCallback = callback;
-        btnPeraturanContinue.textContent = buttonText;
-        
-        const lawText = (myLawText || "").trim();
-        if (!lawText) {
-            peraturanContent.innerHTML = '<span style="color: var(--subtext); font-style: italic;">📌 Sila set "My Law" terlebih dahulu di Menu Utama untuk paparkan peraturan anda di sini.</span>';
-            peraturanContent.scrollTop = 0;
-            peraturanOverlay.style.display = "flex";
-            return;
-        }
+  restLayerIndex = 0;
+  restFinalCallback = callback;
+  tunjukLayerSemasa(buttonText);
+}
 
-        // Pecah teks kepada ayat-ayat (setiap baris bukan kosong = 1 ayat)
-      const semuaAyat = lawText.split('.').map(l => l.trim()).filter(l => l.length > 0);
-          
-        if (semuaAyat.length === 0) {
-            peraturanContent.textContent = lawText;
-            peraturanContent.scrollTop = 0;
-            peraturanOverlay.style.display = "flex";
-            return;
-        }
+function tunjukLayerSemasa(buttonText) {
+  const bacaanAdaKandungan = allBacaanTajuk.filter(t => t.text && t.text.trim());
 
-        // Pastikan index tidak melebihi jumlah ayat
-        if (myLawSentenceIndex >= semuaAyat.length) {
-            myLawSentenceIndex = 0;
-        }
-
-        // Ambil 2 ayat bermula dari kedudukan semasa
-        const ayat1 = semuaAyat[myLawSentenceIndex] || '';
-        const ayat2 = semuaAyat[myLawSentenceIndex + 1] || '';
-        
-        const ayatDipapar = ayat2 ? `${ayat1}\n\n${ayat2}` : ayat1;
-
-        // Papar ayat dengan info kedudukan
-        const jumlah = semuaAyat.length;
-        const mula = myLawSentenceIndex + 1;
-        const tamat = Math.min(myLawSentenceIndex + 2, jumlah);
-
-        peraturanContent.innerHTML = '';
-        
-        // Info kedudukan
-        const infoEl = document.createElement('div');
-        infoEl.style.cssText = 'font-size:0.72rem;color:#a5b4fc;text-align:center;margin-bottom:14px;padding:6px 10px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:8px;';
-        infoEl.textContent = `📖 Ayat ${mula}–${tamat} daripada ${jumlah}`;
-        peraturanContent.appendChild(infoEl);
-
-        // Teks ayat
-        const teksEl = document.createElement('div');
-        teksEl.style.cssText = 'font-size:1.15rem;line-height:1.8;color:#e5e7eb;white-space:pre-wrap;word-wrap:break-word;';
-        teksEl.textContent = ayatDipapar;
-        peraturanContent.appendChild(teksEl);
-
-        // Kemaskini index untuk rest seterusnya (+2 ayat)
-        const nextIndex = myLawSentenceIndex + 2;
-        myLawSentenceIndex = nextIndex >= semuaAyat.length ? 0 : nextIndex;
-
-        // Simpan kedudukan ke Firebase
-        if (currentUser) {
-            const refLaw = doc(db, "users", currentUser.uid, "settings", "myLaw");
-            setDoc(refLaw, { sentenceIndex: myLawSentenceIndex }, { merge: true })
-                .catch(e => console.log("Gagal simpan sentenceIndex:", e));
-        }
-        
-peraturanContent.scrollTop = 0;
-
-// Reset input dan pesan
-        const inputTaip = document.getElementById('peraturan-taip-input');
-        const pesanEl = document.getElementById('peraturan-pesan');
-        if (inputTaip) inputTaip.value = '';
-        if (pesanEl) pesanEl.textContent = '';
-        pilikhFrasaRandom();
-        peraturanOverlay.style.display = "flex";
+  if (restLayerIndex === 0) {
+    tunjukPeraturanSaya(buttonText);
+  } else {
+    const bacaanIdx = restLayerIndex - 1;
+    if (bacaanIdx >= bacaanAdaKandungan.length) {
+      peraturanOverlay.style.display = 'none';
+      if (restFinalCallback) {
+        const cb = restFinalCallback;
+        restFinalCallback = null;
+        cb();
+      }
+      return;
     }
+    const bacaan = bacaanAdaKandungan[bacaanIdx];
+    tunjukBacaanTambahan(bacaan, bacaanIdx, bacaanAdaKandungan.length);
+  }
+}
+
+function tunjukPeraturanSaya(buttonText) {
+  peraturanCallback = null;
+
+  const lawText = (myLawText || "").trim();
+
+  if (!lawText) {
+    peraturanContent.innerHTML = '<span style="color:var(--subtext);font-style:italic;">📌 Sila set "My Law" terlebih dahulu.</span>';
+    peraturanContent.scrollTop = 0;
+    peraturanOverlay.style.display = "flex";
+    _setupPeraturanInput(buttonText, () => {
+      restLayerIndex++;
+      tunjukLayerSemasa(buttonText);
+    });
+    return;
+  }
+
+  const semuaAyat = lawText.split('.').map(l => l.trim()).filter(l => l.length > 0);
+
+  if (!semuaAyat.length) {
+    peraturanContent.textContent = lawText;
+    peraturanContent.scrollTop = 0;
+    peraturanOverlay.style.display = "flex";
+    _setupPeraturanInput(buttonText, () => {
+      restLayerIndex++;
+      tunjukLayerSemasa(buttonText);
+    });
+    return;
+  }
+
+  if (myLawSentenceIndex >= semuaAyat.length) myLawSentenceIndex = 0;
+
+  const ayat1 = semuaAyat[myLawSentenceIndex] || '';
+  const ayat2 = semuaAyat[myLawSentenceIndex + 1] || '';
+  const ayatDipapar = ayat2 ? `${ayat1}\n\n${ayat2}` : ayat1;
+  const jumlah = semuaAyat.length;
+  const mula = myLawSentenceIndex + 1;
+  const tamat = Math.min(myLawSentenceIndex + 2, jumlah);
+
+  peraturanContent.innerHTML = '';
+
+  const infoEl = document.createElement('div');
+  infoEl.style.cssText = 'font-size:0.72rem;color:#a5b4fc;text-align:center;margin-bottom:14px;padding:6px 10px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:8px;';
+  infoEl.textContent = `📖 Peraturan Saya — Ayat ${mula}–${tamat} daripada ${jumlah}`;
+  peraturanContent.appendChild(infoEl);
+
+  const teksEl = document.createElement('div');
+  teksEl.style.cssText = 'font-size:1.15rem;line-height:1.8;color:#e5e7eb;white-space:pre-wrap;word-wrap:break-word;';
+  teksEl.textContent = ayatDipapar;
+  peraturanContent.appendChild(teksEl);
+
+  const bacaanAdaKandungan = allBacaanTajuk.filter(t => t.text && t.text.trim());
+  if (bacaanAdaKandungan.length > 0) {
+    const progressEl = document.createElement('div');
+    progressEl.style.cssText = 'margin-top:12px;font-size:0.7rem;color:var(--subtext);text-align:center;padding:6px;background:rgba(13,148,136,0.08);border-radius:8px;';
+    progressEl.textContent = `Layer 1 / ${bacaanAdaKandungan.length + 1} — ${bacaanAdaKandungan.length} bacaan tambahan menunggu`;
+    peraturanContent.appendChild(progressEl);
+  }
+
+  const nextIndex = myLawSentenceIndex + 2;
+  myLawSentenceIndex = nextIndex >= semuaAyat.length ? 0 : nextIndex;
+
+  if (currentUser) {
+    const refLaw = doc(db, "users", currentUser.uid, "settings", "myLaw");
+    setDoc(refLaw, { sentenceIndex: myLawSentenceIndex }, { merge: true }).catch(() => {});
+  }
+
+  peraturanContent.scrollTop = 0;
+
+  const inputTaip = document.getElementById('peraturan-taip-input');
+  const pesanEl = document.getElementById('peraturan-pesan');
+  if (inputTaip) inputTaip.value = '';
+  if (pesanEl) pesanEl.textContent = '';
+  pilikhFrasaRandom();
+
+  peraturanOverlay.style.display = "flex";
+  _setupPeraturanInput(buttonText, () => {
+    restLayerIndex++;
+    tunjukLayerSemasa(buttonText);
+  });
+}
+
+function tunjukBacaanTambahan(bacaan, bacaanIdx, totalBacaan) {
+  peraturanContent.innerHTML = '';
+
+  const headerEl = document.createElement('div');
+  headerEl.style.cssText = 'font-size:0.85rem;color:#34d399;text-align:center;margin-bottom:14px;padding:8px 10px;background:rgba(13,148,136,0.1);border:1px solid rgba(13,148,136,0.3);border-radius:8px;font-weight:700;';
+  headerEl.textContent = `📚 ${bacaan.name}`;
+  peraturanContent.appendChild(headerEl);
+
+  const teksEl = document.createElement('div');
+  teksEl.style.cssText = 'font-size:1.05rem;line-height:1.8;color:#e5e7eb;white-space:pre-wrap;word-wrap:break-word;';
+  teksEl.textContent = bacaan.text || '(Tiada kandungan)';
+  peraturanContent.appendChild(teksEl);
+
+  const layerSekarang = bacaanIdx + 2;
+  const totalLayer = totalBacaan + 1;
+  const adaLagi = bacaanIdx < totalBacaan - 1;
+
+  const progressEl = document.createElement('div');
+  progressEl.style.cssText = 'margin-top:12px;font-size:0.7rem;color:var(--subtext);text-align:center;padding:6px;background:rgba(13,148,136,0.08);border-radius:8px;';
+  progressEl.textContent = `Layer ${layerSekarang} / ${totalLayer}${adaLagi ? ` — ${totalBacaan - bacaanIdx - 1} bacaan lagi` : ' — Bacaan terakhir'}`;
+  peraturanContent.appendChild(progressEl);
+
+  peraturanContent.scrollTop = 0;
+
+  const inputTaip = document.getElementById('peraturan-taip-input');
+  const pesanEl = document.getElementById('peraturan-pesan');
+  if (inputTaip) {
+    inputTaip.value = '';
+    inputTaip.placeholder = 'Taip "saya sudah baca" untuk teruskan...';
+  }
+  if (pesanEl) pesanEl.textContent = '';
+
+  peraturanOverlay.style.display = "flex";
+  _setupPeraturanInput('bacaan', () => {
+    restLayerIndex++;
+    tunjukLayerSemasa('');
+  });
+}
+
+function _setupPeraturanInput(buttonText, onBerjaya) {
+  const inputTaip = document.getElementById('peraturan-taip-input');
+  const pesanEl = document.getElementById('peraturan-pesan');
+
+  const newInput = inputTaip.cloneNode(true);
+  inputTaip.parentNode.replaceChild(newInput, inputTaip);
+
+  const isLayer0 = restLayerIndex === 0;
+
+  function cuba() {
+    const nilai = newInput.value.trim().toLowerCase();
+    const sasaran = isLayer0 ? peraturanFrasaSemasa.toLowerCase() : 'saya sudah baca';
+    if (nilai === sasaran) {
+      newInput.value = '';
+      if (pesanEl) pesanEl.textContent = '';
+      myLawFromRest = 1;
+      updateMyLawBackButton();
+      onBerjaya();
+    } else {
+      if (pesanEl) pesanEl.textContent = `⚠️ Sila taip "${isLayer0 ? peraturanFrasaSemasa : 'saya sudah baca'}" dengan tepat.`;
+      newInput.focus();
+    }
+  }
+
+  if (isLayer0) {
+    newInput.placeholder = `Taip "${peraturanFrasaSemasa}" untuk sambung...`;
+  } else {
+    newInput.placeholder = 'Taip "saya sudah baca" untuk teruskan...';
+  }
+
+  newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') cuba(); });
+  newInput.addEventListener('input', () => {
+    const nilai = newInput.value.trim().toLowerCase();
+    const sasaran = isLayer0 ? peraturanFrasaSemasa.toLowerCase() : 'saya sudah baca';
+    if (nilai === sasaran) cuba();
+  });
+}    
     // EVENT LISTENER UNTUK BUTTON CONTINUE
 btnPeraturanContinue.addEventListener("click", () => {
         peraturanOverlay.style.display = "none";
@@ -4119,10 +4279,12 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       if (sectionSem) sectionSem.classList.remove("active");
       if (sectionBahasa) sectionBahasa.classList.remove("active");
       if (sectionJenisKata) sectionJenisKata.classList.remove("active");
-if (sectionBahasaPerkataan) sectionBahasaPerkataan.classList.remove("active");
+      if (sectionBahasaPerkataan) sectionBahasaPerkataan.classList.remove("active");
       if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
       document.getElementById('section-arahan-list')?.classList.remove("active");
       document.getElementById('section-kerangka')?.classList.remove("active");
+      document.getElementById('section-bacaan-tambahan')?.classList.remove("active");
+      document.getElementById('section-bacaan-laci')?.classList.remove("active");
       document.getElementById('section-arahan-versi')?.classList.remove("active");
       document.getElementById('section-arahan-editor')?.classList.remove("active");
       if (sectionJournalHub)     sectionJournalHub.classList.remove("active");
@@ -6495,6 +6657,7 @@ showSection(secToShow);
         subscribeToVideoRehat(); // KOD BARU: Subscribe video rehat (dah ada fungsi, tapi belum dipanggil)
         subscribeNewModes();
         subscribeArahan();
+        subscribeBacaanTambahan();
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
         
@@ -12767,6 +12930,147 @@ list.innerHTML = '';
       // Refresh senarai perkataan
       renderPerkataan();
     });
+
+    // ══════════════════════════════════════════
+// BACAAN TAMBAHAN SYSTEM
+// ══════════════════════════════════════════
+let allBacaanTajuk = [];
+let currentBacaanTajukId = null;
+let bacaanLaciSaveTimer = null;
+let restFinalCallback = null;
+let restLayerIndex = 0;
+
+document.getElementById('btn-go-bacaan-tambahan').addEventListener('click', () => {
+  const sec = document.getElementById('section-bacaan-tambahan');
+  if (sec) { showSection(sec); renderBacaanTajukList(); }
+});
+
+document.getElementById('btn-back-mylaw-bacaan').addEventListener('click', () => {
+  showSection(sectionMyLaw);
+});
+
+document.getElementById('btn-back-bacaan-tajuk').addEventListener('click', () => {
+  const sec = document.getElementById('section-bacaan-tambahan');
+  if (sec) { showSection(sec); renderBacaanTajukList(); }
+});
+
+document.getElementById('btn-add-bacaan-tajuk').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const nama = prompt('Nama tajuk bacaan:\n(Cth: Bacaan untuk Mama, Bacaan untuk Abah)');
+  if (!nama || !nama.trim()) return;
+  await addDoc(collection(db, "users", currentUser.uid, "bacaan_tambahan"), {
+    name: nama.trim(),
+    text: '',
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  });
+  showToast(`✅ Tajuk "${nama.trim()}" berjaya ditambah!`);
+});
+
+function renderBacaanTajukList() {
+  const list = document.getElementById('bacaan-tajuk-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const sorted = [...allBacaanTajuk].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+  if (!sorted.length) {
+    list.innerHTML = '<div class="empty-state">Belum ada bacaan tambahan. Tekan "+ Tambah Tajuk".</div>';
+    return;
+  }
+
+  sorted.forEach((data, idx) => {
+    const preview = (data.text || '').substring(0, 60);
+    const div = document.createElement('div');
+    div.className = 'drawer-card';
+    div.style.cssText = 'cursor:pointer;border:1px solid rgba(13,148,136,0.3);';
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+          <span style="font-size:0.7rem;background:rgba(13,148,136,0.2);color:#34d399;padding:2px 8px;border-radius:999px;font-weight:700;flex-shrink:0;">Layer ${idx + 2}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text);">${data.name}</div>
+            ${preview ? `<div style="font-size:0.72rem;color:var(--subtext);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-top:2px;">${preview}${data.text && data.text.length > 60 ? '...' : ''}</div>` : '<div style="font-size:0.72rem;color:#f59e0b;margin-top:2px;">⚠️ Belum ada kandungan</div>'}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn-rename-bacaan btn btn-secondary btn-sm" style="font-size:0.68rem;padding:3px 8px;" data-id="${data.id}">✏️</button>
+          <button class="btn-buka-bacaan btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;font-size:0.72rem;" data-id="${data.id}">Buka →</button>
+        </div>
+      </div>
+    `;
+
+    div.querySelector('.btn-buka-bacaan').addEventListener('click', (e) => {
+      e.stopPropagation();
+      bukaBacaanLaci(data);
+    });
+
+    div.querySelector('.btn-rename-bacaan').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const namaBaru = prompt('Nama baru:', data.name);
+      if (!namaBaru || !namaBaru.trim()) return;
+      await updateDoc(doc(db, "users", currentUser.uid, "bacaan_tambahan", data.id), { name: namaBaru.trim() });
+      showToast('✅ Nama dikemas kini.');
+    });
+
+    div.addEventListener('click', () => bukaBacaanLaci(data));
+    list.appendChild(div);
+  });
+}
+
+function bukaBacaanLaci(data) {
+  currentBacaanTajukId = data.id;
+  const titleEl = document.getElementById('bacaan-laci-title');
+  const textarea = document.getElementById('bacaan-laci-textarea');
+  const statusEl = document.getElementById('bacaan-laci-save-status');
+  if (titleEl) titleEl.textContent = data.name || 'Bacaan';
+  if (textarea) textarea.value = data.text || '';
+  if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+  const sec = document.getElementById('section-bacaan-laci');
+  if (sec) showSection(sec);
+}
+
+document.getElementById('bacaan-laci-textarea').addEventListener('input', (e) => {
+  const statusEl = document.getElementById('bacaan-laci-save-status');
+  if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
+  if (bacaanLaciSaveTimer) clearTimeout(bacaanLaciSaveTimer);
+  bacaanLaciSaveTimer = setTimeout(async () => {
+    if (!currentUser || !currentBacaanTajukId) return;
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid, "bacaan_tambahan", currentBacaanTajukId), {
+        text: e.target.value,
+        updatedAt: Date.now()
+      });
+      if (statusEl) { statusEl.textContent = '✓ Auto-saved'; statusEl.style.color = '#34d399'; }
+      const idx = allBacaanTajuk.findIndex(t => t.id === currentBacaanTajukId);
+      if (idx !== -1) allBacaanTajuk[idx].text = e.target.value;
+    } catch(err) {
+      if (statusEl) { statusEl.textContent = '❌ Gagal simpan'; statusEl.style.color = '#f87171'; }
+    }
+  }, 1000);
+});
+
+document.getElementById('btn-delete-bacaan-tajuk').addEventListener('click', async () => {
+  if (!currentUser || !currentBacaanTajukId) return;
+  const data = allBacaanTajuk.find(t => t.id === currentBacaanTajukId);
+  if (!confirm(`Padam tajuk "${data?.name || 'ini'}"?`)) return;
+  await deleteDoc(doc(db, "users", currentUser.uid, "bacaan_tambahan", currentBacaanTajukId));
+  showToast('🗑️ Tajuk dipadam.');
+  const sec = document.getElementById('section-bacaan-tambahan');
+  if (sec) { showSection(sec); renderBacaanTajukList(); }
+});
+
+function subscribeBacaanTambahan() {
+  if (!currentUser) return;
+  onSnapshot(
+    query(collection(db, "users", currentUser.uid, "bacaan_tambahan"), orderBy("createdAt", "asc")),
+    snap => {
+      allBacaanTajuk = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const sec = document.getElementById('section-bacaan-tambahan');
+      if (sec && sec.classList.contains('active')) renderBacaanTajukList();
+    }
+  );
+}
     
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
