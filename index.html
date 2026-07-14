@@ -1761,6 +1761,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 10r5</button>
+            <button id="btn-main-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
             <button id="btn-toggle-tasbih-ui" class="btn btn-secondary btn-sm" style="border-color: var(--grad2);">UI: Bulatan</button>
             <button id="btn-tm-pattern" class="btn btn-secondary btn-sm" style="display:none; border-color:#3b82f6;color:#60a5fa;">🌑 Bandul</button>
             <button id="btn-music-tasbih" class="btn btn-secondary btn-sm">Muzik: OFF 🎵</button>
@@ -3009,6 +3010,7 @@ const REST_CYCLES = [
   { label: 'Target: 17r33', fasa1: 17, fasa2: 33 },
   { label: 'Target: 10r5',  fasa1: 10, fasa2: 5  },
   { label: 'Target: 5r10',  fasa1: 5,  fasa2: 10 },
+  { label: 'Target: 5r5',   fasa1: 5,  fasa2: 5, specialPlus5: true },
 ];
 let mainRestCycleIdx   = 2;
 let joggingCycleIdx    = 2;
@@ -4397,6 +4399,8 @@ saveAppState();
       const btnMem    = document.getElementById('btn-toggle-memanah-max');
       const btnBahasa = document.getElementById('btn-bahasa-rest-cycle');
       if (btnMain)   btnMain.textContent   = REST_CYCLES[mainRestCycleIdx].label;
+      if (btnMain)   btnMain.textContent   = REST_CYCLES[mainRestCycleIdx].label;
+    updateMainPlus5Btn();
       if (btnJog)    btnJog.textContent    = REST_CYCLES[joggingCycleIdx].label;
       if (btnMem)    btnMem.textContent    = REST_CYCLES[memanahCycleIdx].label;
       if (btnBahasa) btnBahasa.textContent = REST_CYCLES[bahasaRestCycleIdx].label;
@@ -5830,21 +5834,23 @@ else if (learningMode === 2) { // Rest Mode
 
         if (rCount <= 0) {
             if (rPhase === 1) {
-                showVideoRest(() => {
-                    if (isB) { bahasaRestPhase = 2; bahasaRestCount = cyc.fasa2; }
-                    else     { mainRestPhase   = 2; mainRestCount   = cyc.fasa2; }
-                    renderCurrentFact();
-                    showToast("Fasa 2 bermula!");
-                });
+showVideoRest(() => {
+    if (isB) { bahasaRestPhase = 2; bahasaRestCount = cyc.fasa2; }
+    else     { mainRestPhase   = 2; mainRestCount   = cyc.fasa2; }
+    updateMainPlus5Btn();
+    renderCurrentFact();
+    showToast("Fasa 2 bermula!");
+});
             } else {
                 triggerVibration([200, 100, 200, 100, 2000]);
                 isBlocked = true;
                 setTimeout(() => {
                     isBlocked = false;
-                    if (isB) { bahasaRestPhase = 1; bahasaRestCount = cyc.fasa1; }
-                    else     { mainRestPhase   = 1; mainRestCount   = cyc.fasa1; }
-                    isFlipped = false;
-                    currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+if (isB) { bahasaRestPhase = 1; bahasaRestCount = cyc.fasa1; }
+else     { mainRestPhase   = 1; mainRestCount   = cyc.fasa1; mainPlus5Used = false; }
+isFlipped = false;
+updateMainPlus5Btn();
+currentFactIndex = (currentFactIndex + 1) % allFacts.length;
                     syncIndexToFirestore(currentFactIndex);
                     triggerFadeAnimation(renderCurrentFact);
                 }, 2600);
@@ -6921,10 +6927,40 @@ if(btnToggleMainRestMax) {
         mainRestCount = cyc.fasa1;
         mainRestPhase = 1;
         btnToggleMainRestMax.textContent = cyc.label;
+        mainPlus5Used = false;
+        updateMainPlus5Btn();
         renderCurrentFact();
         showToast(`Mode Rest: Fasa 1 = ${cyc.fasa1}, Fasa 2 = ${cyc.fasa2}`);
     });
 }
+
+let mainPlus5Used = false;
+
+function updateMainPlus5Btn() {
+    const btnPlus5 = document.getElementById('btn-main-plus5');
+    if (!btnPlus5) return;
+    const cyc = REST_CYCLES[mainRestCycleIdx];
+    const is5r5 = !!cyc.specialPlus5;
+    const showing = is5r5 && mainRestPhase === 1 && btnToggleMainRestMax.style.display !== 'none';
+    btnPlus5.style.display = showing ? 'inline-flex' : 'none';
+    btnPlus5.disabled = mainPlus5Used;
+    btnPlus5.style.opacity = mainPlus5Used ? '0.4' : '1';
+    btnPlus5.style.cursor = mainPlus5Used ? 'not-allowed' : 'pointer';
+    btnPlus5.textContent = mainPlus5Used ? '+5 ✓' : '+5';
+}
+
+document.getElementById('btn-main-plus5')?.addEventListener('click', () => {
+    if (mainPlus5Used) return;
+    const cyc = REST_CYCLES[mainRestCycleIdx];
+    if (!cyc.specialPlus5) return;
+    if (mainRestPhase !== 1) return;
+    mainPlus5Used = true;
+    mainRestCount += 5;
+    mainRestMax += 5;
+    updateMainPlus5Btn();
+    showToast(`+5 ditambah! Countdown sekarang: ${mainRestCount}`);
+    renderCurrentFact();
+});
     
 btnToggleFact.addEventListener("click", () => {
       factMode = !factMode;
