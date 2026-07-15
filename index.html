@@ -4901,6 +4901,37 @@ if (learningMode === 2) {
     const isB = bahasaMode;
     // ── Semak fasa ejaan bahasa ──
 const semasaFasaEjaan = isB && allFacts[currentFactIndex] && allFacts[currentFactIndex].isFasaEjaan;
+
+    // Button Tips — tunjuk dalam mode bar bila bahasa aktif
+    let btnTipsBar = document.getElementById('btn-tips-bar-bahasa');
+    if (isB) {
+      if (!btnTipsBar) {
+        btnTipsBar = document.createElement('button');
+        btnTipsBar.id = 'btn-tips-bar-bahasa';
+        btnTipsBar.style.cssText = 'padding:3px 10px;border-radius:999px;background:rgba(6,182,212,0.15);border:1px solid #06b6d4;color:#22d3ee;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;';
+        btnTipsBar.textContent = '💡 Tips';
+        btnTipsBar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const curData = allFacts[currentFactIndex];
+          if (!curData || !curData.drawerId) { showToast('Tiada laci aktif.'); return; }
+          const drawerData = allBahasaDrawers.find(d => d.id === curData.drawerId);
+          bukaTipsSebutan(drawerData || { id: curData.drawerId, title: curData.title, tips: '' });
+        });
+        // Letak dalam modeBar — sebaris dengan teks status
+        const modeBar = document.getElementById('tasbih-mode-bar');
+        if (modeBar) modeBar.appendChild(btnTipsBar);
+      }
+      // Kemaskini tanda ✓ kalau ada tips
+      const curData = allFacts[currentFactIndex];
+      const drawerData = curData ? allBahasaDrawers.find(d => d.id === curData.drawerId) : null;
+      const adaTips = !!(drawerData && drawerData.tips && drawerData.tips.trim());
+      btnTipsBar.textContent = adaTips ? '💡 Tips ✓' : '💡 Tips';
+      btnTipsBar.style.borderColor = adaTips ? '#34d399' : '#06b6d4';
+      btnTipsBar.style.color = adaTips ? '#34d399' : '#22d3ee';
+    } else {
+      if (btnTipsBar) btnTipsBar.remove();
+    }
+
     if (semasaFasaEjaan) {
       modeBarSub.innerHTML = `Fasa 0 (Ejaan): <strong style="color:#22d3ee;font-size:1.1rem;">${bahasaEjaanCount}</strong> / 5 &nbsp;→ terus ke Fasa 1: ${REST_CYCLES[bahasaRestCycleIdx].fasa1} kali`;
       modeBarSub.style.color = bahasaEjaanCount <= 2 ? '#fbbf24' : 'var(--subtext)';
@@ -5856,16 +5887,8 @@ factHintEl.style.display = 'block';
       btnCopyFact.style.display = 'flex';
       const btnFs = document.getElementById('btn-fullscreen-fact');
       if (btnFs) btnFs.style.display = 'flex';
-      const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
-      if (btnTipsFact) {
-        if (bahasaMode && data.drawerId) {
-          btnTipsFact.style.display = 'flex';
-          btnTipsFact.setAttribute('data-drawer-id', data.drawerId || '');
-          btnTipsFact.setAttribute('data-drawer-title', data.title || '');
-        } else {
-          btnTipsFact.style.display = 'none';
-        }
-      }
+const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
+      if (btnTipsFact) btnTipsFact.style.display = 'none';
       requestAnimationFrame(() => syncFullscreenFact());
       
       if (routineMode && routineModeSource === 'quran') {
