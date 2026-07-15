@@ -1247,6 +1247,28 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
     </div>
   </div>
   
+<!-- TIPS SEBUTAN OVERLAY -->
+<div id="tips-sebutan-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
+    <div>
+      <div style="font-size:1rem;font-weight:700;color:#22d3ee;">💡 Tips Sebutan</div>
+      <div id="tips-sebutan-tajuk" style="font-size:0.75rem;color:var(--subtext);margin-top:2px;"></div>
+    </div>
+    <button id="btn-close-tips-sebutan" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:1rem;">✕</button>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:16px;gap:12px;overflow:hidden;">
+    <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);border-radius:10px;padding:10px 12px;flex-shrink:0;">
+      <div style="font-size:0.72rem;color:#22d3ee;font-weight:700;margin-bottom:4px;">📌 Cara Guna</div>
+      <div style="font-size:0.72rem;color:var(--subtext);line-height:1.7;">Tanya AI cara sebut perkataan/ayat ini, kemudian copy jawapan AI dan paste di bawah. Tips ini disimpan kekal untuk rujukan anda.</div>
+    </div>
+    <textarea id="tips-sebutan-textarea" placeholder="Paste tips sebutan dari AI di sini...&#10;&#10;Contoh:&#10;• 'commemorate' — sebut: kuh-MEM-uh-rayt&#10;• Tekanan pada suku kata kedua&#10;• Bunyikan 'com' macam 'kuh', bukan 'kom'..." style="flex:1;width:100%;resize:none;border-radius:12px;border:2px solid #06b6d4;background:rgba(15,23,42,0.9);color:var(--text);padding:14px;font-size:0.95rem;line-height:1.7;outline:none;box-shadow:inset 0 0 20px rgba(6,182,212,0.08);"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <span id="tips-sebutan-status" style="font-size:0.72rem;color:#34d399;">✓ Tersimpan</span>
+      <button id="btn-copy-tips-sebutan" style="padding:8px 16px;border-radius:999px;background:rgba(6,182,212,0.15);border:1px solid #06b6d4;color:#22d3ee;font-size:0.78rem;font-weight:600;cursor:pointer;">📋 Copy Tips</button>
+    </div>
+  </div>
+</div>
+
 <!-- FULLSCREEN FACT OVERLAY -->
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
@@ -2428,8 +2450,32 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
       <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Masa (Pilihan)</div>
       <input id="reminder-masa-input" type="time" class="drawer-input-box" style="width:100%;margin-bottom:12px;color:var(--text);background:rgba(0,0,0,0.3);">
 
-      <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Nota Tambahan (Pilihan)</div>
+<div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Nota Tambahan (Pilihan)</div>
       <textarea id="reminder-nota-input" class="drawer-notes" style="min-height:80px;resize:none;width:100%;" placeholder="Alamat, perkara yang perlu dibawa, soalan yang nak ditanya..."></textarea>
+    </div>
+
+    <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px;">
+      <div style="font-size:0.75rem;font-weight:700;color:#f59e0b;margin-bottom:10px;">🔁 Reminder Harian (Pilihan)</div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;">
+        <input type="checkbox" id="reminder-harian-check" style="width:20px;height:20px;accent-color:#f59e0b;">
+        <span style="font-size:0.85rem;color:#e5e7eb;">Aktifkan sebagai reminder harian</span>
+      </label>
+      <div id="reminder-harian-settings" style="display:none;flex-direction:column;gap:10px;">
+        <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Masa Mula Peringatan</div>
+        <input id="reminder-harian-masa" type="time" class="drawer-input-box" style="width:100%;color:var(--text);background:rgba(0,0,0,0.3);">
+        <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Kekerapan Peringatan</div>
+        <select id="reminder-harian-freq" class="drawer-input-box" style="width:100%;color:var(--text);background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;padding:8px 10px;font-size:0.9rem;outline:none;">
+          <option value="5">Setiap 5 minit</option>
+          <option value="10" selected>Setiap 10 minit</option>
+          <option value="15">Setiap 15 minit</option>
+          <option value="20">Setiap 20 minit</option>
+          <option value="25">Setiap 25 minit</option>
+          <option value="30">Setiap 30 minit</option>
+        </select>
+        <div style="font-size:0.7rem;color:var(--subtext);background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:8px 10px;line-height:1.6;">
+          💡 Peringatan muncul bermula dari masa ditetapkan, berulang mengikut kekerapan sepanjang hari. Taip <strong style="color:#fcd34d;">"saya ingat"</strong> untuk tutup buat sementara.
+        </div>
+      </div>
     </div>
 
     <div style="display:flex;gap:8px;">
@@ -10042,13 +10088,17 @@ const sorted = [...filtered].sort((a, b) => {
       sorted.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
-div.innerHTML = `
+const adaTips = !!(data.tips && data.tips.trim());
+        div.innerHTML = `
           <div class="drawer-title-wrapper" style="align-items:flex-start;">
             <textarea class="drawer-title" placeholder="Perkataan / Tajuk" rows="1" style="resize:none;overflow:hidden;min-height:28px;line-height:1.4;">${data.title||''}</textarea>
             <span class="badge-status badge-done" style="flex-shrink:0;">Ulang: ${data.repeatCount||0}</span>
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan / Contoh ayat">${data.notes||''}</textarea>
-          <div style="text-align:right; margin-top:8px;">
+          <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;align-items:center;">
+            <button class="btn btn-secondary btn-sm btn-tips-bd" style="border-color:#06b6d4;color:${adaTips ? '#22d3ee' : 'var(--subtext)'};${adaTips ? 'background:rgba(6,182,212,0.12);' : ''}">
+              💡 Tips${adaTips ? ' ✓' : ''}
+            </button>
             <button class="btn btn-secondary btn-sm btn-del-bd" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
         `;
@@ -10072,7 +10122,11 @@ const tajukEl = div.querySelector('.drawer-title');
           } catch(err) { showToast('Gagal simpan nota: ' + err.message); }
         });
         
-div.querySelector('.btn-del-bd').addEventListener('click', async () => {
+div.querySelector('.btn-tips-bd').addEventListener('click', () => {
+          bukaTipsSebutan(data);
+        });
+
+        div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           showToast(`Debug: ID=${data.id} | jenisId=${data.jenisId || 'KOSONG'}`, 6000);
           try {
@@ -10195,7 +10249,57 @@ function rebuildBahasa() {
     }
 
     // Subscribe collections bahasa
-    function subscribeBahasa() {
+// ── TIPS SEBUTAN SYSTEM ──
+let currentTipsDrawerId = null;
+let tipsSaveTimer = null;
+
+function bukaTipsSebutan(data) {
+  currentTipsDrawerId = data.id;
+  const overlay = document.getElementById('tips-sebutan-overlay');
+  const tajukEl = document.getElementById('tips-sebutan-tajuk');
+  const textarea = document.getElementById('tips-sebutan-textarea');
+  const statusEl = document.getElementById('tips-sebutan-status');
+  if (!overlay) return;
+  if (tajukEl) tajukEl.textContent = data.title || 'Laci Bahasa';
+  if (textarea) textarea.value = data.tips || '';
+  if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+  overlay.style.display = 'flex';
+}
+
+document.getElementById('btn-close-tips-sebutan').addEventListener('click', () => {
+  document.getElementById('tips-sebutan-overlay').style.display = 'none';
+  currentTipsDrawerId = null;
+});
+
+document.getElementById('tips-sebutan-textarea').addEventListener('input', (e) => {
+  const statusEl = document.getElementById('tips-sebutan-status');
+  if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
+  if (tipsSaveTimer) clearTimeout(tipsSaveTimer);
+  tipsSaveTimer = setTimeout(async () => {
+    if (!currentUser || !currentTipsDrawerId) return;
+    try {
+      await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", currentTipsDrawerId), {
+        tips: e.target.value,
+        updatedAt: Date.now()
+      }, { merge: true });
+      const idx = allBahasaDrawers.findIndex(d => d.id === currentTipsDrawerId);
+      if (idx !== -1) allBahasaDrawers[idx].tips = e.target.value;
+      if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+    } catch(err) {
+      if (statusEl) { statusEl.textContent = '❌ Gagal simpan'; statusEl.style.color = '#f87171'; }
+    }
+  }, 800);
+});
+
+document.getElementById('btn-copy-tips-sebutan').addEventListener('click', () => {
+  const teks = document.getElementById('tips-sebutan-textarea').value.trim();
+  if (!teks) { showToast('⚠️ Tiada tips untuk disalin.'); return; }
+  navigator.clipboard.writeText(teks).then(() => {
+    showToast('📋 Tips berjaya disalin!');
+  }).catch(() => showToast('Gagal salin. Cuba lagi.'));
+});
+
+function subscribeBahasa() {
       if (!currentUser) return;
       onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_list")), snap => {
         allBahasaList = snap.docs.map(d => ({id:d.id,...d.data()}));
@@ -13528,7 +13632,12 @@ document.getElementById('btn-back-reminder-list').addEventListener('click', () =
 });
 
 // ── TAMBAH REMINDER ──
-document.getElementById('btn-add-reminder').addEventListener('click', async () => {
+document.getElementById('reminder-harian-check').addEventListener('change', (e) => {
+  const settings = document.getElementById('reminder-harian-settings');
+  if (settings) settings.style.display = e.target.checked ? 'flex' : 'none';
+});
+
+document.getElementById('btn-add-reminder').addEventListener('click', async () => {    
   if (!currentUser) return;
   const newRef = await addDoc(collection(db, "users", currentUser.uid, "reminders"), {
     nama: '',
@@ -13616,6 +13725,16 @@ function bukaReminderEditor(data) {
   document.getElementById('reminder-tarikh-input').value = data.tarikh || '';
   document.getElementById('reminder-masa-input').value = data.masa || '';
   document.getElementById('reminder-nota-input').value = data.nota || '';
+  const harianCheck = document.getElementById('reminder-harian-check');
+  const harianSettings = document.getElementById('reminder-harian-settings');
+  if (harianCheck) {
+    harianCheck.checked = !!data.harian;
+    harianSettings.style.display = data.harian ? 'flex' : 'none';
+  }
+  const harianMasa = document.getElementById('reminder-harian-masa');
+  const harianFreq = document.getElementById('reminder-harian-freq');
+  if (harianMasa) harianMasa.value = data.harianMasa || '';
+  if (harianFreq) harianFreq.value = String(data.harianFreq || '10');
   const sec = document.getElementById('section-reminder-editor');
   if (sec) showSection(sec);
 }
@@ -13634,8 +13753,13 @@ document.getElementById('btn-save-reminder').addEventListener('click', async () 
   const statusEl = document.getElementById('reminder-editor-save-status');
   if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
 
+const harian = document.getElementById('reminder-harian-check')?.checked || false;
+  const harianMasa = document.getElementById('reminder-harian-masa')?.value || '';
+  const harianFreq = parseInt(document.getElementById('reminder-harian-freq')?.value || '10');
   await setDoc(doc(db, "users", currentUser.uid, "reminders", currentReminderId), {
-    nama, tarikh, masa, nota, aktif: true, updatedAt: Date.now()
+    nama, tarikh, masa, nota, aktif: true,
+    harian, harianMasa, harianFreq,
+    updatedAt: Date.now()
   }, { merge: true });
 
   if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
@@ -13667,35 +13791,61 @@ function semakReminderAktif() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Kalau masih dalam snooze, jangan tunjuk
   if (Date.now() < reminderSnoozedUntil) return;
 
-  // Kalau overlay dah terbuka, jangan tunjuk lagi
   const overlay = document.getElementById('reminder-overlay');
   if (overlay && overlay.style.display === 'flex') return;
 
   for (const reminder of allReminders) {
-    if (!reminder.tarikh || !reminder.aktif) continue;
+    if (!reminder.aktif) continue;
 
-const tarikhReminder = new Date(reminder.tarikh + 'T00:00:00');
-  tarikhReminder.setHours(0, 0, 0, 0);
+    // ── REMINDER HARIAN ──
+    if (reminder.harian && reminder.harianMasa) {
+      const [jamSet, minitSet] = reminder.harianMasa.split(':').map(Number);
+      const masaSet = new Date();
+      masaSet.setHours(jamSet, minitSet, 0, 0);
+      const nowMs = now.getTime();
+      const masaSetMs = masaSet.getTime();
+      const freqMs = (reminder.harianFreq || 10) * 60 * 1000;
+      if (nowMs >= masaSetMs) {
+        const selangSejak = nowMs - masaSetMs;
+        const balanganKitar = Math.floor(selangSejak / freqMs);
+        const masaKitarIni = masaSetMs + (balanganKitar * freqMs);
+        const baruMasukKitar = (nowMs - masaKitarIni) < 60000;
+        if (baruMasukKitar) {
+          tunjukReminderOverlay(reminder, null, true);
+          return;
+        }
+      }
+      continue;
+    }
+
+    // ── REMINDER TARIKH ──
+    if (!reminder.tarikh) continue;
+    const tarikhReminder = new Date(reminder.tarikh + 'T00:00:00');
+    tarikhReminder.setHours(0, 0, 0, 0);
     const diffHari = Math.ceil((tarikhReminder - today) / (1000 * 60 * 60 * 24));
-
-    // Tunjuk kalau 0, 1, atau 3 hari lagi
     if (diffHari === 0 || diffHari === 1 || diffHari === 3) {
-      tunjukReminderOverlay(reminder, diffHari);
-      break;
+      tunjukReminderOverlay(reminder, diffHari, false);
+      return;
     }
   }
 }
 
 // ── TUNJUK OVERLAY ──
-function tunjukReminderOverlay(reminder, diffHari) {
+function tunjukReminderOverlay(reminder, diffHari, isHarian = false) {
   const overlay = document.getElementById('reminder-overlay');
   if (!overlay) return;
 
   let labelHari = '';
-  if (diffHari === 0) labelHari = '⏰ HARI INI!';
+  if (isHarian) {
+    const now = new Date();
+    const h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const h12 = h % 12 || 12;
+    labelHari = `🔁 HARIAN — ${h12}:${m}${ampm}`;
+  } else if (diffHari === 0) labelHari = '⏰ HARI INI!';
   else if (diffHari === 1) labelHari = '⚠️ ESOK';
   else if (diffHari === 3) labelHari = '📅 3 HARI LAGI';
 
@@ -13724,7 +13874,7 @@ function tunjukReminderOverlay(reminder, diffHari) {
   overlay.style.display = 'flex';
 
   // Countdown untuk keluar balik
-  const intervalMinit = diffHari === 0 ? 5 : 10;
+  const intervalMinit = isHarian ? (reminder.harianFreq || 10) : (diffHari === 0 ? 5 : 10);
   const snoozeMs = intervalMinit * 60 * 1000;
 
   if (reminderCountdownInterval) clearInterval(reminderCountdownInterval);
