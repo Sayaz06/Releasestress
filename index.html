@@ -2468,9 +2468,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
       <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Nama / Tajuk</div>
       <input id="reminder-nama-input" type="text" placeholder="Cth: Temuduga Syarikat ABC, Appointment Doktor..." class="drawer-input-box" style="width:100%;margin-bottom:12px;font-size:1rem;font-weight:600;">
 
-      <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Tarikh</div>
+      <div id="reminder-tarikh-label" style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Tarikh</div>
       <input id="reminder-tarikh-input" type="date" class="drawer-input-box" style="width:100%;margin-bottom:12px;color:var(--text);background:rgba(0,0,0,0.3);">
-
+      
       <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Masa (Pilihan)</div>
       <input id="reminder-masa-input" type="time" class="drawer-input-box" style="width:100%;margin-bottom:12px;color:var(--text);background:rgba(0,0,0,0.3);">
 
@@ -2484,20 +2484,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         <input type="checkbox" id="reminder-harian-check" style="width:20px;height:20px;accent-color:#f59e0b;">
         <span style="font-size:0.85rem;color:#e5e7eb;">Aktifkan sebagai reminder harian</span>
       </label>
-      <div id="reminder-harian-settings" style="display:none;flex-direction:column;gap:10px;">
-        <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Masa Mula Peringatan</div>
-        <input id="reminder-harian-masa" type="time" class="drawer-input-box" style="width:100%;color:var(--text);background:rgba(0,0,0,0.3);">
-        <div style="font-size:0.72rem;color:#f59e0b;margin-bottom:4px;font-weight:600;">Kekerapan Peringatan</div>
-        <select id="reminder-harian-freq" class="drawer-input-box" style="width:100%;color:var(--text);background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;padding:8px 10px;font-size:0.9rem;outline:none;">
-          <option value="5">Setiap 5 minit</option>
-          <option value="10" selected>Setiap 10 minit</option>
-          <option value="15">Setiap 15 minit</option>
-          <option value="20">Setiap 20 minit</option>
-          <option value="25">Setiap 25 minit</option>
-          <option value="30">Setiap 30 minit</option>
-        </select>
+<div id="reminder-harian-settings" style="display:none;flex-direction:column;gap:10px;">
+        <div style="font-size:0.72rem;color:#f59e0b;font-weight:700;margin-bottom:2px;">⏱ Fasa Masa Peringatan</div>
+        <div style="font-size:0.7rem;color:var(--subtext);margin-bottom:4px;line-height:1.6;">Setiap fasa ada masa mula, masa tamat, dan kekerapan tersendiri. Tekan <strong style="color:#fcd34d;">+ Tambah Fasa</strong> untuk fasa tambahan.</div>
+        <div id="reminder-fasa-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button id="btn-tambah-fasa-reminder" style="width:100%;padding:8px;border-radius:999px;background:rgba(245,158,11,0.12);border:1px dashed #f59e0b;color:#fcd34d;font-size:0.8rem;font-weight:600;cursor:pointer;">+ Tambah Fasa</button>
         <div style="font-size:0.7rem;color:var(--subtext);background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:8px 10px;line-height:1.6;">
-          💡 Peringatan muncul bermula dari masa ditetapkan, berulang mengikut kekerapan sepanjang hari. Taip <strong style="color:#fcd34d;">"saya ingat"</strong> untuk tutup buat sementara.
+          💡 Contoh: Fasa 1 — 8:00am hingga 9:00am, setiap 20 minit. Fasa 2 — 9:00am hingga 8:00pm, setiap 5 minit. Taip <strong style="color:#fcd34d;">"saya ingat"</strong> untuk tutup buat sementara.
         </div>
       </div>
     </div>
@@ -13806,7 +13799,18 @@ document.getElementById('btn-back-reminder-list').addEventListener('click', () =
 // ── TAMBAH REMINDER ──
 document.getElementById('reminder-harian-check').addEventListener('change', (e) => {
   const settings = document.getElementById('reminder-harian-settings');
+  const tarikhLabel = document.getElementById('reminder-tarikh-label');
   if (settings) settings.style.display = e.target.checked ? 'flex' : 'none';
+  if (tarikhLabel) {
+    tarikhLabel.textContent = e.target.checked
+      ? 'Tarikh (Pilihan — untuk temu janji berakhir pada tarikh ini)'
+      : 'Tarikh';
+    tarikhLabel.style.color = e.target.checked ? '#9ca3af' : '#f59e0b';
+  }
+  if (e.target.checked && document.getElementById('reminder-fasa-list')) {
+    const fasaList = document.getElementById('reminder-fasa-list');
+    if (fasaList.children.length === 0) tambahFasaReminder();
+  }
 });
 
 document.getElementById('btn-add-reminder').addEventListener('click', async () => {    
@@ -13887,6 +13891,63 @@ const tarikhObj = data.tarikh ? new Date(data.tarikh + 'T00:00:00') : null;
 }
 
 // ── BUKA EDITOR ──
+function tambahFasaReminder(fasaData) {
+  const fasaList = document.getElementById('reminder-fasa-list');
+  if (!fasaList) return;
+  const idx = fasaList.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'fasa-reminder-item';
+  div.style.cssText = 'background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;';
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.75rem;font-weight:700;color:#fcd34d;">Fasa ${idx}</span>
+      <button class="btn-buang-fasa" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:999px;color:#f87171;font-size:0.7rem;padding:2px 10px;cursor:pointer;">Buang</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="flex:1;">
+        <div style="font-size:0.68rem;color:#f59e0b;margin-bottom:3px;font-weight:600;">Masa Mula</div>
+        <input type="time" class="fasa-mula drawer-input-box" value="${fasaData?.mula || ''}" style="width:100%;color:var(--text);background:rgba(0,0,0,0.3);padding:6px 8px;font-size:0.85rem;">
+      </div>
+      <div style="font-size:0.8rem;color:var(--subtext);padding-top:16px;">→</div>
+      <div style="flex:1;">
+        <div style="font-size:0.68rem;color:#f59e0b;margin-bottom:3px;font-weight:600;">Masa Tamat</div>
+        <input type="time" class="fasa-tamat drawer-input-box" value="${fasaData?.tamat || ''}" style="width:100%;color:var(--text);background:rgba(0,0,0,0.3);padding:6px 8px;font-size:0.85rem;">
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.68rem;color:#f59e0b;margin-bottom:3px;font-weight:600;">Kekerapan</div>
+      <select class="fasa-freq drawer-input-box" style="width:100%;color:var(--text);background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;padding:6px 8px;font-size:0.85rem;outline:none;">
+        <option value="5" ${fasaData?.freq == 5 ? 'selected' : ''}>Setiap 5 minit</option>
+        <option value="10" ${fasaData?.freq == 10 ? 'selected' : ''}>Setiap 10 minit</option>
+        <option value="15" ${fasaData?.freq == 15 ? 'selected' : ''}>Setiap 15 minit</option>
+        <option value="20" ${(!fasaData || fasaData?.freq == 20) ? 'selected' : ''}>Setiap 20 minit</option>
+        <option value="25" ${fasaData?.freq == 25 ? 'selected' : ''}>Setiap 25 minit</option>
+        <option value="30" ${fasaData?.freq == 30 ? 'selected' : ''}>Setiap 30 minit</option>
+        <option value="60" ${fasaData?.freq == 60 ? 'selected' : ''}>Setiap 1 jam</option>
+      </select>
+    </div>
+  `;
+  div.querySelector('.btn-buang-fasa').addEventListener('click', () => {
+    div.remove();
+    // Kemaskini nombor fasa
+    fasaList.querySelectorAll('.fasa-reminder-item').forEach((item, i) => {
+      const label = item.querySelector('span');
+      if (label) label.textContent = `Fasa ${i + 1}`;
+    });
+  });
+  fasaList.appendChild(div);
+}
+
+function bacaSemuaFasa() {
+  const fasaList = document.getElementById('reminder-fasa-list');
+  if (!fasaList) return [];
+  return [...fasaList.querySelectorAll('.fasa-reminder-item')].map(item => ({
+    mula: item.querySelector('.fasa-mula')?.value || '',
+    tamat: item.querySelector('.fasa-tamat')?.value || '',
+    freq: parseInt(item.querySelector('.fasa-freq')?.value || '20')
+  }));
+}
+
 function bukaReminderEditor(data) {
   currentReminderId = data.id;
   const titleEl = document.getElementById('reminder-editor-title');
@@ -13897,40 +13958,64 @@ function bukaReminderEditor(data) {
   document.getElementById('reminder-tarikh-input').value = data.tarikh || '';
   document.getElementById('reminder-masa-input').value = data.masa || '';
   document.getElementById('reminder-nota-input').value = data.nota || '';
+
   const harianCheck = document.getElementById('reminder-harian-check');
   const harianSettings = document.getElementById('reminder-harian-settings');
+  const tarikhLabel = document.getElementById('reminder-tarikh-label');
+  const fasaList = document.getElementById('reminder-fasa-list');
+
   if (harianCheck) {
     harianCheck.checked = !!data.harian;
-    harianSettings.style.display = data.harian ? 'flex' : 'none';
+    if (harianSettings) harianSettings.style.display = data.harian ? 'flex' : 'none';
+    if (tarikhLabel) {
+      tarikhLabel.textContent = data.harian
+        ? 'Tarikh (Pilihan — untuk temu janji berakhir pada tarikh ini)'
+        : 'Tarikh';
+      tarikhLabel.style.color = data.harian ? '#9ca3af' : '#f59e0b';
+    }
   }
-  const harianMasa = document.getElementById('reminder-harian-masa');
-  const harianFreq = document.getElementById('reminder-harian-freq');
-  if (harianMasa) harianMasa.value = data.harianMasa || '';
-  if (harianFreq) harianFreq.value = String(data.harianFreq || '10');
+
+  // Render fasa-fasa yang disimpan
+  if (fasaList) {
+    fasaList.innerHTML = '';
+    const fasaTersimpan = data.harianFasa || [];
+    if (fasaTersimpan.length > 0) {
+      fasaTersimpan.forEach(f => tambahFasaReminder(f));
+    } else if (data.harian) {
+      // Default fasa kalau tiada
+      tambahFasaReminder({ mula: '08:00', tamat: '09:00', freq: 20 });
+      tambahFasaReminder({ mula: '09:00', tamat: '20:00', freq: 5 });
+    }
+  }
+
   const sec = document.getElementById('section-reminder-editor');
   if (sec) showSection(sec);
 }
 
 // ── SIMPAN REMINDER ──
+document.getElementById('btn-tambah-fasa-reminder').addEventListener('click', () => {
+  tambahFasaReminder();
+});
+
 document.getElementById('btn-save-reminder').addEventListener('click', async () => {
   if (!currentUser || !currentReminderId) return;
   const nama = document.getElementById('reminder-nama-input').value.trim();
   const tarikh = document.getElementById('reminder-tarikh-input').value;
   const masa = document.getElementById('reminder-masa-input').value;
   const nota = document.getElementById('reminder-nota-input').value.trim();
+  const harian = document.getElementById('reminder-harian-check')?.checked || false;
 
   if (!nama) { showToast('⚠️ Sila masukkan nama temu janji.'); return; }
-  if (!tarikh) { showToast('⚠️ Sila pilih tarikh.'); return; }
+  if (!harian && !tarikh) { showToast('⚠️ Sila pilih tarikh ATAU aktifkan Reminder Harian.'); return; }
 
   const statusEl = document.getElementById('reminder-editor-save-status');
   if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
 
-const harian = document.getElementById('reminder-harian-check')?.checked || false;
-  const harianMasa = document.getElementById('reminder-harian-masa')?.value || '';
-  const harianFreq = parseInt(document.getElementById('reminder-harian-freq')?.value || '10');
+  const harianFasa = harian ? bacaSemuaFasa() : [];
+
   await setDoc(doc(db, "users", currentUser.uid, "reminders", currentReminderId), {
     nama, tarikh, masa, nota, aktif: true,
-    harian, harianMasa, harianFreq,
+    harian, harianFasa,
     updatedAt: Date.now()
   }, { merge: true });
 
@@ -13971,23 +14056,40 @@ function semakReminderAktif() {
   for (const reminder of allReminders) {
     if (!reminder.aktif) continue;
 
-    // ── REMINDER HARIAN ──
-    if (reminder.harian && reminder.harianMasa) {
-      const [jamSet, minitSet] = reminder.harianMasa.split(':').map(Number);
-      const masaSet = new Date();
-      masaSet.setHours(jamSet, minitSet, 0, 0);
+// ── REMINDER HARIAN ──
+    if (reminder.harian) {
+      const fasaList = reminder.harianFasa || [];
+      if (!fasaList.length) continue;
       const nowMs = now.getTime();
-      const masaSetMs = masaSet.getTime();
-      const freqMs = (reminder.harianFreq || 10) * 60 * 1000;
-      if (nowMs >= masaSetMs) {
-        const selangSejak = nowMs - masaSetMs;
-        const balanganKitar = Math.floor(selangSejak / freqMs);
-        const masaKitarIni = masaSetMs + (balanganKitar * freqMs);
-        const baruMasukKitar = (nowMs - masaKitarIni) < 60000;
-        if (baruMasukKitar) {
-          tunjukReminderOverlay(reminder, null, true);
-          return;
+      const nowJam = now.getHours() * 60 + now.getMinutes();
+
+      let fasaAktif = null;
+      for (const fasa of fasaList) {
+        if (!fasa.mula || !fasa.tamat) continue;
+        const [jamMula, minitMula] = fasa.mula.split(':').map(Number);
+        const [jamTamat, minitTamat] = fasa.tamat.split(':').map(Number);
+        const mulaMinit = jamMula * 60 + minitMula;
+        const tamatMinit = jamTamat * 60 + minitTamat;
+        if (nowJam >= mulaMinit && nowJam < tamatMinit) {
+          fasaAktif = fasa;
+          break;
         }
+      }
+
+      if (!fasaAktif) continue;
+
+      const [jamMula, minitMula] = fasaAktif.mula.split(':').map(Number);
+      const masaMula = new Date();
+      masaMula.setHours(jamMula, minitMula, 0, 0);
+      const freqMs = (fasaAktif.freq || 10) * 60 * 1000;
+      const selangSejak = nowMs - masaMula.getTime();
+      const balanganKitar = Math.floor(selangSejak / freqMs);
+      const masaKitarIni = masaMula.getTime() + (balanganKitar * freqMs);
+      const baruMasukKitar = (nowMs - masaKitarIni) < 60000;
+
+      if (baruMasukKitar) {
+        tunjukReminderOverlay(reminder, null, true, fasaAktif);
+        return;
       }
       continue;
     }
@@ -14005,8 +14107,8 @@ function semakReminderAktif() {
 }
 
 // ── TUNJUK OVERLAY ──
-function tunjukReminderOverlay(reminder, diffHari, isHarian = false) {
-  const overlay = document.getElementById('reminder-overlay');
+function tunjukReminderOverlay(reminder, diffHari, isHarian = false, fasaAktif = null) {
+    const overlay = document.getElementById('reminder-overlay');
   if (!overlay) return;
 
   let labelHari = '';
@@ -14046,8 +14148,10 @@ function tunjukReminderOverlay(reminder, diffHari, isHarian = false) {
   overlay.style.display = 'flex';
 
   // Countdown untuk keluar balik
-  const intervalMinit = isHarian ? (reminder.harianFreq || 10) : (diffHari === 0 ? 5 : 10);
-  const snoozeMs = intervalMinit * 60 * 1000;
+const intervalMinit = isHarian
+    ? (fasaAktif ? (fasaAktif.freq || 10) : 10)
+    : (diffHari === 0 ? 5 : 10);
+const snoozeMs = intervalMinit * 60 * 1000;
 
   if (reminderCountdownInterval) clearInterval(reminderCountdownInterval);
 
