@@ -5844,11 +5844,7 @@ if (bahasaMode && data.isFasaEjaan) {
         const btnFs = document.getElementById('btn-fullscreen-fact');
         if (btnFs) btnFs.style.display = 'none';
         const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
-        if (btnTipsFact) {
-          btnTipsFact.style.display = 'flex';
-          btnTipsFact.setAttribute('data-drawer-id', data.drawerId || '');
-          btnTipsFact.setAttribute('data-drawer-title', data.title || '');
-        }
+        if (btnTipsFact) btnTipsFact.style.display = 'none';
         return;
       }
 
