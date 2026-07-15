@@ -4850,9 +4850,9 @@ const topbarDivB = document.querySelector('#section-tasbih .topbar > div:first-c
 if (learningMode === 2) {
     const isB = bahasaMode;
     // ── Semak fasa ejaan bahasa ──
-    const semasaFasaEjaan = isB && allFacts[currentFactIndex] && allFacts[currentFactIndex].isFasaEjaan;
+const semasaFasaEjaan = isB && allFacts[currentFactIndex] && allFacts[currentFactIndex].isFasaEjaan;
     if (semasaFasaEjaan) {
-      modeBarSub.innerHTML = `Fasa Ejaan: <strong style="color:#22d3ee;font-size:1.1rem;">${bahasaEjaanCount}</strong> / 5 &nbsp;→ Fasa 1: ${REST_CYCLES[bahasaRestCycleIdx].fasa1} kali`;
+      modeBarSub.innerHTML = `Fasa 0 (Ejaan): <strong style="color:#22d3ee;font-size:1.1rem;">${bahasaEjaanCount}</strong> / 5 &nbsp;→ terus ke Fasa 1: ${REST_CYCLES[bahasaRestCycleIdx].fasa1} kali`;
       modeBarSub.style.color = bahasaEjaanCount <= 2 ? '#fbbf24' : 'var(--subtext)';
     } else {
       const rCount = isB ? bahasaRestCount : mainRestCount;
@@ -5048,6 +5048,13 @@ return;
 function decrementTasbih() {
       if (isBlocked) return;
       if (videoOverlay.style.display === 'flex' || peraturanOverlay.style.display === 'flex') return;
+      // Intersep tap untuk bahasa "laci seterusnya"
+      if (window._bahasaNextLaciHandler) {
+        const handler = window._bahasaNextLaciHandler;
+        window._bahasaNextLaciHandler = null;
+        handler();
+        return;
+      }
       if (terskipOverlay.style.display === 'flex') return;
       if (document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
       if (document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
@@ -5819,14 +5826,20 @@ function renderCurrentFact() {
         factHintEl.textContent = routineMode ? "(Super Combo: Sapu/Enter audio & maksud)" : "(Super Combo: Sapu/Enter untuk Audio & Maksud)";
       } else if (learningMode === 3) {
         factHintEl.textContent = routineMode ? "(Combo: Sapu/Enter untuk Maksud)" : "(Combo: Sapu/Enter untuk Maksud)";
-      } else if (learningMode === 2) {
-        const barisLagi = getRemainingInLaci();
-        if (barisLagi > 0 && barisLagi <= 5) {
-          factHintEl.textContent = `⚠️ ${barisLagi} ayat lagi sebelum laci ini habis! Tambah helaian baharu supaya hafalan tidak berulang ke laci pertama.`;
-          factHintEl.style.color = barisLagi <= 2 ? '#f87171' : '#fbbf24';
+} else if (learningMode === 2) {
+        if (bahasaMode) {
+          // Bahasa mode — kosongkan hint countdown, status ada di modeBar sahaja
+          factHintEl.textContent = '';
+          factHintEl.style.display = 'none';
         } else {
-          factHintEl.textContent = `(Rest - Fasa ${mainRestPhase}: Baki ${mainRestCount} - Sapu/Enter)`;
-          factHintEl.style.color = '';
+          const barisLagi = getRemainingInLaci();
+          if (barisLagi > 0 && barisLagi <= 5) {
+            factHintEl.textContent = `⚠️ ${barisLagi} ayat lagi sebelum laci ini habis! Tambah helaian baharu supaya hafalan tidak berulang ke laci pertama.`;
+            factHintEl.style.color = barisLagi <= 2 ? '#f87171' : '#fbbf24';
+          } else {
+            factHintEl.textContent = `(Rest - Fasa ${mainRestPhase}: Baki ${mainRestCount} - Sapu/Enter)`;
+            factHintEl.style.color = '';
+          }
         }
       } else if (learningMode === 1) {
         factHintEl.textContent = routineMode ? "(Normal: Klik kotak untuk Maksud)" : `(Repeat: Baki ${currentRepeatCount} - Sapu/Enter)`;
@@ -5949,12 +5962,20 @@ function cycleFact() {
 else if (learningMode === 2) { // Rest Mode
         const isB = bahasaMode;
 
-        // ── FASA EJAAN BAHASA ──
+        // ── FASA EJAAN BAHASA (FASA 0) — countdown tetap 5, tiada video rest ──
         if (isB && allFacts[currentFactIndex] && allFacts[currentFactIndex].isFasaEjaan) {
           bahasaEjaanCount--;
           if (bahasaEjaanCount <= 0) {
+            // Fasa 0 habis → getaran pendek → terus ke Fasa 1 (tiada video rest)
+            triggerVibration([100, 50, 100]);
             bahasaEjaanCount = 5;
-            currentFactIndex++;
+            // Pergi ke fakta pertama dalam laci ini (selepas isFasaEjaan)
+            const laciFasaEjaanDrawerId = allFacts[currentFactIndex].drawerId;
+            let nextIdx = currentFactIndex + 1;
+            while (nextIdx < allFacts.length && allFacts[nextIdx].drawerId === laciFasaEjaanDrawerId && allFacts[nextIdx].isFasaEjaan) {
+              nextIdx++;
+            }
+            currentFactIndex = nextIdx < allFacts.length ? nextIdx : currentFactIndex + 1;
             if (currentFactIndex >= allFacts.length) currentFactIndex = 0;
             bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
             bahasaRestPhase = 1;
@@ -5966,47 +5987,98 @@ else if (learningMode === 2) { // Rest Mode
           return;
         }
 
+        // ── FASA 1 & 2 BAHASA ──
         if (isB) bahasaRestCount--; else mainRestCount--;
         const rCount = isB ? bahasaRestCount : mainRestCount;
         const rPhase = isB ? bahasaRestPhase : mainRestPhase;
         const cyc    = REST_CYCLES[isB ? bahasaRestCycleIdx : mainRestCycleIdx];
 
         if (rCount <= 0) {
+          if (isB) {
             if (rPhase === 1) {
+              // Fasa 1 habis → video rest + MyLaw → Fasa 2
               showVideoRest(() => {
-                if (isB) { bahasaRestPhase = 2; bahasaRestCount = cyc.fasa2; }
-                else     { mainRestPhase   = 2; mainRestCount   = cyc.fasa2; mainPlus5Used = false; }
+                bahasaRestPhase = 2;
+                bahasaRestCount = cyc.fasa2;
                 updateMainPlus5Btn();
                 renderCurrentFact();
                 showToast("Fasa 2 bermula!");
               });
             } else {
-                triggerVibration([200, 100, 200, 100, 2000]);
-                isBlocked = true;
-                setTimeout(() => {
-                    isBlocked = false;
-                    if (isB) { bahasaRestPhase = 1; bahasaRestCount = cyc.fasa1; }
-                    else     { mainRestPhase   = 1; mainRestCount   = cyc.fasa1; mainPlus5Used = false; }
-                    isFlipped = false;
-                    updateMainPlus5Btn();
-                    bahasaEjaanCount = 5;
-                    // Pergi ke laci seterusnya dulu
-                    const nextIndex = (currentFactIndex + 1) % allFacts.length;
-                    let targetIndex = nextIndex;
-                    while (targetIndex < allFacts.length && !allFacts[targetIndex].isFasaEjaan && !allFacts[targetIndex].isTamat) {
-                      targetIndex = (targetIndex + 1) % allFacts.length;
-                    }
-                    currentFactIndex = targetIndex;
-                    syncIndexToFirestore(currentFactIndex);
-                    // Render tajuk laci baru dulu, KEMUDIAN popup
-                    triggerFadeAnimation(() => {
-                      renderCurrentFact();
-                      setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
-                    });
-                }, 2600);
+              // Fasa 2 habis → tunjuk "laci tamat" → user tap → laci seterusnya → popup Al-Quran
+              triggerVibration([100, 50, 100]);
+              isBlocked = true;
+              bahasaRestPhase = 1;
+              bahasaRestCount = cyc.fasa1;
+              bahasaEjaanCount = 5;
+              isFlipped = false;
+              updateMainPlus5Btn();
+
+              // Cari index laci seterusnya (isFasaEjaan berikutnya)
+              let nextLaciIdx = currentFactIndex + 1;
+              while (nextLaciIdx < allFacts.length && !allFacts[nextLaciIdx].isFasaEjaan && !allFacts[nextLaciIdx].isTamat) {
+                nextLaciIdx++;
+              }
+              // Kalau hit isTamat, ambil index selepas isTamat
+              if (nextLaciIdx < allFacts.length && allFacts[nextLaciIdx].isTamat) {
+                nextLaciIdx++;
+              }
+
+              const isLastLaci = nextLaciIdx >= allFacts.length;
+              const targetIdx = isLastLaci ? 0 : nextLaciIdx;
+
+              // Render "laci tamat" message dulu
+              factTitleEl.textContent = '[ Selesai ]';
+              factContentEl.textContent = '✅ Laci selesai! Sapu/tekan untuk ke laci seterusnya.';
+              factHintEl.textContent = '';
+
+              // Setelah block habis, tunggu user tap sendiri
+              setTimeout(() => {
+                isBlocked = false;
+                // Override cycleFact untuk 1 tap seterusnya → pergi laci + popup
+                const tapSeterusnya = () => {
+                  currentFactIndex = targetIdx;
+                  syncIndexToFirestore(currentFactIndex);
+                  triggerFadeAnimation(renderCurrentFact);
+                  // Popup Al-Quran selepas render laci baru
+                  setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
+                };
+                // Simpan handler sementara — akan dipanggil pada tap/swipe seterusnya
+                window._bahasaNextLaciHandler = tapSeterusnya;
+              }, 300);
             }
+          } else {
+            // Mode fakta biasa (bukan bahasa)
+            if (rPhase === 1) {
+              showVideoRest(() => {
+                mainRestPhase = 2; mainRestCount = cyc.fasa2; mainPlus5Used = false;
+                updateMainPlus5Btn();
+                renderCurrentFact();
+                showToast("Fasa 2 bermula!");
+              });
+            } else {
+              triggerVibration([200, 100, 200, 100, 2000]);
+              isBlocked = true;
+              setTimeout(() => {
+                isBlocked = false;
+                mainRestPhase = 1; mainRestCount = cyc.fasa1; mainPlus5Used = false;
+                isFlipped = false;
+                updateMainPlus5Btn();
+                const nextIndex = (currentFactIndex + 1) % allFacts.length;
+                let targetIndex = nextIndex;
+                while (targetIndex < allFacts.length && !allFacts[targetIndex].isFasaEjaan && !allFacts[targetIndex].isTamat) {
+                  targetIndex = (targetIndex + 1) % allFacts.length;
+                }
+                currentFactIndex = targetIndex;
+                syncIndexToFirestore(currentFactIndex);
+                triggerFadeAnimation(() => {
+                  renderCurrentFact();
+                });
+              }, 2600);
+            }
+          }
         } else {
-            renderCurrentFact(); 
+          renderCurrentFact();
         }
       }
 
@@ -9723,14 +9795,29 @@ if (bahasaMode) {
           factMode = false; routineMode = false;
           btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
           btnToggleRutin.textContent = "Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
+          const cbBhs = document.getElementById('btn-toggle-bahasa-cb');
+          if (cbBhs) cbBhs.checked = false;
           ['quran','doa','hadis'].forEach(s => {
             const b = document.getElementById(`btn-toggle-${s}`);
             if(b){b.textContent=`${getModeLabel(s)}: OFF`;b.classList.remove("btn-active");}
           });
+// PAKSA mode Rest sahaja untuk bahasa — buang semua mode lain
+          learningMode = 2;
+          btnToggleMode.textContent = "Mode: Rest";
+          btnToggleMode.style.display = "none"; // Sorok button tukar mode
+          comboStep = 0;
+          isFlipped = false;
+          isBlocked = false;
+          window._bahasaNextLaciHandler = null;
+          // Tutup Quran fullscreen kalau terbuka
+          const fsOv = document.getElementById('fullscreen-fact-overlay');
+          if (fsOv) fsOv.classList.remove('show');
+          fsShowingMaksud = false;
           factDisplayBox.classList.add("show");
           rebuildBahasa();
         } else {
           factDisplayBox.classList.remove("show");
+          btnToggleMode.style.display = "inline-flex"; // Tunjuk semula
         }
         updateTasbihUI();
       });
