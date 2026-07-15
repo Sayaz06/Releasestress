@@ -1269,6 +1269,28 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
   </div>
 </div>
 
+<!-- TIPS FAKTA OVERLAY -->
+<div id="tips-fakta-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
+    <div>
+      <div style="font-size:1rem;font-weight:700;color:#a78bfa;">📝 Nota / Skrip Fakta</div>
+      <div id="tips-fakta-tajuk" style="font-size:0.75rem;color:var(--subtext);margin-top:2px;"></div>
+    </div>
+    <button id="btn-close-tips-fakta" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:1rem;">✕</button>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:16px;gap:12px;overflow:hidden;">
+    <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);border-radius:10px;padding:10px 12px;flex-shrink:0;">
+      <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">📌 Cara Guna</div>
+      <div style="font-size:0.72rem;color:var(--subtext);line-height:1.7;">Paste skrip DeepLearn, nota AI, atau mana-mana rujukan untuk laci fakta ini. Tersimpan kekal untuk rujukan anda.</div>
+    </div>
+    <textarea id="tips-fakta-textarea" placeholder="Paste skrip DeepLearn atau nota AI di sini...&#10;&#10;Contoh:&#10;• Soalan untuk AI tentang topik ini&#10;• Skrip latihan DeepLearn&#10;• Nota penting dari sesi AI..." style="flex:1;width:100%;resize:none;border-radius:12px;border:2px solid #7c3aed;background:rgba(15,23,42,0.9);color:var(--text);padding:14px;font-size:0.95rem;line-height:1.7;outline:none;box-shadow:inset 0 0 20px rgba(124,58,237,0.08);"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <span id="tips-fakta-status" style="font-size:0.72rem;color:#34d399;">✓ Tersimpan</span>
+      <button id="btn-copy-tips-fakta" style="padding:8px 16px;border-radius:999px;background:rgba(124,58,237,0.15);border:1px solid #7c3aed;color:#a78bfa;font-size:0.78rem;font-weight:600;cursor:pointer;">📋 Copy Nota</button>
+    </div>
+  </div>
+</div>
+
 <!-- FULLSCREEN FACT OVERLAY -->
   <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
@@ -1858,6 +1880,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <button id="btn-tips-sebutan-fact" class="btn-speak" style="display: none; right: 8px; bottom: 52px; top: auto; transform: none; font-size: 0.85rem;" aria-label="Tips Sebutan">💡</button>
           <button id="btn-copy-fact" class="btn-speak" style="display: none; left: 8px; right: auto; top: 8px; transform: none;" aria-label="Salin Teks">📋</button>
           <button id="btn-fullscreen-fact" class="btn-speak" style="display: none; right: 8px; bottom: 8px; top: auto; transform: none; font-size: 0.85rem;" aria-label="Skrin Penuh">⛶</button>
+          <button id="btn-tips-fakta" class="btn-speak" style="display: none; right: 8px; bottom: 52px; top: auto; transform: none; font-size: 0.85rem;" aria-label="Tips Fakta">📝</button>
           <div id="fact-title" class="fact-title-label"></div>
           <div id="fact-content" class="fact-content-text">Sedia untuk mula...</div>
           <div id="fact-hint" class="fact-hint">(Tekan/Klik kotak ini untuk terjemahan)</div>
@@ -5885,6 +5908,27 @@ factHintEl.style.display = 'block';
       if (btnFs) btnFs.style.display = 'flex';
 const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
       if (btnTipsFact) btnTipsFact.style.display = 'none';
+
+      // Tips Fakta button
+      const btnTipsFakta = document.getElementById('btn-tips-fakta');
+      if (btnTipsFakta) {
+        if (factMode && !routineMode) {
+          const curData = allFacts[currentFactIndex];
+          const drawerId = curData ? curData.drawerId : null;
+          const drawerData = drawerId ? allDrawers.find(d => d.id === drawerId) : null;
+          const adaNota = !!(drawerData && drawerData.tipsFakta && drawerData.tipsFakta.trim());
+          btnTipsFakta.style.display = 'flex';
+          btnTipsFakta.textContent = adaNota ? '📝✓' : '📝';
+          btnTipsFakta.style.background = adaNota ? 'rgba(124,58,237,0.3)' : 'rgba(255,255,255,0.15)';
+          btnTipsFakta.onclick = (e) => {
+            e.stopPropagation();
+            if (drawerId) bukaTipsFakta(drawerId, drawerData ? drawerData.title : '');
+          };
+        } else {
+          btnTipsFakta.style.display = 'none';
+        }
+      }
+
       requestAnimationFrame(() => syncFullscreenFact());
       
       if (routineMode && routineModeSource === 'quran') {
@@ -10301,6 +10345,70 @@ function rebuildBahasa() {
 // ── TIPS SEBUTAN SYSTEM ──
 let currentTipsDrawerId = null;
 let tipsSaveTimer = null;
+
+// ── TIPS FAKTA SYSTEM ──
+let currentTipsFaktaDrawerId = null;
+let tipsFaktaSaveTimer = null;
+
+function bukaTipsFakta(drawerId, drawerTitle) {
+  currentTipsFaktaDrawerId = drawerId;
+  const overlay = document.getElementById('tips-fakta-overlay');
+  const tajukEl = document.getElementById('tips-fakta-tajuk');
+  const textarea = document.getElementById('tips-fakta-textarea');
+  const statusEl = document.getElementById('tips-fakta-status');
+  if (!overlay) return;
+  if (tajukEl) tajukEl.textContent = drawerTitle || 'Laci Fakta';
+  if (statusEl) { statusEl.textContent = '⏳ Memuatkan...'; statusEl.style.color = '#fcd34d'; }
+
+  // Load dari Firestore
+  if (currentUser && drawerId) {
+    getDoc(doc(db, "users", currentUser.uid, "drawer", drawerId)).then(snap => {
+      const tipsVal = snap.exists() ? (snap.data().tipsFakta || '') : '';
+      if (textarea) textarea.value = tipsVal;
+      if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+    }).catch(() => {
+      if (textarea) textarea.value = '';
+      if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+    });
+  } else {
+    if (textarea) textarea.value = '';
+  }
+
+  overlay.style.display = 'flex';
+}
+
+document.getElementById('btn-close-tips-fakta').addEventListener('click', () => {
+  document.getElementById('tips-fakta-overlay').style.display = 'none';
+  currentTipsFaktaDrawerId = null;
+});
+
+document.getElementById('tips-fakta-textarea').addEventListener('input', (e) => {
+  const statusEl = document.getElementById('tips-fakta-status');
+  if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
+  if (tipsFaktaSaveTimer) clearTimeout(tipsFaktaSaveTimer);
+  tipsFaktaSaveTimer = setTimeout(async () => {
+    if (!currentUser || !currentTipsFaktaDrawerId) return;
+    try {
+      await setDoc(doc(db, "users", currentUser.uid, "drawer", currentTipsFaktaDrawerId), {
+        tipsFakta: e.target.value,
+        updatedAt: Date.now()
+      }, { merge: true });
+      const idx = allDrawers.findIndex(d => d.id === currentTipsFaktaDrawerId);
+      if (idx !== -1) allDrawers[idx].tipsFakta = e.target.value;
+      if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+    } catch(err) {
+      if (statusEl) { statusEl.textContent = '❌ Gagal simpan'; statusEl.style.color = '#f87171'; }
+    }
+  }, 800);
+});
+
+document.getElementById('btn-copy-tips-fakta').addEventListener('click', () => {
+  const teks = document.getElementById('tips-fakta-textarea').value.trim();
+  if (!teks) { showToast('⚠️ Tiada nota untuk disalin.'); return; }
+  navigator.clipboard.writeText(teks).then(() => {
+    showToast('📋 Nota berjaya disalin!');
+  }).catch(() => showToast('Gagal salin. Cuba lagi.'));
+});
 
 function bukaTipsSebutan(data) {
   currentTipsDrawerId = data.id;
