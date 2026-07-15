@@ -10196,21 +10196,26 @@ const sorted = [...filtered].sort((a, b) => {
       sorted.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
+
 const adaTips = !!(data.tips && data.tips.trim());
+        const adaTipsFasa0 = !!(data.tipsFasa0 && data.tipsFasa0.trim());
         div.innerHTML = `
           <div class="drawer-title-wrapper" style="align-items:flex-start;">
             <textarea class="drawer-title" placeholder="Perkataan / Tajuk" rows="1" style="resize:none;overflow:hidden;min-height:28px;line-height:1.4;">${data.title||''}</textarea>
             <span class="badge-status badge-done" style="flex-shrink:0;">Ulang: ${data.repeatCount||0}</span>
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan / Contoh ayat">${data.notes||''}</textarea>
-          <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;align-items:center;">
+          <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm btn-tips-bd-f0" style="border-color:#a78bfa;color:${adaTipsFasa0 ? '#c4b5fd' : 'var(--subtext)'};${adaTipsFasa0 ? 'background:rgba(167,139,250,0.12);' : ''}">
+              📝 F0${adaTipsFasa0 ? ' ✓' : ''}
+            </button>
             <button class="btn btn-secondary btn-sm btn-tips-bd" style="border-color:#06b6d4;color:${adaTips ? '#22d3ee' : 'var(--subtext)'};${adaTips ? 'background:rgba(6,182,212,0.12);' : ''}">
-              💡 Tips${adaTips ? ' ✓' : ''}
+              📝 F1&2${adaTips ? ' ✓' : ''}
             </button>
             <button class="btn btn-secondary btn-sm btn-del-bd" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
         `;
-
+        
 const tajukEl = div.querySelector('.drawer-title');
         const autoExpand = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
         tajukEl.addEventListener('input', () => autoExpand(tajukEl));
@@ -10231,7 +10236,11 @@ const tajukEl = div.querySelector('.drawer-title');
         });
         
 div.querySelector('.btn-tips-bd').addEventListener('click', () => {
-          bukaTipsSebutan(data);
+          bukaTipsSebutan(data, '1');
+        });
+
+        div.querySelector('.btn-tips-bd-f0').addEventListener('click', () => {
+          bukaTipsSebutan(data, '0');
         });
 
         div.querySelector('.btn-del-bd').addEventListener('click', async () => {
