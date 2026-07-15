@@ -1248,8 +1248,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
   </div>
   
 <!-- TIPS SEBUTAN OVERLAY -->
-<div id="tips-sebutan-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
+    <div id="tips-sebutan-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
     <div>
       <div style="font-size:1rem;font-weight:700;color:#22d3ee;">💡 Tips Sebutan</div>
       <div id="tips-sebutan-tajuk" style="font-size:0.75rem;color:var(--subtext);margin-top:2px;"></div>
@@ -1270,8 +1270,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 </div>
 
 <!-- TIPS FAKTA OVERLAY -->
-<div id="tips-fakta-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
+      <div id="tips-fakta-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
     <div>
       <div style="font-size:1rem;font-weight:700;color:#a78bfa;">📝 Nota / Skrip Fakta</div>
       <div id="tips-fakta-tajuk" style="font-size:0.75rem;color:var(--subtext);margin-top:2px;"></div>
@@ -4949,7 +4949,7 @@ if (learningMode === 2) {
     // ── Semak fasa ejaan bahasa ──
 const semasaFasaEjaan = isB && allFacts[currentFactIndex] && allFacts[currentFactIndex].isFasaEjaan;
 
-    // Button Tips — tunjuk dalam mode bar bila bahasa aktif
+// Button Tips — tunjuk dalam mode bar bila bahasa aktif
     let btnTipsBar = document.getElementById('btn-tips-bar-bahasa');
     if (isB) {
       if (!btnTipsBar) {
@@ -4962,17 +4962,22 @@ const semasaFasaEjaan = isB && allFacts[currentFactIndex] && allFacts[currentFac
           const curData = allFacts[currentFactIndex];
           if (!curData || !curData.drawerId) { showToast('Tiada laci aktif.'); return; }
           const drawerData = allBahasaDrawers.find(d => d.id === curData.drawerId);
-          bukaTipsSebutan(drawerData || { id: curData.drawerId, title: curData.title, tips: '' });
+          // Fasa 0 kalau sedang dalam isFasaEjaan, fasa 1 kalau dalam isi laci
+          const fasaSekarang = curData.isFasaEjaan ? '0' : '1';
+          bukaTipsSebutan(drawerData || { id: curData.drawerId, title: curData.title, tips: '', tipsFasa0: '' }, fasaSekarang);
         });
-        // Letak dalam modeBar — sebaris dengan teks status
         const modeBar = document.getElementById('tasbih-mode-bar');
         if (modeBar) modeBar.appendChild(btnTipsBar);
       }
-      // Kemaskini tanda ✓ kalau ada tips
+      // Kemaskini tanda ✓ — semak kedua-dua field
       const curData = allFacts[currentFactIndex];
       const drawerData = curData ? allBahasaDrawers.find(d => d.id === curData.drawerId) : null;
-      const adaTips = !!(drawerData && drawerData.tips && drawerData.tips.trim());
-      btnTipsBar.textContent = adaTips ? '💡 Tips ✓' : '💡 Tips';
+      const isFasaEjaan = !!(curData && curData.isFasaEjaan);
+      const adaTipsFasa0 = !!(drawerData && drawerData.tipsFasa0 && drawerData.tipsFasa0.trim());
+      const adaTipsFasa1 = !!(drawerData && drawerData.tips && drawerData.tips.trim());
+      const adaTips = isFasaEjaan ? adaTipsFasa0 : adaTipsFasa1;
+      const labelFasa = isFasaEjaan ? '💡 Tips F0' : '💡 Tips';
+      btnTipsBar.textContent = adaTips ? `${labelFasa} ✓` : labelFasa;
       btnTipsBar.style.borderColor = adaTips ? '#34d399' : '#06b6d4';
       btnTipsBar.style.color = adaTips ? '#34d399' : '#22d3ee';
     } else {
@@ -5176,6 +5181,8 @@ return;
 function decrementTasbih() {
       if (isBlocked) return;
       if (videoOverlay.style.display === 'flex' || peraturanOverlay.style.display === 'flex') return;
+      if (document.getElementById('tips-sebutan-overlay')?.style.display === 'flex') return;
+      if (document.getElementById('tips-fakta-overlay')?.style.display === 'flex') return;
       // Intersep tap untuk bahasa "laci seterusnya"
       if (window._bahasaNextLaciHandler) {
         const handler = window._bahasaNextLaciHandler;
@@ -10418,15 +10425,23 @@ document.getElementById('btn-copy-tips-fakta').addEventListener('click', () => {
   }).catch(() => showToast('Gagal salin. Cuba lagi.'));
 });
 
-function bukaTipsSebutan(data) {
+let currentTipsFasa = '1'; // '0' untuk fasa ejaan, '1' untuk fasa isi
+
+function bukaTipsSebutan(data, fasa = '1') {
   currentTipsDrawerId = data.id;
+  currentTipsFasa = fasa;
   const overlay = document.getElementById('tips-sebutan-overlay');
   const tajukEl = document.getElementById('tips-sebutan-tajuk');
   const textarea = document.getElementById('tips-sebutan-textarea');
   const statusEl = document.getElementById('tips-sebutan-status');
   if (!overlay) return;
-  if (tajukEl) tajukEl.textContent = data.title || 'Laci Bahasa';
-  if (textarea) textarea.value = data.tips || '';
+
+  const labelFasa = fasa === '0'
+    ? `${data.title || 'Laci'} — Fasa 0 (Ejaan Tajuk)`
+    : `${data.title || 'Laci'} — Fasa 1 & 2 (Isi Laci)`;
+
+  if (tajukEl) tajukEl.textContent = labelFasa;
+  if (textarea) textarea.value = fasa === '0' ? (data.tipsFasa0 || '') : (data.tips || '');
   if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
   overlay.style.display = 'flex';
 }
@@ -10443,12 +10458,13 @@ document.getElementById('tips-sebutan-textarea').addEventListener('input', (e) =
   tipsSaveTimer = setTimeout(async () => {
     if (!currentUser || !currentTipsDrawerId) return;
     try {
+      const fieldKey = currentTipsFasa === '0' ? 'tipsFasa0' : 'tips';
       await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", currentTipsDrawerId), {
-        tips: e.target.value,
+        [fieldKey]: e.target.value,
         updatedAt: Date.now()
       }, { merge: true });
       const idx = allBahasaDrawers.findIndex(d => d.id === currentTipsDrawerId);
-      if (idx !== -1) allBahasaDrawers[idx].tips = e.target.value;
+      if (idx !== -1) allBahasaDrawers[idx][fieldKey] = e.target.value;
       if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
     } catch(err) {
       if (statusEl) { statusEl.textContent = '❌ Gagal simpan'; statusEl.style.color = '#f87171'; }
