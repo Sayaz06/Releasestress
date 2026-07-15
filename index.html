@@ -4836,6 +4836,37 @@ if (factMode || bahasaMode) {
           tasbihStatusChip.textContent = factMode ? 'Mode: Fakta' : 'Mode: Bahasa';
           if (counterArea) counterArea.style.display = 'none';
 
+          // Button Tips Fakta dalam mode bar
+          let btnTipsFaktaBar = document.getElementById('btn-tips-fakta-bar');
+          if (factMode && !bahasaMode) {
+            if (!btnTipsFaktaBar) {
+              btnTipsFaktaBar = document.createElement('button');
+              btnTipsFaktaBar.id = 'btn-tips-fakta-bar';
+              btnTipsFaktaBar.style.cssText = 'padding:3px 10px;border-radius:999px;background:rgba(124,58,237,0.15);border:1px solid #7c3aed;color:#a78bfa;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;';
+              btnTipsFaktaBar.textContent = '📝 Nota';
+              btnTipsFaktaBar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const curData = allFacts[currentFactIndex];
+                const drawerId = curData ? curData.drawerId : null;
+                const drawerData = drawerId ? allDrawers.find(d => d.id === drawerId) : null;
+                if (!drawerId) { showToast('Tiada laci aktif.'); return; }
+                bukaTipsFakta(drawerId, drawerData ? drawerData.title : '');
+              });
+              const modeBar = document.getElementById('tasbih-mode-bar');
+              if (modeBar) modeBar.appendChild(btnTipsFaktaBar);
+            }
+            // Kemaskini tanda ✓ kalau ada nota
+            const curData = allFacts[currentFactIndex];
+            const drawerId = curData ? curData.drawerId : null;
+            const drawerData = drawerId ? allDrawers.find(d => d.id === drawerId) : null;
+            const adaNota = !!(drawerData && drawerData.tipsFakta && drawerData.tipsFakta.trim());
+            btnTipsFaktaBar.textContent = adaNota ? '📝 Nota ✓' : '📝 Nota';
+            btnTipsFaktaBar.style.borderColor = adaNota ? '#34d399' : '#7c3aed';
+            btnTipsFaktaBar.style.color = adaNota ? '#34d399' : '#a78bfa';
+          } else {
+            if (btnTipsFaktaBar) btnTipsFaktaBar.remove();
+          }
+
           // Shortcut button ke laci aktif
           const existingShortcut = document.getElementById('btn-shortcut-laci-aktif');
           if (!existingShortcut) {
@@ -5909,25 +5940,9 @@ factHintEl.style.display = 'block';
 const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
       if (btnTipsFact) btnTipsFact.style.display = 'none';
 
-      // Tips Fakta button
+// Tips Fakta — diurus dalam mode bar, bukan di sini
       const btnTipsFakta = document.getElementById('btn-tips-fakta');
-      if (btnTipsFakta) {
-        if (factMode && !routineMode) {
-          const curData = allFacts[currentFactIndex];
-          const drawerId = curData ? curData.drawerId : null;
-          const drawerData = drawerId ? allDrawers.find(d => d.id === drawerId) : null;
-          const adaNota = !!(drawerData && drawerData.tipsFakta && drawerData.tipsFakta.trim());
-          btnTipsFakta.style.display = 'flex';
-          btnTipsFakta.textContent = adaNota ? '📝✓' : '📝';
-          btnTipsFakta.style.background = adaNota ? 'rgba(124,58,237,0.3)' : 'rgba(255,255,255,0.15)';
-          btnTipsFakta.onclick = (e) => {
-            e.stopPropagation();
-            if (drawerId) bukaTipsFakta(drawerId, drawerData ? drawerData.title : '');
-          };
-        } else {
-          btnTipsFakta.style.display = 'none';
-        }
-      }
+      if (btnTipsFakta) btnTipsFakta.style.display = 'none';
 
       requestAnimationFrame(() => syncFullscreenFact());
       
