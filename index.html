@@ -3136,7 +3136,7 @@ let allBahasaList = [], allJenisKata = [], allBahasaPerkataan = [], allBahasaDra
     let currentBahasaId = null, currentJenisKataId = null, currentPerkataanId = null;
     let activeGlobalBahasaId = 'default';
     let bahasaMode = false;
-let hadisReadAllMode = false;
+    let hadisReadAllMode = false;
     let hadisReadAllIndex = 0;
 // ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
 const MODE_DAILY_DEFAULTS = { quran: 6236, doa: 1000, hadis: 10 };
@@ -3260,6 +3260,9 @@ function activateRoutineMode(src) {
 
 if (!wasActive) {
         routineMode = true; routineModeSource = src;
+        // Reset hadis/doa read-all state bila tukar source
+        if (src !== 'hadis') hadisReadAllMode = false;
+        if (src !== 'doa') doaReadAllMode = false;
         const b = document.getElementById(`btn-toggle-${src}`);
         if(b){b.textContent=`${getModeLabel(src)}: ON`; b.classList.add("btn-active");}
 factDisplayBox.classList.add("show");
@@ -5751,19 +5754,15 @@ function renderCurrentFact() {
       }
 
 // ── FASA EJAAN BAHASA ──
-      if (bahasaMode && data.isFasaEjaan) {
+if (bahasaMode && data.isFasaEjaan) {
         factTitleEl.textContent = `[ Fasa Ejaan ]`;
         factContentEl.innerHTML = `<span style="font-size:1.4rem; font-weight:700; color:#22d3ee;">${data.text}</span>`;
         factContentEl.style.fontSize = '';
         factContentEl.style.lineHeight = '';
         factContentEl.style.fontFamily = '';
-        factHintEl.style.display = 'block';
-        // Tunjuk countdown semasa — kalau 5 bermakna belum mula lagi
-        const bakinya = bahasaEjaanCount <= 0 ? 5 : bahasaEjaanCount;
-        factHintEl.textContent = `(Eja dan sebut perkataan ini — ${bakinya} kali sebelum teruskan)`;
-        factHintEl.style.color = '#22d3ee';
+        factHintEl.style.display = 'none';
         btnSpeak.style.display = 'flex';
-        btnCopyFact.style.display = 'none';
+        btnCopyFact.style.display = 'flex';
         const btnFs = document.getElementById('btn-fullscreen-fact');
         if (btnFs) btnFs.style.display = 'none';
         return;
@@ -6708,7 +6707,7 @@ allRoutines = [];
 // ── MOD BACA SEMUA HADIS ──
       if (hadisReadAllMode && routineModeSource === 'hadis') {
         const semuaHadis = [...allHadisDrawers]
-          .filter(d => d.zikir || d.target || d.maksud)
+          .filter(d => d.timeId === activeGlobalHadisId && (d.zikir || d.target || d.maksud))
           .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
 
         semuaHadis.forEach(data => {
