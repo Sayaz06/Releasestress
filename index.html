@@ -1855,6 +1855,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
 <div id="fact-display-box">
           <button id="btn-speak" class="btn-speak" style="display: none;" aria-label="Bunyikan Suara">🔊</button>
+          <button id="btn-tips-sebutan-fact" class="btn-speak" style="display: none; right: 8px; bottom: 52px; top: auto; transform: none; font-size: 0.85rem;" aria-label="Tips Sebutan">💡</button>
           <button id="btn-copy-fact" class="btn-speak" style="display: none; left: 8px; right: auto; top: 8px; transform: none;" aria-label="Salin Teks">📋</button>
           <button id="btn-fullscreen-fact" class="btn-speak" style="display: none; right: 8px; bottom: 8px; top: auto; transform: none; font-size: 0.85rem;" aria-label="Skrin Penuh">⛶</button>
           <div id="fact-title" class="fact-title-label"></div>
@@ -5811,6 +5812,12 @@ if (bahasaMode && data.isFasaEjaan) {
         btnCopyFact.style.display = 'flex';
         const btnFs = document.getElementById('btn-fullscreen-fact');
         if (btnFs) btnFs.style.display = 'none';
+        const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
+        if (btnTipsFact) {
+          btnTipsFact.style.display = 'flex';
+          btnTipsFact.setAttribute('data-drawer-id', data.drawerId || '');
+          btnTipsFact.setAttribute('data-drawer-title', data.title || '');
+        }
         return;
       }
 
@@ -5844,11 +5851,21 @@ if (bahasaMode && data.isFasaEjaan) {
         }
       }
 
-      factHintEl.style.display = 'block';
+factHintEl.style.display = 'block';
       btnSpeak.style.display = 'flex';
       btnCopyFact.style.display = 'flex';
       const btnFs = document.getElementById('btn-fullscreen-fact');
       if (btnFs) btnFs.style.display = 'flex';
+      const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
+      if (btnTipsFact) {
+        if (bahasaMode && data.drawerId) {
+          btnTipsFact.style.display = 'flex';
+          btnTipsFact.setAttribute('data-drawer-id', data.drawerId || '');
+          btnTipsFact.setAttribute('data-drawer-title', data.title || '');
+        } else {
+          btnTipsFact.style.display = 'none';
+        }
+      }
       requestAnimationFrame(() => syncFullscreenFact());
       
       if (routineMode && routineModeSource === 'quran') {
@@ -7676,6 +7693,19 @@ fullscreenOverlay.addEventListener('click', (e) => {
       }
     });
     
+    document.getElementById('btn-tips-sebutan-fact').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const drawerId = e.currentTarget.getAttribute('data-drawer-id');
+      const drawerTitle = e.currentTarget.getAttribute('data-drawer-title');
+      if (!drawerId) return;
+      const drawerData = allBahasaDrawers.find(d => d.id === drawerId);
+      if (drawerData) {
+        bukaTipsSebutan(drawerData);
+      } else {
+        bukaTipsSebutan({ id: drawerId, title: drawerTitle, tips: '' });
+      }
+    });
+
     btnSpeak.addEventListener('click', (e) => {
       e.stopPropagation(); 
       const dataSource = routineMode ? allRoutines : allFacts;
