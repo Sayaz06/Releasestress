@@ -6143,7 +6143,14 @@ if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
 
         if (rCount <= 0) {
           if (isB) {
-            if (rPhase === 1) {
+if (rPhase === 1) {
+              // Semak tips sebelum masuk fasa 2
+              const curDataF2 = allFacts[currentFactIndex];
+              const drawerF2 = curDataF2 ? allBahasaDrawers.find(d => d.id === curDataF2.drawerId) : null;
+              if (!drawerF2 || !drawerF2.tips || !drawerF2.tips.trim()) {
+                showToast('⚠️ Sila isi Tips F1&2 dahulu sebelum boleh masuk Fasa 2!', 3500);
+                return;
+              }
               // Fasa 1 habis → video rest + MyLaw → Fasa 2
               showVideoRest(() => {
                 bahasaRestPhase = 2;
@@ -6153,13 +6160,6 @@ if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
                 showToast("Fasa 2 bermula!");
               });
 } else {
-              // Block kalau tips fasa 1&2 kosong
-              const curDataF1 = allFacts[currentFactIndex];
-              const drawerF1 = curDataF1 ? allBahasaDrawers.find(d => d.id === curDataF1.drawerId) : null;
-if (!drawerF1 || !drawerF1.tips || !drawerF1.tips.trim()) {
-                showToast('⚠️ Sila isi Tips F1&2 dahulu sebelum boleh ke laci seterusnya!', 3500);
-                return;
-              }
               // Fasa 2 habis → tunjuk "laci tamat" → user tap → laci seterusnya → popup Al-Quran
               triggerVibration([100, 50, 100]);
               isBlocked = true;
