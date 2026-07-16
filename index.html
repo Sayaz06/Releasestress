@@ -10536,10 +10536,26 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         if (bahasaMode) rebuildBahasa();
       });
 
-      onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
-              allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
+onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
+        const prevDrawers = [...allBahasaDrawers];
+        allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
-        if (bahasaMode) rebuildBahasa();
+        if (bahasaMode) {
+          // Semak sama ada perubahan hanya pada tips/tipsFasa0 sahaja
+          // Kalau ya, update allFacts dan allBahasaDrawers tanpa reset index
+          const hanyaTipsUpdate = snap.docs.every(d => {
+            const prev = prevDrawers.find(p => p.id === d.id);
+            if (!prev) return false; // laci baru — kena rebuild penuh
+            const data = d.data();
+            const tiadsPerubahan = prev.title === data.title && prev.notes === data.notes;
+            return tiadsPerubahan; // hanya tips yang berubah
+          });
+          if (hanyaTipsUpdate) {
+            // Tak perlu rebuild — index kekal, hanya data tips dikemaskini
+            return;
+          }
+          rebuildBahasa();
+        }
       });
     }
 
