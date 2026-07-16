@@ -4973,13 +4973,14 @@ const semasaFasaEjaan = isB && allFacts[currentFactIndex] && allFacts[currentFac
       const curData = allFacts[currentFactIndex];
       const drawerData = curData ? allBahasaDrawers.find(d => d.id === curData.drawerId) : null;
       const isFasaEjaan = !!(curData && curData.isFasaEjaan);
-      const adaTipsFasa0 = !!(drawerData && drawerData.tipsFasa0 && drawerData.tipsFasa0.trim());
+const adaTipsFasa0 = !!(drawerData && drawerData.tipsFasa0 && drawerData.tipsFasa0.trim());
       const adaTipsFasa1 = !!(drawerData && drawerData.tips && drawerData.tips.trim());
       const adaTips = isFasaEjaan ? adaTipsFasa0 : adaTipsFasa1;
-      const labelFasa = isFasaEjaan ? '💡 Tips F0' : '💡 Tips';
-      btnTipsBar.textContent = adaTips ? `${labelFasa} ✓` : labelFasa;
-      btnTipsBar.style.borderColor = adaTips ? '#34d399' : '#06b6d4';
-      btnTipsBar.style.color = adaTips ? '#34d399' : '#22d3ee';
+      const labelFasa = isFasaEjaan ? '📝 Tips F0' : '📝 Tips F1&2';
+      btnTipsBar.textContent = adaTips ? `${labelFasa} ✓` : `${labelFasa} ⚠️`;
+      btnTipsBar.style.borderColor = adaTips ? '#34d399' : '#f87171';
+      btnTipsBar.style.color = adaTips ? '#34d399' : '#f87171';
+      btnTipsBar.style.background = adaTips ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)';
     } else {
       if (btnTipsBar) btnTipsBar.remove();
     }
@@ -6104,6 +6105,16 @@ else if (learningMode === 2) { // Rest Mode
 
         // ── FASA EJAAN BAHASA (FASA 0) — countdown tetap 5, tiada video rest ──
         if (isB && allFacts[currentFactIndex] && allFacts[currentFactIndex].isFasaEjaan) {
+          // Block kalau tipsFasa0 kosong
+          const curDataF0 = allFacts[currentFactIndex];
+          const drawerF0 = curDataF0 ? allBahasaDrawers.find(d => d.id === curDataF0.drawerId) : null;
+          if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
+            isBlocked = true;
+            showToast('⚠️ Sila isi Tips F0 dahulu sebelum boleh countdown!', 3500);
+            bukaTipsSebutan(drawerF0 || { id: curDataF0.drawerId, title: curDataF0.title, tips: '', tipsFasa0: '' }, '0');
+            setTimeout(() => { isBlocked = false; }, 3500);
+            return;
+          }
           bahasaEjaanCount--;
           if (bahasaEjaanCount <= 0) {
             // Fasa 0 habis → getaran pendek → terus ke Fasa 1 (tiada video rest)
@@ -6144,7 +6155,17 @@ else if (learningMode === 2) { // Rest Mode
                 renderCurrentFact();
                 showToast("Fasa 2 bermula!");
               });
-            } else {
+} else {
+              // Block kalau tips fasa 1&2 kosong
+              const curDataF1 = allFacts[currentFactIndex];
+              const drawerF1 = curDataF1 ? allBahasaDrawers.find(d => d.id === curDataF1.drawerId) : null;
+              if (!drawerF1 || !drawerF1.tips || !drawerF1.tips.trim()) {
+                isBlocked = true;
+                showToast('⚠️ Sila isi Tips F1&2 dahulu sebelum boleh ke laci seterusnya!', 3500);
+                bukaTipsSebutan(drawerF1 || { id: curDataF1?.drawerId, title: curDataF1?.title, tips: '', tipsFasa0: '' }, '1');
+                setTimeout(() => { isBlocked = false; }, 3500);
+                return;
+              }
               // Fasa 2 habis → tunjuk "laci tamat" → user tap → laci seterusnya → popup Al-Quran
               triggerVibration([100, 50, 100]);
               isBlocked = true;
