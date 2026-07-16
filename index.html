@@ -6108,11 +6108,8 @@ else if (learningMode === 2) { // Rest Mode
           // Block kalau tipsFasa0 kosong
           const curDataF0 = allFacts[currentFactIndex];
           const drawerF0 = curDataF0 ? allBahasaDrawers.find(d => d.id === curDataF0.drawerId) : null;
-          if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
-            isBlocked = true;
+if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
             showToast('⚠️ Sila isi Tips F0 dahulu sebelum boleh countdown!', 3500);
-            bukaTipsSebutan(drawerF0 || { id: curDataF0.drawerId, title: curDataF0.title, tips: '', tipsFasa0: '' }, '0');
-            setTimeout(() => { isBlocked = false; }, 3500);
             return;
           }
           bahasaEjaanCount--;
@@ -6159,11 +6156,8 @@ else if (learningMode === 2) { // Rest Mode
               // Block kalau tips fasa 1&2 kosong
               const curDataF1 = allFacts[currentFactIndex];
               const drawerF1 = curDataF1 ? allBahasaDrawers.find(d => d.id === curDataF1.drawerId) : null;
-              if (!drawerF1 || !drawerF1.tips || !drawerF1.tips.trim()) {
-                isBlocked = true;
+if (!drawerF1 || !drawerF1.tips || !drawerF1.tips.trim()) {
                 showToast('⚠️ Sila isi Tips F1&2 dahulu sebelum boleh ke laci seterusnya!', 3500);
-                bukaTipsSebutan(drawerF1 || { id: curDataF1?.drawerId, title: curDataF1?.title, tips: '', tipsFasa0: '' }, '1');
-                setTimeout(() => { isBlocked = false; }, 3500);
                 return;
               }
               // Fasa 2 habis → tunjuk "laci tamat" → user tap → laci seterusnya → popup Al-Quran
