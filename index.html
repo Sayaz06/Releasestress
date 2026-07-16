@@ -6135,7 +6135,17 @@ if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
           return;
         }
 
-        // ── FASA 1 & 2 BAHASA ──
+// ── FASA 1 & 2 BAHASA ──
+        // Block countdown pertama fasa 2 kalau tips kosong
+        if (isB && bahasaRestPhase === 2 && bahasaRestCount === REST_CYCLES[bahasaRestCycleIdx].fasa2) {
+          const curDataF2 = allFacts[currentFactIndex];
+          const drawerF2 = curDataF2 ? allBahasaDrawers.find(d => d.id === curDataF2.drawerId) : null;
+          if (!drawerF2 || !drawerF2.tips || !drawerF2.tips.trim()) {
+            showToast('⚠️ Sila isi Tips F1&2 dahulu sebelum boleh countdown Fasa 2!', 3500);
+            return;
+          }
+        }
+
         if (isB) bahasaRestCount--; else mainRestCount--;
         const rCount = isB ? bahasaRestCount : mainRestCount;
         const rPhase = isB ? bahasaRestPhase : mainRestPhase;
@@ -6144,13 +6154,6 @@ if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
         if (rCount <= 0) {
           if (isB) {
 if (rPhase === 1) {
-              // Semak tips sebelum masuk fasa 2
-              const curDataF2 = allFacts[currentFactIndex];
-              const drawerF2 = curDataF2 ? allBahasaDrawers.find(d => d.id === curDataF2.drawerId) : null;
-              if (!drawerF2 || !drawerF2.tips || !drawerF2.tips.trim()) {
-                showToast('⚠️ Sila isi Tips F1&2 dahulu sebelum boleh masuk Fasa 2!', 3500);
-                return;
-              }
               // Fasa 1 habis → video rest + MyLaw → Fasa 2
               showVideoRest(() => {
                 bahasaRestPhase = 2;
