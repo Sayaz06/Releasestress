@@ -10540,21 +10540,44 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap 
         const prevDrawers = [...allBahasaDrawers];
         allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
-        if (bahasaMode) {
-          // Semak sama ada perubahan hanya pada tips/tipsFasa0 sahaja
-          // Kalau ya, update allFacts dan allBahasaDrawers tanpa reset index
+if (bahasaMode) {
+          // Simpan index dan fasa semasa sebelum semak
+          const savedIndex = currentFactIndex;
+          const savedRestPhase = bahasaRestPhase;
+          const savedRestCount = bahasaRestCount;
+          const savedEjaanCount = bahasaEjaanCount;
+
+          // Semak sama ada perubahan hanya pada field tips/tipsFasa0/updatedAt sahaja
           const hanyaTipsUpdate = snap.docs.every(d => {
             const prev = prevDrawers.find(p => p.id === d.id);
-            if (!prev) return false; // laci baru — kena rebuild penuh
+            if (!prev) return false;
             const data = d.data();
-            const tiadsPerubahan = prev.title === data.title && prev.notes === data.notes;
-            return tiadsPerubahan; // hanya tips yang berubah
+            // Bandingkan field yang penting sahaja — ignore tips, tipsFasa0, updatedAt
+            return (
+              prev.title === data.title &&
+              prev.notes === data.notes &&
+              prev.repeatCount === data.repeatCount &&
+              prev.jenisId === data.jenisId &&
+              prev.perkataanId === data.perkataanId
+            );
           });
+
           if (hanyaTipsUpdate) {
-            // Tak perlu rebuild — index kekal, hanya data tips dikemaskini
+            // Hanya tips berubah — tak perlu rebuild, kekalkan kedudukan semasa
             return;
           }
+
+          // Ada perubahan lain — rebuild tapi cuba kekalkan kedudukan
           rebuildBahasa();
+
+          // Pulihkan kedudukan selepas rebuild kalau masih dalam julat
+          if (savedIndex < allFacts.length) {
+            currentFactIndex = savedIndex;
+            bahasaRestPhase = savedRestPhase;
+            bahasaRestCount = savedRestCount;
+            bahasaEjaanCount = savedEjaanCount;
+            renderCurrentFact();
+          }
         }
       });
     }
