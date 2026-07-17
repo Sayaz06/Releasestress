@@ -6287,7 +6287,7 @@ if (rPhase === 1) {
                 showToast("Fasa 2 bermula!");
               });
 } else {
-              // Fasa 2 habis → tunjuk "laci tamat" → user tap → laci seterusnya → popup Al-Quran
+// Fasa 2 habis → tunjuk "laci tamat" message dulu → user tap → laci seterusnya → popup Al-Quran
               triggerVibration([100, 50, 100]);
               isBlocked = true;
               bahasaRestPhase = 1;
@@ -6295,6 +6295,23 @@ if (rPhase === 1) {
               bahasaEjaanCount = 5;
               isFlipped = false;
               updateMainPlus5Btn();
+
+              // ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
+              const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].drawerId : null;
+              if (laciSelesaiId) {
+                // Kalau ini SR session yang baru selesai
+                if (srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === laciSelesaiId) {
+                  selesaiSRUlangan(laciSelesaiId).then(() => {
+                    srLaciSemasa = null;
+                    showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR((srLaciSemasa || {fasaSemasa: 0}).fasaSemasa)}`, 3000);
+                  });
+                } else {
+                  // Laci baru habis dihafal — daftar dalam SR queue
+                  daftarSRBaru(laciSelesaiId).then(() => {
+                    showToast('⏰ Laci didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
+                  });
+                }
+              }
 
               // Cari index laci seterusnya (isFasaEjaan berikutnya)
               let nextLaciIdx = currentFactIndex + 1;
@@ -6315,10 +6332,17 @@ if (rPhase === 1) {
               factHintEl.textContent = '';
 
               // Setelah block habis, tunggu user tap sendiri
-              setTimeout(() => {
+              setTimeout(async () => {
                 isBlocked = false;
                 // Override cycleFact untuk 1 tap seterusnya → pergi laci + popup
-                const tapSeterusnya = () => {
+                const tapSeterusnya = async () => {
+                  // ── CHECK SR QUEUE SEBELUM KE LACI SETERUSNYA ──
+                  const adaSR = await checkSRQueue();
+                  if (adaSR && muatSRLaciSeterusnya()) {
+                    tunjukPopupSR(srLaciSemasa);
+                    await muatLaciSRKeDalamFacts(srLaciSemasa);
+                    return;
+                  }
                   currentFactIndex = targetIdx;
                   syncIndexToFirestore(currentFactIndex);
                   triggerFadeAnimation(renderCurrentFact);
