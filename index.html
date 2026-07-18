@@ -1818,6 +1818,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
             <button id="btn-go-sr-queue" class="btn btn-secondary btn-sm" style="border-color:#fcd34d;color:#fcd34d;">⏰ SR Queue</button>
+            <button id="btn-toggle-rehat" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">💤 Rehat: ON</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 5r5</button>
             <button id="btn-main-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
@@ -3056,13 +3057,18 @@ if (snap.exists() && snap.data().videoRehatUrl) {
     });
 
 function showVideoRest(callback) {
+        // Rehat OFF — terus jalankan callback tanpa video rest
+        if (!rehatMode) {
+          callback();
+          return;
+        }
+
         restYoutube.style.display = 'block';
         restYoutube.src = globalVideoRehatUrl || "https://www.youtube.com/embed/dXZtogyYzyU?autoplay=1&rel=0&playsinline=1";
         
         videoOverlay.style.display = 'flex';
         currentRestCallback = callback;
         
-        // KOD BARU: Tukar text button kepada "Lihat Peraturan" (bukan terus "Sambung Fasa 2")
         btnSambungFasa2.textContent = "Lihat Peraturan 📜";
     }
 
@@ -3080,6 +3086,12 @@ btnSambungFasa2.addEventListener('click', () => {
     });
 // ── POPUP REHAT BAHASA ──
 function bukaBahasaRehatPopup(callback) {
+      // Rehat OFF — skip popup terus
+      if (!rehatMode) {
+        callback();
+        return;
+      }
+
       const popup = document.getElementById('bahasa-rehat-popup');
       if (!popup) { callback(); return; }
 
@@ -3123,6 +3135,19 @@ function bukaBahasaRehatPopup(callback) {
         if (newInput.value.trim().toLowerCase() === 'pergi ke quran') cuba();
       });
     }
+
+// ── TOGGLE REHAT ──
+    let rehatMode = true; // Default: ON, reset setiap buka app
+
+    document.getElementById('btn-toggle-rehat').addEventListener('click', () => {
+      rehatMode = !rehatMode;
+      const btn = document.getElementById('btn-toggle-rehat');
+      btn.textContent = `💤 Rehat: ${rehatMode ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('btn-active', rehatMode);
+      btn.style.color = rehatMode ? '#c4b5fd' : 'var(--subtext)';
+      btn.style.borderColor = rehatMode ? '#a78bfa' : 'var(--border-mid)';
+      showToast(`💤 Rehat ${rehatMode ? 'ON — video rest & peraturan aktif' : 'OFF — terus ke fasa seterusnya'}`, 3000);
+    });
 
     // MUZIK GLOBAL
     const bgMusic = new Audio('backgroundmusic.mp3');
@@ -5704,10 +5729,10 @@ function simpanKeLaciJogging() {
             triggerVibration([200, 100, 200, 100, 2000]);
         }
         
-        if (isJoggingVideoRestON && joggingPhase === 1) {
+if (isJoggingVideoRestON && joggingPhase === 1 && rehatMode) {
             joggingCount.textContent = "Rehat";
             joggingMiniCount.textContent = "⏸️";
-showVideoRest(() => {
+            showVideoRest(() => {
                 joggingPhase = 2;
                 document.getElementById('jogging-phase-label').textContent = "Fasa 2: Baki Hafalan";
                 joggingTapCount = REST_CYCLES[joggingCycleIdx].fasa2;
@@ -6343,16 +6368,25 @@ if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
         const cyc    = REST_CYCLES[isB ? bahasaRestCycleIdx : mainRestCycleIdx];
 
         if (rCount <= 0) {
-          if (isB) {
+if (isB) {
 if (rPhase === 1) {
               // Fasa 1 habis → video rest + MyLaw → Fasa 2
-              showVideoRest(() => {
+              if (rehatMode) {
+                showVideoRest(() => {
+                  bahasaRestPhase = 2;
+                  bahasaRestCount = cyc.fasa2;
+                  updateMainPlus5Btn();
+                  renderCurrentFact();
+                  showToast("Fasa 2 bermula!");
+                });
+              } else {
+                // Rehat OFF — terus ke fasa 2
                 bahasaRestPhase = 2;
                 bahasaRestCount = cyc.fasa2;
                 updateMainPlus5Btn();
                 renderCurrentFact();
                 showToast("Fasa 2 bermula!");
-              });
+              }
 } else {
 // Fasa 2 habis → tunjuk "laci tamat" message dulu → user tap → laci seterusnya → popup Al-Quran
               triggerVibration([100, 50, 100]);
@@ -6420,15 +6454,23 @@ if (rPhase === 1) {
                 window._bahasaNextLaciHandler = tapSeterusnya;
               }, 300);
             }
-          } else {
+} else {
             // Mode fakta biasa (bukan bahasa)
             if (rPhase === 1) {
-              showVideoRest(() => {
+              if (rehatMode) {
+                showVideoRest(() => {
+                  mainRestPhase = 2; mainRestCount = cyc.fasa2; mainPlus5Used = false;
+                  updateMainPlus5Btn();
+                  renderCurrentFact();
+                  showToast("Fasa 2 bermula!");
+                });
+              } else {
+                // Rehat OFF — terus ke fasa 2
                 mainRestPhase = 2; mainRestCount = cyc.fasa2; mainPlus5Used = false;
                 updateMainPlus5Btn();
                 renderCurrentFact();
                 showToast("Fasa 2 bermula!");
-              });
+              }
             } else {
               triggerVibration([200, 100, 200, 100, 2000]);
               isBlocked = true;
@@ -8600,10 +8642,10 @@ if (result.score > 0) {
         
         let finalScore = memanahTotalScore;
 
-        if (isMemanahVideoRestON && memanahPhase === 1) {
+if (isMemanahVideoRestON && memanahPhase === 1 && rehatMode) {
             memanahMiniCount.textContent = "⏸️";
             memanahBigCount.textContent = "⏸️";
-showVideoRest(() => {
+            showVideoRest(() => {
                 memanahPhase = 2;
                 document.getElementById('memanah-phase-label').textContent = "Fasa 2";
                 memanahTapCount = REST_CYCLES[memanahCycleIdx].fasa2;
