@@ -5903,7 +5903,22 @@ function getRemainingInLaci() {
       return count;
     }
 
-function renderCurrentFact() {
+// Cache SR queue IDs supaya tak perlu fetch Firestore setiap render
+    let srQueueIds = new Set();
+
+    async function refreshSRQueueIds() {
+      if (!currentUser) return;
+      try {
+        const snap = await getDocs(
+          collection(db, "users", currentUser.uid, "bahasa_sr_queue")
+        );
+        srQueueIds = new Set(snap.docs.map(d => d.id));
+      } catch(e) {
+        console.log("Gagal refresh SR queue IDs:", e);
+      }
+    }
+
+    function renderCurrentFact() {
       const dataSource = routineMode ? allRoutines : allFacts;
       const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
 
@@ -5919,20 +5934,64 @@ function renderCurrentFact() {
       const data = dataSource[currentIndex];
       
       factContentEl.scrollTop = 0;
+
+      // ── WARNA SR MODE ──
+      const isSR = !!(data && data.isSRMode);
+      const sudahDalamSR = !isSR && bahasaMode && data.drawerId && srQueueIds.has(data.drawerId);
+      const srWarnaTajuk = '#fcd34d';
+      const srWarnaKandungan = '#93c5fd';
+      const normalWarnaTajuk = 'var(--grad2)';
+      const normalWarnaKandungan = 'var(--text)';
+
+      // Apply warna border kotak fakta ikut SR mode
+      if (isSR) {
+        factDisplayBox.style.borderColor = 'rgba(245,158,11,0.5)';
+        factDisplayBox.style.background = 'rgba(30,41,59,0.85)';
+      } else {
+        factDisplayBox.style.borderColor = '';
+        factDisplayBox.style.background = '';
+      }
+
+      // ── TANDA KECIL SR (sudah dalam queue, bukan SR session) ──
+      const oldSRBadge = document.getElementById('sr-badge-kecil');
+      if (oldSRBadge) oldSRBadge.remove();
+      if (sudahDalamSR && !data.isFasaEjaan) {
+        const badge = document.createElement('div');
+        badge.id = 'sr-badge-kecil';
+        badge.style.cssText = `
+          position:absolute;
+          top:6px;
+          left:8px;
+          font-size:0.58rem;
+          font-weight:700;
+          color:#fcd34d;
+          background:rgba(245,158,11,0.15);
+          border:1px solid rgba(245,158,11,0.3);
+          border-radius:999px;
+          padding:1px 7px;
+          pointer-events:none;
+          z-index:10;
+          letter-spacing:0.03em;
+        `;
+        badge.textContent = '⏰ SR';
+        factDisplayBox.appendChild(badge);
+      }
       
       if (data.isTamat) {
         factTitleEl.textContent = `[ Status ]`;
-        factContentEl.innerHTML = `<span style="color: #fca5a5; font-weight: bold;">${data.text}</span>`;
+        factTitleEl.style.color = isSR ? srWarnaTajuk : '';
+        factContentEl.innerHTML = `<span style="color:${isSR ? '#fcd34d' : '#fca5a5'}; font-weight:bold;">${data.text}</span>`;
         factHintEl.style.display = 'none';
         btnSpeak.style.display = 'none';
         btnCopyFact.style.display = 'none';
         return;
       }
 
-// ── FASA EJAAN BAHASA ──
-if (bahasaMode && data.isFasaEjaan) {
-        factTitleEl.textContent = `[ Fasa Ejaan ]`;
-        factContentEl.innerHTML = `<span style="font-size:1.4rem; font-weight:700; color:#22d3ee;">${data.text}</span>`;
+      // ── FASA EJAAN BAHASA ──
+      if (bahasaMode && data.isFasaEjaan) {
+        factTitleEl.textContent = isSR ? `[ ⏰ SR — Fasa Ejaan ]` : `[ Fasa Ejaan ]`;
+        factTitleEl.style.color = isSR ? srWarnaTajuk : 'var(--grad2)';
+        factContentEl.innerHTML = `<span style="font-size:1.4rem; font-weight:700; color:${isSR ? srWarnaKandungan : '#22d3ee'};">${data.text}</span>`;
         factContentEl.style.fontSize = '';
         factContentEl.style.lineHeight = '';
         factContentEl.style.fontFamily = '';
@@ -5947,10 +6006,18 @@ if (bahasaMode && data.isFasaEjaan) {
       }
 
       if (!isFlipped) {
-        factTitleEl.textContent = routineMode ? `[ Zikir: ${data.title} ]` : `[ ${data.title} ]`;
+        factTitleEl.textContent = isSR
+          ? `[ ⏰ SR — ${data.title} ]`
+          : routineMode ? `[ Zikir: ${data.title} ]` : `[ ${data.title} ]`;
+        factTitleEl.style.color = isSR ? srWarnaTajuk : normalWarnaTajuk;
+        factContentEl.style.color = isSR ? srWarnaKandungan : normalWarnaKandungan;
         factContentEl.innerHTML = formatTextToHtmlList(data.text);
       } else {
-        factTitleEl.textContent = routineMode ? `[ Zikir: ${data.title} ] (Maksud)` : `[ ${data.title} ] (Maksud)`;
+        factTitleEl.textContent = isSR
+          ? `[ ⏰ SR — ${data.title} ] (Maksud)`
+          : routineMode ? `[ Zikir: ${data.title} ] (Maksud)` : `[ ${data.title} ] (Maksud)`;
+        factTitleEl.style.color = isSR ? srWarnaTajuk : normalWarnaTajuk;
+        factContentEl.style.color = isSR ? srWarnaKandungan : normalWarnaKandungan;
         if (data.translation) {
           factContentEl.innerHTML = formatTextToHtmlList(data.translation);
         } else {
@@ -10228,8 +10295,9 @@ addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~",
           fsShowingMaksud = false;
           factDisplayBox.classList.add("show");
 
-          // ── CHECK SR QUEUE BILA ON BAHASA ──
+// ── CHECK SR QUEUE BILA ON BAHASA ──
           showToast('⏳ Menyemak ulangan SR...', 1500);
+          await refreshSRQueueIds();
           const adaSR = await checkSRQueue();
           if (adaSR && muatSRLaciSeterusnya()) {
             // Ada SR overdue — muat SR dulu sebelum laci biasa
@@ -10870,7 +10938,7 @@ document.getElementById('btn-copy-tips-sebutan').addEventListener('click', () =>
     let srLaciSemasa = null;    // Rekod SR laci yang sedang diulang
 
     // Daftar laci baru dalam SR queue bila hit isTamat
-    async function daftarSRBaru(drawerId) {
+async function daftarSRBaru(drawerId) {
       if (!currentUser) return;
       const drawer = allBahasaDrawers.find(d => d.id === drawerId);
       if (!drawer) return;
@@ -10883,7 +10951,11 @@ document.getElementById('btn-copy-tips-sebutan').addEventListener('click', () =>
       const snap = await getDoc(refSR);
 
       if (snap.exists()) {
-        // Dah ada — jangan overwrite, biarkan sistem SR yang sedia ada
+        // Dah ada — tunjuk toast berbeza
+        const data = snap.data();
+        const fasaLabel = getLabelFasaSR(data.fasaSemasa);
+        const masaUlangan = formatTarikhMasaSR(data.nextDueAt);
+        showToast(`⏰ Sudah disimpan sebelum ini — ${fasaLabel} — ${masaUlangan}`, 4000);
         return;
       }
 
@@ -10894,11 +10966,16 @@ document.getElementById('btn-copy-tips-sebutan').addEventListener('click', () =>
         perkataanId: drawer.perkataanId || '',
         jenisId: drawer.jenisId || '',
         hafalAt: now,
-        fasaSemasa: 0,         // Index fasa seterusnya (0 = belum buat ulangan pertama)
-        nextDueAt,             // Bila patut diulang seterusnya
-        sejarahFasa: [],       // Rekod bila setiap fasa selesai
+        fasaSemasa: 0,
+        nextDueAt,
+        sejarahFasa: [],
         createdAt: now
       });
+
+      // Kemaskini cache
+      srQueueIds.add(drawerId);
+      // Refresh display
+      renderCurrentFact();
     }
 
     // Kemaskini SR rekod selepas selesai satu ulangan
