@@ -10505,8 +10505,11 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
       });
     }
 
-function renderBahasaDrawers() {
+async function renderBahasaDrawers() {
       const list = document.getElementById('bahasa-drawer-list');
+
+      // Refresh SR queue IDs supaya tanda SR terkini
+      await refreshSRQueueIds();
 
       // Floating button ke countdown — tunjuk bila ada perkataan aktif
       const existingFloat = document.getElementById('btn-float-countdown-bahasa');
@@ -10543,16 +10546,27 @@ const sorted = [...filtered].sort((a, b) => {
         list.innerHTML = '<div class="empty-state">Belum ada perkataan. Tekan Tambah.</div>';
         return;
       }
-      sorted.forEach(data => {
+
+sorted.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
 
-const adaTips = !!(data.tips && data.tips.trim());
+        const adaTips = !!(data.tips && data.tips.trim());
         const adaTipsFasa0 = !!(data.tipsFasa0 && data.tipsFasa0.trim());
+        const adaSRQueue = srQueueIds.has(data.id);
+
+        // Kalau dalam SR queue, bagi border kuning sedikit
+        if (adaSRQueue) {
+          div.style.borderColor = 'rgba(245,158,11,0.35)';
+        }
+
         div.innerHTML = `
           <div class="drawer-title-wrapper" style="align-items:flex-start;">
             <textarea class="drawer-title" placeholder="Perkataan / Tajuk" rows="1" style="resize:none;overflow:hidden;min-height:28px;line-height:1.4;">${data.title||''}</textarea>
-            <span class="badge-status badge-done" style="flex-shrink:0;">Ulang: ${data.repeatCount||0}</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+              ${adaSRQueue ? `<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;white-space:nowrap;">⏰ SR</span>` : ''}
+              <span class="badge-status badge-done">Ulang: ${data.repeatCount||0}</span>
+            </div>
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan / Contoh ayat">${data.notes||''}</textarea>
           <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
@@ -10564,7 +10578,7 @@ const adaTips = !!(data.tips && data.tips.trim());
             </button>
             <button class="btn btn-secondary btn-sm btn-del-bd" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
-        `;
+        `;  
         
 const tajukEl = div.querySelector('.drawer-title');
         const autoExpand = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
