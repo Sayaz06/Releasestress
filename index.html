@@ -5447,7 +5447,7 @@ if (didDecrement) {
           }
           isBlocked = true;
           setTimeout(() => { isBlocked = false; }, isQuranSempadan ? 1300 : 2600);
-        } else if (!factMode && !routineMode && remaining % 50 === 0) {
+} else if (!factMode && !routineMode && !bahasaMode && remaining % 50 === 0) {
           // Getaran panjang bila capai gandaan 50 (9950, 9900... 50, 0, -50, -100...)
           triggerVibration([200, 100, 200, 100, 2000]);
           isBlocked = true;
@@ -6319,41 +6319,45 @@ function syncIndexToFirestore(newIndex) {
 else if (learningMode === 2) { // Rest Mode
         const isB = bahasaMode;
 
-        // ── FASA EJAAN BAHASA (FASA 0) — countdown tetap 5, tiada video rest ──
+// ── FASA EJAAN BAHASA (FASA 0) — countdown tetap 5, tiada video rest ──
         if (isB && allFacts[currentFactIndex] && allFacts[currentFactIndex].isFasaEjaan) {
           // Block kalau tipsFasa0 kosong
           const curDataF0 = allFacts[currentFactIndex];
           const drawerF0 = curDataF0 ? allBahasaDrawers.find(d => d.id === curDataF0.drawerId) : null;
-if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
+          if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
             showToast('⚠️ Sila isi Tips F0 dahulu sebelum boleh countdown!', 3500);
             return;
           }
           bahasaEjaanCount--;
           if (bahasaEjaanCount <= 0) {
-            // Fasa 0 habis → getaran pendek → terus ke Fasa 1 (tiada video rest)
-            triggerVibration([100, 50, 100]);
+            // Fasa 0 habis → getaran PANJANG + block 2.6 saat → terus ke Fasa 1
+            triggerVibration([200, 100, 200, 100, 2000]);
+            isBlocked = true;
             bahasaEjaanCount = 5;
-            // Pergi ke fakta pertama dalam laci ini (selepas isFasaEjaan)
             const laciFasaEjaanDrawerId = allFacts[currentFactIndex].drawerId;
             let nextIdx = currentFactIndex + 1;
             while (nextIdx < allFacts.length && allFacts[nextIdx].drawerId === laciFasaEjaanDrawerId && allFacts[nextIdx].isFasaEjaan) {
               nextIdx++;
             }
-            currentFactIndex = nextIdx < allFacts.length ? nextIdx : currentFactIndex + 1;
-            if (currentFactIndex >= allFacts.length) currentFactIndex = 0;
+            const targetIdx = nextIdx < allFacts.length ? nextIdx : currentFactIndex + 1;
+            const finalIdx = targetIdx >= allFacts.length ? 0 : targetIdx;
             bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
             bahasaRestPhase = 1;
             isFlipped = false;
-            triggerFadeAnimation(renderCurrentFact);
+            setTimeout(() => {
+              isBlocked = false;
+              currentFactIndex = finalIdx;
+              triggerFadeAnimation(renderCurrentFact);
+              showToast('✅ Fasa 0 selesai! Fasa 1 bermula.');
+            }, 2600);
           } else {
             renderCurrentFact();
           }
           return;
         }
-
 // ── FASA 1 & 2 BAHASA ──
         // Block countdown pertama fasa 1 kalau tips kosong
-        if (isB && bahasaRestPhase === 1 && bahasaRestCount === REST_CYCLES[bahasaRestCycleIdx].fasa1) {
+if (isB && bahasaRestPhase === 1 && bahasaRestCount === REST_CYCLES[bahasaRestCycleIdx].fasa1) {
           const curDataF1 = allFacts[currentFactIndex];
           const drawerF1 = curDataF1 ? allBahasaDrawers.find(d => d.id === curDataF1.drawerId) : null;
           if (!drawerF1 || !drawerF1.tips || !drawerF1.tips.trim()) {
@@ -6368,10 +6372,12 @@ if (!drawerF0 || !drawerF0.tipsFasa0 || !drawerF0.tipsFasa0.trim()) {
         const cyc    = REST_CYCLES[isB ? bahasaRestCycleIdx : mainRestCycleIdx];
 
         if (rCount <= 0) {
-if (isB) {
+          if (isB) {
 if (rPhase === 1) {
               // Fasa 1 habis → video rest + MyLaw → Fasa 2
               if (rehatMode) {
+                // Getaran pendek sahaja — video rest jadi penanda peralihan
+                triggerVibration([100, 50, 100]);
                 showVideoRest(() => {
                   bahasaRestPhase = 2;
                   bahasaRestCount = cyc.fasa2;
@@ -6380,12 +6386,17 @@ if (rPhase === 1) {
                   showToast("Fasa 2 bermula!");
                 });
               } else {
-                // Rehat OFF — terus ke fasa 2
-                bahasaRestPhase = 2;
-                bahasaRestCount = cyc.fasa2;
-                updateMainPlus5Btn();
-                renderCurrentFact();
-                showToast("Fasa 2 bermula!");
+                // Rehat OFF — getaran panjang + block 2.6 saat sebagai penanda peralihan
+                triggerVibration([200, 100, 200, 100, 2000]);
+                isBlocked = true;
+                setTimeout(() => {
+                  isBlocked = false;
+                  bahasaRestPhase = 2;
+                  bahasaRestCount = cyc.fasa2;
+                  updateMainPlus5Btn();
+                  renderCurrentFact();
+                  showToast("Fasa 2 bermula!");
+                }, 2600);
               }
 } else {
 // Fasa 2 habis → tunjuk "laci tamat" message dulu → user tap → laci seterusnya → popup Al-Quran
