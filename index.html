@@ -10302,15 +10302,10 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
 perkataanDalamJenis.forEach(perkataan => {
         // Debug — log struktur perkataan dan laci
-        console.log('=== PERKATAAN ===', perkataan.id, perkataan.name);
-        console.log('allBahasaDrawers count:', allBahasaDrawers.length);
-        const semuaLaciPerkataan = allBahasaDrawers.filter(d => d.perkataanId === perkataan.id);
-        const semuaLaciJenis = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
-        console.log('Laci dengan perkataanId:', semuaLaciPerkataan.length);
-        console.log('Laci dengan jenisId:', semuaLaciJenis.length);
-        if (allBahasaDrawers.length > 0) {
-          console.log('Contoh laci pertama:', JSON.stringify(allBahasaDrawers[0]));
+if (allBahasaDrawers.length > 0) {
+          console.log('SATU LACI:', JSON.stringify(allBahasaDrawers[0]));
         }
+        console.log('PERKATAAN ID:', perkataan.id, '| NAMA:', perkataan.name);
 
         // Dapatkan bahagian english dari tajuk perkataan (selepas →)
         const arrowIdx = (perkataan.name || '').indexOf('→');
