@@ -10285,78 +10285,16 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
       setTimeout(() => document.getElementById('jana-tips-pukal-input').focus(), 80);
     });
 
-document.getElementById('btn-export-format-ai')?.addEventListener('click', () => {
+    document.getElementById('btn-export-format-ai')?.addEventListener('click', () => {
       if (!currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
-
-      console.log('Export — currentJenisKataId:', currentJenisKataId);
-      console.log('allBahasaPerkataan count:', allBahasaPerkataan.length);
-      console.log('allBahasaDrawers count:', allBahasaDrawers.length);
 
       // Ambil semua perkataan dalam jenis kata semasa, susun ikut nama
       const perkataanDalamJenis = allBahasaPerkataan
         .filter(p => p.jenisId === currentJenisKataId)
         .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
 
-      console.log('perkataanDalamJenis:', perkataanDalamJenis.length);
-
-      // Kalau filter jenisId kosong, cuba ambil terus dari laci menggunakan jenisId
       if (!perkataanDalamJenis.length) {
-        // Fallback: Jana terus dari laci yang ada jenisId sama
-        const laciDalamJenis = allBahasaDrawers
-          .filter(d => d.jenisId === currentJenisKataId)
-          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
-
-        console.log('Fallback — laciDalamJenis:', laciDalamJenis.length);
-
-        if (!laciDalamJenis.length) {
-          showToast('⚠️ Tiada data dijumpai. Cuba keluar dan masuk semula ke halaman Perkataan.');
-          return;
-        }
-
-        // Kumpulkan ikut perkataanId
-        const byPerkataan = {};
-        laciDalamJenis.forEach(laci => {
-          const pid = laci.perkataanId || 'unknown';
-          if (!byPerkataan[pid]) byPerkataan[pid] = [];
-          byPerkataan[pid].push(laci);
-        });
-
-        const outputLines = ['Sayaz', ''];
-
-        Object.values(byPerkataan).forEach(laciGroup => {
-          // Ambil english dari tajuk laci pertama — format: "1.BM → english"
-          const firstLaci = laciGroup[0];
-          const arrowIdx = (firstLaci.title || '').indexOf('→');
-          if (arrowIdx === -1) return;
-          const english = firstLaci.title.slice(arrowIdx + 1).trim();
-          if (!english) return;
-
-          outputLines.push(`→ ${english}`);
-
-          laciGroup.forEach(laci => {
-            if (!laci.notes || !laci.notes.trim()) return;
-            const lines = laci.notes.split('\n').filter(l => l.trim());
-            lines.forEach(line => {
-              const eqIdx = line.indexOf('=');
-              const ayat = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
-              if (ayat) outputLines.push(ayat);
-            });
-          });
-
-          outputLines.push('');
-        });
-
-        const finalText = outputLines.join('\n').trim();
-        if (!finalText || finalText === 'Sayaz') {
-          showToast('⚠️ Tiada kandungan dalam notes laci.');
-          return;
-        }
-
-        navigator.clipboard.writeText(finalText).then(() => {
-          showToast('✅ Format AI berjaya disalin! (Fallback mode)', 4000);
-        }).catch(() => {
-          tunjukModalExport(finalText);
-        });
+        showToast('⚠️ Tiada perkataan dalam jenis kata ini.');
         return;
       }
 
@@ -10426,24 +10364,21 @@ perkataanDalamJenis.forEach(perkataan => {
       }
 
       // Copy ke clipboard
-navigator.clipboard.writeText(finalText).then(() => {
+      navigator.clipboard.writeText(finalText).then(() => {
         showToast('✅ Format AI berjaya disalin! Pergi ke Claude dan tampal.', 4000);
       }).catch(() => {
-        tunjukModalExport(finalText);
+        // Fallback — tunjuk dalam modal kecil
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:20px;';
+        modal.innerHTML = `
+          <div style="background:#0a1628;border:1px solid #7c3aed;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;gap:12px;">
+            <div style="font-size:1rem;font-weight:700;color:#a78bfa;">📤 Format AI — Salin Manual</div>
+            <textarea style="flex:1;min-height:300px;background:rgba(0,0,0,0.3);border:1px solid #7c3aed;border-radius:8px;color:#e5e7eb;padding:10px;font-size:0.82rem;resize:none;outline:none;" readonly>${finalText}</textarea>
+            <button onclick="this.closest('div').parentElement.remove()" style="padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;cursor:pointer;">Tutup</button>
+          </div>`;
+        document.body.appendChild(modal);
       });
     });
-
-    function tunjukModalExport(teks) {
-      const modal = document.createElement('div');
-      modal.style.cssText = 'position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:20px;';
-      modal.innerHTML = `
-        <div style="background:#0a1628;border:1px solid #7c3aed;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;gap:12px;">
-          <div style="font-size:1rem;font-weight:700;color:#a78bfa;">📤 Format AI — Salin Manual</div>
-          <textarea style="flex:1;min-height:300px;background:rgba(0,0,0,0.3);border:1px solid #7c3aed;border-radius:8px;color:#e5e7eb;padding:10px;font-size:0.82rem;resize:none;outline:none;" readonly>${teks}</textarea>
-          <button onclick="this.closest('div').parentElement.remove()" style="padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;cursor:pointer;">Tutup</button>
-        </div>`;
-      document.body.appendChild(modal);
-    }
 
 // ── MUAT LACI SR KE DALAM FACTS ──
     async function muatLaciSRKeDalamFacts(srData) {
