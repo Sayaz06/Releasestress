@@ -13856,7 +13856,7 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       return hasil;
     }
 
-    // Preview semasa taip
+// Preview semasa taip
     document.getElementById('jana-tips-pukal-input').addEventListener('input', () => {
       const teks = document.getElementById('jana-tips-pukal-input').value;
       const prev = document.getElementById('jana-tips-pukal-preview');
@@ -13869,23 +13869,25 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
         return;
       }
 
-      // Cuba padankan dengan laci dalam allBahasaDrawers
+      // Tapis hanya dalam jenisKata semasa sahaja
+      const laciScope = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
+
       let jumpa = 0;
       let takJumpa = [];
 
       parsed.forEach(p => {
-        const english = p.english.toLowerCase();
-        const match = allBahasaDrawers.find(d => {
+        const english = p.english.trim().toLowerCase();
+        const match = laciScope.find(d => {
           if (!d.title) return false;
-          const parts = d.title.split('→');
-          if (parts.length < 2) return false;
-          return parts[1].trim().toLowerCase() === english;
+          const arrowIdx = d.title.indexOf('→');
+          if (arrowIdx === -1) return false;
+          return d.title.slice(arrowIdx + 1).trim().toLowerCase() === english;
         });
         if (match) jumpa++;
         else takJumpa.push(p.english);
       });
 
-      let msg = `✅ ${parsed.length} laci dikesan | ${jumpa} laci sepadan dijumpai`;
+      let msg = `✅ ${parsed.length} laci dikesan | ${jumpa} / ${parsed.length} sepadan dalam jenis kata ini`;
       if (takJumpa.length > 0) {
         msg += `\n⚠️ Tak jumpa: ${takJumpa.slice(0, 3).join(', ')}${takJumpa.length > 3 ? ` (+${takJumpa.length - 3} lagi)` : ''}`;
       }
@@ -13912,13 +13914,13 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
 const toUpdate = [];
       const takJumpa = [];
 
-      parsed.forEach(p => {
+parsed.forEach(p => {
         const english = p.english.trim().toLowerCase();
         const match = laciDalamJenisKata.find(d => {
           if (!d.title) return false;
-          const parts = d.title.split('→');
-          if (parts.length < 2) return false;
-          return parts[1].trim().toLowerCase() === english;
+          const arrowIdx = d.title.indexOf('→');
+          if (arrowIdx === -1) return false;
+          return d.title.slice(arrowIdx + 1).trim().toLowerCase() === english;
         });
 
         if (match) {
