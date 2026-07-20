@@ -1747,7 +1747,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub" id="parent-perkataan-jenis-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <button id="btn-add-perkataan" class="btn btn-sm mt-8" style="border-color:#06b6d4;">+ Tambah Perkataan</button>
+<button id="btn-add-perkataan" class="btn btn-sm mt-8" style="border-color:#06b6d4;">+ Tambah Perkataan</button>
+        <button id="btn-open-jpt" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;">💡 Jana Pukal Tips Sebutan</button>
         <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
 
@@ -2719,6 +2720,53 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 </div>
 
 <!-- MODAL JANA PUKAL BAHASA -->
+<div id="jana-pukal-tips-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #a78bfa;border-radius:18px;padding:20px;width:100%;max-width:480px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);gap:10px;overflow-y:auto;">
+
+    <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;flex-shrink:0;">💡 Jana Pukal Tips Sebutan</div>
+    <div style="font-size:.73rem;color:#9ca3af;flex-shrink:0;">Tampal output Fasa 4 dari SAYAZ SEBUTAN MATRIX — app akan auto-detect tajuk laci dan masukkan Tips F0 & F1&2 serentak.</div>
+
+    <textarea id="jpt-input" placeholder="Tampal output Fasa 4 di sini...
+
+Contoh format:
+[TAJUK LACI: 1.mengabadikan → immortalise]
+
+F0:
+Perkataan     : immortalise
+Sebutan BM    : i-MOR-te-laiz
+Tekanan       : MOR (suku kata kedua ditekan)
+
+Tips sebutan:
+- tip 1
+- tip 2
+
+F1F2:
+1. The
+Sebutan BM    : DHƏ
+Tekanan       : (satu suku kata)
+Tips sebutan  : tip sebutan
+
+---
+
+[TAJUK LACI: 1.mengabadikan → commemorate]
+..." style="flex:1;min-height:260px;background:rgba(0,0,0,.3);border:1px solid #7c3aed;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.82rem;outline:none;resize:none;box-sizing:border-box;"></textarea>
+
+    <div id="jpt-preview" style="font-size:.72rem;color:#9ca3af;font-style:italic;min-height:16px;flex-shrink:0;"></div>
+
+    <div id="jpt-status" style="display:none;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:12px;font-size:.75rem;line-height:1.9;flex-shrink:0;"></div>
+
+    <div id="jpt-prog-wrap" style="display:none;background:rgba(255,255,255,0.06);border-radius:999px;height:6px;overflow:hidden;flex-shrink:0;">
+      <div id="jpt-prog-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:999px;transition:width 0.3s ease;"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button id="btn-jpt-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">💡 Masukkan Tips</button>
+      <button id="btn-jpt-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
+    </div>
+
+  </div>
+</div>
+
 <div id="jana-pukal-bahasa-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #06b6d4;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#22d3ee;margin-bottom:4px;">🗂️ Jana Pukal Bahasa</div>
@@ -14141,6 +14189,153 @@ list.innerHTML = '';
 // ══════════════════════════════════════════
     // JANA PUKAL BAHASA
     // ══════════════════════════════════════════
+
+// ══════════════════════════════════════════
+    // JANA PUKAL TIPS SEBUTAN
+    // ══════════════════════════════════════════
+
+    function jptParseTips(text) {
+      const result = {};
+      const blocks = text.split(/\[TAJUK LACI:\s*/);
+
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+
+        const tajukMatch = block.match(/^(.+?)\]/);
+        if (!tajukMatch) continue;
+        const tajuk = tajukMatch[1].trim();
+
+        const f0Match = block.match(/F0:\s*([\s\S]*?)(?=F1F2:|---|\[TAJUK LACI:|$)/);
+        const f0 = f0Match ? f0Match[1].trim() : '';
+
+        const f1f2Match = block.match(/F1F2:\s*([\s\S]*?)(?=---|\[TAJUK LACI:|$)/);
+        const f1f2 = f1f2Match ? f1f2Match[1].trim() : '';
+
+        if (tajuk) result[tajuk] = { f0, f1f2 };
+      }
+
+      return result;
+    }
+
+    document.getElementById('btn-open-jpt').addEventListener('click', () => {
+      if (!currentUser || !currentJenisKataId) {
+        showToast('⚠️ Sila buka jenis kata dahulu.'); return;
+      }
+      document.getElementById('jpt-input').value = '';
+      document.getElementById('jpt-preview').textContent = '';
+      document.getElementById('jpt-status').style.display = 'none';
+      document.getElementById('jpt-prog-wrap').style.display = 'none';
+      document.getElementById('jpt-prog-bar').style.width = '0%';
+      document.getElementById('jana-pukal-tips-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('jpt-input').focus(), 80);
+    });
+
+    document.getElementById('btn-jpt-cancel').addEventListener('click', () => {
+      document.getElementById('jana-pukal-tips-modal').style.display = 'none';
+    });
+
+    document.getElementById('jpt-input').addEventListener('input', () => {
+      const teks = document.getElementById('jpt-input').value;
+      const parsed = jptParseTips(teks);
+      const keys = Object.keys(parsed);
+      const preview = document.getElementById('jpt-preview');
+
+      if (!keys.length) {
+        preview.textContent = '';
+        return;
+      }
+
+      const adaF0 = keys.filter(k => parsed[k].f0).length;
+      const adaF1F2 = keys.filter(k => parsed[k].f1f2).length;
+      preview.style.color = '#a78bfa';
+      preview.textContent = `✅ ${keys.length} laci dikesan — F0: ${adaF0} | F1&2: ${adaF1F2}`;
+    });
+
+    document.getElementById('btn-jpt-execute').addEventListener('click', async () => {
+      if (!currentUser || !currentJenisKataId) {
+        showToast('⚠️ Sila buka jenis kata dahulu.'); return;
+      }
+
+      const teks = document.getElementById('jpt-input').value;
+      const parsedTips = jptParseTips(teks);
+      const tajukList = Object.keys(parsedTips);
+
+      if (!tajukList.length) {
+        showToast('⚠️ Tiada tajuk laci dikesan. Semak format output Fasa 4.');
+        return;
+      }
+
+      const btnExecute = document.getElementById('btn-jpt-execute');
+      const btnCancel = document.getElementById('btn-jpt-cancel');
+      const statusEl = document.getElementById('jpt-status');
+      const progWrap = document.getElementById('jpt-prog-wrap');
+      const progBar = document.getElementById('jpt-prog-bar');
+
+      btnExecute.disabled = true;
+      btnExecute.textContent = '⏳ Sedang masukkan...';
+      btnCancel.disabled = true;
+      progWrap.style.display = 'block';
+      statusEl.style.display = 'block';
+
+      // Cari semua laci dalam perkataanId semasa
+      const laciDalamJenis = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
+
+      let selesai = 0;
+      let berjaya = 0;
+      let tidakJumpa = [];
+
+      for (const tajuk of tajukList) {
+        const tipsData = parsedTips[tajuk];
+
+        // Cari laci yang tajuknya sepadan
+        const laciSepadan = laciDalamJenis.find(d =>
+          d.title && d.title.trim().toLowerCase() === tajuk.trim().toLowerCase()
+        );
+
+        if (laciSepadan) {
+          await updateDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", laciSepadan.id), {
+            tipsFasa0: tipsData.f0 || '',
+            tips: tipsData.f1f2 || '',
+            updatedAt: Date.now()
+          });
+          berjaya++;
+        } else {
+          tidakJumpa.push(tajuk);
+        }
+
+        selesai++;
+        const persen = Math.round((selesai / tajukList.length) * 100);
+        progBar.style.width = persen + '%';
+        statusEl.innerHTML = `<div style="color:#a78bfa;">⏳ Memproses ${selesai}/${tajukList.length} — "${tajuk}"...</div>`;
+      }
+
+      // Tunjuk hasil
+      let statusHtml = `<div style="color:#34d399;font-weight:700;margin-bottom:6px;">✅ Selesai!</div>`;
+      statusHtml += `<div>💡 <strong style="color:white;">${berjaya}</strong> laci berjaya dikemaskini</div>`;
+
+      if (tidakJumpa.length > 0) {
+        statusHtml += `<div style="color:#f87171;margin-top:6px;">⚠️ ${tidakJumpa.length} tajuk tidak dijumpai:</div>`;
+        tidakJumpa.forEach(t => {
+          statusHtml += `<div style="font-size:0.68rem;color:#fca5a5;padding-left:8px;">• ${t}</div>`;
+        });
+        statusHtml += `<div style="font-size:0.68rem;color:#9ca3af;margin-top:4px;">Pastikan tajuk dalam output Fasa 4 sama persis dengan tajuk laci dalam app.</div>`;
+      }
+
+      statusEl.innerHTML = statusHtml;
+      progBar.style.width = '100%';
+
+      btnExecute.disabled = false;
+      btnExecute.textContent = '💡 Masukkan Tips';
+      btnCancel.disabled = false;
+
+      showToast(`✅ ${berjaya} laci dikemaskini dengan tips sebutan!`, 4000);
+
+      if (tidakJumpa.length === 0) {
+        setTimeout(() => {
+          document.getElementById('jana-pukal-tips-modal').style.display = 'none';
+        }, 2000);
+      }
+    });
 
     // Toggle panduan
     document.getElementById('btn-toggle-panduan-bahasa').addEventListener('click', () => {
