@@ -13811,30 +13811,26 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
         fasa = null;
       }
 
-      for (let i = 0; i < lines.length; i++) {
+for (let i = 0; i < lines.length; i++) {
         const raw = lines[i];
         const trimmed = raw.trim();
 
-        // Skip baris kosong atau pemisah ---
-        if (!trimmed || trimmed === '---') {
-          if (trimmed === '---') commitLaci();
-          continue;
-        }
+        // Skip baris kosong dan pemisah --- (abaikan terus, jangan commit)
+        if (!trimmed || trimmed === '---') continue;
 
-        // Detect anak panah
+        // Detect anak panah sahaja
         const isArrow = trimmed.startsWith('→') || trimmed.startsWith('->');
         if (isArrow) {
-          // Keluarkan teks selepas anak panah
           const afterArrow = trimmed.replace(/^→\s*|^->\s*/, '').trim();
 
           // Semak sama ada ini "→ Ayat" (sempadan F0/F1)
           const isAyatMarker = afterArrow.toLowerCase() === 'ayat';
 
           if (isAyatMarker) {
-            // Tukar ke fasa F1
+            // Tukar ke fasa F1 — kekal dalam laci yang sama
             fasa = 'f1';
           } else {
-            // Ini laci baru — commit laci sebelum dan mula baru
+            // Anak panah baru = laci baru — commit laci sebelum dan mula baru
             commitLaci();
             currentEnglish = afterArrow;
             fasa = 'f0';
