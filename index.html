@@ -1800,10 +1800,11 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub" id="parent-perkataan-jenis-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
+<div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-perkataan" class="btn btn-sm" style="flex:1;border-color:#06b6d4;">+ Tambah Perkataan</button>
           <button id="btn-open-jana-tips-pukal" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Jana Tips Pukal</button>
         </div>
+        <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export Format AI (Sayaz)</button>
         <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
 
@@ -10282,6 +10283,75 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
       document.getElementById('jana-tips-pukal-preview').textContent = '';
       document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
       setTimeout(() => document.getElementById('jana-tips-pukal-input').focus(), 80);
+    });
+
+    document.getElementById('btn-export-format-ai')?.addEventListener('click', () => {
+      if (!currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
+
+      // Ambil semua perkataan dalam jenis kata semasa, susun ikut nama
+      const perkataanDalamJenis = allBahasaPerkataan
+        .filter(p => p.jenisId === currentJenisKataId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+      if (!perkataanDalamJenis.length) {
+        showToast('⚠️ Tiada perkataan dalam jenis kata ini.');
+        return;
+      }
+
+      const outputLines = ['Sayaz', ''];
+
+      perkataanDalamJenis.forEach(perkataan => {
+        // Dapatkan bahagian english dari tajuk perkataan (selepas →)
+        const arrowIdx = (perkataan.name || '').indexOf('→');
+        if (arrowIdx === -1) return; // Skip kalau tiada →
+
+        const english = perkataan.name.slice(arrowIdx + 1).trim();
+        if (!english) return;
+
+        outputLines.push(`→ ${english}`);
+
+        // Ambil semua laci untuk perkataan ini, susun ikut tajuk
+        const laciPerkataan = allBahasaDrawers
+          .filter(d => d.perkataanId === perkataan.id)
+          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+        // Dari setiap laci, ambil notes — extract bahagian sebelum '=' (ayat english)
+        laciPerkataan.forEach(laci => {
+          if (!laci.notes || !laci.notes.trim()) return;
+          const lines = laci.notes.split('\n').filter(l => l.trim());
+          lines.forEach(line => {
+            // Ambil bahagian sebelum '=' sahaja (ayat english)
+            const eqIdx = line.indexOf('=');
+            const ayat = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
+            if (ayat) outputLines.push(ayat);
+          });
+        });
+
+        outputLines.push(''); // Baris kosong antara laci
+      });
+
+      const finalText = outputLines.join('\n').trim();
+
+      if (!finalText || finalText === 'Sayaz') {
+        showToast('⚠️ Tiada kandungan untuk diexport. Pastikan laci ada notes.');
+        return;
+      }
+
+      // Copy ke clipboard
+      navigator.clipboard.writeText(finalText).then(() => {
+        showToast('✅ Format AI berjaya disalin! Pergi ke Claude dan tampal.', 4000);
+      }).catch(() => {
+        // Fallback — tunjuk dalam modal kecil
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:20px;';
+        modal.innerHTML = `
+          <div style="background:#0a1628;border:1px solid #7c3aed;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;gap:12px;">
+            <div style="font-size:1rem;font-weight:700;color:#a78bfa;">📤 Format AI — Salin Manual</div>
+            <textarea style="flex:1;min-height:300px;background:rgba(0,0,0,0.3);border:1px solid #7c3aed;border-radius:8px;color:#e5e7eb;padding:10px;font-size:0.82rem;resize:none;outline:none;" readonly>${finalText}</textarea>
+            <button onclick="this.closest('div').parentElement.remove()" style="padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;cursor:pointer;">Tutup</button>
+          </div>`;
+        document.body.appendChild(modal);
+      });
     });
 
 // ── MUAT LACI SR KE DALAM FACTS ──
