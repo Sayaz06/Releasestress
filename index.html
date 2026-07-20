@@ -10300,34 +10300,60 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
       const outputLines = ['Sayaz', ''];
 
-      perkataanDalamJenis.forEach(perkataan => {
+perkataanDalamJenis.forEach(perkataan => {
+        // Debug — log struktur perkataan dan laci
+        console.log('=== PERKATAAN ===', perkataan.id, perkataan.name);
+        console.log('allBahasaDrawers count:', allBahasaDrawers.length);
+        const semuaLaciPerkataan = allBahasaDrawers.filter(d => d.perkataanId === perkataan.id);
+        const semuaLaciJenis = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
+        console.log('Laci dengan perkataanId:', semuaLaciPerkataan.length);
+        console.log('Laci dengan jenisId:', semuaLaciJenis.length);
+        if (allBahasaDrawers.length > 0) {
+          console.log('Contoh laci pertama:', JSON.stringify(allBahasaDrawers[0]));
+        }
+
         // Dapatkan bahagian english dari tajuk perkataan (selepas →)
         const arrowIdx = (perkataan.name || '').indexOf('→');
-        if (arrowIdx === -1) return; // Skip kalau tiada →
+        if (arrowIdx === -1) {
+          console.log('SKIP — tiada → dalam nama:', perkataan.name);
+          return;
+        }
 
         const english = perkataan.name.slice(arrowIdx + 1).trim();
-        if (!english) return;
+        if (!english) {
+          console.log('SKIP — english kosong');
+          return;
+        }
 
         outputLines.push(`→ ${english}`);
 
-        // Ambil semua laci untuk perkataan ini, susun ikut tajuk
-        const laciPerkataan = allBahasaDrawers
-          .filter(d => d.perkataanId === perkataan.id)
-          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+        // Cuba kedua-dua cara filter
+        let laciPerkataan = allBahasaDrawers.filter(d => d.perkataanId === perkataan.id);
 
-        // Dari setiap laci, ambil notes — extract bahagian sebelum '=' (ayat english)
+        // Kalau kosong, cuba guna jenisId sahaja (fallback)
+        if (!laciPerkataan.length) {
+          console.log('perkataanId filter kosong — cuba jenisId fallback');
+          laciPerkataan = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
+        }
+
+        laciPerkataan = laciPerkataan.sort((a, b) =>
+          (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
+        );
+
+        console.log('Laci akan diproses:', laciPerkataan.length);
+
         laciPerkataan.forEach(laci => {
+          console.log('  Laci:', laci.title, '| notes:', laci.notes?.substring(0, 50));
           if (!laci.notes || !laci.notes.trim()) return;
           const lines = laci.notes.split('\n').filter(l => l.trim());
           lines.forEach(line => {
-            // Ambil bahagian sebelum '=' sahaja (ayat english)
             const eqIdx = line.indexOf('=');
             const ayat = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
             if (ayat) outputLines.push(ayat);
           });
         });
 
-        outputLines.push(''); // Baris kosong antara laci
+        outputLines.push('');
       });
 
       const finalText = outputLines.join('\n').trim();
