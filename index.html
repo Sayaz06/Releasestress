@@ -1788,10 +1788,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub" id="parent-perkataan-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button id="btn-add-bahasa-laci" class="btn btn-sm" style="flex:1;">+ Tambah Laci</button>
-          <button id="btn-open-jana-tips-pukal" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Jana Tips Pukal</button>
-        </div>
+        <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Laci</button>
         <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
 
@@ -1803,7 +1800,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub" id="parent-perkataan-jenis-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <button id="btn-add-perkataan" class="btn btn-sm mt-8" style="border-color:#06b6d4;">+ Tambah Perkataan</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-perkataan" class="btn btn-sm" style="flex:1;border-color:#06b6d4;">+ Tambah Perkataan</button>
+          <button id="btn-open-jana-tips-pukal" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Jana Tips Pukal</button>
+        </div>
         <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
 
@@ -10276,8 +10276,8 @@ addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~",
     showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
 });
 
-    document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', () => {
-      if (!currentPerkataanId) { showToast('⚠️ Sila buka halaman Laci Bahasa (perkataan) dahulu.'); return; }
+document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', () => {
+      if (!currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
       document.getElementById('jana-tips-pukal-input').value = '';
       document.getElementById('jana-tips-pukal-preview').textContent = '';
       document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
@@ -13893,10 +13893,10 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       prev.textContent = msg;
     });
 
-    // Jana sekarang
+// Jana sekarang
     document.getElementById('btn-jana-tips-pukal-execute').addEventListener('click', async () => {
       if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
-      if (!currentPerkataanId) { showToast('⚠️ Sila buka halaman Laci Bahasa dahulu.'); return; }
+      if (!currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
       const teks = document.getElementById('jana-tips-pukal-input').value;
       const parsed = parseTipsPukal(teks);
@@ -13906,15 +13906,15 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
         return;
       }
 
-      // Padankan dengan laci — hanya laci dalam perkataan semasa
-      const laciDalamPerkataan = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
+      // Padankan dengan laci — semua laci dalam jenis kata semasa
+      const laciDalamJenisKata = allBahasaDrawers.filter(d => d.jenisId === currentJenisKataId);
 
-      const toUpdate = [];
+const toUpdate = [];
       const takJumpa = [];
 
       parsed.forEach(p => {
         const english = p.english.trim().toLowerCase();
-        const match = laciDalamPerkataan.find(d => {
+        const match = laciDalamJenisKata.find(d => {
           if (!d.title) return false;
           const parts = d.title.split('→');
           if (parts.length < 2) return false;
