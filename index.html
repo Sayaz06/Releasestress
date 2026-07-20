@@ -1079,6 +1079,59 @@ body.dark-mode {
   </div>
 </div>
   
+<!-- MODAL JANA TIPS PUKAL -->
+<div id="jana-tips-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #06b6d4;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#22d3ee;margin-bottom:4px;">📝 Jana Tips Pukal (F0 & F1&2)</div>
+    <div style="font-size:.75rem;color:#9ca3af;margin-bottom:10px;">Tampal format tips sebutan untuk isi F0 dan F1&2 semua laci sekaligus</div>
+
+    <button id="btn-toggle-panduan-tips-pukal"
+      style="width:100%;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);border-radius:8px;color:#22d3ee;padding:8px;font-size:0.78rem;font-weight:600;cursor:pointer;margin-bottom:10px;text-align:left;">
+      📘 Lihat Format ▾
+    </button>
+    <div id="panduan-tips-pukal-content" style="display:none;margin-bottom:10px;overflow-y:auto;max-height:200px;">
+      <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:8px;padding:12px;margin-bottom:8px;">
+        <div style="font-size:0.72rem;color:#22d3ee;font-weight:700;margin-bottom:6px;">📌 Format Wajib</div>
+        <div style="font-family:monospace;font-size:0.7rem;color:#e5e7eb;line-height:2;background:rgba(0,0,0,0.3);border-radius:6px;padding:8px;">
+          → [english phrase]<br>
+          Perkataan     : ...<br>
+          Sebutan BM    : ...<br>
+          Tekanan       : ...<br>
+          Tips sebutan:<br>
+          - ...<br>
+          <br>
+          → Ayat<br>
+          1. [perkataan]<br>
+          Sebutan BM    : ...<br>
+          Tekanan       : ...<br>
+          Tips sebutan  : ...<br>
+          <br>
+          ---<br>
+          <br>
+          → [english phrase seterusnya]<br>
+          ...
+        </div>
+      </div>
+      <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px;">
+        <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">⚠️ Nota Penting</div>
+        <div style="font-size:0.7rem;color:#e5e7eb;line-height:2;">
+          • Laci mesti wujud terlebih dahulu dalam koleksi<br>
+          • Tajuk laci format: <strong style="color:#fcd34d;">BM → english</strong> (cth: teragak-agak → keep hesitating)<br>
+          • <strong style="color:white;">→ Ayat</strong> bermaksud sempadan F0/F1&2<br>
+          • <strong style="color:white;">---</strong> atau anak panah baru bermaksud laci seterusnya
+        </div>
+      </div>
+    </div>
+
+    <textarea id="jana-tips-pukal-input" placeholder="Tampal teks format tips di sini..." style="flex:1;min-height:220px;background:rgba(0,0,0,.3);border:1px solid #06b6d4;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;margin-bottom:10px;"></textarea>
+    <div id="jana-tips-pukal-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:10px;font-style:italic;min-height:18px;line-height:1.6;"></div>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-jana-tips-pukal-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
+      <button id="btn-jana-tips-pukal-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
+    </div>
+  </div>
+</div>
+
 <div id="arab-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📖 Tampal Arab Pukal</div>
@@ -1735,8 +1788,11 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub" id="parent-perkataan-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Laci</button>
-                <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-bahasa-laci" class="btn btn-sm" style="flex:1;">+ Tambah Laci</button>
+          <button id="btn-open-jana-tips-pukal" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Jana Tips Pukal</button>
+        </div>
+        <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
 
 <section id="section-bahasa-perkataan" class="section">
@@ -10220,6 +10276,14 @@ addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~",
     showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
 });
 
+    document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', () => {
+      if (!currentPerkataanId) { showToast('⚠️ Sila buka halaman Laci Bahasa (perkataan) dahulu.'); return; }
+      document.getElementById('jana-tips-pukal-input').value = '';
+      document.getElementById('jana-tips-pukal-preview').textContent = '';
+      document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('jana-tips-pukal-input').focus(), 80);
+    });
+
 // ── MUAT LACI SR KE DALAM FACTS ──
     async function muatLaciSRKeDalamFacts(srData) {
       if (!currentUser || !srData) return;
@@ -13707,6 +13771,216 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       }
       return hasil;
     }
+
+// ── JANA TIPS PUKAL ──
+    document.getElementById('btn-toggle-panduan-tips-pukal').addEventListener('click', () => {
+      const content = document.getElementById('panduan-tips-pukal-content');
+      const btn = document.getElementById('btn-toggle-panduan-tips-pukal');
+      const isOpen = content.style.display !== 'none';
+      content.style.display = isOpen ? 'none' : 'block';
+      btn.textContent = isOpen ? '📘 Lihat Format ▾' : '📘 Sembunyikan Format ▴';
+    });
+
+    document.getElementById('btn-jana-tips-pukal-cancel').addEventListener('click', () => {
+      document.getElementById('jana-tips-pukal-modal').style.display = 'none';
+    });
+
+    function parseTipsPukal(text) {
+      // Pisahkan kepada blok-blok berdasarkan "---" atau anak panah laci baru
+      // Setiap blok: bahagian F0 (sebelum → Ayat) dan F1 (selepas → Ayat)
+      const hasil = [];
+
+      // Split kepada bahagian-bahagian laci menggunakan regex
+      // Laci baru = baris yang bermula dengan → dan BUKAN "→ Ayat"
+      const lines = text.split('\n');
+
+      let currentEnglish = null;
+      let currentF0Lines = [];
+      let currentF1Lines = [];
+      let fasa = null; // null | 'f0' | 'f1'
+
+      function commitLaci() {
+        if (!currentEnglish) return;
+        hasil.push({
+          english: currentEnglish.trim(),
+          f0: currentF0Lines.join('\n').trim(),
+          f1: currentF1Lines.join('\n').trim()
+        });
+        currentF0Lines = [];
+        currentF1Lines = [];
+        fasa = null;
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i];
+        const trimmed = raw.trim();
+
+        // Skip baris kosong atau pemisah ---
+        if (!trimmed || trimmed === '---') {
+          if (trimmed === '---') commitLaci();
+          continue;
+        }
+
+        // Detect anak panah
+        const isArrow = trimmed.startsWith('→') || trimmed.startsWith('->');
+        if (isArrow) {
+          // Keluarkan teks selepas anak panah
+          const afterArrow = trimmed.replace(/^→\s*|^->\s*/, '').trim();
+
+          // Semak sama ada ini "→ Ayat" (sempadan F0/F1)
+          const isAyatMarker = afterArrow.toLowerCase() === 'ayat';
+
+          if (isAyatMarker) {
+            // Tukar ke fasa F1
+            fasa = 'f1';
+          } else {
+            // Ini laci baru — commit laci sebelum dan mula baru
+            commitLaci();
+            currentEnglish = afterArrow;
+            fasa = 'f0';
+          }
+          continue;
+        }
+
+        // Tambah ke fasa semasa
+        if (fasa === 'f0') {
+          currentF0Lines.push(raw);
+        } else if (fasa === 'f1') {
+          currentF1Lines.push(raw);
+        }
+      }
+
+      // Commit laci terakhir
+      commitLaci();
+
+      return hasil;
+    }
+
+    // Preview semasa taip
+    document.getElementById('jana-tips-pukal-input').addEventListener('input', () => {
+      const teks = document.getElementById('jana-tips-pukal-input').value;
+      const prev = document.getElementById('jana-tips-pukal-preview');
+      if (!teks.trim()) { prev.textContent = ''; return; }
+
+      const parsed = parseTipsPukal(teks);
+      if (!parsed.length) {
+        prev.style.color = '#f87171';
+        prev.textContent = '⚠️ Tiada laci dikesan. Semak format (mesti ada → sebelum english phrase).';
+        return;
+      }
+
+      // Cuba padankan dengan laci dalam allBahasaDrawers
+      let jumpa = 0;
+      let takJumpa = [];
+
+      parsed.forEach(p => {
+        const english = p.english.toLowerCase();
+        const match = allBahasaDrawers.find(d => {
+          if (!d.title) return false;
+          const parts = d.title.split('→');
+          if (parts.length < 2) return false;
+          return parts[1].trim().toLowerCase() === english;
+        });
+        if (match) jumpa++;
+        else takJumpa.push(p.english);
+      });
+
+      let msg = `✅ ${parsed.length} laci dikesan | ${jumpa} laci sepadan dijumpai`;
+      if (takJumpa.length > 0) {
+        msg += `\n⚠️ Tak jumpa: ${takJumpa.slice(0, 3).join(', ')}${takJumpa.length > 3 ? ` (+${takJumpa.length - 3} lagi)` : ''}`;
+      }
+      prev.style.color = jumpa > 0 ? '#22d3ee' : '#f87171';
+      prev.textContent = msg;
+    });
+
+    // Jana sekarang
+    document.getElementById('btn-jana-tips-pukal-execute').addEventListener('click', async () => {
+      if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
+      if (!currentPerkataanId) { showToast('⚠️ Sila buka halaman Laci Bahasa dahulu.'); return; }
+
+      const teks = document.getElementById('jana-tips-pukal-input').value;
+      const parsed = parseTipsPukal(teks);
+
+      if (!parsed.length) {
+        showToast('⚠️ Tiada laci dikesan. Semak format.');
+        return;
+      }
+
+      // Padankan dengan laci — hanya laci dalam perkataan semasa
+      const laciDalamPerkataan = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
+
+      const toUpdate = [];
+      const takJumpa = [];
+
+      parsed.forEach(p => {
+        const english = p.english.trim().toLowerCase();
+        const match = laciDalamPerkataan.find(d => {
+          if (!d.title) return false;
+          const parts = d.title.split('→');
+          if (parts.length < 2) return false;
+          return parts[1].trim().toLowerCase() === english;
+        });
+
+        if (match) {
+          toUpdate.push({
+            id: match.id,
+            tipsFasa0: p.f0,
+            tips: p.f1,
+            title: match.title
+          });
+        } else {
+          takJumpa.push(p.english);
+        }
+      });
+
+      if (!toUpdate.length) {
+        showToast(`⚠️ Tiada laci sepadan dalam perkataan ini. Pastikan anda berada dalam laci perkataan yang betul.\n\nTak jumpa: ${takJumpa.slice(0,3).join(', ')}`);
+        return;
+      }
+
+      document.getElementById('jana-tips-pukal-modal').style.display = 'none';
+      showToast(`⏳ Mengemas kini ${toUpdate.length} laci...`, 0);
+
+      try {
+        // Batch write — max 499 per batch
+        let i = 0;
+        while (i < toUpdate.length) {
+          const batch = writeBatch(db);
+          const end = Math.min(i + 499, toUpdate.length);
+          for (let j = i; j < end; j++) {
+            const item = toUpdate[j];
+            batch.update(
+              doc(db, "users", currentUser.uid, "bahasa_drawers", item.id),
+              {
+                tipsFasa0: item.tipsFasa0,
+                tips: item.tips,
+                updatedAt: Date.now()
+              }
+            );
+            // Kemaskini cache tempatan
+            const idx = allBahasaDrawers.findIndex(d => d.id === item.id);
+            if (idx !== -1) {
+              allBahasaDrawers[idx].tipsFasa0 = item.tipsFasa0;
+              allBahasaDrawers[idx].tips = item.tips;
+            }
+          }
+          await batch.commit();
+          i = end;
+        }
+
+        let successMsg = `✅ ${toUpdate.length} laci berjaya dikemas kini!`;
+        if (takJumpa.length > 0) {
+          successMsg += `\n⚠️ ${takJumpa.length} laci tak dijumpai: ${takJumpa.slice(0, 3).join(', ')}${takJumpa.length > 3 ? '...' : ''}`;
+        }
+        showToast(successMsg, 5000);
+
+        // Refresh render supaya tanda ✓ terkini
+        renderBahasaDrawers();
+
+      } catch(e) {
+        showToast('❌ Gagal: ' + e.message);
+      }
+    });
 
     document.getElementById('btn-open-arab-pukal').addEventListener('click', () => {
       if (!currentQuranTimeId) { showToast('Sila buka kategori dahulu.'); return; }
