@@ -2719,6 +2719,30 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 </div>
 
 <!-- MODAL JANA PUKAL BAHASA -->
+<div id="jana-tips-pukal-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #22d3ee;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#22d3ee;margin-bottom:4px;">💡 Jana Pukal Tips (F0 &amp; F1&amp;2)</div>
+    <div style="font-size:.75rem;color:#9ca3af;margin-bottom:12px;">Paste format tips untuk isi F0 dan F1&amp;2 secara pukal ke laci yang sepadan</div>
+    <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:0.7rem;color:#e5e7eb;line-height:1.8;">
+      <strong style="color:#22d3ee;">📌 Format:</strong><br>
+      • <code>→ nama laci</code> — bermula blok F0 untuk laci ini<br>
+      • <code>→ Ayat</code> — bermula blok F1&amp;2 (laci sama)<br>
+      • <code>---</code> — tamat satu kumpulan laci<br>
+      • Laci dikesan ikut nama <strong>selepas</strong> tanda <code>→</code> dalam tajuk laci
+    </div>
+    <textarea id="jana-tips-input" placeholder="Paste format tips di sini..." style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #06b6d4;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;margin-bottom:10px;"></textarea>
+    <div id="jana-tips-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:8px;font-style:italic;min-height:18px;"></div>
+    <div id="jana-tips-log-section" style="display:none;max-height:180px;overflow-y:auto;margin-bottom:10px;background:rgba(0,0,0,0.2);border:1px solid var(--border-soft);border-radius:8px;padding:10px;">
+      <div style="font-size:0.72rem;font-weight:700;color:#9ca3af;margin-bottom:6px;">📋 Log Hasil</div>
+      <div id="jana-tips-log"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-jana-tips-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
+      <button id="btn-jana-tips-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Tutup</button>
+    </div>
+  </div>
+</div>
+
 <div id="jana-pukal-bahasa-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
   <div style="background:#0a1628;border:1px solid #06b6d4;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
     <div style="font-size:1.1rem;font-weight:700;color:#22d3ee;margin-bottom:4px;">🗂️ Jana Pukal Bahasa</div>
@@ -10508,6 +10532,24 @@ function renderPerkataan() {
         });
         list.insertBefore(btnJanaPukal, list.firstChild);
       }
+
+      const existingJanaTipsBtn = document.getElementById('btn-jana-tips-pukal');
+      if (!existingJanaTipsBtn) {
+        const btnJanaTips = document.createElement('button');
+        btnJanaTips.id = 'btn-jana-tips-pukal';
+        btnJanaTips.className = 'btn btn-sm';
+        btnJanaTips.style.cssText = 'width:100%;margin-bottom:8px;background:linear-gradient(135deg,#0e7490,#164e63);border:none;box-shadow:0 6px 18px rgba(6,182,212,.3);';
+        btnJanaTips.textContent = '💡 Jana Pukal Tips (F0 & F1&2)';
+        btnJanaTips.addEventListener('click', () => {
+          document.getElementById('jana-tips-input').value = '';
+          document.getElementById('jana-tips-preview').textContent = '';
+          document.getElementById('jana-tips-log').innerHTML = '';
+          document.getElementById('jana-tips-log-section').style.display = 'none';
+          document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
+          setTimeout(() => document.getElementById('jana-tips-input').focus(), 80);
+        });
+        list.insertBefore(btnJanaTips, list.firstChild);
+      }
     
       sorted.forEach(data => {
         const div = document.createElement("div");
@@ -14143,7 +14185,7 @@ list.innerHTML = '';
     // ══════════════════════════════════════════
 
     // Toggle panduan
-    document.getElementById('btn-toggle-panduan-bahasa').addEventListener('click', () => {
+document.getElementById('btn-toggle-panduan-bahasa').addEventListener('click', () => {
       const content = document.getElementById('panduan-bahasa-content');
       const btn = document.getElementById('btn-toggle-panduan-bahasa');
       const isOpen = content.style.display !== 'none';
@@ -14154,6 +14196,220 @@ list.innerHTML = '';
     // Tutup modal
     document.getElementById('btn-jana-bahasa-cancel').addEventListener('click', () => {
       document.getElementById('jana-pukal-bahasa-modal').style.display = 'none';
+    });
+
+    // ══════════════════════════════════════════
+    // JANA PUKAL TIPS (F0 & F1&2)
+    // ══════════════════════════════════════════
+
+    document.getElementById('btn-jana-tips-pukal').addEventListener('click', () => {
+      if (!currentPerkataanId) { showToast('⚠️ Sila buka senarai laci perkataan dahulu.'); return; }
+      document.getElementById('jana-tips-input').value = '';
+      document.getElementById('jana-tips-preview').textContent = '';
+      document.getElementById('jana-tips-log').innerHTML = '';
+      document.getElementById('jana-tips-log-section').style.display = 'none';
+      document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
+    });
+
+    document.getElementById('btn-jana-tips-cancel').addEventListener('click', () => {
+      document.getElementById('jana-tips-pukal-modal').style.display = 'none';
+    });
+
+    // Parse format tips
+    function parseTipsPukalFormat(text) {
+      const lines = text.split('\n');
+      const blok = []; // { tajuk, f0Lines, f1Lines }
+      let current = null;
+      let fasa = null; // 'f0' | 'f1'
+
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i];
+        const trimmed = raw.trim();
+
+        // Detect anak panah
+        const mPanah = trimmed.match(/^→\s*(.+)/);
+        if (mPanah) {
+          const selepahPanah = mPanah[1].trim();
+
+          if (selepahPanah.toLowerCase() === 'ayat') {
+            // Tukar ke F1&2 pada laci semasa
+            if (current) fasa = 'f1';
+          } else {
+            // Laci baru
+            if (current) blok.push(current);
+            current = { tajuk: selepahPanah, f0Lines: [], f1Lines: [] };
+            fasa = 'f0';
+          }
+          continue;
+        }
+
+        // Garis separator ---
+        if (trimmed.match(/^-{3,}$/)) {
+          if (current) {
+            blok.push(current);
+            current = null;
+            fasa = null;
+          }
+          continue;
+        }
+
+        if (!current || !fasa) continue;
+
+        // Masukkan baris ke fasa yang sesuai
+        if (fasa === 'f0') {
+          current.f0Lines.push(raw);
+        } else if (fasa === 'f1') {
+          current.f1Lines.push(raw);
+        }
+      }
+
+      // Jangan lupa blok terakhir
+      if (current) blok.push(current);
+
+      // Bersihkan baris kosong di hujung
+      return blok.map(b => ({
+        tajuk: b.tajuk,
+        f0: b.f0Lines.join('\n').trim(),
+        f1: b.f1Lines.join('\n').trim()
+      })).filter(b => b.tajuk && (b.f0 || b.f1));
+    }
+
+    // Preview semasa taip
+    document.getElementById('jana-tips-input').addEventListener('input', () => {
+      const teks = document.getElementById('jana-tips-input').value;
+      const prev = document.getElementById('jana-tips-preview');
+      const parsed = parseTipsPukalFormat(teks);
+      if (!parsed.length) { prev.textContent = ''; return; }
+      const adaF0 = parsed.filter(p => p.f0).length;
+      const adaF1 = parsed.filter(p => p.f1).length;
+      prev.style.color = '#22d3ee';
+      prev.textContent = `✅ ${parsed.length} laci dijumpai — ${adaF0} ada F0, ${adaF1} ada F1&2`;
+    });
+
+    // Jana sekarang
+    document.getElementById('btn-jana-tips-execute').addEventListener('click', async () => {
+      if (!currentUser || !currentPerkataanId) {
+        showToast('⚠️ Sila buka senarai laci perkataan dahulu.'); return;
+      }
+
+      const teks = document.getElementById('jana-tips-input').value;
+      const parsed = parseTipsPukalFormat(teks);
+
+      if (!parsed.length) {
+        showToast('⚠️ Tiada blok dijumpai. Semak format teks.'); return;
+      }
+
+      // Ambil semua laci untuk perkataan aktif
+      const laciAktif = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
+
+      const logBerjaya = [];
+      const logSkip = [];
+      const logTakJumpa = [];
+
+      for (const blok of parsed) {
+        // Cari laci yang tajuknya mengandungi tajuk blok (bahagian selepas →)
+        // Format tajuk laci: "BM → EN" — kita cari yang mengandungi blok.tajuk
+        const laciSepadan = laciAktif.find(d => {
+          const tajuk = (d.title || '').toLowerCase();
+          const cari = blok.tajuk.toLowerCase();
+          // Semak bahagian selepas → dalam tajuk laci
+          const selepahPanahLaci = tajuk.includes('→') 
+            ? tajuk.split('→').slice(1).join('→').trim()
+            : tajuk;
+          return selepahPanahLaci === cari || tajuk === cari || tajuk.endsWith('→ ' + cari) || tajuk.includes(cari);
+        });
+
+        if (!laciSepadan) {
+          logTakJumpa.push(blok.tajuk);
+          continue;
+        }
+
+        const updateData = {};
+        const skipSebab = [];
+
+        // Semak F0
+        if (blok.f0) {
+          if (laciSepadan.tipsFasa0 && laciSepadan.tipsFasa0.trim()) {
+            skipSebab.push('F0 sudah ada content');
+          } else {
+            updateData.tipsFasa0 = blok.f0;
+          }
+        }
+
+        // Semak F1&2
+        if (blok.f1) {
+          if (laciSepadan.tips && laciSepadan.tips.trim()) {
+            skipSebab.push('F1&2 sudah ada content');
+          } else {
+            updateData.tips = blok.f1;
+          }
+        }
+
+        // Kalau ada skip — catat
+        if (skipSebab.length > 0) {
+          logSkip.push({ tajuk: blok.tajuk, sebab: skipSebab });
+        }
+
+        // Kalau ada data untuk update
+        if (Object.keys(updateData).length > 0) {
+          try {
+            await setDoc(
+              doc(db, "users", currentUser.uid, "bahasa_drawers", laciSepadan.id),
+              { ...updateData, updatedAt: Date.now() },
+              { merge: true }
+            );
+            // Kemaskini cache
+            const idx = allBahasaDrawers.findIndex(d => d.id === laciSepadan.id);
+            if (idx !== -1) {
+              if (updateData.tipsFasa0 !== undefined) allBahasaDrawers[idx].tipsFasa0 = updateData.tipsFasa0;
+              if (updateData.tips !== undefined) allBahasaDrawers[idx].tips = updateData.tips;
+            }
+            logBerjaya.push({ tajuk: blok.tajuk, apa: Object.keys(updateData).join(', ') });
+          } catch(e) {
+            logSkip.push({ tajuk: blok.tajuk, sebab: ['Gagal simpan: ' + e.message] });
+          }
+        }
+      }
+
+      // Papar log
+      const logSection = document.getElementById('jana-tips-log-section');
+      const logEl = document.getElementById('jana-tips-log');
+      logSection.style.display = 'block';
+      logEl.innerHTML = '';
+
+      if (logBerjaya.length) {
+        logEl.insertAdjacentHTML('beforeend', `
+          <div style="font-size:0.75rem;font-weight:700;color:#34d399;margin-bottom:6px;">✅ Berjaya (${logBerjaya.length})</div>
+          ${logBerjaya.map(l => `
+            <div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(52,211,153,0.08);border-radius:6px;margin-bottom:3px;">
+              <strong>${l.tajuk}</strong> → ${l.apa}
+            </div>`).join('')}
+        `);
+      }
+
+      if (logSkip.length) {
+        logEl.insertAdjacentHTML('beforeend', `
+          <div style="font-size:0.75rem;font-weight:700;color:#fcd34d;margin:10px 0 6px;">⚠️ Dilangkau (${logSkip.length})</div>
+          ${logSkip.map(l => `
+            <div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(245,158,11,0.08);border-radius:6px;margin-bottom:3px;">
+              <strong>${l.tajuk}</strong> — ${l.sebab.join(', ')}
+            </div>`).join('')}
+        `);
+      }
+
+      if (logTakJumpa.length) {
+        logEl.insertAdjacentHTML('beforeend', `
+          <div style="font-size:0.75rem;font-weight:700;color:#f87171;margin:10px 0 6px;">❌ Laci Tidak Jumpa (${logTakJumpa.length})</div>
+          ${logTakJumpa.map(t => `
+            <div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(248,113,113,0.08);border-radius:6px;margin-bottom:3px;">
+              ${t}
+            </div>`).join('')}
+        `);
+      }
+
+      const total = logBerjaya.length;
+      showToast(`✅ Selesai! ${total} laci dikemas kini.`);
+      if (bahasaMode) rebuildBahasa();
     });
 
     // Parse teks format kamus
