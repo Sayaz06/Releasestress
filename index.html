@@ -10533,23 +10533,20 @@ function renderPerkataan() {
         list.insertBefore(btnJanaPukal, list.firstChild);
       }
 
-      const existingJanaTipsBtn = document.getElementById('btn-jana-tips-pukal');
-      if (!existingJanaTipsBtn) {
-        const btnJanaTips = document.createElement('button');
-        btnJanaTips.id = 'btn-jana-tips-pukal';
-        btnJanaTips.className = 'btn btn-sm';
-        btnJanaTips.style.cssText = 'width:100%;margin-bottom:8px;background:linear-gradient(135deg,#0e7490,#164e63);border:none;box-shadow:0 6px 18px rgba(6,182,212,.3);';
-        btnJanaTips.textContent = '💡 Jana Pukal Tips (F0 & F1&2)';
-        btnJanaTips.addEventListener('click', () => {
-          document.getElementById('jana-tips-input').value = '';
-          document.getElementById('jana-tips-preview').textContent = '';
-          document.getElementById('jana-tips-log').innerHTML = '';
-          document.getElementById('jana-tips-log-section').style.display = 'none';
-          document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
-          setTimeout(() => document.getElementById('jana-tips-input').focus(), 80);
-        });
-        list.insertBefore(btnJanaTips, list.firstChild);
-      }
+const btnJanaTips = document.createElement('button');
+      btnJanaTips.id = 'btn-jana-tips-pukal-perkataan';
+      btnJanaTips.className = 'btn btn-sm';
+      btnJanaTips.style.cssText = 'width:100%;margin-bottom:8px;background:linear-gradient(135deg,#0e7490,#164e63);border:none;box-shadow:0 6px 18px rgba(6,182,212,.3);';
+      btnJanaTips.textContent = '💡 Jana Pukal Tips (F0 & F1&2)';
+      btnJanaTips.addEventListener('click', () => {
+        document.getElementById('jana-tips-input').value = '';
+        document.getElementById('jana-tips-preview').textContent = '';
+        document.getElementById('jana-tips-log').innerHTML = '';
+        document.getElementById('jana-tips-log-section').style.display = 'none';
+        document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('jana-tips-input').focus(), 80);
+      });
+      list.insertBefore(btnJanaTips, list.firstChild);
     
       sorted.forEach(data => {
         const div = document.createElement("div");
@@ -10600,11 +10597,18 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
       });
     }
 
+// ── RENDER BAHASA DRAWERS ──
 async function renderBahasaDrawers() {
       const list = document.getElementById('bahasa-drawer-list');
 
       // Refresh SR queue IDs supaya tanda SR terkini
       await refreshSRQueueIds();
+
+      // Buang button lama setiap kali render semula
+      const oldJanaPukal = document.getElementById('btn-open-jana-pukal-bahasa');
+      if (oldJanaPukal) oldJanaPukal.remove();
+      const oldJanaTips = document.getElementById('btn-jana-tips-pukal-perkataan');
+      if (oldJanaTips) oldJanaTips.remove();
 
       // Floating button ke countdown — tunjuk bila ada perkataan aktif
       const existingFloat = document.getElementById('btn-float-countdown-bahasa');
@@ -14211,8 +14215,113 @@ document.getElementById('btn-toggle-panduan-bahasa').addEventListener('click', (
       document.getElementById('jana-tips-pukal-modal').style.display = 'flex';
     });
 
-    document.getElementById('btn-jana-tips-cancel').addEventListener('click', () => {
+document.getElementById('btn-jana-tips-cancel')?.addEventListener('click', () => {
       document.getElementById('jana-tips-pukal-modal').style.display = 'none';
+    });
+
+    document.getElementById('btn-jana-tips-execute')?.addEventListener('click', async () => {
+      if (!currentUser || !currentPerkataanId) {
+        showToast('⚠️ Sila buka senarai laci perkataan dahulu.'); return;
+      }
+
+      const teks = document.getElementById('jana-tips-input').value;
+      const parsed = parseTipsPukalFormat(teks);
+
+      if (!parsed.length) {
+        showToast('⚠️ Tiada blok dijumpai. Semak format teks.'); return;
+      }
+
+      const laciAktif = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
+
+      const logBerjaya = [];
+      const logSkip = [];
+      const logTakJumpa = [];
+
+      for (const blok of parsed) {
+        const laciSepadan = laciAktif.find(d => {
+          const tajuk = (d.title || '').toLowerCase();
+          const cari = blok.tajuk.toLowerCase();
+          const selepahPanahLaci = tajuk.includes('→')
+            ? tajuk.split('→').slice(1).join('→').trim()
+            : tajuk;
+          return selepahPanahLaci === cari || tajuk === cari || tajuk.endsWith('→ ' + cari) || tajuk.includes(cari);
+        });
+
+        if (!laciSepadan) {
+          logTakJumpa.push(blok.tajuk);
+          continue;
+        }
+
+        const updateData = {};
+        const skipSebab = [];
+
+        if (blok.f0) {
+          if (laciSepadan.tipsFasa0 && laciSepadan.tipsFasa0.trim()) {
+            skipSebab.push('F0 sudah ada content');
+          } else {
+            updateData.tipsFasa0 = blok.f0;
+          }
+        }
+
+        if (blok.f1) {
+          if (laciSepadan.tips && laciSepadan.tips.trim()) {
+            skipSebab.push('F1&2 sudah ada content');
+          } else {
+            updateData.tips = blok.f1;
+          }
+        }
+
+        if (skipSebab.length > 0) {
+          logSkip.push({ tajuk: blok.tajuk, sebab: skipSebab });
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          try {
+            await setDoc(
+              doc(db, "users", currentUser.uid, "bahasa_drawers", laciSepadan.id),
+              { ...updateData, updatedAt: Date.now() },
+              { merge: true }
+            );
+            const idx = allBahasaDrawers.findIndex(d => d.id === laciSepadan.id);
+            if (idx !== -1) {
+              if (updateData.tipsFasa0 !== undefined) allBahasaDrawers[idx].tipsFasa0 = updateData.tipsFasa0;
+              if (updateData.tips !== undefined) allBahasaDrawers[idx].tips = updateData.tips;
+            }
+            logBerjaya.push({ tajuk: blok.tajuk, apa: Object.keys(updateData).join(', ') });
+          } catch(e) {
+            logSkip.push({ tajuk: blok.tajuk, sebab: ['Gagal simpan: ' + e.message] });
+          }
+        }
+      }
+
+      const logSection = document.getElementById('jana-tips-log-section');
+      const logEl = document.getElementById('jana-tips-log');
+      logSection.style.display = 'block';
+      logEl.innerHTML = '';
+
+      if (logBerjaya.length) {
+        logEl.insertAdjacentHTML('beforeend', `
+          <div style="font-size:0.75rem;font-weight:700;color:#34d399;margin-bottom:6px;">✅ Berjaya (${logBerjaya.length})</div>
+          ${logBerjaya.map(l => `<div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(52,211,153,0.08);border-radius:6px;margin-bottom:3px;"><strong>${l.tajuk}</strong> → ${l.apa}</div>`).join('')}
+        `);
+      }
+
+      if (logSkip.length) {
+        logEl.insertAdjacentHTML('beforeend', `
+          <div style="font-size:0.75rem;font-weight:700;color:#fcd34d;margin:10px 0 6px;">⚠️ Dilangkau (${logSkip.length})</div>
+          ${logSkip.map(l => `<div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(245,158,11,0.08);border-radius:6px;margin-bottom:3px;"><strong>${l.tajuk}</strong> — ${l.sebab.join(', ')}</div>`).join('')}
+        `);
+      }
+
+      if (logTakJumpa.length) {
+        logEl.insertAdjacentHTML('beforeend', `
+          <div style="font-size:0.75rem;font-weight:700;color:#f87171;margin:10px 0 6px;">❌ Laci Tidak Jumpa (${logTakJumpa.length})</div>
+          ${logTakJumpa.map(t => `<div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(248,113,113,0.08);border-radius:6px;margin-bottom:3px;">${t}</div>`).join('')}
+        `);
+      }
+
+      showToast(`✅ Selesai! ${logBerjaya.length} laci dikemas kini.`);
+      if (bahasaMode) rebuildBahasa();
     });
 
     // Parse format tips
@@ -14284,132 +14393,6 @@ document.getElementById('btn-toggle-panduan-bahasa').addEventListener('click', (
       const adaF1 = parsed.filter(p => p.f1).length;
       prev.style.color = '#22d3ee';
       prev.textContent = `✅ ${parsed.length} laci dijumpai — ${adaF0} ada F0, ${adaF1} ada F1&2`;
-    });
-
-    // Jana sekarang
-    document.getElementById('btn-jana-tips-execute').addEventListener('click', async () => {
-      if (!currentUser || !currentPerkataanId) {
-        showToast('⚠️ Sila buka senarai laci perkataan dahulu.'); return;
-      }
-
-      const teks = document.getElementById('jana-tips-input').value;
-      const parsed = parseTipsPukalFormat(teks);
-
-      if (!parsed.length) {
-        showToast('⚠️ Tiada blok dijumpai. Semak format teks.'); return;
-      }
-
-      // Ambil semua laci untuk perkataan aktif
-      const laciAktif = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
-
-      const logBerjaya = [];
-      const logSkip = [];
-      const logTakJumpa = [];
-
-      for (const blok of parsed) {
-        // Cari laci yang tajuknya mengandungi tajuk blok (bahagian selepas →)
-        // Format tajuk laci: "BM → EN" — kita cari yang mengandungi blok.tajuk
-        const laciSepadan = laciAktif.find(d => {
-          const tajuk = (d.title || '').toLowerCase();
-          const cari = blok.tajuk.toLowerCase();
-          // Semak bahagian selepas → dalam tajuk laci
-          const selepahPanahLaci = tajuk.includes('→') 
-            ? tajuk.split('→').slice(1).join('→').trim()
-            : tajuk;
-          return selepahPanahLaci === cari || tajuk === cari || tajuk.endsWith('→ ' + cari) || tajuk.includes(cari);
-        });
-
-        if (!laciSepadan) {
-          logTakJumpa.push(blok.tajuk);
-          continue;
-        }
-
-        const updateData = {};
-        const skipSebab = [];
-
-        // Semak F0
-        if (blok.f0) {
-          if (laciSepadan.tipsFasa0 && laciSepadan.tipsFasa0.trim()) {
-            skipSebab.push('F0 sudah ada content');
-          } else {
-            updateData.tipsFasa0 = blok.f0;
-          }
-        }
-
-        // Semak F1&2
-        if (blok.f1) {
-          if (laciSepadan.tips && laciSepadan.tips.trim()) {
-            skipSebab.push('F1&2 sudah ada content');
-          } else {
-            updateData.tips = blok.f1;
-          }
-        }
-
-        // Kalau ada skip — catat
-        if (skipSebab.length > 0) {
-          logSkip.push({ tajuk: blok.tajuk, sebab: skipSebab });
-        }
-
-        // Kalau ada data untuk update
-        if (Object.keys(updateData).length > 0) {
-          try {
-            await setDoc(
-              doc(db, "users", currentUser.uid, "bahasa_drawers", laciSepadan.id),
-              { ...updateData, updatedAt: Date.now() },
-              { merge: true }
-            );
-            // Kemaskini cache
-            const idx = allBahasaDrawers.findIndex(d => d.id === laciSepadan.id);
-            if (idx !== -1) {
-              if (updateData.tipsFasa0 !== undefined) allBahasaDrawers[idx].tipsFasa0 = updateData.tipsFasa0;
-              if (updateData.tips !== undefined) allBahasaDrawers[idx].tips = updateData.tips;
-            }
-            logBerjaya.push({ tajuk: blok.tajuk, apa: Object.keys(updateData).join(', ') });
-          } catch(e) {
-            logSkip.push({ tajuk: blok.tajuk, sebab: ['Gagal simpan: ' + e.message] });
-          }
-        }
-      }
-
-      // Papar log
-      const logSection = document.getElementById('jana-tips-log-section');
-      const logEl = document.getElementById('jana-tips-log');
-      logSection.style.display = 'block';
-      logEl.innerHTML = '';
-
-      if (logBerjaya.length) {
-        logEl.insertAdjacentHTML('beforeend', `
-          <div style="font-size:0.75rem;font-weight:700;color:#34d399;margin-bottom:6px;">✅ Berjaya (${logBerjaya.length})</div>
-          ${logBerjaya.map(l => `
-            <div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(52,211,153,0.08);border-radius:6px;margin-bottom:3px;">
-              <strong>${l.tajuk}</strong> → ${l.apa}
-            </div>`).join('')}
-        `);
-      }
-
-      if (logSkip.length) {
-        logEl.insertAdjacentHTML('beforeend', `
-          <div style="font-size:0.75rem;font-weight:700;color:#fcd34d;margin:10px 0 6px;">⚠️ Dilangkau (${logSkip.length})</div>
-          ${logSkip.map(l => `
-            <div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(245,158,11,0.08);border-radius:6px;margin-bottom:3px;">
-              <strong>${l.tajuk}</strong> — ${l.sebab.join(', ')}
-            </div>`).join('')}
-        `);
-      }
-
-      if (logTakJumpa.length) {
-        logEl.insertAdjacentHTML('beforeend', `
-          <div style="font-size:0.75rem;font-weight:700;color:#f87171;margin:10px 0 6px;">❌ Laci Tidak Jumpa (${logTakJumpa.length})</div>
-          ${logTakJumpa.map(t => `
-            <div style="font-size:0.72rem;color:#e5e7eb;padding:4px 8px;background:rgba(248,113,113,0.08);border-radius:6px;margin-bottom:3px;">
-              ${t}
-            </div>`).join('')}
-        `);
-      }
-
-      const total = logBerjaya.length;
-      showToast(`✅ Selesai! ${total} laci dikemas kini.`);
-      if (bahasaMode) rebuildBahasa();
     });
 
     // Parse teks format kamus
