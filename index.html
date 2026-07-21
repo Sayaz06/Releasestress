@@ -11253,7 +11253,7 @@ async function daftarSRBaru(drawerId) {
     }
 
     // Load semua SR overdue untuk user ini
-    async function loadSROverdue() {
+async function loadSROverdue() {
       if (!currentUser) return [];
       const now = Date.now();
       const snap = await getDocs(
@@ -11266,13 +11266,8 @@ async function daftarSRBaru(drawerId) {
       const overdue = [];
       snap.docs.forEach(d => {
         const data = d.data();
-        // Semak laci masih wujud dalam bahasa_drawers
-        const laciWujud = allBahasaDrawers.find(dr => dr.id === data.drawerId);
-        if (!laciWujud) {
-          // Laci dah dipadam — delete SR rekod
-          deleteDoc(doc(db, "users", currentUser.uid, "bahasa_sr_queue", d.id));
-          return;
-        }
+        // JANGAN padam SR berdasarkan memory cache — biarkan je kalau tak jumpa dalam memory
+        // SR hanya dipadam bila user padam laci secara explicit (btn-del-bd)
         if (data.nextDueAt <= now) {
           overdue.push({ id: d.id, ...data });
         }
@@ -14912,7 +14907,7 @@ function subscribeBacaanTambahan() {
       renderSRQueuePage();
     });
 
-    async function renderSRQueuePage() {
+async function renderSRQueuePage() {
       if (!currentUser) return;
       const list = document.getElementById('sr-queue-list');
       const statsBar = document.getElementById('sr-stats-bar');
@@ -14939,11 +14934,19 @@ function subscribeBacaanTambahan() {
         const now = Date.now();
         const semua = [];
 
-        // Semak laci masih wujud, auto-clean yang dah dipadam
+        // ── AMBIL SEMUA LACI DARI FIRESTORE DULU sebelum semak ──
+        // Jangan guna allBahasaDrawers (memory) — mungkin belum fully loaded
+        const laciSnap = await getDocs(
+          collection(db, "users", currentUser.uid, "bahasa_drawers")
+        );
+        const laciMap = new Map();
+        laciSnap.docs.forEach(d => laciMap.set(d.id, { id: d.id, ...d.data() }));
+
         for (const d of snap.docs) {
           const data = d.data();
-          const laciWujud = allBahasaDrawers.find(dr => dr.id === data.drawerId);
+          const laciWujud = laciMap.get(data.drawerId);
           if (!laciWujud) {
+            // Laci betul-betul dah dipadam dari Firestore — baru boleh padam SR
             await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_sr_queue", d.id));
             continue;
           }
