@@ -1224,8 +1224,8 @@ body.dark-mode {
 </div>
 
 <!-- ══ REMINDER OVERLAY ══ -->
-<div id="reminder-overlay" style="display:none;position:fixed;inset:0;z-index:999999999;background:rgba(2,6,23,0.97);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);">
-  <div style="width:100%;max-width:400px;background:rgba(15,23,42,0.98);border:2px solid #f59e0b;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <div id="reminder-overlay" style="display:none;position:fixed;inset:0;z-index:999999999;background:rgba(2,6,23,0.97);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();event.preventDefault();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();event.preventDefault();">
+    <div style="width:100%;max-width:400px;background:rgba(15,23,42,0.98);border:2px solid #f59e0b;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
     <div style="font-size:2.5rem;">⏰</div>
     <div id="reminder-overlay-hari" style="font-size:0.75rem;background:rgba(245,158,11,0.2);color:#fcd34d;padding:4px 14px;border-radius:999px;font-weight:700;"></div>
     <div style="font-size:1.1rem;font-weight:700;color:#fcd34d;text-align:center;">Peringatan Temu Janji</div>
@@ -5310,6 +5310,7 @@ function decrementTasbih() {
       if (videoOverlay.style.display === 'flex' || peraturanOverlay.style.display === 'flex') return;
       if (document.getElementById('tips-sebutan-overlay')?.style.display === 'flex') return;
       if (document.getElementById('tips-fakta-overlay')?.style.display === 'flex') return;
+      if (document.getElementById('reminder-overlay')?.style.display === 'flex') return;
       // Intersep tap untuk bahasa "laci seterusnya"
       if (window._bahasaNextLaciHandler) {
         const handler = window._bahasaNextLaciHandler;
