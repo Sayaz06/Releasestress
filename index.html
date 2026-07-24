@@ -924,7 +924,7 @@ body.dark-mode {
   </div>
 
 <!-- KOD BARU: Overlay Peraturan (My Law) -->
-<div id="peraturan-overlay" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();event.preventDefault();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();event.preventDefault();">
+<div id="peraturan-overlay">
     <div class="peraturan-card">
       <div class="peraturan-title">📜 Peraturan Saya</div>
       <div class="peraturan-subtitle">Baca dan hayati peraturan hidup anda</div>
@@ -1224,8 +1224,8 @@ body.dark-mode {
 </div>
 
 <!-- ══ REMINDER OVERLAY ══ -->
-    <div id="reminder-overlay" style="display:none;position:fixed;inset:0;z-index:999999999;background:rgba(2,6,23,0.97);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();event.preventDefault();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();event.preventDefault();">
-    <div style="width:100%;max-width:400px;background:rgba(15,23,42,0.98);border:2px solid #f59e0b;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+<div id="reminder-overlay" style="display:none;position:fixed;inset:0;z-index:999999999;background:rgba(2,6,23,0.97);flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);">
+  <div style="width:100%;max-width:400px;background:rgba(15,23,42,0.98);border:2px solid #f59e0b;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
     <div style="font-size:2.5rem;">⏰</div>
     <div id="reminder-overlay-hari" style="font-size:0.75rem;background:rgba(245,158,11,0.2);color:#fcd34d;padding:4px 14px;border-radius:999px;font-weight:700;"></div>
     <div style="font-size:1.1rem;font-weight:700;color:#fcd34d;text-align:center;">Peringatan Temu Janji</div>
@@ -1301,8 +1301,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
   </div>
   
 <!-- TIPS SEBUTAN OVERLAY -->
-<div id="tips-sebutan-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();event.preventDefault();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();event.preventDefault();">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
+    <div id="tips-sebutan-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
     <div>
       <div style="font-size:1rem;font-weight:700;color:#22d3ee;">💡 Tips Sebutan</div>
       <div id="tips-sebutan-tajuk" style="font-size:0.75rem;color:var(--subtext);margin-top:2px;"></div>
@@ -1323,8 +1323,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 </div>
 
 <!-- TIPS FAKTA OVERLAY -->
-        <div id="tips-fakta-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();event.preventDefault();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();event.preventDefault();">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
+      <div id="tips-fakta-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
     <div>
       <div style="font-size:1rem;font-weight:700;color:#a78bfa;">📝 Nota / Skrip Fakta</div>
       <div id="tips-fakta-tajuk" style="font-size:0.75rem;color:var(--subtext);margin-top:2px;"></div>
@@ -1345,7 +1345,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 </div>
 
 <!-- FULLSCREEN FACT OVERLAY -->
-<div id="fullscreen-fact-overlay" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
+  <div id="fullscreen-fact-overlay">
     <button id="btn-close-fullscreen-fact">✕</button>
 <!-- TOPBAR — NAMA SURAH + PROGRESS RING -->
     <div id="fs-topbar" style="width:100%;flex-shrink:0;min-height:240px;max-height:320px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;position:relative;">
@@ -2644,8 +2644,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
   </div>
 
 <!-- MODAL PANDUAN SISTEM AL-QURAN -->
-    <div id="panduan-sistem-quran-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();event.preventDefault();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();event.preventDefault();">
-    <div style="background:#0a1628;border:1px solid #f59e0b;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+<div id="panduan-sistem-quran-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #f59e0b;border-radius:18px;padding:24px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.9);">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;">
       <div style="font-size:1rem;font-weight:700;color:#fcd34d;">📘 Sistem Al-Quran — Panduan Lengkap</div>
       <button id="btn-tutup-panduan-quran" style="background:rgba(255,255,255,.08);border:1px solid #4b5563;border-radius:999px;color:#e5e7eb;padding:4px 12px;font-size:.8rem;cursor:pointer;">Tutup</button>
@@ -2723,8 +2723,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 </div>
 
 <!-- OVERLAY NOTA KELUAR -->
-    <div id="nota-keluar-overlay" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center;padding:24px;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();event.preventDefault();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();event.preventDefault();">
-    <div style="width:100%;max-width:400px;background:#0a1628;border:1px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);">
+<div id="nota-keluar-overlay" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:400px;background:#0a1628;border:1px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);">
     <div style="font-size:1rem;font-weight:700;color:#34d399;margin-bottom:16px;text-align:center;">📌 Nota Bacaan Terakhir</div>
     <div id="nota-keluar-content" style="font-size:1rem;font-weight:700;color:white;text-align:center;margin-bottom:6px;"></div>
     <div id="nota-keluar-tarikh" style="font-size:0.72rem;color:var(--subtext);text-align:center;margin-bottom:20px;"></div>
@@ -2737,8 +2737,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 
 <!-- OVERLAY TERSKIP AYAT -->
 <div id="terskip-overlay"
-    style="display:none;position:fixed;inset:0;z-index:999999;background:#020617;flex-direction:column;padding:16px;"
-    onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();event.preventDefault();" ontouchend="event.stopPropagation();">
+    style="display:none;position:fixed;inset:0;z-index:999999;background:#020617;flex-direction:column;padding:16px;">
   
   <!-- STATUS BAR -->
   <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;margin-bottom:10px;flex-shrink:0;">
@@ -8154,38 +8153,10 @@ fullscreenOverlay.addEventListener('click', (e) => {
     let isSwiping = false;
     const GAP = 5;
 
-function isAnyOverlayOpen() {
-      const overlayIds = [
-        'reminder-overlay',
-        'peraturan-overlay',
-        'panduan-sistem-quran-modal',
-        'nota-keluar-overlay',
-        'tips-sebutan-overlay',
-        'tips-fakta-overlay',
-        'video-rest-overlay',
-        'fs-rehat-popup',
-        'bahasa-rehat-popup',
-        'jana-pukal-modal',
-        'jana-pukal-v2-modal',
-        'jana-tips-pukal-modal',
-        'arab-pukal-modal',
-        'maksud-pukal-modal',
-        'kosong-pukal-modal',
-        'edit-pukal-modal',
-        'tong-sampah-modal',
-        'tong-sampah-universal-modal',
-        'tong-sampah-quran-modal',
-        'qr-modal',
-      ];
-      return overlayIds.some(id => {
-        const el = document.getElementById(id);
-        return el && (el.style.display === 'flex' || el.style.display === 'block');
-      });
-    }
-
-    document.addEventListener("touchstart", (e) => {
+document.addEventListener("touchstart", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
-      if(isAnyOverlayOpen()) return;
+      if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
+      if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
       if(!sectionTasbih.classList.contains('active')) return;
       if(e.target.closest('button') || e.target.closest('.topbar') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       touchY = e.touches[0].clientY;
@@ -8194,7 +8165,8 @@ function isAnyOverlayOpen() {
 
 document.addEventListener("touchmove", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
-      if(isAnyOverlayOpen()) return;
+      if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
+      if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
       if(fullscreenOverlay && fullscreenOverlay.classList.contains('show')) return;
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container')) return;
       // Matikan swipe untuk next ayat kalau mode quran aktif
@@ -8217,7 +8189,8 @@ document.addEventListener("touchmove", (e) => {
 
 document.addEventListener("click", (e) => {
       if(terskipOverlay.style.display === 'flex') return;
-      if(isAnyOverlayOpen()) return;
+      if(document.getElementById('panduan-sistem-quran-modal').style.display === 'flex') return;
+      if(document.getElementById('nota-keluar-overlay').style.display === 'flex') return;
       if(!sectionTasbih.classList.contains('active') || e.target.closest('button') || e.target.closest('#fact-display-box') || e.target.closest('#tasbih-memanah-container') || isSwiping) return;
       decrementTasbih();
     });
