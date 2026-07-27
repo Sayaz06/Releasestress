@@ -1447,6 +1447,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <button id="btn-go-rutin-fizikal" class="btn btn-secondary" style="border-color: #fb923c; color: #fdba74;">
             <span>💪 Rutin Fizikal & Kesihatan</span>
           </button>
+          <button id="btn-go-session-planner" class="btn btn-secondary" style="border-color: #a78bfa; color: #c4b5fd;">
+            <span>🗓️ Session Planner</span>
+          </button>
           <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
           </button>
@@ -1519,6 +1522,48 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 
   <div class="list" id="rutin-fizikal-list" style="padding:10px;"></div>
   <div class="list" id="rutin-fizikal-history-list" style="padding:10px;display:none;"></div>
+</section>
+
+<!-- ══ SESSION PLANNER ══ -->
+<section id="section-session-planner" class="section">
+  <div class="topbar" style="flex-shrink:0;">
+    <button id="btn-back-home-session" class="btn btn-secondary btn-sm">← Menu</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#a78bfa;">🗓️ Session Planner</div>
+      <div class="topbar-sub">Turutan countdown automatik</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+    <div style="font-size:0.78rem;font-weight:700;color:#a78bfa;margin-bottom:6px;">📌 Cara Guna</div>
+    <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+      • Susun turutan sesi harian anda<br>
+      • Contoh: Rutin 10x → Air 250ml → Bahasa 1 laci → Quran 5 ayat<br>
+      • Tekan <strong style="color:#a78bfa;">▶ Mula Sesi</strong> untuk auto beralih ikut turutan<br>
+      • Bila satu blok selesai → auto ke blok seterusnya
+    </div>
+  </div>
+
+  <!-- ACTIVE SESSION BAR -->
+  <div id="session-aktif-bar" style="display:none;background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(99,102,241,0.2));border:1px solid rgba(167,139,250,0.5);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="font-size:0.82rem;font-weight:700;color:#a78bfa;">⚡ Sesi Sedang Berjalan</div>
+      <button id="btn-stop-session" style="padding:4px 12px;border-radius:999px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;font-size:0.72rem;cursor:pointer;">⏹ Henti</button>
+    </div>
+    <div id="session-aktif-blok" style="font-size:0.88rem;color:white;font-weight:600;"></div>
+    <div id="session-aktif-progress" style="font-size:0.72rem;color:var(--subtext);margin-top:2px;"></div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-shrink:0;">
+    <button id="btn-add-session-blok" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">
+      + Tambah Blok
+    </button>
+    <button id="btn-mula-session" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;">
+      ▶ Mula Sesi
+    </button>
+  </div>
+
+  <div class="list" id="session-blok-list" style="padding:10px;"></div>
 </section>
 
 <!-- ══ JOURNAL HUB ══ -->
@@ -2182,8 +2227,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub" id="parent-routine-time-name" style="color:var(--grad2); font-weight:bold;"></div>
           </div>
         </div>
-  <div style="display:flex; gap:8px; margin-top:8px;">
+<div style="display:flex; gap:8px; margin-top:8px;">
           <button id="btn-add-routine-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Zikir</button>
+          <button id="btn-add-routine-fizikal-laci" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#ea580c,#c2410c);border:none;color:white;">💪 Tambah Laci Fizikal</button>
           <button id="btn-open-jana-pukal" class="btn btn-sm" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
         </div>
 <div style="display:flex; gap:6px; margin-top:8px;">
@@ -4676,6 +4722,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-arahan-list')?.classList.remove("active");
       document.getElementById('section-kerangka')?.classList.remove("active");
       document.getElementById('section-rutin-fizikal')?.classList.remove("active");
+      document.getElementById('section-session-planner')?.classList.remove("active");
       document.getElementById('section-bacaan-tambahan')?.classList.remove("active");
       document.getElementById('section-bacaan-laci')?.classList.remove("active");
       document.getElementById('section-reminder')?.classList.remove("active");
@@ -5396,6 +5443,48 @@ if (routineMode && allRoutines.length > 0) {
         didDecrement = true;
         const isQuran = routineModeSource === 'quran';
 
+        // ── INTERCEPT TAP UNTUK LACI FIZIKAL ──
+// ── INTERSEP TAP SESSION FIZIKAL ──
+        if (sessionAktif && window._sessionFizikalHandler) {
+          const handler = window._sessionFizikalHandler;
+          window._sessionFizikalHandler = null;
+          handler();
+          return;
+        }
+
+      // ── INTERSEP TAP UNTUK LACI FIZIKAL ──
+        const laciSemasa = allRoutines[currentRoutineIndex];
+        if (laciSemasa && laciSemasa.isFizikal && laciSemasa.rutinFizikalId) {
+          loadProgressHariIni(laciSemasa.rutinFizikalId).then(async progress => {
+            const target = laciSemasa.rutinTarget || 1;
+            const nilaiTap = laciSemasa.rutinNilaiPerTap || 1;
+            const unit = laciSemasa.rutinUnit || 'kali';
+            const nilaiBaru = Math.min(target, progress + nilaiTap);
+
+            await simpanProgressRF(laciSemasa.rutinFizikalId, nilaiBaru, laciSemasa.rutinNama);
+
+            if (nilaiBaru >= target) {
+              showToast(`🎉 ${laciSemasa.rutinNama} selesai!`, 2500);
+              triggerVibration([200, 100, 200]);
+              // Auto ke laci seterusnya
+              isBlocked = true;
+              setTimeout(() => {
+                isBlocked = false;
+                currentRoutineIndex = (currentRoutineIndex + 1) % allRoutines.length;
+                currentRoutineTarget = allRoutines[currentRoutineIndex].target;
+                syncIndexToFirestore(currentRoutineIndex);
+                triggerFadeAnimation(renderCurrentFact);
+              }, 1500);
+            } else {
+              const baki = target - nilaiBaru;
+              showToast(`${laciSemasa.rutinEmoji} ${nilaiBaru}${unit} (+${nilaiTap}${unit}) — baki ${baki}${unit}`);
+              renderCurrentFact(); // Refresh display
+            }
+          });
+          updateTasbihUI();
+          return; // Jangan proceed dengan countdown biasa
+        }
+  
 if (isQuran) {
           const isFlipKeArab = learningMode === 3 && comboStep === 1;
           const isFlipKeMaksud = learningMode === 3 && comboStep === 0;
@@ -6135,6 +6224,50 @@ function getRemainingInLaci() {
         if (btnFs) btnFs.style.display = 'none';
         const btnTipsFact = document.getElementById('btn-tips-sebutan-fact');
         if (btnTipsFact) btnTipsFact.style.display = 'none';
+        return;
+      }
+
+// ── LACI FIZIKAL — render khas ──
+      if (data.isFizikal && data.rutinFizikalId) {
+        factTitleEl.textContent = `[ 💪 Rutin Fizikal ]`;
+        factTitleEl.style.color = '#fb923c';
+        factContentEl.style.color = 'var(--text)';
+        factContentEl.style.fontSize = '';
+        factContentEl.style.fontFamily = '';
+        factContentEl.style.direction = '';
+        factContentEl.style.textAlign = '';
+
+        // Load progress dari Firestore secara async
+        loadProgressHariIni(data.rutinFizikalId).then(progress => {
+          const target = data.rutinTarget || 1;
+          const unit = data.rutinUnit || 'kali';
+          const jenis = data.rutinJenis || 'checkbox';
+          const selesai = progress >= target;
+          const peratus = Math.min(100, Math.round((progress / target) * 100));
+
+          factContentEl.innerHTML = `
+            <div style="text-align:center;padding:10px 0;">
+              <div style="font-size:3rem;margin-bottom:8px;">${data.rutinEmoji || '✅'}</div>
+              <div style="font-size:1.3rem;font-weight:700;color:${selesai ? '#34d399' : '#fdba74'};margin-bottom:12px;">${data.rutinNama}</div>
+              ${jenis === 'counter' ? `
+                <div style="font-size:2rem;font-weight:700;color:white;margin-bottom:4px;">${progress} / ${target} ${unit}</div>
+                <div style="background:rgba(0,0,0,0.3);border-radius:999px;height:10px;margin:8px 16px;overflow:hidden;">
+                  <div style="height:100%;width:${peratus}%;background:${selesai ? '#34d399' : '#fb923c'};border-radius:999px;transition:width 0.3s;"></div>
+                </div>
+                <div style="font-size:0.82rem;color:var(--subtext);margin-top:4px;">${selesai ? '✅ Selesai hari ini!' : `Tap untuk tambah +${data.rutinNilaiPerTap}${unit}`}</div>
+              ` : `
+                <div style="font-size:1.5rem;font-weight:700;color:${selesai ? '#34d399' : 'white'};margin-bottom:4px;">${progress} / ${target} kali</div>
+                <div style="font-size:0.82rem;color:var(--subtext);">${selesai ? '✅ Selesai hari ini!' : 'Tap untuk rekod selesai'}</div>
+              `}
+            </div>
+          `;
+        });
+
+        factHintEl.style.display = 'block';
+        factHintEl.textContent = '(Tap untuk rekod & teruskan)';
+        factHintEl.style.color = '#fb923c';
+        btnSpeak.style.display = 'none';
+        btnCopyFact.style.display = 'none';
         return;
       }
 
@@ -7392,6 +7525,26 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
                 });
               });
             }
+} else if (data.isFizikal && data.rutinFizikalId) {
+            // ── LACI FIZIKAL ──
+            const rutinData = allRutinFizikal.find(r => r.id === data.rutinFizikalId);
+            if (rutinData) {
+              allRoutines.push({
+                title: tajukLaci,
+                text: `${rutinData.emoji} ${rutinData.nama}`,
+                target: 1, // 1 tap = selesai satu unit
+                translation: null,
+                isTamat: false,
+                isFizikal: true,
+                rutinFizikalId: data.rutinFizikalId,
+                rutinJenis: rutinData.jenis,
+                rutinNilaiPerTap: rutinData.nilaiPerTap,
+                rutinUnit: rutinData.unit,
+                rutinTarget: rutinData.target,
+                rutinEmoji: rutinData.emoji,
+                rutinNama: rutinData.nama
+              });
+            }
           } else if (data.zikir || data.target || data.maksud) {
             const zikirText = (data.zikir || '').trim() || (data.maksud || '').trim() || 'Kosong';
             const targetVal = parseInt(data.target);
@@ -7517,6 +7670,7 @@ showSection(secToShow);
         subscribeBacaanTambahan();
         subscribeReminders();
         subscribeRutinFizikal();
+        subscribeSessionBlok();
         mulakanReminderCheck();
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
@@ -7583,12 +7737,46 @@ addDoc(collection(db, "users", currentUser.uid, "drawer"), { title: "~", notes: 
       addDoc(collection(db, "users", currentUser.uid, "routine_times"), { name: "", isActive: false, createdAt: Date.now() });
     });
 btnAddRoutineDrawer.addEventListener("click", () => { 
-  if(currentRoutineTimeId) {
-addDoc(collection(db, "users", currentUser.uid, "routine_drawers"), { title: "~", zikir: "", target: "", maksud: "", timeId: currentRoutineTimeId, createdAt: Date.now() });
+      if(currentRoutineTimeId) {
+        addDoc(collection(db, "users", currentUser.uid, "routine_drawers"), { title: "~", zikir: "", target: "", maksud: "", timeId: currentRoutineTimeId, createdAt: Date.now() });
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
-  }
-});
+      }
+    });
 
+    document.getElementById('btn-add-routine-fizikal-laci').addEventListener('click', async () => {
+      if (!currentUser || !currentRoutineTimeId) return;
+      if (!allRutinFizikal.length) {
+        showToast('⚠️ Tiada rutin fizikal. Sila tambah dalam "💪 Rutin Fizikal & Kesihatan" dahulu.');
+        return;
+      }
+
+      // Tunjuk senarai rutin fizikal untuk dipilih
+      const pilihan = allRutinFizikal.map((r, i) => `${i + 1}. ${r.emoji} ${r.nama} (${r.jenis === 'counter' ? `+${r.nilaiPerTap}${r.unit} per tap, target ${r.target}${r.unit}` : `${r.target}x`})`).join('\n');
+      const input = prompt(`Pilih rutin fizikal untuk dijadikan laci:\n\n${pilihan}\n\nTaip nombor:`);
+      if (input === null) return;
+
+      const idx = parseInt(input.trim()) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= allRutinFizikal.length) {
+        showToast('⚠️ Nombor tidak sah.');
+        return;
+      }
+
+      const rutin = allRutinFizikal[idx];
+      await addDoc(collection(db, "users", currentUser.uid, "routine_drawers"), {
+        title: `${rutin.emoji} ${rutin.nama}`,
+        zikir: '',
+        target: String(rutin.nilaiPerTap),
+        maksud: rutin.jenis === 'counter'
+          ? `counter|${rutin.id}|${rutin.nilaiPerTap}|${rutin.unit}|${rutin.target}`
+          : `checkbox|${rutin.id}|${rutin.target}`,
+        timeId: currentRoutineTimeId,
+        isFizikal: true,
+        rutinFizikalId: rutin.id,
+        createdAt: Date.now()
+      });
+      showToast(`✅ Laci "${rutin.emoji} ${rutin.nama}" berjaya ditambah!`);
+    });
+    
 // ── JANA PUKAL ─────────────────────────────────────────
     const janaPukalModal = document.getElementById('jana-pukal-modal');
     const bulkPrefix = document.getElementById('bulk-prefix');
@@ -15217,10 +15405,16 @@ async function renderSRQueuePage() {
       }
     }
 
-
-    // ── RUTIN FIZIKAL SYSTEM ──
+// ── RUTIN FIZIKAL SYSTEM ──
     let allRutinFizikal = [];
     let rutinFizikalTabAktif = 'hari-ini';
+
+    // ── SESSION PLANNER ──
+    let allSessionBlok = [];
+    let sessionAktif = false;
+    let sessionBlokIndex = 0;
+    let sessionBlokCountdown = 0;
+
     
 // ══════════════════════════════════════════
 // REMINDER SYSTEM
@@ -16028,16 +16222,438 @@ function subscribeReminders() {
       }
     }
 
+// ══════════════════════════════════════════
+    // SESSION PLANNER SYSTEM
+    // ══════════════════════════════════════════
+
+    document.getElementById('btn-go-session-planner').addEventListener('click', () => {
+      const sec = document.getElementById('section-session-planner');
+      if (sec) { showSection(sec); renderSessionBlokList(); }
+    });
+
+    document.getElementById('btn-back-home-session').addEventListener('click', () => {
+      showSection(sectionHome);
+    });
+
+    // ── JENIS BLOK ──
+    const SESSION_JENIS = {
+      rutin:   { label: 'Zikir / Rutin',    warna: '#a78bfa', emoji: '📿' },
+      bahasa:  { label: 'Bahasa',           warna: '#22d3ee', emoji: '📝' },
+      quran:   { label: 'Al-Quran',         warna: '#34d399', emoji: '📖' },
+      doa:     { label: 'Doa',              warna: '#fcd34d', emoji: '🤲' },
+      hadis:   { label: 'Hadis',            warna: '#f9a8d4', emoji: '📚' },
+      fizikal: { label: 'Rutin Fizikal',    warna: '#fb923c', emoji: '💪' },
+    };
+
+    // ── TAMBAH BLOK ──
+    document.getElementById('btn-add-session-blok').addEventListener('click', async () => {
+      if (!currentUser) return;
+
+      const jenisStr = Object.entries(SESSION_JENIS)
+        .map(([k, v], i) => `${i+1}. ${v.emoji} ${v.label}`)
+        .join('\n');
+
+      const input = prompt(`Pilih jenis blok:\n\n${jenisStr}\n\nTaip nombor:`);
+      if (input === null) return;
+
+      const jenisKeys = Object.keys(SESSION_JENIS);
+      const idx = parseInt(input.trim()) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= jenisKeys.length) {
+        showToast('⚠️ Nombor tidak sah.'); return;
+      }
+
+      const jenis = jenisKeys[idx];
+      const jenisInfo = SESSION_JENIS[jenis];
+
+      let count = 1;
+      let label = '';
+
+      if (jenis === 'rutin') {
+        const countInput = prompt('Berapa kali countdown minimum?\n(Cth: 10 untuk 10 kali zikir)');
+        count = parseInt(countInput) || 10;
+        label = `${jenisInfo.emoji} Zikir ${count}x`;
+      } else if (jenis === 'bahasa') {
+        const countInput = prompt('Berapa laci bahasa?\n(Cth: 1 untuk 1 laci penuh)');
+        count = parseInt(countInput) || 1;
+        label = `${jenisInfo.emoji} Bahasa ${count} laci`;
+      } else if (jenis === 'quran') {
+        const countInput = prompt('Berapa ayat?\n(Cth: 5 untuk 5 ayat)');
+        count = parseInt(countInput) || 5;
+        label = `${jenisInfo.emoji} Quran ${count} ayat`;
+      } else if (jenis === 'doa') {
+        const countInput = prompt('Berapa countdown doa?\n(Cth: 10)');
+        count = parseInt(countInput) || 10;
+        label = `${jenisInfo.emoji} Doa ${count}x`;
+      } else if (jenis === 'hadis') {
+        const countInput = prompt('Berapa countdown hadis?\n(Cth: 5)');
+        count = parseInt(countInput) || 5;
+        label = `${jenisInfo.emoji} Hadis ${count}x`;
+      } else if (jenis === 'fizikal') {
+        if (!allRutinFizikal.length) {
+          showToast('⚠️ Tiada rutin fizikal. Tambah dalam "💪 Rutin Fizikal" dahulu.');
+          return;
+        }
+        const pilihanRutin = allRutinFizikal.map((r, i) => `${i+1}. ${r.emoji} ${r.nama}`).join('\n');
+        const rutinInput = prompt(`Pilih rutin fizikal:\n\n${pilihanRutin}\n\nTaip nombor:`);
+        if (rutinInput === null) return;
+        const rutinIdx = parseInt(rutinInput.trim()) - 1;
+        if (isNaN(rutinIdx) || rutinIdx < 0 || rutinIdx >= allRutinFizikal.length) {
+          showToast('⚠️ Nombor tidak sah.'); return;
+        }
+        const rutin = allRutinFizikal[rutinIdx];
+        count = 1;
+        label = `${rutin.emoji} ${rutin.nama}`;
+        await addDoc(collection(db, "users", currentUser.uid, "session_blok"), {
+          jenis, label, count,
+          rutinFizikalId: rutin.id,
+          rutinNama: rutin.nama,
+          rutinEmoji: rutin.emoji,
+          rutinJenis: rutin.jenis,
+          rutinNilaiPerTap: rutin.nilaiPerTap,
+          rutinUnit: rutin.unit,
+          rutinTarget: rutin.target,
+          urutan: allSessionBlok.length,
+          createdAt: Date.now()
+        });
+        showToast(`✅ Blok "${label}" ditambah!`);
+        return;
+      }
+
+      await addDoc(collection(db, "users", currentUser.uid, "session_blok"), {
+        jenis, label, count,
+        urutan: allSessionBlok.length,
+        createdAt: Date.now()
+      });
+      showToast(`✅ Blok "${label}" ditambah!`);
+    });
+
+    // ── SUBSCRIBE SESSION BLOK ──
+    function subscribeSessionBlok() {
+      if (!currentUser) return;
+      onSnapshot(
+        query(collection(db, "users", currentUser.uid, "session_blok"), orderBy("urutan", "asc")),
+        snap => {
+          allSessionBlok = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const sec = document.getElementById('section-session-planner');
+          if (sec && sec.classList.contains('active')) renderSessionBlokList();
+        }
+      );
+    }
+
+    // ── RENDER BLOK LIST ──
+    function renderSessionBlokList() {
+      const list = document.getElementById('session-blok-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (!allSessionBlok.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada blok. Tekan "+ Tambah Blok".</div>';
+        return;
+      }
+
+      allSessionBlok.forEach((blok, idx) => {
+        const info = SESSION_JENIS[blok.jenis] || { warna: '#9ca3af', emoji: '▪' };
+        const isAktif = sessionAktif && sessionBlokIndex === idx;
+
+        const div = document.createElement('div');
+        div.className = 'drawer-card';
+        div.style.cssText = `border:1px solid ${isAktif ? info.warna : 'var(--border-soft)'};background:${isAktif ? `rgba(${hexToRgb(info.warna)},0.1)` : ''};margin-bottom:8px;`;
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+              <button class="btn-blok-up btn btn-secondary btn-sm" data-id="${blok.id}" data-idx="${idx}" style="padding:2px 8px;font-size:0.7rem;" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
+              <button class="btn-blok-down btn btn-secondary btn-sm" data-id="${blok.id}" data-idx="${idx}" style="padding:2px 8px;font-size:0.7rem;" ${idx === allSessionBlok.length-1 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
+            </div>
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(${hexToRgb(info.warna)},0.2);border:1px solid ${info.warna};display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">${info.emoji}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.88rem;font-weight:700;color:${isAktif ? info.warna : 'var(--text)'};">
+                ${blok.label}
+                ${isAktif ? '<span style="font-size:0.65rem;background:'+info.warna+';color:#020617;padding:1px 8px;border-radius:999px;margin-left:6px;font-weight:700;">AKTIF</span>' : ''}
+              </div>
+              <div style="font-size:0.7rem;color:var(--subtext);">
+                ${info.label}
+                ${isAktif ? ` — Baki: <strong style="color:${info.warna};">${sessionBlokCountdown}</strong>` : ''}
+              </div>
+            </div>
+            <button class="btn-blok-del btn btn-secondary btn-sm" data-id="${blok.id}" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">✕</button>
+          </div>
+        `;
+
+        // Naik
+        div.querySelector('.btn-blok-up').addEventListener('click', async () => {
+          if (idx === 0) return;
+          await tukarUrutanBlok(idx, idx - 1);
+        });
+
+        // Turun
+        div.querySelector('.btn-blok-down').addEventListener('click', async () => {
+          if (idx === allSessionBlok.length - 1) return;
+          await tukarUrutanBlok(idx, idx + 1);
+        });
+
+        // Padam
+        div.querySelector('.btn-blok-del').addEventListener('click', async () => {
+          if (!confirm(`Padam blok "${blok.label}"?`)) return;
+          await deleteDoc(doc(db, "users", currentUser.uid, "session_blok", blok.id));
+          // Re-index urutan
+          const remaining = allSessionBlok.filter(b => b.id !== blok.id);
+          const batch = writeBatch(db);
+          remaining.forEach((b, i) => {
+            batch.update(doc(db, "users", currentUser.uid, "session_blok", b.id), { urutan: i });
+          });
+          await batch.commit();
+          showToast('🗑️ Blok dipadam.');
+        });
+
+        list.appendChild(div);
+      });
+    }
+
+    // Helper tukar urutan
+    async function tukarUrutanBlok(idxA, idxB) {
+      const blokA = allSessionBlok[idxA];
+      const blokB = allSessionBlok[idxB];
+      const batch = writeBatch(db);
+      batch.update(doc(db, "users", currentUser.uid, "session_blok", blokA.id), { urutan: idxB });
+      batch.update(doc(db, "users", currentUser.uid, "session_blok", blokB.id), { urutan: idxA });
+      await batch.commit();
+    }
+
+    // Helper hex to rgb
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result
+        ? `${parseInt(result[1],16)},${parseInt(result[2],16)},${parseInt(result[3],16)}`
+        : '255,255,255';
+    }
+
+    // ── MULA SESI ──
+    document.getElementById('btn-mula-session').addEventListener('click', () => {
+      if (!allSessionBlok.length) {
+        showToast('⚠️ Tambah blok dahulu.'); return;
+      }
+
+      sessionAktif = true;
+      sessionBlokIndex = 0;
+      mulaBlokSession(0);
+
+      // Pergi ke Tasbih
+      showSection(sectionTasbih);
+      showToast('▶ Sesi bermula! Ikut turutan yang ditetapkan.', 4000);
+    });
+
+    // ── HENTI SESI ──
+    document.getElementById('btn-stop-session').addEventListener('click', () => {
+      hentiSession();
+      showToast('⏹ Sesi dihentikan.');
+    });
+
+    function hentiSession() {
+      sessionAktif = false;
+      sessionBlokIndex = 0;
+      sessionBlokCountdown = 0;
+      const bar = document.getElementById('session-aktif-bar');
+      if (bar) bar.style.display = 'none';
+
+      // Off semua mode
+      factMode = false;
+      bahasaMode = false;
+      routineMode = false;
+      btnToggleFact.textContent = 'Fakta: OFF';
+      btnToggleFact.classList.remove('btn-active');
+      btnToggleRutin.textContent = 'Rutin: OFF';
+      btnToggleRutin.classList.remove('btn-active');
+      const btnBhs = document.getElementById('btn-toggle-bahasa');
+      if (btnBhs) { btnBhs.textContent = '📝 Bahasa: OFF'; btnBhs.classList.remove('btn-active'); }
+      ['quran','doa','hadis'].forEach(s => {
+        const b = document.getElementById(`btn-toggle-${s}`);
+        if (b) { b.textContent = `${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
+      });
+      factDisplayBox.classList.remove('show');
+      updateTasbihUI();
+    }
+
+    function mulaBlokSession(idx) {
+      if (!sessionAktif || idx >= allSessionBlok.length) {
+        // Sesi selesai — ulang dari awal
+        showToast('🎉 Sesi selesai! Ulang semula dari blok pertama.', 4000);
+        triggerVibration([200, 100, 200, 100, 500]);
+        sessionBlokIndex = 0;
+        mulaBlokSession(0);
+        return;
+      }
+
+      const blok = allSessionBlok[idx];
+      sessionBlokIndex = idx;
+      sessionBlokCountdown = blok.count || 1;
+
+      // Kemaskini bar aktif
+      const bar = document.getElementById('session-aktif-bar');
+      const blokEl = document.getElementById('session-aktif-blok');
+      const progressEl = document.getElementById('session-aktif-progress');
+      if (bar) bar.style.display = 'block';
+      if (blokEl) blokEl.textContent = blok.label;
+      if (progressEl) progressEl.textContent = `Blok ${idx + 1} / ${allSessionBlok.length}`;
+
+      // Aktifkan mode ikut jenis blok
+      switch (blok.jenis) {
+        case 'rutin':
+          // Off yang lain, ON rutin
+          bahasaMode = false;
+          const btnBhs2 = document.getElementById('btn-toggle-bahasa');
+          if (btnBhs2) { btnBhs2.textContent = '📝 Bahasa: OFF'; btnBhs2.classList.remove('btn-active'); }
+          ['quran','doa','hadis'].forEach(s => {
+            const b = document.getElementById(`btn-toggle-${s}`);
+            if (b) { b.textContent = `${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
+          });
+          factMode = false;
+          routineMode = true;
+          routineModeSource = 'rutin';
+          btnToggleRutin.textContent = 'Rutin: ON';
+          btnToggleRutin.classList.add('btn-active');
+          factDisplayBox.classList.add('show');
+          learningMode = 2;
+          btnToggleMode.textContent = 'Mode: Rest';
+          btnToggleMode.style.display = 'inline-flex';
+          mainRestMax = blok.count || 10;
+          mainRestCount = mainRestMax;
+          mainRestPhase = 1;
+          rebuildRoutines();
+          break;
+
+        case 'bahasa':
+          activateRoutineMode('rutin'); // Off semua dulu
+          bahasaMode = true;
+          const btnBhs3 = document.getElementById('btn-toggle-bahasa');
+          if (btnBhs3) { btnBhs3.textContent = '📝 Bahasa: ON'; btnBhs3.classList.add('btn-active'); }
+          factMode = false; routineMode = false;
+          learningMode = 2;
+          btnToggleMode.textContent = 'Mode: Rest';
+          btnToggleMode.style.display = 'none';
+          factDisplayBox.classList.add('show');
+          rebuildBahasa();
+          break;
+
+        case 'quran':
+          activateRoutineMode('quran');
+          sessionBlokCountdown = blok.count || 5;
+          break;
+
+        case 'doa':
+          activateRoutineMode('doa');
+          break;
+
+        case 'hadis':
+          activateRoutineMode('hadis');
+          break;
+
+        case 'fizikal':
+          // Tunjuk popup fizikal terus
+          tunjukSessionFizikalPopup(blok, idx);
+          return;
+      }
+
+      updateTasbihUI();
+      showToast(`${SESSION_JENIS[blok.jenis]?.emoji} Blok ${idx+1}: ${blok.label}`, 3000);
+    }
+
+    // ── POPUP FIZIKAL DALAM SESSION ──
+    function tunjukSessionFizikalPopup(blok, idx) {
+      loadProgressHariIni(blok.rutinFizikalId).then(progress => {
+        const target = blok.rutinTarget || 1;
+        const unit = blok.rutinUnit || 'kali';
+        const nilaiTap = blok.rutinNilaiPerTap || 1;
+        const selesai = progress >= target;
+
+        if (selesai) {
+          showToast(`✅ ${blok.rutinNama} dah selesai hari ini! Ke blok seterusnya.`, 3000);
+          setTimeout(() => mulaBlokSeterusnya(), 2000);
+          return;
+        }
+
+        // Tunjuk dalam factDisplayBox
+        factDisplayBox.classList.add('show');
+        factTitleEl.textContent = `[ 💪 Session: ${blok.rutinNama} ]`;
+        factTitleEl.style.color = '#fb923c';
+        const nilaiBaru = Math.min(target, progress + nilaiTap);
+        factContentEl.innerHTML = `
+          <div style="text-align:center;padding:10px 0;">
+            <div style="font-size:3rem;margin-bottom:8px;">${blok.rutinEmoji || '💪'}</div>
+            <div style="font-size:1.3rem;font-weight:700;color:#fdba74;margin-bottom:12px;">${blok.rutinNama}</div>
+            <div style="font-size:1.5rem;font-weight:700;color:white;margin-bottom:4px;">${progress} / ${target} ${unit}</div>
+            <div style="font-size:0.82rem;color:var(--subtext);">Tap untuk tambah +${nilaiTap}${unit}</div>
+          </div>
+        `;
+        factHintEl.textContent = '(Tap untuk rekod & teruskan ke blok seterusnya)';
+        factHintEl.style.color = '#fb923c';
+        factHintEl.style.display = 'block';
+
+        // Override tap seterusnya
+        window._sessionFizikalHandler = async () => {
+          await simpanProgressRF(blok.rutinFizikalId, nilaiBaru, blok.rutinNama);
+          window._sessionFizikalHandler = null;
+          if (nilaiBaru >= target) {
+            showToast(`🎉 ${blok.rutinNama} selesai!`, 2000);
+            triggerVibration([200, 100, 200]);
+          }
+          setTimeout(() => mulaBlokSeterusnya(), 1000);
+        };
+      });
+    }
+
+    // ── CHECK SESSION DALAM DECREMENTTASBIH ──
+    function semakSessionBlokSelesai() {
+      if (!sessionAktif) return;
+
+      const blok = allSessionBlok[sessionBlokIndex];
+      if (!blok) return;
+
+      if (blok.jenis === 'rutin') {
+        // Countdown rest — semak bila mainRestCount habis fasa 2
+        sessionBlokCountdown--;
+        if (sessionBlokCountdown <= 0) {
+          setTimeout(() => mulaBlokSeterusnya(), 500);
+        }
+      } else if (blok.jenis === 'quran') {
+        sessionBlokCountdown--;
+        if (sessionBlokCountdown <= 0) {
+          setTimeout(() => mulaBlokSeterusnya(), 500);
+        }
+      }
+    }
+
+    function mulaBlokSeterusnya() {
+      const nextIdx = sessionBlokIndex + 1;
+      mulaBlokSession(nextIdx);
+    }
+
     // ── START INTERVAL SEMAK REMINDER ──
 function mulakanReminderCheck() {
-  if (reminderCheckInterval) clearInterval(reminderCheckInterval);
-  // Semak setiap 1 minit
-  reminderCheckInterval = setInterval(() => {
-    semakReminderAktif();
-  }, 60 * 1000);
-  // Semak terus masa mula
-  setTimeout(() => semakReminderAktif(), 3000);
-}
+      if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+      reminderCheckInterval = setInterval(() => {
+        semakReminderAktif();
+        semakMidnightResetRF();
+      }, 60 * 1000);
+      setTimeout(() => semakReminderAktif(), 3000);
+    }
+
+    // ── MIDNIGHT RESET RUTIN FIZIKAL ──
+    let lastResetKeyRF = localStorage.getItem('lastResetKeyRF') || '';
+
+    function semakMidnightResetRF() {
+      const todayKey = todayKeyRF();
+      if (lastResetKeyRF === todayKey) return; // Dah reset hari ini
+      // Hari baru — update key (data lama kekal dalam Firestore sebagai history)
+      lastResetKeyRF = todayKey;
+      localStorage.setItem('lastResetKeyRF', todayKey);
+      // Refresh display kalau dalam page rutin fizikal
+      const sec = document.getElementById('section-rutin-fizikal');
+      if (sec && sec.classList.contains('active')) {
+        renderRutinFizikalList();
+        loadRutinFizikalStats();
+      }
+      showToast('🌅 Hari baru! Progress rutin fizikal di-reset.', 4000);
+    }
             
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
