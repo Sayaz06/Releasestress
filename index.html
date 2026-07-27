@@ -16520,40 +16520,91 @@ function subscribeReminders() {
 
       // Aktifkan mode ikut jenis blok
       switch (blok.jenis) {
-        case 'rutin':
-          // Off yang lain, ON rutin
+case 'rutin':
+          // Reset semua state dulu
+          factMode = false;
           bahasaMode = false;
+          routineMode = false;
+          routineModeSource = 'rutin'; // Tetapkan DULU sebelum rebuild
+          isBlocked = false;
+          comboStep = 0;
+          isFlipped = false;
+          window._bahasaNextLaciHandler = null;
+
+          // Off semua button
           const btnBhs2 = document.getElementById('btn-toggle-bahasa');
           if (btnBhs2) { btnBhs2.textContent = '📝 Bahasa: OFF'; btnBhs2.classList.remove('btn-active'); }
           ['quran','doa','hadis'].forEach(s => {
             const b = document.getElementById(`btn-toggle-${s}`);
             if (b) { b.textContent = `${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
           });
-          factMode = false;
+          btnToggleFact.textContent = 'Fakta: OFF';
+          btnToggleFact.classList.remove('btn-active');
+
+          // ON rutin
           routineMode = true;
-          routineModeSource = 'rutin';
           btnToggleRutin.textContent = 'Rutin: ON';
           btnToggleRutin.classList.add('btn-active');
           factDisplayBox.classList.add('show');
           learningMode = 2;
           btnToggleMode.textContent = 'Mode: Rest';
           btnToggleMode.style.display = 'inline-flex';
+          btnToggleMainRestMax.style.display = 'inline-flex';
           mainRestMax = blok.count || 10;
           mainRestCount = mainRestMax;
           mainRestPhase = 1;
+          mainPlus5Used = false;
+          updateMainPlus5Btn();
+
+          // Sembunyikan button skip bahasa
+          const btnSkipRutin = document.getElementById('btn-skip-bahasa-laci');
+          if (btnSkipRutin) btnSkipRutin.style.display = 'none';
+
           rebuildRoutines();
           break;
 
-        case 'bahasa':
-          activateRoutineMode('rutin'); // Off semua dulu
+case 'bahasa':
+          // Off semua mode dulu tanpa trigger activateRoutineMode (elak side effects)
+          factMode = false;
+          routineMode = false;
+          ['quran','doa','hadis','rutin'].forEach(s => {
+            const b = document.getElementById(`btn-toggle-${s}`);
+            if (b) { b.textContent = `${s === 'rutin' ? 'Rutin' : getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
+          });
+          btnToggleRutin.textContent = 'Rutin: OFF';
+          btnToggleRutin.classList.remove('btn-active');
+          btnToggleFact.textContent = 'Fakta: OFF';
+          btnToggleFact.classList.remove('btn-active');
+
+          // ON bahasa
           bahasaMode = true;
+          srModeAktif = false;
+          srLaciSemasa = null;
+          srQueue = [];
+          srSemuaSelesai = false;
+          window._bahasaNextLaciHandler = null;
+
           const btnBhs3 = document.getElementById('btn-toggle-bahasa');
           if (btnBhs3) { btnBhs3.textContent = '📝 Bahasa: ON'; btnBhs3.classList.add('btn-active'); }
-          factMode = false; routineMode = false;
+
           learningMode = 2;
           btnToggleMode.textContent = 'Mode: Rest';
           btnToggleMode.style.display = 'none';
+          btnToggleMainRestMax.style.display = 'none';
+
+          comboStep = 0;
+          isFlipped = false;
+          isBlocked = false;
+          bahasaEjaanCount = 5;
+          bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
+          bahasaRestPhase = 1;
+
           factDisplayBox.classList.add('show');
+
+          // Tunjuk button Skip
+          const btnSkipSession = document.getElementById('btn-skip-bahasa-laci');
+          if (btnSkipSession) btnSkipSession.style.display = 'inline-flex';
+
           rebuildBahasa();
           break;
 
