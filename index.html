@@ -4694,6 +4694,51 @@ function showSection(section) {
       const floatBahasa = document.getElementById('btn-float-countdown-bahasa');
       if (floatBahasa) floatBahasa.remove();
 
+      // ── SESSION: Tunjuk floating bar bila session aktif dan bukan di tasbih ──
+      const existingSessionFloat = document.getElementById('session-float-bar');
+      if (existingSessionFloat) existingSessionFloat.remove();
+
+// Buang floating bar kalau pergi ke tasbih
+      if (section.id === 'section-tasbih') {
+        const existFloat = document.getElementById('session-float-bar');
+        if (existFloat) existFloat.remove();
+      }
+
+      if (sessionAktif && section.id !== 'section-tasbih') {
+        const blok = allSessionBlok[sessionBlokIndex];
+        const floatBar = document.createElement('div');
+        floatBar.id = 'session-float-bar';
+        floatBar.style.cssText = `
+          position:fixed;bottom:0;left:0;right:0;z-index:99999;
+          background:linear-gradient(135deg,rgba(124,58,237,0.95),rgba(99,102,241,0.95));
+          padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
+          box-shadow:0 -4px 20px rgba(0,0,0,0.5);backdrop-filter:blur(8px);
+        `;
+        floatBar.innerHTML = `
+          <div>
+            <div style="font-size:0.78rem;font-weight:700;color:white;">🗓️ Session Aktif</div>
+            <div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">${blok ? blok.label : ''} — Baki: ${Math.max(0, sessionBlokCountdown)}</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button id="btn-float-session-sambung" style="padding:6px 14px;border-radius:999px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;font-size:0.78rem;font-weight:600;cursor:pointer;">▶ Sambung</button>
+            <button id="btn-float-session-henti" style="padding:6px 14px;border-radius:999px;background:rgba(239,68,68,0.3);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;font-size:0.78rem;font-weight:600;cursor:pointer;">⏹ Henti</button>
+          </div>
+        `;
+        document.body.appendChild(floatBar);
+
+        document.getElementById('btn-float-session-sambung').addEventListener('click', () => {
+          floatBar.remove();
+          showSection(sectionTasbih);
+        });
+
+        document.getElementById('btn-float-session-henti').addEventListener('click', () => {
+          if (!confirm('Henti session sekarang?')) return;
+          hentiSession();
+          floatBar.remove();
+          showToast('⏹ Session dihentikan.');
+        });
+      }
+
       sectionLogin.classList.remove("active");
       sectionHome.classList.remove("active");
       sectionTasbih.classList.remove("active");
@@ -5047,9 +5092,53 @@ if (hideCircle) {
         const modeRemainingEl = document.getElementById('tasbih-mode-remaining');
 
 if (factMode || bahasaMode) {
-          modeBarText.textContent = factMode ? '📚 Mode Fakta' : '📝 Mode Bahasa';
-          tasbihStatusChip.textContent = factMode ? 'Mode: Fakta' : 'Mode: Bahasa';
+          // ── Session bar untuk fakta/bahasa ──
+          if (sessionAktif) {
+            const blokSemasa = allSessionBlok[sessionBlokIndex];
+            if (blokSemasa && (blokSemasa.jenis === 'fakta' || blokSemasa.jenis === 'bahasa')) {
+              modeBarText.textContent = `${SESSION_JENIS[blokSemasa.jenis]?.emoji} ${blokSemasa.label}`;
+              tasbihStatusChip.textContent = `Session — Baki ${Math.max(0, sessionBlokCountdown)}`;
+            } else {
+              modeBarText.textContent = factMode ? '📚 Mode Fakta' : '📝 Mode Bahasa';
+              tasbihStatusChip.textContent = factMode ? 'Mode: Fakta' : 'Mode: Bahasa';
+            }
+          } else {
+            modeBarText.textContent = factMode ? '📚 Mode Fakta' : '📝 Mode Bahasa';
+            tasbihStatusChip.textContent = factMode ? 'Mode: Fakta' : 'Mode: Bahasa';
+          }
           if (counterArea) counterArea.style.display = 'none';
+
+// ── Badge SR pending dalam modeBar — refresh async ──
+          const oldSRBadgeBar = document.getElementById('sr-badge-modebar');
+          if (oldSRBadgeBar) oldSRBadgeBar.remove();
+
+          // Refresh IDs dulu secara async supaya terkini
+          const refreshPromise = factMode ? refreshSRFaktaQueueIds() : refreshSRQueueIds();
+          refreshPromise.then(() => {
+            const srPendingCount = factMode ? srFaktaQueueIds.size : srQueueIds.size;
+            if (srPendingCount > 0 && modeBar) {
+              // Buang badge lama dulu (mungkin dah ada dari refresh sebelum)
+              const oldBadge = document.getElementById('sr-badge-modebar');
+              if (oldBadge) oldBadge.remove();
+
+              const srBadgeBar = document.createElement('div');
+              srBadgeBar.id = 'sr-badge-modebar';
+              srBadgeBar.style.cssText = `
+                display:inline-flex;align-items:center;gap:4px;
+                padding:3px 10px;border-radius:999px;
+                background:rgba(245,158,11,0.15);
+                border:1px solid rgba(245,158,11,0.4);
+                color:#fcd34d;font-size:0.68rem;font-weight:700;
+                margin-top:4px;cursor:pointer;
+              `;
+              srBadgeBar.innerHTML = `⏰ ${srPendingCount} SR ${factMode ? 'Fakta' : 'Bahasa'} menunggu`;
+              srBadgeBar.addEventListener('click', () => {
+                showSection(document.getElementById('section-sr-queue'));
+                renderSRQueuePage();
+              });
+              modeBar.appendChild(srBadgeBar);
+            }
+          });
 
           // Button Tips Fakta dalam mode bar
           let btnTipsFaktaBar = document.getElementById('btn-tips-fakta-bar');
@@ -5683,13 +5772,22 @@ if (routineModeSource === 'quran' && nextIsOrWasTamat) {
             return;
           }
 
+          // ── SESSION: Kira countdown doa/hadis/rutin bila laci selesai ──
+          if (sessionAktif) {
+            const blokSemasa = allSessionBlok[sessionBlokIndex];
+            if (blokSemasa && ['doa','hadis','rutin'].includes(blokSemasa.jenis)) {
+              semakSessionBlokSelesai();
+              if (sessionBlokCountdown <= 0) return; // Session handle peralihan
+            }
+          }
+
           currentRoutineIndex = (currentRoutineIndex + 1) % allRoutines.length;
           const nextRtn = allRoutines[currentRoutineIndex];
           currentRoutineTarget = nextRtn.target;
           
           syncIndexToFirestore(currentRoutineIndex);
           
-isFlipped = false;
+          isFlipped = false;
           comboStep = 0;
           currentRoutineTarget = allRoutines[currentRoutineIndex].target;
           triggerFadeAnimation(renderCurrentFact);
@@ -6146,9 +6244,13 @@ function getRemainingInLaci() {
       }
     }
 
-    function renderCurrentFact() {
+function renderCurrentFact() {
       const dataSource = routineMode ? allRoutines : allFacts;
       const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
+
+      // ── Refresh SR IDs setiap render untuk badge terkini ──
+      if (factMode && !srFaktaModeAktif) refreshSRFaktaQueueIds();
+      if (bahasaMode && !srModeAktif) refreshSRQueueIds();
 
       if (dataSource.length === 0) {
         factTitleEl.textContent = "";
@@ -6158,14 +6260,14 @@ function getRemainingInLaci() {
         btnCopyFact.style.display = 'none';
         return;
       }
-
       const data = dataSource[currentIndex];
       
       factContentEl.scrollTop = 0;
 
-      // ── WARNA SR MODE ──
+// ── WARNA SR MODE ──
       const isSR = !!(data && data.isSRMode);
       const sudahDalamSR = !isSR && bahasaMode && data.drawerId && srQueueIds.has(data.drawerId);
+      const sudahDalamSRFakta = !isSR && factMode && data.drawerId && srFaktaQueueIds.has(data.drawerId);
       const srWarnaTajuk = '#fcd34d';
       const srWarnaKandungan = '#93c5fd';
       const normalWarnaTajuk = 'var(--grad2)';
@@ -6180,10 +6282,11 @@ function getRemainingInLaci() {
         factDisplayBox.style.background = '';
       }
 
-      // ── TANDA KECIL SR (sudah dalam queue, bukan SR session) ──
+// ── TANDA KECIL SR (sudah dalam queue, bukan SR session) ──
       const oldSRBadge = document.getElementById('sr-badge-kecil');
       if (oldSRBadge) oldSRBadge.remove();
-      if (sudahDalamSR && !data.isFasaEjaan) {
+      const patutTunjukBadge = (sudahDalamSR && !data.isFasaEjaan) || sudahDalamSRFakta;
+      if (patutTunjukBadge) {
         const badge = document.createElement('div');
         badge.id = 'sr-badge-kecil';
         badge.style.cssText = `
@@ -6201,7 +6304,7 @@ function getRemainingInLaci() {
           z-index:10;
           letter-spacing:0.03em;
         `;
-        badge.textContent = '⏰ SR';
+        badge.textContent = sudahDalamSRFakta ? '⏰ SR Fakta' : '⏰ SR';
         factDisplayBox.appendChild(badge);
       }
       
@@ -6410,10 +6513,17 @@ function syncIndexToFirestore(newIndex) {
     }
 
 // ── POPUP SR NOTIFIKASI ──
-    function tunjukPopupSR(srData) {
+function tunjukPopupSR(srData) {
       // Buang popup lama kalau ada
       const oldPopup = document.getElementById('sr-notif-popup');
       if (oldPopup) oldPopup.remove();
+
+      const isFakta = !!(srData && srData.topicId);
+      const warnaPopup = isFakta ? 'rgba(99,102,241,0.95)' : 'rgba(217,119,6,0.95)';
+      const warnaBorder = isFakta ? '#a5b4fc' : '#fcd34d';
+      const warnaSubteks = isFakta ? '#c7d2fe' : '#fef3c7';
+      const warnaLabel = isFakta ? '#e0e7ff' : '#fde68a';
+      const labelJenis = isFakta ? '📚 SR Fakta Masuk' : '⏰ Ulangan SR Masuk';
 
       const popup = document.createElement('div');
       popup.id = 'sr-notif-popup';
@@ -6422,8 +6532,8 @@ function syncIndexToFirestore(newIndex) {
         bottom: 24px;
         left: 50%;
         transform: translateX(-50%) translateY(100px);
-        background: rgba(217, 119, 6, 0.95);
-        border: 1px solid #fcd34d;
+        background: ${warnaPopup};
+        border: 1px solid ${warnaBorder};
         border-radius: 14px;
         padding: 10px 18px;
         z-index: 999999;
@@ -6436,11 +6546,11 @@ function syncIndexToFirestore(newIndex) {
         width: 90%;
       `;
       popup.innerHTML = `
-        <span style="font-size:1.2rem;flex-shrink:0;">⏰</span>
+        <span style="font-size:1.2rem;flex-shrink:0;">${isFakta ? '📚' : '⏰'}</span>
         <div>
-          <div style="font-size:0.75rem;font-weight:700;color:#fef3c7;">Ulangan SR Masuk</div>
+          <div style="font-size:0.75rem;font-weight:700;color:${warnaSubteks};">${labelJenis}</div>
           <div style="font-size:0.82rem;color:white;font-weight:600;">${srData.drawerTitle || 'Laci'}</div>
-          <div style="font-size:0.68rem;color:#fde68a;">${getLabelFasaSR(srData.fasaSemasa)}</div>
+          <div style="font-size:0.68rem;color:${warnaLabel};">${getLabelFasaSR(srData.fasaSemasa)}</div>
         </div>
       `;
       document.body.appendChild(popup);
@@ -6463,13 +6573,43 @@ function syncIndexToFirestore(newIndex) {
       if ((!factMode && !bahasaMode) || allFacts.length === 0) return;
       const currentData = allFacts[currentFactIndex];
 
-      if (currentData.isTamat) {
+if (currentData.isTamat) {
+        // ── SR FAKTA isTamat — handle khas ──
+        if (currentData.isSRFakta && currentData.drawerId) {
+          triggerVibration([200, 100, 200, 100, 2000]);
+          isBlocked = true;
+          setTimeout(async () => {
+            isBlocked = false;
+            await handleSRFaktaTamat(currentData.drawerId);
+          }, 2600);
+          updateTasbihUI();
+          return;
+        }
+
         if (currentData.drawerId && currentUser) {
           const dObj = allDrawers.find(d => d.id === currentData.drawerId);
           if (dObj) {
             updateDoc(doc(db, "users", currentUser.uid, "drawer", currentData.drawerId), { 
               repeatCount: (dObj.repeatCount || 0) + 1 
             });
+          }
+        }
+
+        // ── Daftar SR Fakta bila laci biasa selesai ──
+        if (factMode && !srFaktaModeAktif && currentData.drawerId) {
+          daftarSRFaktaBaru(currentData.drawerId);
+        }
+
+        // ── Daftar SR Bahasa bila laci bahasa selesai ──
+        if (bahasaMode && currentData.drawerId) {
+          if (srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === currentData.drawerId) {
+            selesaiSRUlangan(currentData.drawerId).then(() => {
+              const fasaSelesai = srLaciSemasa ? srLaciSemasa.fasaSemasa : 0;
+              srLaciSemasa = null;
+              showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR(fasaSelesai)}`, 3000);
+            });
+          } else {
+            daftarSRBaru(currentData.drawerId);
           }
         }
 
@@ -6489,7 +6629,7 @@ function syncIndexToFirestore(newIndex) {
           }
         }
 
-        if (learningMode === 2) {
+if (learningMode === 2) {
           setTimeout(async () => {
             isBlocked = false;
             comboStep = 0;
@@ -6498,15 +6638,40 @@ function syncIndexToFirestore(newIndex) {
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
-            // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
-            if (bahasaMode) {
+// ── CHECK SR FAKTA QUEUE ──
+            if (factMode && !srFaktaSemuaSelesai) {
+              const adaSRFakta = await checkSRFaktaQueue();
+              if (adaSRFakta && muatSRFaktaLaciSeterusnya()) {
+                tunjukPopupSR(srFaktaLaciSemasa);
+                // SR Fakta — countdown dikira dalam handleSRFaktaTamat, JANGAN kira di sini
+                await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
+                return;
+              }
+            }
+            srFaktaSemuaSelesai = false;
+
+            // ── CHECK SR BAHASA QUEUE ──
+            if (bahasaMode && !srSemuaSelesai) {
               const adaSR = await checkSRQueue();
               if (adaSR && muatSRLaciSeterusnya()) {
-                // Tunjuk popup notifikasi
                 tunjukPopupSR(srLaciSemasa);
-                // Muat laci SR
+                // SR Bahasa — kira sebagai 1 laci dalam session
+                if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
+                  semakSessionBlokSelesai();
+                  if (sessionBlokCountdown <= 0) return;
+                }
                 await muatLaciSRKeDalamFacts(srLaciSemasa);
                 return;
+              }
+            }
+            srSemuaSelesai = false;
+
+            // ── SESSION: kira laci biasa (bukan SR) ──
+            if (sessionAktif) {
+              const blokSemasa = allSessionBlok[sessionBlokIndex];
+              if (blokSemasa && (blokSemasa.jenis === 'fakta' || blokSemasa.jenis === 'bahasa')) {
+                semakSessionBlokSelesai();
+                if (sessionBlokCountdown <= 0) return;
               }
             }
 
@@ -6514,19 +6679,36 @@ function syncIndexToFirestore(newIndex) {
             syncIndexToFirestore(currentFactIndex); 
             triggerFadeAnimation(renderCurrentFact);
           }, 2600);
-        } else {
+} else {
           setTimeout(async () => {
             isBlocked = false;
 
-            // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
-            if (bahasaMode) {
+// ── CHECK SR FAKTA QUEUE ──
+            if (factMode && !srFaktaSemuaSelesai) {
+              const adaSRFakta = await checkSRFaktaQueue();
+              if (adaSRFakta && muatSRFaktaLaciSeterusnya()) {
+                tunjukPopupSR(srFaktaLaciSemasa);
+                // SR Fakta — countdown dikira dalam handleSRFaktaTamat
+                await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
+                return;
+              }
+            }
+            srFaktaSemuaSelesai = false;
+
+            // ── CHECK SR BAHASA QUEUE ──
+            if (bahasaMode && !srSemuaSelesai) {
               const adaSR = await checkSRQueue();
               if (adaSR && muatSRLaciSeterusnya()) {
                 tunjukPopupSR(srLaciSemasa);
+                if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
+                  semakSessionBlokSelesai();
+                  if (sessionBlokCountdown <= 0) return;
+                }
                 await muatLaciSRKeDalamFacts(srLaciSemasa);
                 return;
               }
             }
+            srSemuaSelesai = false;
 
             showPeraturanOverlay("Sambung Laci Seterusnya", () => {
               comboStep = 0;
@@ -6655,12 +6837,20 @@ triggerVibration([100, 50, 100]);
               isFlipped = false;
               updateMainPlus5Btn();
 
-              // ── SESSION PLANNER: kira countdown blok bahasa ──
+              // ── SESSION PLANNER: kira countdown blok bahasa — SATU kali sahaja ──
               if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
-                semakSessionBlokSelesai();
+                // Kira terus di sini, jangan biar cycleFact kira lagi
+                sessionBlokCountdown--;
+                simpanSessionState();
+                const progressElBahasa = document.getElementById('session-aktif-progress');
+                if (progressElBahasa) progressElBahasa.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+
                 if (sessionBlokCountdown <= 0) {
                   isBlocked = false;
-                  return; // Session akan handle peralihan
+                  showToast(`✅ Blok "${allSessionBlok[sessionBlokIndex]?.label}" selesai!`, 2500);
+                  triggerVibration([100, 50, 100, 50, 200]);
+                  setTimeout(() => mulaBlokSeterusnya(), 2000);
+                  return;
                 }
               }
 
@@ -6747,14 +6937,23 @@ setTimeout(async () => {
 } else {
               triggerVibration([200, 100, 200, 100, 2000]);
               isBlocked = true;
-              // ── SESSION PLANNER: kira countdown blok rutin ──
+
+              // ── SESSION PLANNER: kira blok rutin — 1 kitaran fasa = 1 kira ──
               if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'rutin') {
-                semakSessionBlokSelesai();
+                sessionBlokCountdown--;
+                simpanSessionState();
+                const progressElRutin = document.getElementById('session-aktif-progress');
+                if (progressElRutin) progressElRutin.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+
                 if (sessionBlokCountdown <= 0) {
                   isBlocked = false;
-                  return; // Session akan handle peralihan
+                  showToast(`✅ Blok "${allSessionBlok[sessionBlokIndex]?.label}" selesai!`, 2500);
+                  triggerVibration([100, 50, 100, 50, 200]);
+                  setTimeout(() => mulaBlokSeterusnya(), 2000);
+                  return;
                 }
               }
+
               setTimeout(() => {
                 isBlocked = false;
                 mainRestPhase = 1; mainRestCount = cyc.fasa1; mainPlus5Used = false;
@@ -6771,7 +6970,7 @@ setTimeout(async () => {
                   renderCurrentFact();
                 });
               }, 2600);
-            }    
+            }
           }
         } else {
           renderCurrentFact();
@@ -7079,6 +7278,9 @@ function renderDrawers() {
       const topic = allTopics.find(t => t.id === currentTopicId);
       document.getElementById("parent-topic-name").textContent = topic && topic.name ? `Topik: ${topic.name}` : "";
 
+      // Refresh SR Fakta IDs
+      refreshSRFaktaQueueIds();
+
       // Floating button ke countdown — tunjuk bila ada topik aktif
       const existingFloat = document.getElementById('btn-float-countdown-fakta');
       if (existingFloat) existingFloat.remove();
@@ -7115,10 +7317,14 @@ const sortedDrawers = filteredDrawers.sort((a, b) => {
         const div = document.createElement("div");
         div.className = "drawer-card";
         
+const adaSRFaktaBadge = srFaktaQueueIds.has(data.id);
         div.innerHTML = `
           <div class="drawer-title-wrapper">
              <input class="drawer-title" value="${data.title || ''}" placeholder="Tajuk Laci">
-             <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
+             <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+               ${adaSRFaktaBadge ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;white-space:nowrap;">⏰ SR</span>' : ''}
+               <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
+             </div>
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan">${data.notes || ''}</textarea>
           
@@ -7159,6 +7365,8 @@ div.querySelector(".btn-del-laci").addEventListener("click", async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           await hantarKeTrashUniversal('drawer', data.id, data, data.title || 'Laci');
           await deleteDoc(doc(db, "users", currentUser.uid, "drawer", data.id));
+          // ── Auto clean SR Fakta queue ──
+          await deleteSRFaktaRekod(data.id);
           showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
@@ -7229,8 +7437,14 @@ if(data.notes) {
       mainRestCount = mainRestMax;
       mainRestPhase = 1;
       
-      if (!routineMode && factMode && allFacts.length > 0) {
+if (!routineMode && factMode && allFacts.length > 0) {
         renderCurrentFact();
+        // ── SESSION: kemaskini progress bar ──
+        if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'fakta') {
+          const progressEl = document.getElementById('session-aktif-progress');
+          const blok = allSessionBlok[sessionBlokIndex];
+          if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+        }
       } else if (!routineMode && allFacts.length === 0) {
         factTitleEl.textContent = "";
         factContentEl.textContent = "Tiada topik aktif. Sila tick SATU topik.";
@@ -7691,10 +7905,94 @@ showSection(secToShow);
         subscribeNewModes();
         subscribeArahan();
         subscribeBacaanTambahan();
-        subscribeReminders();
+subscribeReminders();
         subscribeRutinFizikal();
         subscribeSessionBlok();
         mulakanReminderCheck();
+
+// ── Restore session bila app dibuka semula ──
+        if (sessionAktif) {
+          // Tunggu 3 saat — pastikan allSessionBlok, SESSION_JENIS, dan semua data loaded
+          setTimeout(() => {
+            if (!allSessionBlok.length || sessionBlokIndex >= allSessionBlok.length) {
+              clearSessionState();
+              sessionAktif = false;
+              kemaskiniButtonMulaSession();
+              return;
+            }
+
+            const blok = allSessionBlok[sessionBlokIndex];
+            if (!blok) {
+              clearSessionState();
+              sessionAktif = false;
+              kemaskiniButtonMulaSession();
+              return;
+            }
+
+            // Kemaskini UI
+            const bar = document.getElementById('session-aktif-bar');
+            const blokEl = document.getElementById('session-aktif-blok');
+            const progressEl = document.getElementById('session-aktif-progress');
+            if (bar) bar.style.display = 'block';
+            if (blokEl) blokEl.textContent = blok.label;
+            if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+
+            kemaskiniButtonMulaSession();
+
+            const info = typeof SESSION_JENIS !== 'undefined' ? SESSION_JENIS[blok.jenis] : null;
+            const emoji = info ? info.emoji : '▪';
+            showToast(`🗓️ Session dipulihkan — ${emoji} ${blok.label} (baki ${sessionBlokCountdown})`, 4000);
+
+            // Aktifkan semula mode yang sepatutnya
+            switch (blok.jenis) {
+              case 'rutin':
+                if (!routineMode) {
+                  routineMode = true;
+                  routineModeSource = 'rutin';
+                  btnToggleRutin.textContent = 'Rutin: ON';
+                  btnToggleRutin.classList.add('btn-active');
+                  factDisplayBox.classList.add('show');
+                  rebuildRoutines();
+                }
+                break;
+              case 'bahasa':
+                if (!bahasaMode) {
+                  bahasaMode = true;
+                  const btnBhsR = document.getElementById('btn-toggle-bahasa');
+                  if (btnBhsR) { btnBhsR.textContent = '📝 Bahasa: ON'; btnBhsR.classList.add('btn-active'); }
+                  factDisplayBox.classList.add('show');
+                  rebuildBahasa();
+                }
+                break;
+              case 'fakta':
+                if (!factMode) {
+                  factMode = true;
+                  btnToggleFact.textContent = 'Fakta: ON';
+                  btnToggleFact.classList.add('btn-active');
+                  factDisplayBox.classList.add('show');
+                  rebuildFacts();
+                }
+                break;
+              case 'quran':
+                if (!routineMode || routineModeSource !== 'quran') {
+                  activateRoutineMode('quran');
+                }
+                break;
+              case 'doa':
+                if (!routineMode || routineModeSource !== 'doa') {
+                  activateRoutineMode('doa');
+                }
+                break;
+              case 'hadis':
+                if (!routineMode || routineModeSource !== 'hadis') {
+                  activateRoutineMode('hadis');
+                }
+                break;
+            }
+
+            updateTasbihUI();
+          }, 3000);
+        }
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
         
@@ -7935,8 +8233,29 @@ if(btnToggleMainRestMax) {
     });
 }
     
-btnToggleFact.addEventListener("click", () => {
+btnToggleFact.addEventListener("click", async () => {
       factMode = !factMode;
+
+if (factMode) {
+        // Reset SR Fakta state
+        srFaktaModeAktif = false;
+        srFaktaLaciSemasa = null;
+        srFaktaQueue = [];
+        srFaktaSemuaSelesai = false;
+        await refreshSRFaktaQueueIds();
+
+        // ── Check SR Fakta terus bila ON fakta ──
+        const adaSRFakta = await checkSRFaktaQueue();
+        if (adaSRFakta && muatSRFaktaLaciSeterusnya()) {
+          tunjukPopupSR(srFaktaLaciSemasa);
+          setTimeout(async () => {
+            await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
+          }, 300);
+        } else {
+          rebuildFacts();
+        }
+      }
+
 if (factMode && (routineMode || bahasaMode)) {
          routineMode = false;
          bahasaMode = false;
@@ -8190,7 +8509,7 @@ function syncFullscreenFact() {
       fsContent.scrollTop = 0;
     }
 
-    function updateFsTopbar() {
+function updateFsTopbar() {
       if (!routineMode || routineModeSource !== 'quran') return;
       const surahNum = currentQuranSurahNum || 1;
       const surahName = QURAN_SURAH_NAMES[surahNum - 1] || '';
@@ -8212,11 +8531,48 @@ function syncFullscreenFact() {
       const surahRumiEl = document.getElementById('fs-surah-rumi');
       const ayatInfoEl = document.getElementById('fs-ayat-info');
 
-      if (ring) ring.style.strokeDashoffset = offset;
-      if (percentEl) percentEl.textContent = `${percent}%`;
+// ── SESSION: Warna ring ikut baki ──
+      let warnaRing = '#34d399'; // Default hijau
+      if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+        const blok = allSessionBlok[sessionBlokIndex];
+        const peratusSession = sessionBlokCountdown / (blok.count || 10);
+        if (peratusSession <= 0.2) warnaRing = '#f87171';       // Merah — hampir habis
+        else if (peratusSession <= 0.5) warnaRing = '#fcd34d';  // Kuning — separuh
+        else warnaRing = '#a78bfa';                              // Ungu — session aktif
+      }
+
+      if (ring) {
+        ring.style.strokeDashoffset = offset;
+        ring.style.stroke = warnaRing;
+      }
+      if (percentEl) {
+        percentEl.textContent = sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran'
+          ? `${Math.max(0, sessionBlokCountdown)}`
+          : `${percent}%`;
+        percentEl.style.color = warnaRing;
+      }
       if (surahArabEl) surahArabEl.textContent = surahName;
       if (surahRumiEl) surahRumiEl.textContent = `${surahNum}. ${surahName}`;
-      if (ayatInfoEl) ayatInfoEl.textContent = `Ayat ${ayatSemasa} / ${jumlahAyat}`;
+
+      // ── SESSION: Tunjuk countdown session dalam topbar ──
+      if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+        const blok = allSessionBlok[sessionBlokIndex];
+        if (ayatInfoEl) {
+          ayatInfoEl.textContent = `Ayat ${ayatSemasa} / ${jumlahAyat} — 🗓️ Baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count}`;
+          ayatInfoEl.style.color = warnaRing;
+        }
+        // Tukar label percent kepada countdown
+        const labelBawah = fullscreenOverlay.querySelector('#fs-progress-percent + div');
+        if (labelBawah) labelBawah.textContent = 'ayat lagi';
+      } else {
+        if (ayatInfoEl) {
+          ayatInfoEl.textContent = `Ayat ${ayatSemasa} / ${jumlahAyat}`;
+          ayatInfoEl.style.color = '';
+        }
+        if (percentEl) percentEl.style.color = '#34d399';
+        const labelBawah = fullscreenOverlay.querySelector('#fs-progress-percent + div');
+        if (labelBawah) labelBawah.textContent = 'selesai';
+      }
     }
 
     // ── POPUP REHAT DALAM FULLSCREEN ──
@@ -8288,6 +8644,16 @@ btnFullscreenFact.addEventListener('click', (e) => {
 
       fsShowingMaksud = false;
       fullscreenOverlay.classList.add('show');
+
+      // ── SESSION: Tunjuk baki countdown dalam fullscreen ──
+      if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+        const blok = allSessionBlok[sessionBlokIndex];
+        const fsHint = document.getElementById('fullscreen-fact-hint');
+        if (fsHint) {
+          fsHint.textContent = `🗓️ Session — Baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat`;
+          fsHint.style.color = '#a78bfa';
+        }
+      }
       
       const fsContent = document.getElementById('fullscreen-fact-content');
       const fsTitle = document.getElementById('fullscreen-fact-title');
@@ -8313,6 +8679,28 @@ btnFullscreenFact.addEventListener('click', (e) => {
 
 document.getElementById('btn-close-fullscreen-fact').addEventListener('click', (e) => {
       e.stopPropagation();
+
+      // ── SESSION: Confirm dulu kalau session quran aktif ──
+      if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+        const blok = allSessionBlok[sessionBlokIndex];
+        const sahkan = confirm(
+          `Keluar dari fullscreen?\n\nSession masih berjalan — baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat.\n\nTekan OK untuk keluar ke mod biasa. Session akan diteruskan.`
+        );
+        if (!sahkan) return;
+
+        fullscreenOverlay.classList.remove('show');
+        fsShowingMaksud = false;
+        fsAyatCount = 0;
+        isFlipped = false;
+        comboStep = 0;
+        renderCurrentFact();
+
+        const progressEl = document.getElementById('session-aktif-progress');
+        if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+        showToast(`🗓️ Session diteruskan dalam mod biasa — baki ${Math.max(0, sessionBlokCountdown)} ayat`, 3000);
+        return;
+      }
+
       fullscreenOverlay.classList.remove('show');
       fsShowingMaksud = false;
       fsAyatCount = 0;
@@ -8354,7 +8742,7 @@ fullscreenOverlay.addEventListener('click', (e) => {
       const fsTitle = document.getElementById('fullscreen-fact-title');
       const fsHint = document.getElementById('fullscreen-fact-hint');
 
-      if (!fsShowingMaksud) {
+if (!fsShowingMaksud) {
         // Tap pertama — tunjuk maksud sahaja, JANGAN trigger decrement
         const dataSource = routineMode ? allRoutines : allFacts;
         const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
@@ -8371,13 +8759,38 @@ fullscreenOverlay.addEventListener('click', (e) => {
         fsContent.style.cssText = 'font-size:1.1rem; font-family:inherit; direction:ltr; text-align:left; line-height:1.4; font-weight:600; color:#e5e7eb; overflow-y:auto; padding:12px 16px; width:100%; box-sizing:border-box;';
         fsContent.textContent = maksud || 'Tiada maksud diisi.';
         fsContent.scrollTop = 0;
-        fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
+
+        // ── SESSION: Hint tunjuk baki terkini ──
+        if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+          const blok = allSessionBlok[sessionBlokIndex];
+          const warnaHint = sessionBlokCountdown <= 3 ? '#f87171' : sessionBlokCountdown <= 5 ? '#fcd34d' : '#a78bfa';
+          fsHint.textContent = `🗓️ Baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat — Tap untuk seterusnya`;
+          fsHint.style.color = warnaHint;
+        } else {
+          fsHint.textContent = '(Tekan sekali lagi untuk ayat seterusnya)';
+          fsHint.style.color = '';
+        }
 
       } else {
         // Tap kedua — next ayat, reset semua flag
         fsShowingMaksud = false;
         decrementTasbih();
         setTimeout(() => {
+          // ── SESSION: Semak countdown selepas tap dalam fullscreen ──
+          if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+            const progressEl = document.getElementById('session-aktif-progress');
+            const blok = allSessionBlok[sessionBlokIndex];
+            if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+
+            if (sessionBlokCountdown <= 0) {
+              // Tutup fullscreen automatik bila countdown habis
+              fullscreenOverlay.classList.remove('show');
+              fsShowingMaksud = false;
+              showToast(`✅ ${blok.count} ayat selesai! Beralih ke blok seterusnya...`, 2500);
+              setTimeout(() => mulaBlokSeterusnya(), 2000);
+              return;
+            }
+          }
           syncFullscreenFact();
         }, 400);
       }
@@ -11518,6 +11931,245 @@ let srQueue = [];           // Queue overdue yang sedang aktif
     let srLaciSemasa = null;    // Rekod SR laci yang sedang diulang
     let srSemuaSelesai = false; // Flag — semua SR dalam sesi ini dah selesai
 
+// ══════════════════════════════════════════
+    // SR QUEUE UNTUK FAKTA
+    // ══════════════════════════════════════════
+
+    let srFaktaQueue = [];
+    let srFaktaModeAktif = false;
+    let srFaktaLaciSemasa = null;
+    let srFaktaSemuaSelesai = false;
+    let srFaktaQueueIds = new Set();
+
+    async function refreshSRFaktaQueueIds() {
+      if (!currentUser) return;
+      try {
+        const snap = await getDocs(collection(db, "users", currentUser.uid, "fakta_sr_queue"));
+        srFaktaQueueIds = new Set(snap.docs.map(d => d.id));
+      } catch(e) {}
+    }
+
+    async function daftarSRFaktaBaru(drawerId) {
+      if (!currentUser) return;
+      const drawer = allDrawers.find(d => d.id === drawerId);
+      if (!drawer) return;
+
+      const now = Date.now();
+      const refSR = doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId);
+      const snap = await getDoc(refSR);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        showToast(`⏰ SR Fakta: "${drawer.title}" dah dalam queue — ${getLabelFasaSR(data.fasaSemasa)}`, 3000);
+        return;
+      }
+
+      await setDoc(refSR, {
+        drawerId,
+        drawerTitle: drawer.title || '',
+        topicId: drawer.topicId || '',
+        hafalAt: now,
+        fasaSemasa: 0,
+        nextDueAt: now + SR_INTERVALS[0],
+        sejarahFasa: [],
+        createdAt: now
+      });
+
+      srFaktaQueueIds.add(drawerId);
+      showToast('⏰ Laci Fakta didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3000);
+    }
+
+    async function selesaiSRFaktaUlangan(drawerId) {
+      if (!currentUser) return;
+      const refSR = doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId);
+      const snap = await getDoc(refSR);
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+      const fasaBaru = data.fasaSemasa + 1;
+      const now = Date.now();
+      const nextDueAt = now + getSRInterval(fasaBaru);
+
+      await updateDoc(refSR, {
+        fasaSemasa: fasaBaru,
+        nextDueAt,
+        sejarahFasa: [...(data.sejarahFasa || []), {
+          fasa: data.fasaSemasa,
+          selesaiAt: now,
+          labelFasa: getLabelFasaSR(data.fasaSemasa)
+        }],
+        updatedAt: now
+      });
+    }
+
+    async function deleteSRFaktaRekod(drawerId) {
+      if (!currentUser) return;
+      try {
+        await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId));
+        srFaktaQueueIds.delete(drawerId);
+      } catch(e) {}
+    }
+
+    async function loadSRFaktaOverdue() {
+      if (!currentUser) return [];
+      const now = Date.now();
+      const snap = await getDocs(
+        query(collection(db, "users", currentUser.uid, "fakta_sr_queue"), orderBy("nextDueAt", "asc"))
+      );
+
+      const overdue = [];
+      for (const d of snap.docs) {
+        const data = d.data();
+        const laciWujud = allDrawers.find(dr => dr.id === data.drawerId);
+        if (!laciWujud) {
+          await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
+          continue;
+        }
+        if (data.nextDueAt <= now) {
+          overdue.push({ id: d.id, ...data });
+        }
+      }
+      return overdue.sort((a, b) => a.nextDueAt - b.nextDueAt);
+    }
+
+    async function checkSRFaktaQueue() {
+      if (!currentUser) return false;
+      const overdue = await loadSRFaktaOverdue();
+      if (!overdue.length) return false;
+      srFaktaQueue = overdue;
+      return true;
+    }
+
+    function muatSRFaktaLaciSeterusnya() {
+      if (!srFaktaQueue.length) {
+        srFaktaModeAktif = false;
+        srFaktaLaciSemasa = null;
+        srFaktaSemuaSelesai = true;
+        return false;
+      }
+      srFaktaLaciSemasa = srFaktaQueue.shift();
+      srFaktaModeAktif = true;
+      srFaktaSemuaSelesai = false;
+      return true;
+    }
+
+    async function muatLaciSRFaktaKeDalamFacts(srData) {
+      if (!currentUser || !srData) return;
+
+      const drawer = allDrawers.find(d => d.id === srData.drawerId);
+      if (!drawer) {
+        await deleteSRFaktaRekod(srData.drawerId);
+        const adaSR = await checkSRFaktaQueue();
+        if (adaSR && muatSRFaktaLaciSeterusnya()) {
+          tunjukPopupSR(srFaktaLaciSemasa);
+          await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
+        } else {
+          srFaktaModeAktif = false;
+          triggerFadeAnimation(renderCurrentFact);
+        }
+        return;
+      }
+
+      const tajukLaci = drawer.title || 'Tiada Tajuk';
+      const factsBaru = [];
+
+      if (drawer.notes) {
+        const lines = drawer.notes.split('\n').filter(l => l.trim() !== '');
+        lines.forEach(line => {
+          const parts = line.split('=');
+          const perkataan = parts[0].trim();
+          const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
+          const maksudFormatted = maksudRaw
+            ? maksudRaw
+                .replace(/\s+k(\d+)\s*/g, '\nk$1 ')
+                .replace(/\s+(\d+)\.\s*/g, '\n$1. ')
+                .trim()
+            : null;
+          factsBaru.push({
+            drawerId: drawer.id,
+            title: tajukLaci,
+            text: perkataan,
+            translation: maksudFormatted,
+            isTamat: false,
+            isSRMode: true,
+            isSRFakta: true
+          });
+        });
+      }
+
+factsBaru.push({
+        drawerId: drawer.id,
+        title: tajukLaci,
+        text: `✅ SR Fakta selesai — ${getLabelFasaSR(srData.fasaSemasa)}`,
+        isTamat: true,
+        isSRMode: true,
+        isSRFakta: true
+      });
+
+      allFacts = factsBaru;
+      currentFactIndex = 0;
+      mainRestCount = mainRestMax;
+      mainRestPhase = 1;
+      comboStep = 0;
+      isFlipped = false;
+      isBlocked = false;
+
+      triggerFadeAnimation(renderCurrentFact);
+      updateTasbihUI();
+    }
+
+// ── HANDLE isTamat SR FAKTA ──
+    // Flag untuk elak double call
+    let _srFaktaTamatSedangDiproses = false;
+
+    async function handleSRFaktaTamat(drawerId) {
+      if (!currentUser) return;
+      if (_srFaktaTamatSedangDiproses) return; // Elak double call
+      _srFaktaTamatSedangDiproses = true;
+
+      try {
+        // Selesaikan ulangan SR
+        const fasaSelesai = srFaktaLaciSemasa ? srFaktaLaciSemasa.fasaSemasa : 0;
+        await selesaiSRFaktaUlangan(drawerId);
+        srFaktaLaciSemasa = null;
+        showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSelesai)}`, 3000);
+
+        // ── SESSION: kira sebagai 1 laci — HANYA sekali di sini ──
+        let sessionHabis = false;
+        if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'fakta') {
+          sessionBlokCountdown--;
+          simpanSessionState();
+          const progressEl = document.getElementById('session-aktif-progress');
+          if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+
+          if (sessionBlokCountdown <= 0) {
+            sessionHabis = true;
+            showToast(`✅ Blok "${allSessionBlok[sessionBlokIndex]?.label}" selesai!`, 2500);
+            triggerVibration([100, 50, 100, 50, 200]);
+            setTimeout(() => mulaBlokSeterusnya(), 2000);
+          }
+        }
+
+        if (sessionHabis) return;
+
+        // Check lagi SR queue — ada lagi tak
+        const adaSRFakta = await checkSRFaktaQueue();
+        if (adaSRFakta && !srFaktaSemuaSelesai && muatSRFaktaLaciSeterusnya()) {
+          tunjukPopupSR(srFaktaLaciSemasa);
+          await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
+          return;
+        }
+
+        // Tiada lagi SR — balik ke laci biasa
+        srFaktaSemuaSelesai = true;
+        srFaktaModeAktif = false;
+        rebuildFacts();
+
+      } finally {
+        _srFaktaTamatSedangDiproses = false;
+      }
+    }
+      
     // Daftar laci baru dalam SR queue bila hit isTamat
 async function daftarSRBaru(drawerId) {
       if (!currentUser) return;
@@ -11647,8 +12299,10 @@ async function loadSROverdue() {
     }
 
 // ── BUTTON SR QUEUE ──
-    document.getElementById('btn-go-sr-queue').addEventListener('click', () => {
+document.getElementById('btn-go-sr-queue').addEventListener('click', async () => {
       showSection(document.getElementById('section-sr-queue'));
+      await refreshSRQueueIds();
+      await refreshSRFaktaQueueIds();
       renderSRQueuePage();
     });
 
@@ -12805,6 +13459,15 @@ async function alQuranPenuhNextSurah() {
       currentQuranSurahNum = nextSurahNum;
       const surah = SURAH_PERMANENT[nextSurahNum - 1];
       showToast(`📖 Surah ${surah.num}. ${surah.nama} — Mula!`, 4000);
+
+      // ── SESSION: Reset countdown quran bila masuk surah baru ──
+      if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+        sessionBlokCountdown = allSessionBlok[sessionBlokIndex].count || 10;
+        const progressEl = document.getElementById('session-aktif-progress');
+        const blok = allSessionBlok[sessionBlokIndex];
+        if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${sessionBlokCountdown}`;
+        showToast(`🔄 Surah baru — countdown reset ke ${sessionBlokCountdown} ayat`, 3000);
+      }
 
       // Reset index ke 0 untuk surah baru
       currentRoutineIndex = 0;
@@ -14616,7 +15279,7 @@ bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa',
         });
 
         // Event listeners
-        list.querySelectorAll('.btn-pulih-universal').forEach(btn => {
+list.querySelectorAll('.btn-pulih-universal').forEach(btn => {
           btn.addEventListener('click', async () => {
             const trashId = btn.getAttribute('data-id');
             const trashSnap = await getDoc(doc(db, "users", currentUser.uid, TRASH_COLL, trashId));
@@ -14627,6 +15290,15 @@ bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa',
               const newRef = doc(collection(db, "users", currentUser.uid, item.originalColl));
               await setDoc(newRef, item.originalData);
               await deleteDoc(doc(db, "users", currentUser.uid, TRASH_COLL, trashId));
+
+              // ── Buang dari SR queue kalau laci fakta yang dipulihkan ──
+              // (SR queue akan daftar semula bila user habiskan laci tu nanti)
+              if (item.originalColl === 'drawer') {
+                await deleteSRFaktaRekod(item.originalId);
+              } else if (item.originalColl === 'bahasa_drawers') {
+                await deleteSRRekod(item.originalId);
+              }
+
               showToast(`✅ "${item.label}" berjaya dipulihkan!`);
               await muatTrashUniversal(colls);
             } catch(e) { showToast('❌ Gagal pulihkan: ' + e.message); }
@@ -15219,27 +15891,33 @@ function subscribeBacaanTambahan() {
     });
 
     // Tab buttons
-    document.getElementById('btn-sr-tab-overdue').addEventListener('click', () => {
+document.getElementById('btn-sr-tab-overdue').addEventListener('click', async () => {
       srTabAktif = 'overdue';
       document.getElementById('btn-sr-tab-overdue').classList.add('btn-active');
       document.getElementById('btn-sr-tab-upcoming').classList.remove('btn-active');
       document.getElementById('btn-sr-tab-semua').classList.remove('btn-active');
+      await refreshSRQueueIds();
+      await refreshSRFaktaQueueIds();
       renderSRQueuePage();
     });
 
-    document.getElementById('btn-sr-tab-upcoming').addEventListener('click', () => {
+    document.getElementById('btn-sr-tab-upcoming').addEventListener('click', async () => {
       srTabAktif = 'upcoming';
       document.getElementById('btn-sr-tab-overdue').classList.remove('btn-active');
       document.getElementById('btn-sr-tab-upcoming').classList.add('btn-active');
       document.getElementById('btn-sr-tab-semua').classList.remove('btn-active');
+      await refreshSRQueueIds();
+      await refreshSRFaktaQueueIds();
       renderSRQueuePage();
     });
 
-    document.getElementById('btn-sr-tab-semua').addEventListener('click', () => {
+    document.getElementById('btn-sr-tab-semua').addEventListener('click', async () => {
       srTabAktif = 'semua';
       document.getElementById('btn-sr-tab-overdue').classList.remove('btn-active');
       document.getElementById('btn-sr-tab-upcoming').classList.remove('btn-active');
       document.getElementById('btn-sr-tab-semua').classList.add('btn-active');
+      await refreshSRQueueIds();
+      await refreshSRFaktaQueueIds();
       renderSRQueuePage();
     });
 
@@ -15251,6 +15929,12 @@ async function renderSRQueuePage() {
       if (!list) return;
 
       list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
+      // Load SR Fakta jugak
+      const snapFakta = await getDocs(
+        query(collection(db, "users", currentUser.uid, "fakta_sr_queue"), orderBy("nextDueAt", "asc"))
+      );
+      const srFaktaAll = snapFakta.docs.map(d => ({ id: d.id, ...d.data(), jenisSR: 'fakta' }));
 
       try {
         const snap = await getDocs(
@@ -15267,14 +15951,11 @@ async function renderSRQueuePage() {
           return;
         }
 
-        const now = Date.now();
+const now = Date.now();
         const semua = [];
 
-        // ── AMBIL SEMUA LACI DARI FIRESTORE DULU sebelum semak ──
-        // Jangan guna allBahasaDrawers (memory) — mungkin belum fully loaded
-        const laciSnap = await getDocs(
-          collection(db, "users", currentUser.uid, "bahasa_drawers")
-        );
+        // ── AMBIL SEMUA LACI BAHASA DARI FIRESTORE ──
+        const laciSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
         const laciMap = new Map();
         laciSnap.docs.forEach(d => laciMap.set(d.id, { id: d.id, ...d.data() }));
 
@@ -15282,26 +15963,44 @@ async function renderSRQueuePage() {
           const data = d.data();
           const laciWujud = laciMap.get(data.drawerId);
           if (!laciWujud) {
-            // Laci betul-betul dah dipadam dari Firestore — baru boleh padam SR
             await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_sr_queue", d.id));
             continue;
           }
-          semua.push({ id: d.id, ...data, laciData: laciWujud });
+          semua.push({ id: d.id, ...data, laciData: laciWujud, jenisSR: 'bahasa' });
         }
+
+        // ── TAMBAH SR FAKTA ──
+        const laciDrawerMap = new Map();
+        allDrawers.forEach(d => laciDrawerMap.set(d.id, d));
+        for (const item of srFaktaAll) {
+          const laciWujud = laciDrawerMap.get(item.drawerId);
+          if (!laciWujud) {
+            await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", item.id));
+            continue;
+          }
+          semua.push({ ...item, laciData: laciWujud, jenisSR: 'fakta' });
+        }
+
+        // Sort ikut nextDueAt
+        semua.sort((a, b) => a.nextDueAt - b.nextDueAt);
 
         const overdue = semua.filter(s => s.nextDueAt <= now);
         const upcoming = semua.filter(s => s.nextDueAt > now);
+        const overdueB = overdue.filter(s => s.jenisSR === 'bahasa').length;
+        const overdueF = overdue.filter(s => s.jenisSR === 'fakta').length;
 
         // Stats bar
         if (statsBar) {
           statsBar.innerHTML = `
             <div class="chip" style="border-color:#f59e0b;color:#fcd34d;">⚠️ Overdue: ${overdue.length}</div>
+            <div class="chip" style="border-color:#22d3ee;color:#67e8f9;">📝 Bahasa: ${overdueB}</div>
+            <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📚 Fakta: ${overdueF}</div>
             <div class="chip" style="border-color:#34d399;color:#6ee7b7;">📅 Upcoming: ${upcoming.length}</div>
-            <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📋 Jumlah: ${semua.length}</div>
+            <div class="chip" style="border-color:var(--border-soft);color:var(--subtext);">📋 Jumlah: ${semua.length}</div>
           `;
         }
 
-        if (subtitle) subtitle.textContent = `${semua.length} laci dalam queue`;
+        if (subtitle) subtitle.textContent = `${semua.length} laci dalam queue (${overdueB} Bahasa + ${overdueF} Fakta overdue)`;
 
         // Filter ikut tab
         let toShow = [];
@@ -15323,15 +16022,24 @@ async function renderSRQueuePage() {
           const ikonStatus = isOverdue ? '⚠️' : '📅';
           const labelStatus = isOverdue ? 'OVERDUE' : 'UPCOMING';
 
-          const tarikhMasa = formatTarikhMasaSR(data.nextDueAt);
+const tarikhMasa = formatTarikhMasaSR(data.nextDueAt);
           const relative = formatRelativeSR(data.nextDueAt);
           const labelFasa = getLabelFasaSR(data.fasaSemasa);
+          const isFaktaSR = data.jenisSR === 'fakta';
 
           // Cari parent info
-          const perkataan = allBahasaPerkataan.find(p => p.id === data.perkataanId);
-          const jenisKata = allJenisKata.find(j => j.id === data.jenisId);
-          const parentLabel = perkataan ? perkataan.name : '';
-          const jenisLabel = jenisKata ? jenisKata.name : '';
+          let parentLabel = '';
+          let jenisLabel = '';
+          if (isFaktaSR) {
+            const topic = allTopics.find(t => t.id === data.topicId);
+            parentLabel = topic ? topic.name : '';
+            jenisLabel = '📚 Fakta';
+          } else {
+            const perkataan = allBahasaPerkataan.find(p => p.id === data.perkataanId);
+            const jenisKata = allJenisKata.find(j => j.id === data.jenisId);
+            parentLabel = perkataan ? perkataan.name : '';
+            jenisLabel = jenisKata ? `📝 ${jenisKata.name}` : '📝 Bahasa';
+          }
 
           // Sejarah fasa
           const sejarahCount = (data.sejarahFasa || []).length;
@@ -15397,11 +16105,12 @@ async function renderSRQueuePage() {
             });
           }
 
-          // Reset ke fasa 1
+// Reset ke fasa 1
           div.querySelector('.btn-sr-reset').addEventListener('click', async () => {
             if (!confirm(`Reset SR "${data.drawerTitle}" ke Fasa 1?\n\nSejarah ulangan akan dipadam.`)) return;
             const now = Date.now();
-            const refSR = doc(db, "users", currentUser.uid, "bahasa_sr_queue", data.drawerId);
+            const collName = isFaktaSR ? "fakta_sr_queue" : "bahasa_sr_queue";
+            const refSR = doc(db, "users", currentUser.uid, collName, data.drawerId);
             await updateDoc(refSR, {
               fasaSemasa: 0,
               nextDueAt: now + SR_INTERVALS[0],
@@ -15415,7 +16124,11 @@ async function renderSRQueuePage() {
           // Buang dari queue
           div.querySelector('.btn-sr-delete').addEventListener('click', async () => {
             if (!confirm(`Buang "${data.drawerTitle}" dari SR queue?\n\nLaci tidak akan diulang lagi.`)) return;
-            await deleteSRRekod(data.drawerId);
+            if (isFaktaSR) {
+              await deleteSRFaktaRekod(data.drawerId);
+            } else {
+              await deleteSRRekod(data.drawerId);
+            }
             showToast(`🗑️ "${data.drawerTitle}" dibuang dari SR queue.`);
             renderSRQueuePage();
           });
@@ -15432,11 +16145,36 @@ async function renderSRQueuePage() {
     let allRutinFizikal = [];
     let rutinFizikalTabAktif = 'hari-ini';
 
-    // ── SESSION PLANNER ──
+// ── SESSION PLANNER ──
     let allSessionBlok = [];
     let sessionAktif = false;
     let sessionBlokIndex = 0;
     let sessionBlokCountdown = 0;
+
+    // Load session dari localStorage kalau ada
+    try {
+      const savedSession = localStorage.getItem('sessionPlannerState');
+      if (savedSession) {
+        const s = JSON.parse(savedSession);
+        sessionAktif = s.aktif || false;
+        sessionBlokIndex = s.blokIndex || 0;
+        sessionBlokCountdown = s.blokCountdown || 0;
+      }
+    } catch(e) {}
+
+    function simpanSessionState() {
+      try {
+        localStorage.setItem('sessionPlannerState', JSON.stringify({
+          aktif: sessionAktif,
+          blokIndex: sessionBlokIndex,
+          blokCountdown: sessionBlokCountdown
+        }));
+      } catch(e) {}
+    }
+
+    function clearSessionState() {
+      localStorage.removeItem('sessionPlannerState');
+    }
 
     
 // ══════════════════════════════════════════
@@ -16259,7 +16997,8 @@ function subscribeReminders() {
     });
 
     // ── JENIS BLOK ──
-    const SESSION_JENIS = {
+const SESSION_JENIS = {
+      fakta:   { label: 'Laci Fakta',       warna: '#6366f1', emoji: '📚' },
       rutin:   { label: 'Zikir / Rutin',    warna: '#a78bfa', emoji: '📿' },
       bahasa:  { label: 'Bahasa',           warna: '#22d3ee', emoji: '📝' },
       quran:   { label: 'Al-Quran',         warna: '#34d399', emoji: '📖' },
@@ -16291,7 +17030,11 @@ function subscribeReminders() {
       let count = 1;
       let label = '';
 
-      if (jenis === 'rutin') {
+if (jenis === 'fakta') {
+        const countInput = prompt('Berapa laci fakta?\n(Cth: 3 untuk 3 laci penuh)');
+        count = parseInt(countInput) || 1;
+        label = `${jenisInfo.emoji} Fakta ${count} laci`;
+      } else if (jenis === 'rutin') {
         const countInput = prompt('Berapa kali countdown minimum?\n(Cth: 10 untuk 10 kali zikir)');
         count = parseInt(countInput) || 10;
         label = `${jenisInfo.emoji} Zikir ${count}x`;
@@ -16363,7 +17106,7 @@ function subscribeReminders() {
       );
     }
 
-    // ── RENDER BLOK LIST ──
+// ── RENDER BLOK LIST ──
     function renderSessionBlokList() {
       const list = document.getElementById('session-blok-list');
       if (!list) return;
@@ -16372,6 +17115,20 @@ function subscribeReminders() {
       if (!allSessionBlok.length) {
         list.innerHTML = '<div class="empty-state">Belum ada blok. Tekan "+ Tambah Blok".</div>';
         return;
+      }
+
+      // Kemaskini button Mula/Henti
+      kemaskiniButtonMulaSession();
+
+      // Kemaskini session aktif bar
+      if (sessionAktif && allSessionBlok[sessionBlokIndex]) {
+        const bar = document.getElementById('session-aktif-bar');
+        const blokEl = document.getElementById('session-aktif-blok');
+        const progressEl = document.getElementById('session-aktif-progress');
+        const blok = allSessionBlok[sessionBlokIndex];
+        if (bar) bar.style.display = 'block';
+        if (blokEl) blokEl.textContent = blok.label;
+        if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
       }
 
       allSessionBlok.forEach((blok, idx) => {
@@ -16450,8 +17207,17 @@ function subscribeReminders() {
         : '255,255,255';
     }
 
-    // ── MULA SESI ──
+// ── MULA / HENTI SESI ──
     document.getElementById('btn-mula-session').addEventListener('click', () => {
+      if (sessionAktif) {
+        // Sesi sedang berjalan — henti
+        if (!confirm('Henti session sekarang?')) return;
+        hentiSession();
+        kemaskiniButtonMulaSession();
+        showToast('⏹ Session dihentikan.');
+        return;
+      }
+
       if (!allSessionBlok.length) {
         showToast('⚠️ Tambah blok dahulu.'); return;
       }
@@ -16459,11 +17225,24 @@ function subscribeReminders() {
       sessionAktif = true;
       sessionBlokIndex = 0;
       mulaBlokSession(0);
+      kemaskiniButtonMulaSession();
 
       // Pergi ke Tasbih
       showSection(sectionTasbih);
       showToast('▶ Sesi bermula! Ikut turutan yang ditetapkan.', 4000);
     });
+
+    function kemaskiniButtonMulaSession() {
+      const btn = document.getElementById('btn-mula-session');
+      if (!btn) return;
+      if (sessionAktif) {
+        btn.textContent = '⏹ Henti Sesi';
+        btn.style.background = 'linear-gradient(135deg,#dc2626,#991b1b)';
+      } else {
+        btn.textContent = '▶ Mula Sesi';
+        btn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+      }
+    }
 
     // ── HENTI SESI ──
     document.getElementById('btn-stop-session').addEventListener('click', () => {
@@ -16471,12 +17250,20 @@ function subscribeReminders() {
       showToast('⏹ Sesi dihentikan.');
     });
 
-    function hentiSession() {
+function hentiSession() {
       sessionAktif = false;
       sessionBlokIndex = 0;
       sessionBlokCountdown = 0;
+      clearSessionState(); // Clear localStorage
       const bar = document.getElementById('session-aktif-bar');
       if (bar) bar.style.display = 'none';
+
+      // Buang floating bar kalau ada
+      const floatBar = document.getElementById('session-float-bar');
+      if (floatBar) floatBar.remove();
+
+      // Kemaskini button
+      kemaskiniButtonMulaSession();
 
       // Off semua mode
       factMode = false;
@@ -16516,11 +17303,83 @@ function subscribeReminders() {
       const progressEl = document.getElementById('session-aktif-progress');
       if (bar) bar.style.display = 'block';
       if (blokEl) blokEl.textContent = blok.label;
-      if (progressEl) progressEl.textContent = `Blok ${idx + 1} / ${allSessionBlok.length}`;
+      if (progressEl) progressEl.textContent = `Blok ${idx + 1} / ${allSessionBlok.length} — Baki: ${sessionBlokCountdown}`;
 
       // Aktifkan mode ikut jenis blok
-      switch (blok.jenis) {
-case 'rutin':
+switch (blok.jenis) {
+case 'fakta':
+          // Reset semua state dulu
+          bahasaMode = false;
+          routineMode = false;
+          isBlocked = false;
+          comboStep = 0;
+          isFlipped = false;
+          srFaktaModeAktif = false;
+          srFaktaLaciSemasa = null;
+          srFaktaQueue = [];
+          srFaktaSemuaSelesai = false;
+          window._bahasaNextLaciHandler = null;
+
+          // Off semua button
+          const btnBhsFakta = document.getElementById('btn-toggle-bahasa');
+          if (btnBhsFakta) { btnBhsFakta.textContent = '📝 Bahasa: OFF'; btnBhsFakta.classList.remove('btn-active'); }
+          ['quran','doa','hadis'].forEach(s => {
+            const b = document.getElementById(`btn-toggle-${s}`);
+            if (b) { b.textContent = `${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
+          });
+          btnToggleRutin.textContent = 'Rutin: OFF';
+          btnToggleRutin.classList.remove('btn-active');
+
+          // Semak topik aktif dulu
+          const topikAktifFakta = allTopics.find(t => t.isActive);
+          if (!topikAktifFakta) {
+            showToast('⚠️ Tiada topik fakta aktif! Tick SATU topik dalam Laci Fakta dulu.', 4000);
+            // Skip ke blok seterusnya dalam session
+            if (sessionAktif) {
+              setTimeout(() => mulaBlokSeterusnya(), 3000);
+            }
+            break;
+          }
+
+          // ON Fakta
+          factMode = true;
+          btnToggleFact.textContent = 'Fakta: ON';
+          btnToggleFact.classList.add('btn-active');
+          factDisplayBox.classList.add('show');
+          learningMode = 2;
+          btnToggleMode.textContent = 'Mode: Rest';
+          btnToggleMode.style.display = 'inline-flex';
+          btnToggleMainRestMax.style.display = 'inline-flex';
+
+          // mainRestMax = bilangan LACI yang nak dibaca (bukan countdown rest)
+          // sessionBlokCountdown track bilangan laci, mainRestMax untuk rest cycle
+          mainRestMax = REST_CYCLES[mainRestCycleIdx].fasa1; // Kekal ikut cycle user
+          mainRestCount = mainRestMax;
+          mainRestPhase = 1;
+          mainPlus5Used = false;
+          updateMainPlus5Btn();
+
+          // Set sessionBlokCountdown ikut blok.count (bilangan laci)
+          sessionBlokCountdown = blok.count || 1;
+
+          // Sembunyikan button skip bahasa
+          const btnSkipFakta = document.getElementById('btn-skip-bahasa-laci');
+          if (btnSkipFakta) btnSkipFakta.style.display = 'none';
+
+          // Refresh SR IDs dan check SR dulu
+          refreshSRFaktaQueueIds().then(async () => {
+            const adaSRFakta = await checkSRFaktaQueue();
+            if (adaSRFakta && muatSRFaktaLaciSeterusnya()) {
+              tunjukPopupSR(srFaktaLaciSemasa);
+              await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
+            } else {
+              rebuildFacts();
+            }
+          });
+          break;
+
+        case 'rutin':
+      
           // Reset semua state dulu
           factMode = false;
           bahasaMode = false;
@@ -16564,7 +17423,17 @@ case 'rutin':
           break;
 
 case 'bahasa':
-          // Off semua mode dulu tanpa trigger activateRoutineMode (elak side effects)
+          // Semak perkataan aktif dulu
+          const perkataanAktifSession = allBahasaPerkataan.find(p => p.isActive);
+          if (!perkataanAktifSession) {
+            showToast('⚠️ Tiada perkataan bahasa aktif! Tick SATU perkataan dalam Laci Bahasa dulu.', 4000);
+            if (sessionAktif) {
+              setTimeout(() => mulaBlokSeterusnya(), 3000);
+            }
+            break;
+          }
+
+          // Reset semua mode dulu tanpa trigger activateRoutineMode (elak side effects)
           factMode = false;
           routineMode = false;
           ['quran','doa','hadis','rutin'].forEach(s => {
@@ -16576,7 +17445,7 @@ case 'bahasa':
           btnToggleFact.textContent = 'Fakta: OFF';
           btnToggleFact.classList.remove('btn-active');
 
-          // ON bahasa
+// ON bahasa
           bahasaMode = true;
           srModeAktif = false;
           srLaciSemasa = null;
@@ -16599,13 +17468,25 @@ case 'bahasa':
           bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
           bahasaRestPhase = 1;
 
+          // ── Set sessionBlokCountdown ikut blok.count ──
+          sessionBlokCountdown = blok.count || 1;
+
           factDisplayBox.classList.add('show');
 
           // Tunjuk button Skip
           const btnSkipSession = document.getElementById('btn-skip-bahasa-laci');
           if (btnSkipSession) btnSkipSession.style.display = 'inline-flex';
 
-          rebuildBahasa();
+          // Check SR Bahasa dulu
+          refreshSRQueueIds().then(async () => {
+            const adaSR = await checkSRQueue();
+            if (adaSR && muatSRLaciSeterusnya()) {
+              tunjukPopupSR(srLaciSemasa);
+              await muatLaciSRKeDalamFacts(srLaciSemasa);
+            } else {
+              rebuildBahasa();
+            }
+          });
           break;
 
         case 'quran':
@@ -16682,12 +17563,42 @@ function semakSessionBlokSelesai() {
       if (!blok) return;
 
       sessionBlokCountdown--;
+      simpanSessionState(); // Simpan setiap kali countdown berubah
+
+      // Kemaskini semua tempat yang tunjuk baki
       const progressEl = document.getElementById('session-aktif-progress');
       if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+
+      // Kemaskini hint dalam fullscreen kalau terbuka
+      if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+        const fsHint = document.getElementById('fullscreen-fact-hint');
+        if (fsHint && sessionAktif) {
+          fsHint.textContent = `🗓️ Session — Baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat`;
+          fsHint.style.color = sessionBlokCountdown <= 3 ? '#f87171' : '#a78bfa';
+        }
+      }
+
+      // Kemaskini hint dalam fact box
+      if (factHintEl && routineMode && routineModeSource === 'quran') {
+        factHintEl.textContent = `🗓️ Session Baki: ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat`;
+        factHintEl.style.color = sessionBlokCountdown <= 3 ? '#f87171' : '#a78bfa';
+        factHintEl.style.display = 'block';
+      }
 
       if (sessionBlokCountdown <= 0) {
         showToast(`✅ Blok "${blok.label}" selesai! Ke blok seterusnya...`, 2500);
         triggerVibration([100, 50, 100, 50, 200]);
+
+        // Tutup fullscreen kalau terbuka
+        if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+          setTimeout(() => {
+            fullscreenOverlay.classList.remove('show');
+            fsShowingMaksud = false;
+            isFlipped = false;
+            comboStep = 0;
+          }, 500);
+        }
+
         setTimeout(() => mulaBlokSeterusnya(), 2000);
       }
     }
@@ -16697,6 +17608,15 @@ function mulaBlokSeterusnya() {
       isBlocked = false;
       window._bahasaNextLaciHandler = null;
       window._sessionFizikalHandler = null;
+
+      // ── Tutup fullscreen automatik bila beralih blok ──
+      if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+        fullscreenOverlay.classList.remove('show');
+        fsShowingMaksud = false;
+        fsAyatCount = 0;
+        isFlipped = false;
+        comboStep = 0;
+      }
 
       // Kalau quran aktif — off popup rehat dulu
       const fsPopup = document.getElementById('fs-rehat-popup');
@@ -16711,6 +17631,8 @@ function mulaBlokSeterusnya() {
         triggerVibration([200, 100, 200, 100, 500]);
         setTimeout(() => mulaBlokSession(0), 2500);
       } else {
+        const blokSeterusnya = allSessionBlok[nextIdx];
+        showToast(`⏭ Beralih ke: ${blokSeterusnya?.label || 'Blok seterusnya'}`, 2000);
         mulaBlokSession(nextIdx);
       }
     }
