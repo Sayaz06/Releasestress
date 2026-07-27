@@ -6503,10 +6503,10 @@ if (learningMode === 2) {
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
-// ── SESSION PLANNER: kira 1 laci selesai di sini ──
+            // ── SESSION PLANNER: kira 1 laci selesai ──
             if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
+              console.log('SESSION: memanggil sessionBahasaLaciSelesai, countdown:', sessionBlokCountdown);
               const blokHabis = sessionBahasaLaciSelesai();
-              // Kalau blok habis, stop — jangan load SR atau laci seterusnya
               if (blokHabis) return;
             }
 
