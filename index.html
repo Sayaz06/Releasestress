@@ -6492,15 +6492,9 @@ function syncIndexToFirestore(newIndex) {
           }
         }
 
-// ── SESSION PLANNER: kira 1 laci selesai ──
-        // Kira bila laci biasa isTamat, ATAU SR laci hit isSRTamat
-        if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
-          if (!currentData.isSRMode || currentData.isSRTamat) {
-            sessionBahasaLaciSelesai();
-          }
-        }
+// (kiraan session dilakukan dalam setTimeout di atas)
 
-        if (learningMode === 2) {
+if (learningMode === 2) {
           setTimeout(async () => {
             isBlocked = false;
             comboStep = 0;
@@ -6509,13 +6503,20 @@ function syncIndexToFirestore(newIndex) {
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
+            // ── SESSION PLANNER: kira 1 laci selesai di sini ──
+            // Dipanggil selepas laci habis, sebelum check SR seterusnya
+            if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
+              sessionBahasaLaciSelesai();
+              // Kalau countdown habis, sessionBahasaLaciSelesai akan handle beralih
+              // Jangan teruskan ke SR atau laci seterusnya
+              if (sessionBlokCountdown <= 0) return;
+            }
+
             // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
             if (bahasaMode) {
               const adaSR = await checkSRQueue();
               if (adaSR && muatSRLaciSeterusnya()) {
-                // Tunjuk popup notifikasi
                 tunjukPopupSR(srLaciSemasa);
-                // Muat laci SR
                 await muatLaciSRKeDalamFacts(srLaciSemasa);
                 return;
               }
