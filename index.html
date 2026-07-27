@@ -10855,13 +10855,12 @@ const btnToggleBahasa = document.getElementById('btn-toggle-bahasa');
 
         if (bahasaMode) {
           // Kalau dari session planner — skip SR check
-          if (window._sessionSkipSR) {
+if (window._sessionSkipSR) {
             srModeAktif = false;
             srLaciSemasa = null;
             srQueue = [];
             srSemuaSelesai = false;
             window._bahasaNextLaciHandler = null;
-            // Off mode lain
             factMode = false; routineMode = false;
             btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
             btnToggleRutin.textContent = "Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
@@ -10872,7 +10871,7 @@ const btnToggleBahasa = document.getElementById('btn-toggle-bahasa');
             learningMode = 2;
             btnToggleMode.textContent = "Mode: Rest";
             btnToggleMode.style.display = "none";
-            btntToggleMainRestMax.style.display = 'none';
+            btnToggleMainRestMax.style.display = 'none';
             comboStep = 0; isFlipped = false; isBlocked = false;
             bahasaEjaanCount = 5;
             bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
@@ -10883,7 +10882,7 @@ const btnToggleBahasa = document.getElementById('btn-toggle-bahasa');
             rebuildBahasa();
             updateTasbihUI();
             return;
-          }
+          } // ← penutup if _sessionSkipSR
           // Matikan fakta/rutin lain
           factMode = false; routineMode = false;
           btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
