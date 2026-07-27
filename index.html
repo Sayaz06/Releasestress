@@ -3209,12 +3209,12 @@ if (snap.exists() && snap.data().videoRehatUrl) {
     });
 
 function showVideoRest(callback) {
-        // Rehat OFF — terus jalankan callback tanpa video rest
-        if (!rehatMode) {
+        // Rehat OFF atau Session aktif — terus jalankan callback tanpa video rest
+        if (!rehatMode || sessionAktif) {
           callback();
           return;
         }
-
+    
         restYoutube.style.display = 'block';
         restYoutube.src = globalVideoRehatUrl || "https://www.youtube.com/embed/dXZtogyYzyU?autoplay=1&rel=0&playsinline=1";
         
@@ -3238,8 +3238,8 @@ btnSambungFasa2.addEventListener('click', () => {
     });
 // ── POPUP REHAT BAHASA ──
 function bukaBahasaRehatPopup(callback) {
-      // Rehat OFF — skip popup terus
-      if (!rehatMode) {
+      // Rehat OFF atau Session aktif — skip popup terus
+      if (!rehatMode || sessionAktif) {
         callback();
         return;
       }
@@ -4419,6 +4419,11 @@ document.getElementById('btn-peraturan-go-mylaw').addEventListener('click', () =
     
     // FUNGSI: TUNJUK OVERLAY PERATURAN
 function showPeraturanOverlay(buttonText, callback) {
+  // Session aktif — skip peraturan, terus jalankan callback
+  if (sessionAktif) {
+    callback();
+    return;
+  }
   restLayerIndex = 0;
   restFinalCallback = callback;
   tunjukLayerSemasa(buttonText);
@@ -6476,7 +6481,7 @@ function syncIndexToFirestore(newIndex) {
         triggerVibration([200, 100, 200, 100, 2000]); 
         isBlocked = true;
 
-        // ── DAFTAR SR BILA LACI BAHASA HIT isTamat ──
+// ── DAFTAR SR BILA LACI BAHASA HIT isTamat ──
         if (bahasaMode && currentData.drawerId) {
           // Kalau ini SR session yang baru selesai
           if (srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === currentData.drawerId) {
@@ -6487,6 +6492,11 @@ function syncIndexToFirestore(newIndex) {
             // Laci baru habis dihafal — daftar dalam SR queue
             daftarSRBaru(currentData.drawerId);
           }
+        }
+
+        // ── SESSION PLANNER: kira laci bahasa selesai ──
+        if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
+          sessionBahasaLaciSelesai();
         }
 
         if (learningMode === 2) {
@@ -8220,7 +8230,10 @@ function syncFullscreenFact() {
     }
 
     // ── POPUP REHAT DALAM FULLSCREEN ──
-    function bukaPopupRehatFullscreen(jumlahAyat) {
+function bukaPopupRehatFullscreen(jumlahAyat) {
+      // Session aktif — skip popup rehat fullscreen
+      if (sessionAktif) return;
+
       const popup = document.getElementById('fs-rehat-popup');
       const input = document.getElementById('fs-rehat-input');
       const btnKeluar = document.getElementById('fs-rehat-btn-keluar');
@@ -10831,7 +10844,7 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
     });
 
     // Toggle Bahasa ON/OFF dalam countdown
-    const btnToggleBahasa = document.getElementById('btn-toggle-bahasa');
+const btnToggleBahasa = document.getElementById('btn-toggle-bahasa');
     if (btnToggleBahasa) {
       btnToggleBahasa.addEventListener('click', async () => {
         bahasaMode = !bahasaMode;
@@ -10841,6 +10854,36 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
         if (cbEl) cbEl.checked = bahasaMode;
 
         if (bahasaMode) {
+          // Kalau dari session planner — skip SR check
+          if (window._sessionSkipSR) {
+            srModeAktif = false;
+            srLaciSemasa = null;
+            srQueue = [];
+            srSemuaSelesai = false;
+            window._bahasaNextLaciHandler = null;
+            // Off mode lain
+            factMode = false; routineMode = false;
+            btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
+            btnToggleRutin.textContent = "Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
+            ['quran','doa','hadis'].forEach(s => {
+              const b = document.getElementById(`btn-toggle-${s}`);
+              if(b){b.textContent=`${getModeLabel(s)}: OFF`;b.classList.remove("btn-active");}
+            });
+            learningMode = 2;
+            btnToggleMode.textContent = "Mode: Rest";
+            btnToggleMode.style.display = "none";
+            btntToggleMainRestMax.style.display = 'none';
+            comboStep = 0; isFlipped = false; isBlocked = false;
+            bahasaEjaanCount = 5;
+            bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
+            bahasaRestPhase = 1;
+            factDisplayBox.classList.add("show");
+            const btnSkip = document.getElementById('btn-skip-bahasa-laci');
+            if (btnSkip) btnSkip.style.display = 'inline-flex';
+            rebuildBahasa();
+            updateTasbihUI();
+            return;
+          }
           // Matikan fakta/rutin lain
           factMode = false; routineMode = false;
           btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
@@ -10894,7 +10937,9 @@ srModeAktif = false;
           }
 
 } else {
-// OFF bahasa — simpan index semasa supaya ON balik kekal di tempat sama
+} // tutup if window._sessionSkipSR
+
+          // OFF bahasa — simpan index semasa supaya ON balik kekal di tempat sama
           if (activeGlobalBahasaId !== 'default' && currentUser) {
             updateDoc(doc(db, "users", currentUser.uid, "bahasa_perkataan", activeGlobalBahasaId), {
               lastIndex: currentFactIndex
@@ -16321,9 +16366,12 @@ function subscribeReminders() {
         const countInput = prompt('Berapa laci bahasa?\n(Cth: 1 untuk 1 laci penuh)');
         count = parseInt(countInput) || 1;
         label = `${jenisInfo.emoji} Bahasa ${count} laci`;
-      } else if (jenis === 'quran') {
-        const countInput = prompt('Berapa ayat?\n(Cth: 5 untuk 5 ayat)');
-        count = parseInt(countInput) || 5;
+} else if (jenis === 'quran') {
+        const countInput = prompt('Berapa ayat? (Mesti gandaan 10)\n(Cth: 10, 20, 30...)');
+        const rawCount = parseInt(countInput) || 10;
+        // Bulatkan ke gandaan 10 terdekat, minimum 10
+        count = Math.max(10, Math.round(rawCount / 10) * 10);
+        if (count !== rawCount) showToast(`⚠️ Ditukar ke gandaan 10 terdekat: ${count} ayat`, 3000);
         label = `${jenisInfo.emoji} Quran ${count} ayat`;
       } else if (jenis === 'doa') {
         const countInput = prompt('Berapa countdown doa?\n(Cth: 10)');
@@ -16472,19 +16520,18 @@ function subscribeReminders() {
         : '255,255,255';
     }
 
-    // ── MULA SESI ──
+// ── MULA SESI ──
     document.getElementById('btn-mula-session').addEventListener('click', () => {
       if (!allSessionBlok.length) {
         showToast('⚠️ Tambah blok dahulu.'); return;
       }
-
       sessionAktif = true;
       sessionBlokIndex = 0;
-      mulaBlokSession(0);
-
-      // Pergi ke Tasbih
+      sessionBlokCountdown = 0;
       showSection(sectionTasbih);
-      showToast('▶ Sesi bermula! Ikut turutan yang ditetapkan.', 4000);
+      // Simulasi tekan button ON untuk blok pertama
+      sessionTekanButtonOn(allSessionBlok[0]);
+      showToast('▶ Sesi bermula!', 3000);
     });
 
     // ── HENTI SESI ──
@@ -16499,37 +16546,14 @@ function subscribeReminders() {
       sessionBlokCountdown = 0;
       const bar = document.getElementById('session-aktif-bar');
       if (bar) bar.style.display = 'none';
-
-      // Off semua mode
-      factMode = false;
-      bahasaMode = false;
-      routineMode = false;
-      btnToggleFact.textContent = 'Fakta: OFF';
-      btnToggleFact.classList.remove('btn-active');
-      btnToggleRutin.textContent = 'Rutin: OFF';
-      btnToggleRutin.classList.remove('btn-active');
-      const btnBhs = document.getElementById('btn-toggle-bahasa');
-      if (btnBhs) { btnBhs.textContent = '📝 Bahasa: OFF'; btnBhs.classList.remove('btn-active'); }
-      ['quran','doa','hadis'].forEach(s => {
-        const b = document.getElementById(`btn-toggle-${s}`);
-        if (b) { b.textContent = `${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
-      });
-      factDisplayBox.classList.remove('show');
+      // Simulasi tekan OFF semua button
+      sessionTekanSemuaOff();
       updateTasbihUI();
     }
 
-    function mulaBlokSession(idx) {
-      if (!sessionAktif || idx >= allSessionBlok.length) {
-        // Sesi selesai — ulang dari awal
-        showToast('🎉 Sesi selesai! Ulang semula dari blok pertama.', 4000);
-        triggerVibration([200, 100, 200, 100, 500]);
-        sessionBlokIndex = 0;
-        mulaBlokSession(0);
-        return;
-      }
-
-      const blok = allSessionBlok[idx];
-      sessionBlokIndex = idx;
+    // ── TERAS: Simulasi tekan button ON — sama seperti user tekan sendiri ──
+    function sessionTekanButtonOn(blok) {
+      if (!blok) return;
       sessionBlokCountdown = blok.count || 1;
 
       // Kemaskini bar aktif
@@ -16538,123 +16562,109 @@ function subscribeReminders() {
       const progressEl = document.getElementById('session-aktif-progress');
       if (bar) bar.style.display = 'block';
       if (blokEl) blokEl.textContent = blok.label;
-      if (progressEl) progressEl.textContent = `Blok ${idx + 1} / ${allSessionBlok.length} — Baki: ${sessionBlokCountdown}`;
+      if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${sessionBlokCountdown}`;
 
-      // Aktifkan mode ikut jenis blok
+      // OFF semua dulu — sama seperti activateRoutineMode buat
+      sessionTekanSemuaOff();
+
+      // ON mengikut jenis — guna fungsi yang sama dengan button sebenar
       switch (blok.jenis) {
-case 'rutin':
-          // Reset semua state dulu
-          factMode = false;
-          bahasaMode = false;
-          routineMode = false;
-          routineModeSource = 'rutin'; // Tetapkan DULU sebelum rebuild
-          isBlocked = false;
-          comboStep = 0;
-          isFlipped = false;
-          window._bahasaNextLaciHandler = null;
-
-          // Off semua button
-          const btnBhs2 = document.getElementById('btn-toggle-bahasa');
-          if (btnBhs2) { btnBhs2.textContent = '📝 Bahasa: OFF'; btnBhs2.classList.remove('btn-active'); }
-          ['quran','doa','hadis'].forEach(s => {
-            const b = document.getElementById(`btn-toggle-${s}`);
-            if (b) { b.textContent = `${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
-          });
-          btnToggleFact.textContent = 'Fakta: OFF';
-          btnToggleFact.classList.remove('btn-active');
-
-          // ON rutin
-          routineMode = true;
-          btnToggleRutin.textContent = 'Rutin: ON';
-          btnToggleRutin.classList.add('btn-active');
-          factDisplayBox.classList.add('show');
-          learningMode = 2;
-          btnToggleMode.textContent = 'Mode: Rest';
-          btnToggleMode.style.display = 'inline-flex';
-          btnToggleMainRestMax.style.display = 'inline-flex';
-          mainRestMax = blok.count || 10;
-          mainRestCount = mainRestMax;
-          mainRestPhase = 1;
-          mainPlus5Used = false;
-          updateMainPlus5Btn();
-
-          // Sembunyikan button skip bahasa
-          const btnSkipRutin = document.getElementById('btn-skip-bahasa-laci');
-          if (btnSkipRutin) btnSkipRutin.style.display = 'none';
-
-          rebuildRoutines();
+        case 'rutin':
+          // Tekan button Rutin: ON
+          btnToggleRutin.click();
           break;
 
-case 'bahasa':
-          // Off semua mode dulu tanpa trigger activateRoutineMode (elak side effects)
-          factMode = false;
-          routineMode = false;
-          ['quran','doa','hadis','rutin'].forEach(s => {
-            const b = document.getElementById(`btn-toggle-${s}`);
-            if (b) { b.textContent = `${s === 'rutin' ? 'Rutin' : getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
-          });
-          btnToggleRutin.textContent = 'Rutin: OFF';
-          btnToggleRutin.classList.remove('btn-active');
-          btnToggleFact.textContent = 'Fakta: OFF';
-          btnToggleFact.classList.remove('btn-active');
-
-          // ON bahasa
-          bahasaMode = true;
-          srModeAktif = false;
-          srLaciSemasa = null;
-          srQueue = [];
-          srSemuaSelesai = false;
-          window._bahasaNextLaciHandler = null;
-
-          const btnBhs3 = document.getElementById('btn-toggle-bahasa');
-          if (btnBhs3) { btnBhs3.textContent = '📝 Bahasa: ON'; btnBhs3.classList.add('btn-active'); }
-
-          learningMode = 2;
-          btnToggleMode.textContent = 'Mode: Rest';
-          btnToggleMode.style.display = 'none';
-          btnToggleMainRestMax.style.display = 'none';
-
-          comboStep = 0;
-          isFlipped = false;
-          isBlocked = false;
-          bahasaEjaanCount = 5;
-          bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
-          bahasaRestPhase = 1;
-
-          factDisplayBox.classList.add('show');
-
-          // Tunjuk button Skip
-          const btnSkipSession = document.getElementById('btn-skip-bahasa-laci');
-          if (btnSkipSession) btnSkipSession.style.display = 'inline-flex';
-
-          rebuildBahasa();
+        case 'bahasa':
+          // Tekan button Bahasa: ON — tapi skip SR untuk session
+          // Guna flag supaya bahasa ON tanpa check SR
+          window._sessionSkipSR = true;
+          document.getElementById('btn-toggle-bahasa')?.click();
+          window._sessionSkipSR = false;
           break;
 
-        case 'quran':
-          activateRoutineMode('quran');
-          sessionBlokCountdown = blok.count || 5;
+case 'quran':
+          // Tekan button Quran: ON
+          document.getElementById('btn-toggle-quran')?.click();
+          // Paksa gandaan 10 — bulatkan ke atas
+          sessionBlokCountdown = Math.max(10, Math.round((blok.count || 10) / 10) * 10);
+          if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${sessionBlokCountdown}`;
           break;
 
         case 'doa':
-          activateRoutineMode('doa');
+          document.getElementById('btn-toggle-doa')?.click();
           break;
 
         case 'hadis':
-          activateRoutineMode('hadis');
+          document.getElementById('btn-toggle-hadis')?.click();
           break;
 
         case 'fizikal':
-          // Tunjuk popup fizikal terus
-          tunjukSessionFizikalPopup(blok, idx);
+          tunjukSessionFizikalPopup(blok);
           return;
       }
 
-      updateTasbihUI();
-      showToast(`${SESSION_JENIS[blok.jenis]?.emoji} Blok ${idx+1}: ${blok.label}`, 3000);
+      showToast(`${SESSION_JENIS[blok.jenis]?.emoji} Blok ${sessionBlokIndex + 1}: ${blok.label}`, 3000);
+    }
+
+    // ── OFF semua mode ──
+    function sessionTekanSemuaOff() {
+      // Off fakta
+      if (factMode) {
+        factMode = false;
+        btnToggleFact.textContent = 'Fakta: OFF';
+        btnToggleFact.classList.remove('btn-active');
+        factDisplayBox.classList.remove('show');
+        btnToggleMode.style.display = 'none';
+        btnToggleMainRestMax.style.display = 'none';
+      }
+
+      // Off bahasa
+      if (bahasaMode) {
+        bahasaMode = false;
+        const btnBhs = document.getElementById('btn-toggle-bahasa');
+        if (btnBhs) { btnBhs.textContent = '📝 Bahasa: OFF'; btnBhs.classList.remove('btn-active'); }
+        factDisplayBox.classList.remove('show');
+        window._bahasaNextLaciHandler = null;
+        srModeAktif = false;
+        srLaciSemasa = null;
+        srQueue = [];
+        srSemuaSelesai = false;
+      }
+
+      // Off rutin/quran/doa/hadis
+      if (routineMode) {
+        routineMode = false;
+        btnToggleRutin.textContent = 'Rutin: OFF';
+        btnToggleRutin.classList.remove('btn-active');
+        ['quran','doa','hadis'].forEach(s => {
+          const b = document.getElementById(`btn-toggle-${s}`);
+          if (b) { b.textContent = `${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
+        });
+        factDisplayBox.classList.remove('show');
+        btnToggleMode.style.display = 'none';
+      }
+
+      // Reset state
+      isBlocked = false;
+      comboStep = 0;
+      isFlipped = false;
+      window._sessionFizikalHandler = null;
+      quranPopupSuisOn = false;
+      quranPopupSuisLock = true;
+
+      // Tutup fullscreen quran kalau terbuka
+      if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
+        fullscreenOverlay.classList.remove('show');
+        fsShowingMaksud = false;
+      }
+
+      // Tutup popup rehat
+      const fsPopup = document.getElementById('fs-rehat-popup');
+      if (fsPopup) fsPopup.style.display = 'none';
     }
 
     // ── POPUP FIZIKAL DALAM SESSION ──
-    function tunjukSessionFizikalPopup(blok, idx) {
+    function tunjukSessionFizikalPopup(blok) {
       loadProgressHariIni(blok.rutinFizikalId).then(progress => {
         const target = blok.rutinTarget || 1;
         const unit = blok.rutinUnit || 'kali';
@@ -16667,7 +16677,6 @@ case 'bahasa':
           return;
         }
 
-        // Tunjuk dalam factDisplayBox
         factDisplayBox.classList.add('show');
         factTitleEl.textContent = `[ 💪 Session: ${blok.rutinNama} ]`;
         factTitleEl.style.color = '#fb923c';
@@ -16684,7 +16693,6 @@ case 'bahasa':
         factHintEl.style.color = '#fb923c';
         factHintEl.style.display = 'block';
 
-        // Override tap seterusnya
         window._sessionFizikalHandler = async () => {
           await simpanProgressRF(blok.rutinFizikalId, nilaiBaru, blok.rutinNama);
           window._sessionFizikalHandler = null;
@@ -16697,72 +16705,82 @@ case 'bahasa':
       });
     }
 
-    // ── CHECK SESSION DALAM DECREMENTTASBIH ──
+    // ── SEMAK COUNTDOWN DALAM decrementTasbih ──
 function semakSessionBlokSelesai() {
       if (!sessionAktif) return;
       const blok = allSessionBlok[sessionBlokIndex];
       if (!blok) return;
 
+      // Bahasa: dikira oleh sessionBahasaLaciSelesai() — skip di sini
+      if (blok.jenis === 'bahasa') return;
+
+      // Quran: kira HANYA pada tap kedua (masa maksud dipapar = comboStep baru reset ke 0)
+      // comboStep === 0 bermaksud kita baru lepas tap maksud, ayat betul-betul selesai
+      if (blok.jenis === 'quran') {
+        // Hanya kira bila comboStep === 0 (bermaksud tap maksud baru selesai)
+        if (comboStep !== 0) return;
+      }
+
+      // Rutin: kira hanya bila currentRoutineTarget baru jadi 0 (sempadan laci)
+      // Ini dipanggil dari dalam decrementTasbih selepas routineAutoNext = true
+      // Jadi kiraan adalah betul — satu unit = satu laci selesai
+      if (blok.jenis === 'rutin') {
+        // Dipanggil dari sempadan laci — kiraan betul, teruskan
+      }
+
       sessionBlokCountdown--;
 
-      // Kemaskini semua tempat yang tunjuk baki
       const progressEl = document.getElementById('session-aktif-progress');
       if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
 
-      // Kemaskini hint dalam fullscreen kalau terbuka
+      // Update hint dalam fullscreen quran
       if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
         const fsHint = document.getElementById('fullscreen-fact-hint');
-        if (fsHint && sessionAktif) {
-          fsHint.textContent = `🗓️ Session — Baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat`;
+        if (fsHint) {
+          fsHint.textContent = `🗓️ Session — Baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count}`;
           fsHint.style.color = sessionBlokCountdown <= 3 ? '#f87171' : '#a78bfa';
         }
-      }
-
-      // Kemaskini hint dalam fact box
-      if (factHintEl && routineMode && routineModeSource === 'quran') {
-        factHintEl.textContent = `🗓️ Session Baki: ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat`;
-        factHintEl.style.color = sessionBlokCountdown <= 3 ? '#f87171' : '#a78bfa';
-        factHintEl.style.display = 'block';
       }
 
       if (sessionBlokCountdown <= 0) {
         showToast(`✅ Blok "${blok.label}" selesai! Ke blok seterusnya...`, 2500);
         triggerVibration([100, 50, 100, 50, 200]);
+        setTimeout(() => mulaBlokSeterusnya(), 2000);
+      }
+    }
 
-        // Tutup fullscreen kalau terbuka
-        if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
-          setTimeout(() => {
-            fullscreenOverlay.classList.remove('show');
-            fsShowingMaksud = false;
-            isFlipped = false;
-            comboStep = 0;
-          }, 500);
-        }
+    // ── BAHASA LACI SELESAI — dipanggil dari sistem bahasa ──
+    function sessionBahasaLaciSelesai() {
+      if (!sessionAktif) return;
+      const blok = allSessionBlok[sessionBlokIndex];
+      if (!blok || blok.jenis !== 'bahasa') return;
 
+      sessionBlokCountdown--;
+
+      const progressEl = document.getElementById('session-aktif-progress');
+      if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)} laci`;
+
+      if (sessionBlokCountdown <= 0) {
+        showToast(`✅ Blok Bahasa selesai! Ke blok seterusnya...`, 2500);
+        triggerVibration([100, 50, 100, 50, 200]);
         setTimeout(() => mulaBlokSeterusnya(), 2000);
       }
     }
 
 function mulaBlokSeterusnya() {
-      // Reset semua state semasa sebelum beralih
       isBlocked = false;
       window._bahasaNextLaciHandler = null;
       window._sessionFizikalHandler = null;
 
-      // Kalau quran aktif — off popup rehat dulu
-      const fsPopup = document.getElementById('fs-rehat-popup');
-      if (fsPopup) fsPopup.style.display = 'none';
-      quranPopupSuisOn = false;
-      quranPopupSuisLock = true;
-
       const nextIdx = sessionBlokIndex + 1;
+      sessionBlokIndex = nextIdx >= allSessionBlok.length ? 0 : nextIdx;
+
       if (nextIdx >= allSessionBlok.length) {
-        // Habis semua blok — ulang dari awal
-        showToast('🎉 Semua blok selesai! Ulang dari blok pertama.', 4000);
+        showToast('🔁 Semua blok selesai! Ulang dari blok pertama.', 4000);
         triggerVibration([200, 100, 200, 100, 500]);
-        setTimeout(() => mulaBlokSession(0), 2500);
+        setTimeout(() => sessionTekanButtonOn(allSessionBlok[0]), 2500);
       } else {
-        mulaBlokSession(nextIdx);
+        sessionTekanButtonOn(allSessionBlok[nextIdx]);
       }
     }
 
