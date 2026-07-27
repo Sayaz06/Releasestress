@@ -6492,11 +6492,12 @@ function syncIndexToFirestore(newIndex) {
           }
         }
 
-// ── SESSION PLANNER: isTamat = 1 laci selesai ──
-        // SR laci (isSRMode:true) pun hit isTamat yang sama
-        // Dikira di sini sahaja — satu tempat, tiada double count
+// ── SESSION PLANNER: kira 1 laci selesai ──
+        // Kira bila laci biasa isTamat, ATAU SR laci hit isSRTamat
         if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
-          sessionBahasaLaciSelesai();
+          if (!currentData.isSRMode || currentData.isSRTamat) {
+            sessionBahasaLaciSelesai();
+          }
         }
 
         if (learningMode === 2) {
@@ -10775,13 +10776,14 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
         });
       }
 
-      // Laci tamat — dengan label SR
+// Laci tamat SR — isTamat:true supaya session kira sebagai 1 laci selesai
       factsBaru.push({
         drawerId: drawer.id,
         title: tajukLaci,
         text: `✅ Ulangan SR selesai — ${getLabelFasaSR(srData.fasaSemasa)}`,
         isTamat: true,
-        isSRMode: true
+        isSRMode: true,
+        isSRTamat: true  // flag khas untuk bezakan dari isTamat biasa dalam SR
       });
 
       // Replace allFacts dengan SR facts
