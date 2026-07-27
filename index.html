@@ -6492,9 +6492,9 @@ function syncIndexToFirestore(newIndex) {
           }
         }
 
-        // ── SESSION PLANNER: isTamat = 1 laci selesai, kira countdown ──
-        // SR laci ada isSRMode:true tapi tetap hit isTamat yang sama
-        // Jadi dikira di sini tanpa syarat tambahan
+// ── SESSION PLANNER: isTamat = 1 laci selesai ──
+        // SR laci (isSRMode:true) pun hit isTamat yang sama
+        // Dikira di sini sahaja — satu tempat, tiada double count
         if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
           sessionBahasaLaciSelesai();
         }
@@ -6690,10 +6690,7 @@ triggerVibration([100, 50, 100]);
                 }
               }
 
-              // ── SESSION PLANNER: fasa 2 habis = 1 laci bahasa selesai ──
-              if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
-                sessionBahasaLaciSelesai();
-              }
+// (session dikira di isTamat sahaja — buang dari sini elak double count)
 
               // Cari index laci seterusnya (isFasaEjaan berikutnya)
               let nextLaciIdx = currentFactIndex + 1;
@@ -6713,10 +6710,9 @@ triggerVibration([100, 50, 100]);
               factContentEl.textContent = '✅ Laci selesai! Sapu/tekan untuk ke laci seterusnya.';
               factHintEl.textContent = '';
 
-              // Setelah block habis, tunggu user tap sendiri
-setTimeout(async () => {
+// Setelah block habis, dalam session terus jalan — luar session tunggu tap
+              setTimeout(async () => {
                 isBlocked = false;
-                // Override cycleFact untuk 1 tap seterusnya → pergi laci + popup
                 const tapSeterusnya = async () => {
                   // ── CHECK SR QUEUE SEBELUM KE LACI SETERUSNYA ──
                   // Jangan check SR kalau flag semuaSelesai aktif (elak SR terakhir berulang)
@@ -6736,8 +6732,19 @@ setTimeout(async () => {
                   // Popup Al-Quran selepas render laci baru
                   setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
                 };
-                // Simpan handler sementara — akan dipanggil pada tap/swipe seterusnya
+// Simpan handler — dalam session terus trigger, luar session tunggu tap
                 window._bahasaNextLaciHandler = tapSeterusnya;
+
+                // Kalau session aktif, terus jalankan tanpa tunggu tap
+                if (sessionAktif) {
+                  setTimeout(() => {
+                    if (window._bahasaNextLaciHandler) {
+                      const h = window._bahasaNextLaciHandler;
+                      window._bahasaNextLaciHandler = null;
+                      h();
+                    }
+                  }, 1500);
+                }
               }, 300);
             }
 } else {
