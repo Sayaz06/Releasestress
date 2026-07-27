@@ -6494,7 +6494,8 @@ function syncIndexToFirestore(newIndex) {
           }
         }
 
-        // ── SESSION PLANNER: kira laci bahasa selesai ──
+        // ── SESSION PLANNER: kira laci bahasa selesai (SR laci pun dikira sama) ──
+        // isTamat bermaksud satu laci penuh selesai — sama ada laci biasa atau SR
         if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
           sessionBahasaLaciSelesai();
         }
