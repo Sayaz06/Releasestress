@@ -5517,7 +5517,7 @@ if (isFlipKeMaksud) {
               quranPopupSuisLock = false;
             }
 
-            if (patutSave) {
+if (patutSave) {
               // Gandaan 5 — cuba ON suis kalau lock dah hilang
               if (!quranPopupSuisLock && ayatUntukSave % 5 === 0) {
                 quranPopupSuisOn = true;
@@ -5533,7 +5533,13 @@ if (isFlipKeMaksud) {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
-                if (patutPopup) {
+// ── SESSION PLANNER: kira countdown blok quran ──
+                if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'quran') {
+                  semakSessionBlokSelesai();
+                  if (sessionBlokCountdown <= 0) return; // Dah beralih, jangan tunjuk popup
+                }
+                // Popup rehat hanya tunjuk kalau TIADA session berjalan
+                if (patutPopup && !sessionAktif) {
                   setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
                 }
               });
@@ -6641,13 +6647,22 @@ if (rPhase === 1) {
               }
 } else {
 // Fasa 2 habis → tunjuk "laci tamat" message dulu → user tap → laci seterusnya → popup Al-Quran
-              triggerVibration([100, 50, 100]);
+triggerVibration([100, 50, 100]);
               isBlocked = true;
               bahasaRestPhase = 1;
               bahasaRestCount = cyc.fasa1;
               bahasaEjaanCount = 5;
               isFlipped = false;
               updateMainPlus5Btn();
+
+              // ── SESSION PLANNER: kira countdown blok bahasa ──
+              if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
+                semakSessionBlokSelesai();
+                if (sessionBlokCountdown <= 0) {
+                  isBlocked = false;
+                  return; // Session akan handle peralihan
+                }
+              }
 
               // ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
               const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].drawerId : null;
@@ -6729,9 +6744,17 @@ setTimeout(async () => {
                 renderCurrentFact();
                 showToast("Fasa 2 bermula!");
               }
-            } else {
+} else {
               triggerVibration([200, 100, 200, 100, 2000]);
               isBlocked = true;
+              // ── SESSION PLANNER: kira countdown blok rutin ──
+              if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'rutin') {
+                semakSessionBlokSelesai();
+                if (sessionBlokCountdown <= 0) {
+                  isBlocked = false;
+                  return; // Session akan handle peralihan
+                }
+              }
               setTimeout(() => {
                 isBlocked = false;
                 mainRestPhase = 1; mainRestCount = cyc.fasa1; mainPlus5Used = false;
@@ -6748,7 +6771,7 @@ setTimeout(async () => {
                   renderCurrentFact();
                 });
               }, 2600);
-            }
+            }    
           }
         } else {
           renderCurrentFact();
@@ -16602,29 +16625,43 @@ function subscribeReminders() {
     }
 
     // ── CHECK SESSION DALAM DECREMENTTASBIH ──
-    function semakSessionBlokSelesai() {
+function semakSessionBlokSelesai() {
       if (!sessionAktif) return;
-
       const blok = allSessionBlok[sessionBlokIndex];
       if (!blok) return;
 
-      if (blok.jenis === 'rutin') {
-        // Countdown rest — semak bila mainRestCount habis fasa 2
-        sessionBlokCountdown--;
-        if (sessionBlokCountdown <= 0) {
-          setTimeout(() => mulaBlokSeterusnya(), 500);
-        }
-      } else if (blok.jenis === 'quran') {
-        sessionBlokCountdown--;
-        if (sessionBlokCountdown <= 0) {
-          setTimeout(() => mulaBlokSeterusnya(), 500);
-        }
+      sessionBlokCountdown--;
+      const progressEl = document.getElementById('session-aktif-progress');
+      if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+
+      if (sessionBlokCountdown <= 0) {
+        showToast(`✅ Blok "${blok.label}" selesai! Ke blok seterusnya...`, 2500);
+        triggerVibration([100, 50, 100, 50, 200]);
+        setTimeout(() => mulaBlokSeterusnya(), 2000);
       }
     }
 
-    function mulaBlokSeterusnya() {
+function mulaBlokSeterusnya() {
+      // Reset semua state semasa sebelum beralih
+      isBlocked = false;
+      window._bahasaNextLaciHandler = null;
+      window._sessionFizikalHandler = null;
+
+      // Kalau quran aktif — off popup rehat dulu
+      const fsPopup = document.getElementById('fs-rehat-popup');
+      if (fsPopup) fsPopup.style.display = 'none';
+      quranPopupSuisOn = false;
+      quranPopupSuisLock = true;
+
       const nextIdx = sessionBlokIndex + 1;
-      mulaBlokSession(nextIdx);
+      if (nextIdx >= allSessionBlok.length) {
+        // Habis semua blok — ulang dari awal
+        showToast('🎉 Semua blok selesai! Ulang dari blok pertama.', 4000);
+        triggerVibration([200, 100, 200, 100, 500]);
+        setTimeout(() => mulaBlokSession(0), 2500);
+      } else {
+        mulaBlokSession(nextIdx);
+      }
     }
 
     // ── START INTERVAL SEMAK REMINDER ──
