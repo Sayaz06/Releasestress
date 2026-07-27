@@ -4706,39 +4706,48 @@ function showSection(section) {
         if (existFloat) existFloat.remove();
       }
 
-      if (sessionAktif && section.id !== 'section-tasbih') {
+if (sessionAktif && section.id !== 'section-tasbih') {
+        // Semak kalau floating bar dah ada — kemaskini sahaja, jangan cipta baru
+        let floatBar = document.getElementById('session-float-bar');
+
+        if (!floatBar) {
+          // Cipta baru hanya kalau belum ada
+          floatBar = document.createElement('div');
+          floatBar.id = 'session-float-bar';
+          floatBar.style.cssText = `
+            position:fixed;bottom:0;left:0;right:0;z-index:99999;
+            background:linear-gradient(135deg,rgba(124,58,237,0.95),rgba(99,102,241,0.95));
+            padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
+            box-shadow:0 -4px 20px rgba(0,0,0,0.5);backdrop-filter:blur(8px);
+          `;
+          floatBar.innerHTML = `
+            <div>
+              <div id="float-session-title" style="font-size:0.78rem;font-weight:700;color:white;">🗓️ Session Aktif</div>
+              <div id="float-session-sub" style="font-size:0.7rem;color:rgba(255,255,255,0.7);"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button id="btn-float-session-sambung" style="padding:6px 14px;border-radius:999px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;font-size:0.78rem;font-weight:600;cursor:pointer;">▶ Sambung</button>
+              <button id="btn-float-session-henti" style="padding:6px 14px;border-radius:999px;background:rgba(239,68,68,0.3);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;font-size:0.78rem;font-weight:600;cursor:pointer;">⏹ Henti</button>
+            </div>
+          `;
+          document.body.appendChild(floatBar);
+
+          // Event listeners hanya sekali
+          document.getElementById('btn-float-session-sambung').addEventListener('click', () => {
+            showSection(sectionTasbih);
+          });
+
+          document.getElementById('btn-float-session-henti').addEventListener('click', () => {
+            if (!confirm('Henti session sekarang?')) return;
+            hentiSession();
+            showToast('⏹ Session dihentikan.');
+          });
+        }
+
+        // Kemaskini kandungan
         const blok = allSessionBlok[sessionBlokIndex];
-        const floatBar = document.createElement('div');
-        floatBar.id = 'session-float-bar';
-        floatBar.style.cssText = `
-          position:fixed;bottom:0;left:0;right:0;z-index:99999;
-          background:linear-gradient(135deg,rgba(124,58,237,0.95),rgba(99,102,241,0.95));
-          padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
-          box-shadow:0 -4px 20px rgba(0,0,0,0.5);backdrop-filter:blur(8px);
-        `;
-        floatBar.innerHTML = `
-          <div>
-            <div style="font-size:0.78rem;font-weight:700;color:white;">🗓️ Session Aktif</div>
-            <div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">${blok ? blok.label : ''} — Baki: ${Math.max(0, sessionBlokCountdown)}</div>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button id="btn-float-session-sambung" style="padding:6px 14px;border-radius:999px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;font-size:0.78rem;font-weight:600;cursor:pointer;">▶ Sambung</button>
-            <button id="btn-float-session-henti" style="padding:6px 14px;border-radius:999px;background:rgba(239,68,68,0.3);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;font-size:0.78rem;font-weight:600;cursor:pointer;">⏹ Henti</button>
-          </div>
-        `;
-        document.body.appendChild(floatBar);
-
-        document.getElementById('btn-float-session-sambung').addEventListener('click', () => {
-          floatBar.remove();
-          showSection(sectionTasbih);
-        });
-
-        document.getElementById('btn-float-session-henti').addEventListener('click', () => {
-          if (!confirm('Henti session sekarang?')) return;
-          hentiSession();
-          floatBar.remove();
-          showToast('⏹ Session dihentikan.');
-        });
+        const subEl = document.getElementById('float-session-sub');
+        if (subEl) subEl.textContent = `${blok ? blok.label : ''} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
       }
 
       sectionLogin.classList.remove("active");
@@ -5110,12 +5119,12 @@ if (factMode || bahasaMode) {
           }
           if (counterArea) counterArea.style.display = 'none';
 
-// ── Badge SR pending dalam modeBar — refresh async ──
+// ── Badge SR pending dalam modeBar — throttled ──
           const oldSRBadgeBar = document.getElementById('sr-badge-modebar');
           if (oldSRBadgeBar) oldSRBadgeBar.remove();
 
-          // Refresh IDs dulu secara async supaya terkini
-          const refreshPromise = factMode ? refreshSRFaktaQueueIds() : refreshSRQueueIds();
+          // Guna cache yang ada — jangan refresh setiap kali updateTasbihUI
+          const refreshPromise = Promise.resolve();
           refreshPromise.then(() => {
             const srPendingCount = factMode ? srFaktaQueueIds.size : srQueueIds.size;
             if (srPendingCount > 0 && modeBar) {
@@ -5816,7 +5825,7 @@ if (routineModeSource === 'quran' && nextIsOrWasTamat) {
             if (blokSemasa && ['doa','hadis'].includes(blokSemasa.jenis)) {
               sessionBlokCountdown--;
               simpanSessionState();
-kemaskiniFLoatingSessionBar();
+              kemaskiniFloatingSessionBar();              
               const progressElDH = document.getElementById('session-aktif-progress');
               if (progressElDH) progressElDH.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
               if (sessionBlokCountdown <= 0) {
@@ -6291,14 +6300,41 @@ function getRemainingInLaci() {
       }
     }
 
-function renderCurrentFact() {
+// ── Throttle SR refresh — max sekali setiap 30 saat ──
+    let _lastSRFaktaRefresh = 0;
+    let _lastSRBahasaRefresh = 0;
+    const SR_REFRESH_THROTTLE = 30000; // 30 saat
+
+    // Auto refresh SR cache setiap 2 minit bila mode aktif
+    setInterval(() => {
+      if (factMode && !srFaktaModeAktif) {
+        refreshSRFaktaQueueIds().then(() => {
+          _lastSRFaktaRefresh = Date.now();
+          updateTasbihUI();
+        });
+      }
+      if (bahasaMode && !srModeAktif) {
+        refreshSRQueueIds().then(() => {
+          _lastSRBahasaRefresh = Date.now();
+          updateTasbihUI();
+        });
+      }
+    }, 2 * 60 * 1000); // 2 minit
+
+    function renderCurrentFact() {
       const dataSource = routineMode ? allRoutines : allFacts;
       const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
 
-      // ── Refresh SR IDs setiap render untuk badge terkini ──
-      if (factMode && !srFaktaModeAktif) refreshSRFaktaQueueIds();
-      if (bahasaMode && !srModeAktif) refreshSRQueueIds();
-
+      // ── Refresh SR IDs — throttled supaya tak terlalu banyak Firestore reads ──
+      const now = Date.now();
+      if (factMode && !srFaktaModeAktif && (now - _lastSRFaktaRefresh) > SR_REFRESH_THROTTLE) {
+        _lastSRFaktaRefresh = now;
+        refreshSRFaktaQueueIds();
+      }
+      if (bahasaMode && !srModeAktif && (now - _lastSRBahasaRefresh) > SR_REFRESH_THROTTLE) {
+        _lastSRBahasaRefresh = now;
+        refreshSRQueueIds();
+      }
       if (dataSource.length === 0) {
         factTitleEl.textContent = "";
         factContentEl.textContent = routineMode ? "Tiada rutin aktif. Sila tick SATU waktu." : "Tiada topik aktif. Sila tick SATU topik.";
@@ -6883,7 +6919,7 @@ triggerVibration([100, 50, 100]);
                 // Kira terus di sini, jangan biar cycleFact kira lagi
 sessionBlokCountdown--;
               simpanSessionState();
-              kemaskiniFLoatingSessionBar();
+              kemaskiniFloatingSessionBar();
               const progressElBahasa = document.getElementById('session-aktif-progress');
               if (progressElBahasa) progressElBahasa.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
 
@@ -6984,7 +7020,7 @@ setTimeout(async () => {
               if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'rutin') {
                 sessionBlokCountdown--;
                 simpanSessionState();
-                kemaskiniFLoatingSessionBar();
+                kemaskiniFloatingSessionBar();                
                 const progressElRutin = document.getElementById('session-aktif-progress');
                 if (progressElRutin) progressElRutin.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
                 
@@ -7986,9 +8022,8 @@ subscribeReminders();
             const emoji = info ? info.emoji : '▪';
             showToast(`🗓️ Session dipulihkan — ${emoji} ${blok.label} (baki ${sessionBlokCountdown})`, 4000);
 
-// Aktifkan semula mode yang sepatutnya
-            // Pergi ke tasbih dulu
-            showSection(sectionTasbih);
+// Aktifkan semula mode — JANGAN paksa navigate ke tasbih
+            // Biar user navigate sendiri, kita hanya restore state
 
             setTimeout(() => {
               switch (blok.jenis) {
@@ -12202,28 +12237,35 @@ factsBaru.push({
     }
 
 // ── HANDLE isTamat SR FAKTA ──
-    // Flag untuk elak double call
     let _srFaktaTamatSedangDiproses = false;
 
     async function handleSRFaktaTamat(drawerId) {
       if (!currentUser) return;
-      if (_srFaktaTamatSedangDiproses) return; // Elak double call
+      if (_srFaktaTamatSedangDiproses) return;
       _srFaktaTamatSedangDiproses = true;
 
       try {
-        // Selesaikan ulangan SR
         const fasaSelesai = srFaktaLaciSemasa ? srFaktaLaciSemasa.fasaSemasa : 0;
-        await selesaiSRFaktaUlangan(drawerId);
+
+        // Selesaikan SR — dalam try berasingan supaya flag reset walaupun error
+        try {
+          await selesaiSRFaktaUlangan(drawerId);
+        } catch(e) {
+          console.log("Gagal selesai SR Fakta:", e);
+        }
+
         srFaktaLaciSemasa = null;
         showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSelesai)}`, 3000);
 
-        // ── SESSION: kira sebagai 1 laci — HANYA sekali di sini ──
+        // ── SESSION: kira sebagai 1 laci ──
         let sessionHabis = false;
         if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'fakta') {
           sessionBlokCountdown--;
           simpanSessionState();
+          kemaskiniFloatingSessionBar();
           const progressEl = document.getElementById('session-aktif-progress');
           if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+          kemaskiniSessionProgressBar(sessionBlokIndex);
 
           if (sessionBlokCountdown <= 0) {
             sessionHabis = true;
@@ -12235,12 +12277,16 @@ factsBaru.push({
 
         if (sessionHabis) return;
 
-        // Check lagi SR queue — ada lagi tak
-        const adaSRFakta = await checkSRFaktaQueue();
-        if (adaSRFakta && !srFaktaSemuaSelesai && muatSRFaktaLaciSeterusnya()) {
-          tunjukPopupSR(srFaktaLaciSemasa);
-          await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
-          return;
+        // Check SR queue lagi
+        try {
+          const adaSRFakta = await checkSRFaktaQueue();
+          if (adaSRFakta && !srFaktaSemuaSelesai && muatSRFaktaLaciSeterusnya()) {
+            tunjukPopupSR(srFaktaLaciSemasa);
+            await muatLaciSRFaktaKeDalamFacts(srFaktaLaciSemasa);
+            return;
+          }
+        } catch(e) {
+          console.log("Gagal check SR Fakta queue:", e);
         }
 
         // Tiada lagi SR — balik ke laci biasa
@@ -12248,7 +12294,14 @@ factsBaru.push({
         srFaktaModeAktif = false;
         rebuildFacts();
 
+      } catch(e) {
+        console.log("handleSRFaktaTamat error:", e);
+        // Reset state supaya app tak stuck
+        srFaktaModeAktif = false;
+        srFaktaLaciSemasa = null;
+        rebuildFacts();
       } finally {
+        // Sentiasa reset flag — walaupun ada error
         _srFaktaTamatSedangDiproses = false;
       }
     }
@@ -15374,12 +15427,17 @@ list.querySelectorAll('.btn-pulih-universal').forEach(btn => {
               await setDoc(newRef, item.originalData);
               await deleteDoc(doc(db, "users", currentUser.uid, TRASH_COLL, trashId));
 
-              // ── Buang dari SR queue kalau laci fakta yang dipulihkan ──
-              // (SR queue akan daftar semula bila user habiskan laci tu nanti)
-              if (item.originalColl === 'drawer') {
-                await deleteSRFaktaRekod(item.originalId);
-              } else if (item.originalColl === 'bahasa_drawers') {
-                await deleteSRRekod(item.originalId);
+// ── Buang dari SR queue kalau laci dipulihkan ──
+              // Guna originalId (ID asal sebelum dipadam) bukan ID baru
+              // SR queue akan daftar semula bila user habiskan laci tu nanti
+              try {
+                if (item.originalColl === 'drawer') {
+                  await deleteSRFaktaRekod(item.originalId);
+                } else if (item.originalColl === 'bahasa_drawers') {
+                  await deleteSRRekod(item.originalId);
+                }
+              } catch(e) {
+                console.log("Gagal buang SR queue selepas pulih:", e);
               }
 
               showToast(`✅ "${item.label}" berjaya dipulihkan!`);
@@ -17075,14 +17133,14 @@ document.getElementById('btn-go-session-planner').addEventListener('click', () =
       if (sec) {
         showSection(sec);
         renderSessionBlokList();
-        // Scroll ke blok aktif
+// Scroll ke blok aktif menggunakan data-index
         if (sessionAktif && sessionBlokIndex > 0) {
           setTimeout(() => {
             const list = document.getElementById('session-blok-list');
             if (!list) return;
-            const cards = list.querySelectorAll('.drawer-card');
-            if (cards[sessionBlokIndex]) {
-              cards[sessionBlokIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const target = list.querySelector(`[data-session-idx="${sessionBlokIndex}"]`);
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
           }, 300);
         }
@@ -17232,8 +17290,9 @@ if (jenis === 'fakta') {
         const info = SESSION_JENIS[blok.jenis] || { warna: '#9ca3af', emoji: '▪' };
         const isAktif = sessionAktif && sessionBlokIndex === idx;
 
-        const div = document.createElement('div');
+const div = document.createElement('div');
         div.className = 'drawer-card';
+        div.setAttribute('data-session-idx', idx);
         div.style.cssText = `border:1px solid ${isAktif ? info.warna : 'var(--border-soft)'};background:${isAktif ? `rgba(${hexToRgb(info.warna)},0.1)` : ''};margin-bottom:8px;`;
         div.innerHTML = `
           <div style="display:flex;align-items:center;gap:10px;">
@@ -17329,15 +17388,13 @@ if (jenis === 'fakta') {
       showToast('▶ Sesi bermula! Ikut turutan yang ditetapkan.', 4000);
     });
 
-function kemaskiniFLoatingSessionBar() {
-      const floatBar = document.getElementById('session-float-bar');
-      if (!floatBar || !sessionAktif) return;
+function kemaskiniFloatingSessionBar() {
+      if (!sessionAktif) return;
+      const subEl = document.getElementById('float-session-sub');
+      if (!subEl) return;
       const blok = allSessionBlok[sessionBlokIndex];
       if (!blok) return;
-      const blokDiv = floatBar.querySelector('div > div:first-child');
-      const subDiv = floatBar.querySelector('div > div:last-child');
-      if (blokDiv) blokDiv.textContent = '🗓️ Session Aktif';
-      if (subDiv) subDiv.textContent = `${blok.label} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
+      subEl.textContent = `${blok.label} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
     }
 
     function kemaskiniButtonMulaSession() {    
@@ -17400,13 +17457,28 @@ function hentiSession() {
       sessionAktif = false;
       sessionBlokIndex = 0;
       sessionBlokCountdown = 0;
-      clearSessionState(); // Clear localStorage
+      clearSessionState();
+
+      // Buang semua UI session
       const bar = document.getElementById('session-aktif-bar');
       if (bar) bar.style.display = 'none';
 
-      // Buang floating bar kalau ada
       const floatBar = document.getElementById('session-float-bar');
       if (floatBar) floatBar.remove();
+
+      // Buang badge SR dalam modeBar
+      const srBadge = document.getElementById('sr-badge-modebar');
+      if (srBadge) srBadge.remove();
+
+      // Buang progress bar dots
+      const progressBar = document.getElementById('session-blok-progress-bar');
+      if (progressBar) progressBar.innerHTML = '';
+
+      // Reset modeBar text
+      const modeBarText = document.getElementById('tasbih-mode-bar-text');
+      if (modeBarText) modeBarText.textContent = '';
+      const modeBarSub = document.getElementById('tasbih-mode-bar-sub');
+      if (modeBarSub) modeBarSub.textContent = '';
 
       // Kemaskini button
       kemaskiniButtonMulaSession();
@@ -17454,8 +17526,8 @@ function hentiSession() {
       // ── Render progress dot semua blok ──
       kemaskiniSessionProgressBar(idx);
 
-      // ── Kemaskini floating bar kalau ada ──
-      kemaskiniFLoatingSessionBar();
+// ── Kemaskini floating bar kalau ada ──
+      kemaskiniFloatingSessionBar();
 
       // Aktifkan mode ikut jenis blok
 switch (blok.jenis) {
@@ -17680,7 +17752,13 @@ case 'fizikal':
         const nilaiTap = blok.rutinNilaiPerTap || 1;
         const selesai = progress >= target;
 
-        if (selesai) {
+if (selesai) {
+          // ── Kira countdown walaupun dah selesai ──
+          if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'fizikal') {
+            sessionBlokCountdown--;
+            simpanSessionState();
+            kemaskiniFloatingSessionBar();
+          }
           showToast(`✅ ${blok.rutinNama} dah selesai hari ini! Ke blok seterusnya.`, 3000);
           setTimeout(() => mulaBlokSeterusnya(), 2000);
           return;
@@ -17716,14 +17794,10 @@ window._sessionFizikalHandler = async () => {
             if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'fizikal') {
               sessionBlokCountdown--;
               simpanSessionState();
-              kemaskiniFLoatingSessionBar();
-
-              if (sessionBlokCountdown <= 0) {
-                showToast(`✅ Blok "${allSessionBlok[sessionBlokIndex]?.label}" selesai!`, 2500);
-                triggerVibration([100, 50, 100, 50, 200]);
-                setTimeout(() => mulaBlokSeterusnya(), 2000);
-                return;
-              }
+kemaskiniFloatingSessionBar();
+              triggerVibration([100, 50, 100, 50, 200]);
+              setTimeout(() => mulaBlokSeterusnya(), 2000);
+              return;
             }
           }
 
@@ -17733,59 +17807,10 @@ window._sessionFizikalHandler = async () => {
     }
 
     // ── CHECK SESSION DALAM DECREMENTTASBIH ──
-// semakSessionBlokSelesai sekarang hanya untuk Quran sahaja
-    // Rutin, Bahasa, Fakta, Doa, Hadis kira sendiri di tempat masing-masing
-function semakSessionBlokSelesai() {
-      if (!sessionAktif) return;
-      const blok = allSessionBlok[sessionBlokIndex];
-      if (!blok) return;
-      if (!['quran'].includes(blok.jenis)) return; // Hanya untuk Quran
-
-      sessionBlokCountdown--;
-      simpanSessionState();
-
-      // Kemaskini progress bar kalau dalam page session planner
-      const secSession = document.getElementById('section-session-planner');
-      if (secSession && secSession.classList.contains('active')) {
-        kemaskiniSessionProgressBar(sessionBlokIndex);
-      }
-
-      // Kemaskini semua tempat yang tunjuk baki
-      const progressEl = document.getElementById('session-aktif-progress');
-      if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)}`;
-
-      // Kemaskini hint dalam fullscreen kalau terbuka
-      if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
-        const fsHint = document.getElementById('fullscreen-fact-hint');
-        if (fsHint && sessionAktif) {
-          fsHint.textContent = `🗓️ Session — Baki ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat`;
-          fsHint.style.color = sessionBlokCountdown <= 3 ? '#f87171' : '#a78bfa';
-        }
-      }
-
-      // Kemaskini hint dalam fact box
-      if (factHintEl && routineMode && routineModeSource === 'quran') {
-        factHintEl.textContent = `🗓️ Session Baki: ${Math.max(0, sessionBlokCountdown)} / ${blok.count} ayat`;
-        factHintEl.style.color = sessionBlokCountdown <= 3 ? '#f87171' : '#a78bfa';
-        factHintEl.style.display = 'block';
-      }
-
-      if (sessionBlokCountdown <= 0) {
-        showToast(`✅ Blok "${blok.label}" selesai! Ke blok seterusnya...`, 2500);
-        triggerVibration([100, 50, 100, 50, 200]);
-
-        // Tutup fullscreen kalau terbuka
-        if (fullscreenOverlay && fullscreenOverlay.classList.contains('show')) {
-          setTimeout(() => {
-            fullscreenOverlay.classList.remove('show');
-            fsShowingMaksud = false;
-            isFlipped = false;
-            comboStep = 0;
-          }, 500);
-        }
-
-        setTimeout(() => mulaBlokSeterusnya(), 2000);
-      }
+// ── semakSessionBlokSelesai DIBUANG — setiap jenis kira sendiri ──
+    // Fungsi ini dikekalkan kosong untuk elak error kalau masih ada panggilan lama
+    function semakSessionBlokSelesai() {
+      console.warn('semakSessionBlokSelesai dipanggil — sepatutnya tidak berlaku lagi');
     }
 
 function mulaBlokSeterusnya() {
@@ -17814,11 +17839,16 @@ const nextIdx = sessionBlokIndex + 1;
         // Habis semua blok — ulang dari awal
         showToast('🎉 Semua blok selesai! Ulang dari blok pertama.', 4000);
         triggerVibration([200, 100, 200, 100, 500]);
-        // Reset countdown untuk blok pertama
+// Reset countdown untuk blok pertama
         if (allSessionBlok.length > 0) {
           sessionBlokCountdown = allSessionBlok[0].count || 1;
         }
         simpanSessionState();
+
+        // Reset progress dots
+        const progressBarDots = document.getElementById('session-blok-progress-bar');
+        if (progressBarDots) progressBarDots.innerHTML = '';
+
         setTimeout(() => mulaBlokSession(0), 2500);
       } else {
         const blokSeterusnya = allSessionBlok[nextIdx];
