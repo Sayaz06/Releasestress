@@ -6483,19 +6483,18 @@ function syncIndexToFirestore(newIndex) {
 
 // ── DAFTAR SR BILA LACI BAHASA HIT isTamat ──
         if (bahasaMode && currentData.drawerId) {
-          // Kalau ini SR session yang baru selesai
           if (srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === currentData.drawerId) {
             selesaiSRUlangan(currentData.drawerId).then(() => {
               srLaciSemasa = null;
             });
           } else {
-            // Laci baru habis dihafal — daftar dalam SR queue
             daftarSRBaru(currentData.drawerId);
           }
         }
 
-        // ── SESSION PLANNER: kira laci bahasa selesai (SR laci pun dikira sama) ──
-        // isTamat bermaksud satu laci penuh selesai — sama ada laci biasa atau SR
+        // ── SESSION PLANNER: isTamat = 1 laci selesai, kira countdown ──
+        // SR laci ada isSRMode:true tapi tetap hit isTamat yang sama
+        // Jadi dikira di sini tanpa syarat tambahan
         if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
           sessionBahasaLaciSelesai();
         }
@@ -6675,22 +6674,25 @@ triggerVibration([100, 50, 100]);
                 }
               }
 
-              // ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
+// ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
               const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].drawerId : null;
               if (laciSelesaiId) {
-                // Kalau ini SR session yang baru selesai
                 if (srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === laciSelesaiId) {
-selesaiSRUlangan(laciSelesaiId).then(() => {
+                  selesaiSRUlangan(laciSelesaiId).then(() => {
                     const fasaSelesai = srLaciSemasa ? srLaciSemasa.fasaSemasa : 0;
                     srLaciSemasa = null;
                     showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR(fasaSelesai)}`, 3000);
                   });
                 } else {
-                  // Laci baru habis dihafal — daftar dalam SR queue
                   daftarSRBaru(laciSelesaiId).then(() => {
                     showToast('⏰ Laci didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
                   });
                 }
+              }
+
+              // ── SESSION PLANNER: fasa 2 habis = 1 laci bahasa selesai ──
+              if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
+                sessionBahasaLaciSelesai();
               }
 
               // Cari index laci seterusnya (isFasaEjaan berikutnya)
