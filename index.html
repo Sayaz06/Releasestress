@@ -16729,12 +16729,14 @@ function semakSessionBlokSelesai() {
 
 // ── BAHASA LACI SELESAI — dipanggil dari sistem bahasa ──
     // Pulangkan true kalau blok dah habis (supaya caller boleh return terus)
-    function sessionBahasaLaciSelesai() {
+function sessionBahasaLaciSelesai() {
       if (!sessionAktif) return false;
       const blok = allSessionBlok[sessionBlokIndex];
       if (!blok || blok.jenis !== 'bahasa') return false;
 
+      console.log('sessionBahasaLaciSelesai dipanggil, countdown sebelum:', sessionBlokCountdown);
       sessionBlokCountdown--;
+      console.log('countdown selepas:', sessionBlokCountdown);
 
       const progressEl = document.getElementById('session-aktif-progress');
       if (progressEl) progressEl.textContent = `Blok ${sessionBlokIndex + 1} / ${allSessionBlok.length} — Baki: ${Math.max(0, sessionBlokCountdown)} laci`;
