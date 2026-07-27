@@ -6503,13 +6503,11 @@ if (learningMode === 2) {
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
-            // ── SESSION PLANNER: kira 1 laci selesai di sini ──
-            // Dipanggil selepas laci habis, sebelum check SR seterusnya
+// ── SESSION PLANNER: kira 1 laci selesai di sini ──
             if (sessionAktif && allSessionBlok[sessionBlokIndex]?.jenis === 'bahasa') {
-              sessionBahasaLaciSelesai();
-              // Kalau countdown habis, sessionBahasaLaciSelesai akan handle beralih
-              // Jangan teruskan ke SR atau laci seterusnya
-              if (sessionBlokCountdown <= 0) return;
+              const blokHabis = sessionBahasaLaciSelesai();
+              // Kalau blok habis, stop — jangan load SR atau laci seterusnya
+              if (blokHabis) return;
             }
 
             // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
@@ -16729,11 +16727,12 @@ function semakSessionBlokSelesai() {
       }
     }
 
-    // ── BAHASA LACI SELESAI — dipanggil dari sistem bahasa ──
+// ── BAHASA LACI SELESAI — dipanggil dari sistem bahasa ──
+    // Pulangkan true kalau blok dah habis (supaya caller boleh return terus)
     function sessionBahasaLaciSelesai() {
-      if (!sessionAktif) return;
+      if (!sessionAktif) return false;
       const blok = allSessionBlok[sessionBlokIndex];
-      if (!blok || blok.jenis !== 'bahasa') return;
+      if (!blok || blok.jenis !== 'bahasa') return false;
 
       sessionBlokCountdown--;
 
@@ -16744,7 +16743,9 @@ function semakSessionBlokSelesai() {
         showToast(`✅ Blok Bahasa selesai! Ke blok seterusnya...`, 2500);
         triggerVibration([100, 50, 100, 50, 200]);
         setTimeout(() => mulaBlokSeterusnya(), 2000);
+        return true; // blok habis
       }
+      return false; // blok belum habis
     }
 
 function mulaBlokSeterusnya() {
