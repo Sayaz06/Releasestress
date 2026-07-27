@@ -1444,9 +1444,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <span>🤖 Arahan AI</span>
           </button>
 
+<button id="btn-go-rutin-fizikal" class="btn btn-secondary" style="border-color: #fb923c; color: #fdba74;">
+            <span>💪 Rutin Fizikal & Kesihatan</span>
+          </button>
           <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
           </button>
+  
 <button id="btn-pembersih" class="btn btn-secondary" style="border-color:#f59e0b;color:#fcd34d;">
             🧹 Pembersih Data Yatim
           </button>
@@ -1473,6 +1477,49 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
       </section>
 
+
+<!-- ══ RUTIN FIZIKAL ══ -->
+<section id="section-rutin-fizikal" class="section">
+  <div class="topbar" style="flex-shrink:0;">
+    <button id="btn-back-home-rutin-fizikal" class="btn btn-secondary btn-sm">← Menu</button>
+    <div style="text-align:right;">
+      <div class="topbar-title" style="color:#fb923c;">💪 Rutin Fizikal</div>
+      <div class="topbar-sub">Tracker kesihatan harian</div>
+    </div>
+  </div>
+
+  <!-- STATS BAR -->
+  <div id="rutin-fizikal-stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;flex-shrink:0;"></div>
+
+  <!-- INFO -->
+  <div style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+    <div style="font-size:0.78rem;font-weight:700;color:#fb923c;margin-bottom:6px;">📌 Cara Guna</div>
+    <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+      • Tambah rutin fizikal anda — air, suplemen, makan, mandi dll<br>
+      • <strong>Checkbox</strong> — satu tap = selesai (berus gigi, mandi)<br>
+      • <strong>Counter</strong> — setiap tap tambah nilai (air 250ml, suplemen 1 biji)<br>
+      • Progress reset setiap tengah malam<br>
+      • Rutin ini boleh dimasukkan dalam <strong>Laci Rutin</strong> countdown
+    </div>
+  </div>
+
+  <button id="btn-add-rutin-fizikal" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#ea580c,#c2410c);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+    + Tambah Rutin Fizikal
+  </button>
+
+  <!-- HISTORY TOGGLE -->
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-shrink:0;">
+    <button id="btn-rf-tab-hari-ini" class="btn btn-sm btn-active" style="flex:1;font-size:0.78rem;padding:8px;">
+      📋 Hari Ini
+    </button>
+    <button id="btn-rf-tab-history" class="btn btn-secondary btn-sm" style="flex:1;font-size:0.78rem;padding:8px;border-color:#fb923c;color:#fdba74;">
+      📅 History
+    </button>
+  </div>
+
+  <div class="list" id="rutin-fizikal-list" style="padding:10px;"></div>
+  <div class="list" id="rutin-fizikal-history-list" style="padding:10px;display:none;"></div>
+</section>
 
 <!-- ══ JOURNAL HUB ══ -->
       <section id="section-journal-hub" class="section">
@@ -4626,8 +4673,9 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       if (sectionJenisKata) sectionJenisKata.classList.remove("active");
       if (sectionBahasaPerkataan) sectionBahasaPerkataan.classList.remove("active");
       if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
-document.getElementById('section-arahan-list')?.classList.remove("active");
+      document.getElementById('section-arahan-list')?.classList.remove("active");
       document.getElementById('section-kerangka')?.classList.remove("active");
+      document.getElementById('section-rutin-fizikal')?.classList.remove("active");
       document.getElementById('section-bacaan-tambahan')?.classList.remove("active");
       document.getElementById('section-bacaan-laci')?.classList.remove("active");
       document.getElementById('section-reminder')?.classList.remove("active");
@@ -7468,6 +7516,7 @@ showSection(secToShow);
         subscribeArahan();
         subscribeBacaanTambahan();
         subscribeReminders();
+        subscribeRutinFizikal();
         mulakanReminderCheck();
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
@@ -15168,9 +15217,15 @@ async function renderSRQueuePage() {
       }
     }
 
+
+    // ── RUTIN FIZIKAL SYSTEM ──
+    let allRutinFizikal = [];
+    let rutinFizikalTabAktif = 'hari-ini';
+    
 // ══════════════════════════════════════════
 // REMINDER SYSTEM
 // ══════════════════════════════════════════
+
 let allReminders = [];
 let currentReminderId = null;
 let reminderCheckInterval = null;
@@ -15614,7 +15669,366 @@ function subscribeReminders() {
   );
 }
 
-// ── START INTERVAL SEMAK REMINDER ──
+// ══════════════════════════════════════════
+    // RUTIN FIZIKAL SYSTEM
+    // ══════════════════════════════════════════
+
+    document.getElementById('btn-go-rutin-fizikal').addEventListener('click', () => {
+      const sec = document.getElementById('section-rutin-fizikal');
+      if (sec) { showSection(sec); renderRutinFizikalList(); loadRutinFizikalStats(); }
+    });
+
+    document.getElementById('btn-back-home-rutin-fizikal').addEventListener('click', () => {
+      showSection(sectionHome);
+    });
+
+    // Tab buttons
+    document.getElementById('btn-rf-tab-hari-ini').addEventListener('click', () => {
+      rutinFizikalTabAktif = 'hari-ini';
+      document.getElementById('btn-rf-tab-hari-ini').classList.add('btn-active');
+      document.getElementById('btn-rf-tab-history').classList.remove('btn-active');
+      document.getElementById('rutin-fizikal-list').style.display = 'block';
+      document.getElementById('rutin-fizikal-history-list').style.display = 'none';
+      renderRutinFizikalList();
+    });
+
+    document.getElementById('btn-rf-tab-history').addEventListener('click', () => {
+      rutinFizikalTabAktif = 'history';
+      document.getElementById('btn-rf-tab-hari-ini').classList.remove('btn-active');
+      document.getElementById('btn-rf-tab-history').classList.add('btn-active');
+      document.getElementById('rutin-fizikal-list').style.display = 'none';
+      document.getElementById('rutin-fizikal-history-list').style.display = 'block';
+      loadRutinFizikalHistory();
+    });
+
+    // Tambah rutin baru
+    document.getElementById('btn-add-rutin-fizikal').addEventListener('click', async () => {
+      if (!currentUser) return;
+
+      const nama = prompt('Nama rutin:\n(Cth: Minum Air, Berus Gigi, Vitamin C, Makan Tengahari, Mandi)');
+      if (!nama || !nama.trim()) return;
+
+      const jenis = confirm(
+        `Pilih jenis rutin untuk "${nama.trim()}":\n\nOK = Counter (tambah nilai setiap tap)\nBatal = Checkbox (satu tap = selesai)`
+      ) ? 'counter' : 'checkbox';
+
+      let unit = '';
+      let nilaiPerTap = 1;
+      let target = 1;
+
+      if (jenis === 'counter') {
+        const unitInput = prompt('Unit pengukuran:\n(Cth: ml, biji, kali, gram)') || 'kali';
+        unit = unitInput.trim();
+        const nilaiInput = prompt(`Berapa ${unit} setiap tap?\n(Cth: 250 untuk air 250ml setiap tap)`);
+        nilaiPerTap = parseFloat(nilaiInput) || 1;
+        const targetInput = prompt(`Target harian (dalam ${unit})?\n(Cth: 2000 untuk 2000ml sehari)`);
+        target = parseFloat(targetInput) || nilaiPerTap;
+      } else {
+        const targetInput = prompt('Berapa kali sehari?\n(Cth: 2 untuk berus gigi 2x sehari)');
+        target = parseInt(targetInput) || 1;
+        unit = 'kali';
+        nilaiPerTap = 1;
+      }
+
+      const EMOJI_MAP = {
+        'air': '💧', 'minum': '💧', 'water': '💧',
+        'gigi': '🪥', 'berus': '🪥',
+        'vitamin': '💊', 'supplement': '💊', 'suplemen': '💊', 'ubat': '💊',
+        'makan': '🍽️', 'sarapan': '🍽️', 'lunch': '🍽️', 'dinner': '🍽️', 'tengahari': '🍽️',
+        'mandi': '🚿', 'shower': '🚿',
+        'senaman': '🏃', 'exercise': '🏃', 'gym': '🏃',
+        'tidur': '😴', 'sleep': '😴',
+        'solat': '🙏', 'prayer': '🙏',
+      };
+
+      const namaLower = nama.trim().toLowerCase();
+      let emoji = '✅';
+      for (const [key, val] of Object.entries(EMOJI_MAP)) {
+        if (namaLower.includes(key)) { emoji = val; break; }
+      }
+
+      await addDoc(collection(db, "users", currentUser.uid, "rutin_fizikal"), {
+        nama: nama.trim(),
+        jenis,
+        unit,
+        nilaiPerTap,
+        target,
+        emoji,
+        aktif: true,
+        createdAt: Date.now()
+      });
+
+      showToast(`✅ "${nama.trim()}" berjaya ditambah!`);
+    });
+
+    // Subscribe Firestore
+    function subscribeRutinFizikal() {
+      if (!currentUser) return;
+      onSnapshot(
+        query(collection(db, "users", currentUser.uid, "rutin_fizikal"), orderBy("createdAt", "asc")),
+        snap => {
+          allRutinFizikal = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const sec = document.getElementById('section-rutin-fizikal');
+          if (sec && sec.classList.contains('active')) {
+            renderRutinFizikalList();
+            loadRutinFizikalStats();
+          }
+        }
+      );
+    }
+
+    // Kunci hari ini
+    function todayKeyRF() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    }
+
+    // Load progress hari ini dari Firestore
+    async function loadProgressHariIni(rutinId) {
+      if (!currentUser) return 0;
+      try {
+        const snap = await getDoc(doc(db, "users", currentUser.uid, "rutin_fizikal_log", `${rutinId}_${todayKeyRF()}`));
+        return snap.exists() ? (snap.data().nilai || 0) : 0;
+      } catch(e) { return 0; }
+    }
+
+    // Simpan progress
+    async function simpanProgressRF(rutinId, nilaiBaru, namaRutin) {
+      if (!currentUser) return;
+      const key = `${rutinId}_${todayKeyRF()}`;
+      await setDoc(doc(db, "users", currentUser.uid, "rutin_fizikal_log", key), {
+        rutinId,
+        namaRutin,
+        nilai: nilaiBaru,
+        dateKey: todayKeyRF(),
+        updatedAt: Date.now()
+      }, { merge: true });
+    }
+
+    // Render senarai rutin hari ini
+    async function renderRutinFizikalList() {
+      const list = document.getElementById('rutin-fizikal-list');
+      if (!list) return;
+      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
+      if (!allRutinFizikal.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada rutin. Tekan "+ Tambah".</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+
+      for (const rutin of allRutinFizikal) {
+        const progress = await loadProgressHariIni(rutin.id);
+        const target = rutin.target || 1;
+        const selesai = progress >= target;
+        const peratus = Math.min(100, Math.round((progress / target) * 100));
+
+        const div = document.createElement('div');
+        div.className = 'drawer-card';
+        div.style.cssText = `border:1px solid ${selesai ? 'rgba(52,211,153,0.5)' : 'rgba(251,146,60,0.3)'};margin-bottom:8px;`;
+
+        const progressBar = rutin.jenis === 'counter' ? `
+          <div style="background:rgba(0,0,0,0.3);border-radius:999px;height:6px;margin:8px 0;overflow:hidden;">
+            <div style="height:100%;width:${peratus}%;background:${selesai ? '#34d399' : '#fb923c'};border-radius:999px;transition:width 0.3s ease;"></div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--subtext);">${progress} / ${target} ${rutin.unit} (${peratus}%)</div>
+        ` : `
+          <div style="font-size:0.72rem;color:var(--subtext);">${progress} / ${target} kali</div>
+        `;
+
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:1.8rem;flex-shrink:0;">${rutin.emoji || '✅'}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                <div style="font-size:0.95rem;font-weight:700;color:var(--text);">${rutin.nama}</div>
+                ${selesai ? '<span style="font-size:0.65rem;background:rgba(52,211,153,0.2);color:#34d399;padding:1px 8px;border-radius:999px;font-weight:700;">✅ SELESAI</span>' : ''}
+              </div>
+              ${progressBar}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
+              <button class="btn-rf-tap btn btn-sm" data-id="${rutin.id}" data-progress="${progress}" data-target="${target}" data-nilai="${rutin.nilaiPerTap}" data-nama="${rutin.nama}" data-jenis="${rutin.jenis}" data-unit="${rutin.unit || 'kali'}"
+                style="background:${selesai ? 'rgba(52,211,153,0.2)' : 'linear-gradient(135deg,#ea580c,#c2410c)'};border:${selesai ? '1px solid #34d399' : 'none'};color:white;padding:8px 14px;border-radius:999px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                ${selesai ? '✓ Done' : rutin.jenis === 'counter' ? `+${rutin.nilaiPerTap}${rutin.unit}` : 'Tap'}
+              </button>
+              <div style="display:flex;gap:4px;">
+                <button class="btn-rf-edit btn btn-secondary btn-sm" data-id="${rutin.id}" style="font-size:0.65rem;padding:2px 8px;">✏️</button>
+                <button class="btn-rf-reset btn btn-secondary btn-sm" data-id="${rutin.id}" data-progress="${progress}" data-nama="${rutin.nama}" style="font-size:0.65rem;padding:2px 8px;color:#f59e0b;border-color:#f59e0b;">↺</button>
+                <button class="btn-rf-del btn btn-secondary btn-sm" data-id="${rutin.id}" data-nama="${rutin.nama}" style="font-size:0.65rem;padding:2px 8px;color:var(--danger);border-color:var(--danger);">✕</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Tap button
+        div.querySelector('.btn-rf-tap').addEventListener('click', async (e) => {
+          const btn = e.currentTarget;
+          const id = btn.dataset.id;
+          const progressSemasa = parseFloat(btn.dataset.progress);
+          const targetVal = parseFloat(btn.dataset.target);
+          const nilaiTap = parseFloat(btn.dataset.nilai);
+          const nama = btn.dataset.nama;
+          const jenis = btn.dataset.jenis;
+          const unit = btn.dataset.unit;
+
+          if (progressSemasa >= targetVal) {
+            showToast(`✅ ${nama} dah selesai hari ini!`); return;
+          }
+
+          const nilaiBaru = Math.min(targetVal, progressSemasa + nilaiTap);
+          await simpanProgressRF(id, nilaiBaru, nama);
+
+          if (nilaiBaru >= targetVal) {
+            showToast(`🎉 ${nama} selesai hari ini! Tahniah!`, 3000);
+            triggerVibration([200, 100, 200]);
+          } else {
+            const baki = targetVal - nilaiBaru;
+            showToast(`${nama}: ${nilaiBaru}${unit} (+${nilaiTap}${unit}) — baki ${baki}${unit}`);
+          }
+
+          renderRutinFizikalList();
+          loadRutinFizikalStats();
+        });
+
+        // Reset progress
+        div.querySelector('.btn-rf-reset').addEventListener('click', async (e) => {
+          const id = e.currentTarget.dataset.id;
+          const nama = e.currentTarget.dataset.nama;
+          if (!confirm(`Reset progress "${nama}" hari ini ke 0?`)) return;
+          await simpanProgressRF(id, 0, nama);
+          showToast(`↺ ${nama} di-reset.`);
+          renderRutinFizikalList();
+          loadRutinFizikalStats();
+        });
+
+        // Edit rutin
+        div.querySelector('.btn-rf-edit').addEventListener('click', async (e) => {
+          const id = e.currentTarget.dataset.id;
+          const rutin = allRutinFizikal.find(r => r.id === id);
+          if (!rutin) return;
+
+          const namaBaru = prompt('Nama rutin:', rutin.nama);
+          if (!namaBaru || !namaBaru.trim()) return;
+
+          const targetBaru = prompt(`Target harian (${rutin.unit}):`, rutin.target);
+          const nilaiTapBaru = rutin.jenis === 'counter'
+            ? prompt(`Nilai setiap tap (${rutin.unit}):`, rutin.nilaiPerTap)
+            : rutin.nilaiPerTap;
+
+          await updateDoc(doc(db, "users", currentUser.uid, "rutin_fizikal", id), {
+            nama: namaBaru.trim(),
+            target: parseFloat(targetBaru) || rutin.target,
+            nilaiPerTap: parseFloat(nilaiTapBaru) || rutin.nilaiPerTap,
+            updatedAt: Date.now()
+          });
+          showToast('✅ Rutin dikemas kini.');
+        });
+
+        // Padam rutin
+        div.querySelector('.btn-rf-del').addEventListener('click', async (e) => {
+          const id = e.currentTarget.dataset.id;
+          const nama = e.currentTarget.dataset.nama;
+          if (!confirm(`Padam "${nama}"? History akan dikekalkan.`)) return;
+          await deleteDoc(doc(db, "users", currentUser.uid, "rutin_fizikal", id));
+          showToast(`🗑️ "${nama}" dipadam.`);
+        });
+
+        list.appendChild(div);
+      }
+    }
+
+    // Stats bar
+    async function loadRutinFizikalStats() {
+      const statsEl = document.getElementById('rutin-fizikal-stats');
+      if (!statsEl || !allRutinFizikal.length) return;
+
+      let selesaiCount = 0;
+      for (const rutin of allRutinFizikal) {
+        const progress = await loadProgressHariIni(rutin.id);
+        if (progress >= rutin.target) selesaiCount++;
+      }
+
+      const total = allRutinFizikal.length;
+      const peratus = Math.round((selesaiCount / total) * 100);
+
+      statsEl.innerHTML = `
+        <div class="chip" style="border-color:#fb923c;color:#fdba74;">✅ ${selesaiCount}/${total} selesai</div>
+        <div class="chip" style="border-color:${peratus === 100 ? '#34d399' : '#fb923c'};color:${peratus === 100 ? '#6ee7b7' : '#fdba74'};">${peratus}% lengkap</div>
+        <div class="chip" style="border-color:var(--border-soft);color:var(--subtext);">📅 ${todayKeyRF()}</div>
+      `;
+    }
+
+    // History 7 hari
+    async function loadRutinFizikalHistory() {
+      const list = document.getElementById('rutin-fizikal-history-list');
+      if (!list || !currentUser) return;
+      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+
+      try {
+        const snap = await getDocs(
+          query(collection(db, "users", currentUser.uid, "rutin_fizikal_log"), orderBy("dateKey", "desc"))
+        );
+
+        if (snap.empty) {
+          list.innerHTML = '<div class="empty-state">Belum ada history.</div>';
+          return;
+        }
+
+        // Kumpul ikut tarikh
+        const byDate = {};
+        snap.docs.forEach(d => {
+          const data = d.data();
+          const key = data.dateKey;
+          if (!byDate[key]) byDate[key] = [];
+          byDate[key].push(data);
+        });
+
+        list.innerHTML = '';
+        Object.entries(byDate)
+          .sort((a, b) => b[0].localeCompare(a[0]))
+          .slice(0, 30)
+          .forEach(([dateKey, items]) => {
+            const [y, m, d] = dateKey.split('-');
+            const dateObj = new Date(Number(y), Number(m)-1, Number(d));
+            const { label } = formatDateLabel(dateObj);
+
+            const selesai = items.filter(i => {
+              const rutin = allRutinFizikal.find(r => r.id === i.rutinId);
+              return rutin && i.nilai >= rutin.target;
+            }).length;
+
+            const card = document.createElement('div');
+            card.className = 'drawer-card';
+            card.style.cssText = 'margin-bottom:8px;';
+            card.innerHTML = `
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="font-size:0.85rem;font-weight:700;color:var(--text);">${label}</div>
+                <span class="chip" style="border-color:#fb923c;color:#fdba74;">${selesai}/${items.length} selesai</span>
+              </div>
+              ${items.map(i => {
+                const rutin = allRutinFizikal.find(r => r.id === i.rutinId);
+                const target = rutin ? rutin.target : 1;
+                const unit = rutin ? rutin.unit : 'kali';
+                const emoji = rutin ? rutin.emoji : '✅';
+                const done = i.nilai >= target;
+                return `
+                  <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:1rem;">${emoji}</span>
+                    <span style="font-size:0.82rem;flex:1;">${i.namaRutin || 'Rutin'}</span>
+                    <span style="font-size:0.75rem;color:${done ? '#34d399' : '#f87171'};font-weight:600;">${i.nilai}/${target} ${unit} ${done ? '✅' : '⬜'}</span>
+                  </div>
+                `;
+              }).join('')}
+            `;
+            list.appendChild(card);
+          });
+      } catch(e) {
+        list.innerHTML = `<div class="empty-state">Gagal: ${e.message}</div>`;
+      }
+    }
+
+    // ── START INTERVAL SEMAK REMINDER ──
 function mulakanReminderCheck() {
   if (reminderCheckInterval) clearInterval(reminderCheckInterval);
   // Semak setiap 1 minit
