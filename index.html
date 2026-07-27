@@ -10936,9 +10936,7 @@ srModeAktif = false;
           }
 
 } else {
-} // tutup if window._sessionSkipSR
-
-          // OFF bahasa — simpan index semasa supaya ON balik kekal di tempat sama
+// OFF bahasa — simpan index semasa supaya ON balik kekal di tempat sama
           if (activeGlobalBahasaId !== 'default' && currentUser) {
             updateDoc(doc(db, "users", currentUser.uid, "bahasa_perkataan", activeGlobalBahasaId), {
               lastIndex: currentFactIndex
