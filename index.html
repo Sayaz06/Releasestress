@@ -10858,34 +10858,7 @@ const btnToggleBahasa = document.getElementById('btn-toggle-bahasa');
 
         if (bahasaMode) {
           // Kalau dari session planner — skip SR check
-if (window._sessionSkipSR) {
-            srModeAktif = false;
-            srLaciSemasa = null;
-            srQueue = [];
-            srSemuaSelesai = false;
-            window._bahasaNextLaciHandler = null;
-            factMode = false; routineMode = false;
-            btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
-            btnToggleRutin.textContent = "Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
-            ['quran','doa','hadis'].forEach(s => {
-              const b = document.getElementById(`btn-toggle-${s}`);
-              if(b){b.textContent=`${getModeLabel(s)}: OFF`;b.classList.remove("btn-active");}
-            });
-            learningMode = 2;
-            btnToggleMode.textContent = "Mode: Rest";
-            btnToggleMode.style.display = "none";
-            btnToggleMainRestMax.style.display = 'none';
-            comboStep = 0; isFlipped = false; isBlocked = false;
-            bahasaEjaanCount = 5;
-            bahasaRestCount = REST_CYCLES[bahasaRestCycleIdx].fasa1;
-            bahasaRestPhase = 1;
-            factDisplayBox.classList.add("show");
-            const btnSkip = document.getElementById('btn-skip-bahasa-laci');
-            if (btnSkip) btnSkip.style.display = 'inline-flex';
-            rebuildBahasa();
-            updateTasbihUI();
-            return;
-          } // ← penutup if _sessionSkipSR
+// (session skip SR dibuang — SR jalan seperti biasa dalam session)
           // Matikan fakta/rutin lain
           factMode = false; routineMode = false;
           btnToggleFact.textContent = "Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
@@ -16574,12 +16547,9 @@ function subscribeReminders() {
           btnToggleRutin.click();
           break;
 
-        case 'bahasa':
-          // Tekan button Bahasa: ON — tapi skip SR untuk session
-          // Guna flag supaya bahasa ON tanpa check SR
-          window._sessionSkipSR = true;
+case 'bahasa':
+          // Tekan button Bahasa: ON — SR tetap jalan seperti biasa
           document.getElementById('btn-toggle-bahasa')?.click();
-          window._sessionSkipSR = false;
           break;
 
 case 'quran':
