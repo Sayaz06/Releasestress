@@ -6561,17 +6561,18 @@ if (rPhase === 1) {
               updateMainPlus5Btn();
 
               // ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
-              const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].drawerId : null;
+const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].drawerId : null;
               const isSRSelesai = srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === laciSelesaiId;
               const fasaSRSelesai = srLaciSemasa ? srLaciSemasa.fasaSemasa : 0;
 
               if (laciSelesaiId) {
                 if (isSRSelesai) {
                   // SR session selesai — simpan dulu SEBELUM render tamat
-                  await selesaiSRUlangan(laciSelesaiId);
-                  srQueueIds.delete(laciSelesaiId);
-                  srLaciSemasa = null;
-                  showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR(fasaSRSelesai)}`, 3000);
+                  selesaiSRUlangan(laciSelesaiId).then(() => {
+                    srQueueIds.delete(laciSelesaiId);
+                    srLaciSemasa = null;
+                    showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR(fasaSRSelesai)}`, 3000);
+                  });
                 } else {
                   // Laci biasa habis — daftar SR
                   // Simpan index sebelum SR ambil alih (untuk Queue)
