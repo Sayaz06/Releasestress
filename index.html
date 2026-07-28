@@ -5374,6 +5374,13 @@ function decrementTasbih() {
       if (document.getElementById('tips-sebutan-overlay')?.style.display === 'flex') return;
       if (document.getElementById('tips-fakta-overlay')?.style.display === 'flex') return;
       if (document.getElementById('reminder-overlay')?.style.display === 'flex') return;
+      // Intersep tap untuk retrieval practice Queue
+      if (window._queueRetrievalHandler) {
+        const handler = window._queueRetrievalHandler;
+        window._queueRetrievalHandler = null;
+        handler();
+        return;
+      }
       // Intersep tap untuk bahasa "laci seterusnya"
       if (window._bahasaNextLaciHandler) {
         const handler = window._bahasaNextLaciHandler;
@@ -5466,8 +5473,35 @@ if (patutPopup) {
                     quranPopupSuisLock = true;
                     activateRoutineMode('quran'); // OFF Quran
 
+// ── RETRIEVAL PRACTICE — papar mesej, tunggu tap user ──
+                    factDisplayBox.classList.add('show');
+                    factTitleEl.textContent = '[ Latihan Ingatan ]';
+                    factContentEl.textContent = 'Cuba sebutkan ayat yang awak hafal sebelum awak membaca 10 ayat Al-Quran sebentar tadi...';
+                    factContentEl.style.fontSize = '1rem';
+                    factContentEl.style.fontFamily = 'inherit';
+                    factContentEl.style.direction = 'ltr';
+                    factContentEl.style.textAlign = 'left';
+                    factContentEl.style.color = '#34d399';
+                    factHintEl.textContent = '(Tap skrin untuk teruskan ke bahasa)';
+                    factHintEl.style.display = 'block';
+                    btnSpeak.style.display = 'none';
+
+                    // Tunggu tap user
+                    await new Promise(resolve => {
+                      window._queueRetrievalHandler = resolve;
+                    });
+
+                    // Reset style factbox
+                    window._queueRetrievalHandler = null;
+                    factContentEl.style.fontSize = '';
+                    factContentEl.style.fontFamily = '';
+                    factContentEl.style.direction = '';
+                    factContentEl.style.textAlign = '';
+                    factContentEl.style.color = '';
+                    factHintEl.style.display = '';
+
                     // Tunggu sekejap sebelum ON bahasa — bagi sistem settle
-                    await new Promise(resolve => setTimeout(resolve, 800));
+                    await new Promise(resolve => setTimeout(resolve, 500));
 
                     // ON Bahasa semula
                     await refreshSRQueueIds();
