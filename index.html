@@ -5459,12 +5459,15 @@ const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSu
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
 
-                if (patutPopup) {
+if (patutPopup) {
                   if (queueMode) {
                     // ── LANDASAN C: Queue ON → OFF Quran → ON Bahasa terus ──
                     quranPopupSuisOn = false;
                     quranPopupSuisLock = true;
                     activateRoutineMode('quran'); // OFF Quran
+
+                    // Tunggu sekejap sebelum ON bahasa — bagi sistem settle
+                    await new Promise(resolve => setTimeout(resolve, 800));
 
                     // ON Bahasa semula
                     await refreshSRQueueIds();
@@ -10605,7 +10608,7 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
         isSRMode: true
       });
 
-      // Replace allFacts dengan SR facts
+// Replace allFacts dengan SR facts
       allFacts = factsBaru;
       currentFactIndex = 0;
       bahasaEjaanCount = 5;
@@ -10614,6 +10617,18 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
       comboStep = 0;
       isFlipped = false;
       isBlocked = false;
+      fsShowingMaksud = false;
+      learningMode = 2;
+      window._bahasaNextLaciHandler = null;
+      // Tutup fullscreen kalau terbuka
+      const fsOv = document.getElementById('fullscreen-fact-overlay');
+      if (fsOv && fsOv.classList.contains('show')) {
+        fsOv.classList.remove('show');
+      }
+      // Pastikan factMode tidak aktif
+      factMode = false;
+      btnToggleFact.textContent = 'Fakta: OFF';
+      btnToggleFact.classList.remove('btn-active');
 
       // Reset input box — SR mode tak perlu input ayat baru
       const joggingInputBeforeEl = document.getElementById('jogging-input-before');
