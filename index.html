@@ -5470,14 +5470,16 @@ const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSu
                     await refreshSRQueueIds();
                     const adaSR = await checkSRQueue();
 
-                    if (adaSR && muatSRLaciSeterusnya()) {
+if (adaSR && muatSRLaciSeterusnya()) {
                       // Ada SR overdue — papar SR dulu
-                      tunjukPopupSR(srLaciSemasa);
+                      // Set bahasaMode dulu SEBELUM muat SR
                       bahasaMode = true;
                       const btnBhs = document.getElementById('btn-toggle-bahasa');
                       if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
                       factDisplayBox.classList.add('show');
-                      rebuildBahasa();
+                      // Pastikan allBahasaDrawers sedia dulu untuk SR
+                      // JANGAN panggil rebuildBahasa() — ia akan overwrite allFacts
+                      tunjukPopupSR(srLaciSemasa);
                       await muatLaciSRKeDalamFacts(srLaciSemasa);
                     } else {
                       // Tiada SR — sambung dari index tersimpan
@@ -5486,10 +5488,15 @@ const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSu
                       const btnBhs = document.getElementById('btn-toggle-bahasa');
                       if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
                       factDisplayBox.classList.add('show');
+                      // Rebuild bahasa untuk laci biasa
                       rebuildBahasa();
-                      // Pulihkan index tersimpan
-                      currentFactIndex = queueBahasaSavedIndex;
-                      renderCurrentFact();
+                      // Pulihkan index tersimpan selepas rebuild
+                      setTimeout(() => {
+                        currentFactIndex = queueBahasaSavedIndex;
+                        renderCurrentFact();
+                        updateTasbihUI();
+                      }, 100);
+                      return;
                     }
                     updateTasbihUI();
                   } else {
@@ -11060,6 +11067,8 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
 
 function rebuildBahasa() {
       if (!bahasaMode) return;
+      // Jangan rebuild kalau SR sedang aktif — elak overwrite allFacts SR
+      if (srModeAktif && srLaciSemasa) return;
       // Reset ejaan count bila rebuild
       bahasaEjaanCount = 5;
       const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
