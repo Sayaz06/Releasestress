@@ -1878,6 +1878,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
             <button id="btn-go-sr-queue" class="btn btn-secondary btn-sm" style="border-color:#fcd34d;color:#fcd34d;">⏰ SR Queue</button>
             <button id="btn-toggle-rehat" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">💤 Rehat: ON</button>
+            <button id="btn-toggle-queue" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">🔄 Queue: OFF</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 5r5</button>
             <button id="btn-main-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
@@ -3196,7 +3197,10 @@ function bukaBahasaRehatPopup(callback) {
     }
 
 // ── TOGGLE REHAT ──
+// ── TOGGLE REHAT ──
     let rehatMode = true; // Default: ON, reset setiap buka app
+    let queueMode = false;
+    let queueBahasaSavedIndex = 0;
 
     document.getElementById('btn-toggle-rehat').addEventListener('click', () => {
       rehatMode = !rehatMode;
@@ -3208,6 +3212,58 @@ function bukaBahasaRehatPopup(callback) {
       showToast(`💤 Rehat ${rehatMode ? 'ON — video rest & peraturan aktif' : 'OFF — terus ke fasa seterusnya'}`, 3000);
     });
 
+    // ── TOGGLE QUEUE ──
+    const QUEUE_BLOCK_IDS = [
+      'btn-go-subjects','btn-go-routine-times','btn-go-bahasa-times',
+      'btn-go-quran-times','btn-go-doa-times','btn-go-hadis-times',
+      'btn-go-sr-queue','btn-toggle-bahasa','btn-toggle-quran',
+      'btn-toggle-rutin','btn-toggle-fact','btn-toggle-doa',
+      'btn-toggle-hadis','btn-toggle-mode','btn-back-home-from-tasbih'
+    ];
+
+    function applyQueueBlock(isOn) {
+      QUEUE_BLOCK_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (isOn) {
+          el.setAttribute('data-queue-disabled', 'true');
+          el.style.opacity = '0.35';
+          el.style.pointerEvents = 'none';
+          el.style.cursor = 'not-allowed';
+        } else {
+          el.removeAttribute('data-queue-disabled');
+          el.style.opacity = '';
+          el.style.pointerEvents = '';
+          el.style.cursor = '';
+        }
+      });
+    }
+
+    document.getElementById('btn-toggle-queue').addEventListener('click', () => {
+      queueMode = !queueMode;
+      const btn = document.getElementById('btn-toggle-queue');
+      btn.textContent = `🔄 Queue: ${queueMode ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('btn-active', queueMode);
+      btn.style.color = queueMode ? 'white' : '#34d399';
+      btn.style.borderColor = queueMode ? 'transparent' : '#34d399';
+
+      applyQueueBlock(queueMode);
+
+      if (queueMode) {
+        // Bila ON queue — pastikan bahasa aktif
+        if (!bahasaMode) {
+          showToast('🔄 Queue ON — sila ON bahasa untuk mula.', 4000);
+        } else {
+          // Simpan index semasa sebagai saved index
+          queueBahasaSavedIndex = currentFactIndex;
+          showToast('🔄 Queue ON — Bahasa → Quran → Bahasa (loop)', 4000);
+        }
+      } else {
+        queueBahasaSavedIndex = 0;
+        showToast('🔄 Queue OFF', 2000);
+      }
+    });
+    
     // MUZIK GLOBAL
     const bgMusic = new Audio('backgroundmusic.mp3');
     bgMusic.loop = true;
@@ -5386,18 +5442,54 @@ if (isFlipKeMaksud) {
                 quranPopupSuisOn = true;
               }
 
-              const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
+const patutPopup = ayatUntukSave % 10 === 0 && quranPopupSuisOn && !quranPopupSuisLock;
 
               console.log(`ayat:${ayatUntukSave} mod10:${ayatMod10} suisOn:${quranPopupSuisOn} lock:${quranPopupSuisLock} patutPopup:${patutPopup}`);
 
               quranAyatSemasa = ayatUntukSave;
               quranSurahSemasa = surahUntukSave;
-              saveQuranSession().then(() => {
+              saveQuranSession().then(async () => {
                 quranSessionTapCount = 0;
                 quranSessionStartTime = null;
                 quranSessionLastTapTime = null;
+
                 if (patutPopup) {
-                  setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
+                  if (queueMode) {
+                    // ── LANDASAN C: Queue ON → OFF Quran → ON Bahasa terus ──
+                    quranPopupSuisOn = false;
+                    quranPopupSuisLock = true;
+                    activateRoutineMode('quran'); // OFF Quran
+
+                    // ON Bahasa semula
+                    await refreshSRQueueIds();
+                    const adaSR = await checkSRQueue();
+
+                    if (adaSR && muatSRLaciSeterusnya()) {
+                      // Ada SR overdue — papar SR dulu
+                      tunjukPopupSR(srLaciSemasa);
+                      bahasaMode = true;
+                      const btnBhs = document.getElementById('btn-toggle-bahasa');
+                      if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
+                      factDisplayBox.classList.add('show');
+                      rebuildBahasa();
+                      await muatLaciSRKeDalamFacts(srLaciSemasa);
+                    } else {
+                      // Tiada SR — sambung dari index tersimpan
+                      srSemuaSelesai = false;
+                      bahasaMode = true;
+                      const btnBhs = document.getElementById('btn-toggle-bahasa');
+                      if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
+                      factDisplayBox.classList.add('show');
+                      rebuildBahasa();
+                      // Pulihkan index tersimpan
+                      currentFactIndex = queueBahasaSavedIndex;
+                      renderCurrentFact();
+                    }
+                    updateTasbihUI();
+                  } else {
+                    // Flow biasa — popup keluar
+                    setTimeout(() => bukaPopupRehatFullscreen(ayatUntukSave), 50);
+                  }
                 }
               });
             }
@@ -6470,16 +6562,22 @@ if (rPhase === 1) {
 
               // ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
               const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].drawerId : null;
+              const isSRSelesai = srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === laciSelesaiId;
+              const fasaSRSelesai = srLaciSemasa ? srLaciSemasa.fasaSemasa : 0;
+
               if (laciSelesaiId) {
-                // Kalau ini SR session yang baru selesai
-                if (srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === laciSelesaiId) {
-selesaiSRUlangan(laciSelesaiId).then(() => {
-                    const fasaSelesai = srLaciSemasa ? srLaciSemasa.fasaSemasa : 0;
-                    srLaciSemasa = null;
-                    showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR(fasaSelesai)}`, 3000);
-                  });
+                if (isSRSelesai) {
+                  // SR session selesai — simpan dulu SEBELUM render tamat
+                  await selesaiSRUlangan(laciSelesaiId);
+                  srQueueIds.delete(laciSelesaiId);
+                  srLaciSemasa = null;
+                  showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR(fasaSRSelesai)}`, 3000);
                 } else {
-                  // Laci baru habis dihafal — daftar dalam SR queue
+                  // Laci biasa habis — daftar SR
+                  // Simpan index sebelum SR ambil alih (untuk Queue)
+                  if (queueMode) {
+                    queueBahasaSavedIndex = currentFactIndex;
+                  }
                   daftarSRBaru(laciSelesaiId).then(() => {
                     showToast('⏰ Laci didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
                   });
@@ -6508,9 +6606,23 @@ selesaiSRUlangan(laciSelesaiId).then(() => {
 setTimeout(async () => {
                 isBlocked = false;
                 // Override cycleFact untuk 1 tap seterusnya → pergi laci + popup
-                const tapSeterusnya = async () => {
-                  // ── CHECK SR QUEUE SEBELUM KE LACI SETERUSNYA ──
-                  // Jangan check SR kalau flag semuaSelesai aktif (elak SR terakhir berulang)
+const tapSeterusnya = async () => {
+                  // ── QUEUE MODE: terus ON Quran tanpa popup ──
+                  if (queueMode) {
+                    // Simpan index laci biasa seterusnya
+                    queueBahasaSavedIndex = targetIdx;
+                    srSemuaSelesai = false;
+                    srLaciSemasa = null;
+                    // Terus ON Quran
+                    bahasaMode = false;
+                    const btnBhs = document.getElementById('btn-toggle-bahasa');
+                    if (btnBhs) { btnBhs.textContent = '📝 Bahasa: OFF'; btnBhs.classList.remove('btn-active'); }
+                    activateRoutineMode('quran');
+                    return;
+                  }
+
+                  // ── FLOW BIASA ──
+                  // CHECK SR QUEUE SEBELUM KE LACI SETERUSNYA
                   if (!srSemuaSelesai) {
                     const adaSR = await checkSRQueue();
                     if (adaSR && muatSRLaciSeterusnya()) {
