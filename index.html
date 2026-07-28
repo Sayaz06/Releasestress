@@ -3239,27 +3239,33 @@ function bukaBahasaRehatPopup(callback) {
       });
     }
 
-    document.getElementById('btn-toggle-queue').addEventListener('click', () => {
-      queueMode = !queueMode;
+document.getElementById('btn-toggle-queue').addEventListener('click', () => {
       const btn = document.getElementById('btn-toggle-queue');
-      btn.textContent = `🔄 Queue: ${queueMode ? 'ON' : 'OFF'}`;
-      btn.classList.toggle('btn-active', queueMode);
-      btn.style.color = queueMode ? 'white' : '#34d399';
-      btn.style.borderColor = queueMode ? 'transparent' : '#34d399';
 
-      applyQueueBlock(queueMode);
-
-      if (queueMode) {
-        // Bila ON queue — pastikan bahasa aktif
+      if (!queueMode) {
+        // Cuba ON Queue — semak bahasa dulu
         if (!bahasaMode) {
-          showToast('🔄 Queue ON — sila ON bahasa untuk mula.', 4000);
-        } else {
-          // Simpan index semasa sebagai saved index
-          queueBahasaSavedIndex = currentFactIndex;
-          showToast('🔄 Queue ON — Bahasa → Quran → Bahasa (loop)', 4000);
+          showToast('⚠️ Sila ON Bahasa dahulu sebelum aktifkan Queue.', 4000);
+          return; // Keluar terus, tiada perubahan
         }
+        // Bahasa aktif — boleh ON Queue
+        queueMode = true;
+        queueBahasaSavedIndex = currentFactIndex;
+        btn.textContent = '🔄 Queue: ON';
+        btn.classList.add('btn-active');
+        btn.style.color = 'white';
+        btn.style.borderColor = 'transparent';
+        applyQueueBlock(true);
+        showToast('🔄 Queue ON — Bahasa → Quran → Bahasa (loop)', 4000);
       } else {
+        // OFF Queue
+        queueMode = false;
         queueBahasaSavedIndex = 0;
+        btn.textContent = '🔄 Queue: OFF';
+        btn.classList.remove('btn-active');
+        btn.style.color = '#34d399';
+        btn.style.borderColor = '#34d399';
+        applyQueueBlock(false);
         showToast('🔄 Queue OFF', 2000);
       }
     });
