@@ -3242,13 +3242,51 @@ function bukaBahasaRehatPopup(callback) {
 document.getElementById('btn-toggle-queue').addEventListener('click', () => {
       const btn = document.getElementById('btn-toggle-queue');
 
-      if (!queueMode) {
-        // Cuba ON Queue — semak bahasa dulu
+if (!queueMode) {
+        // Cuba ON Queue — auto ON bahasa kalau belum on
         if (!bahasaMode) {
-          showToast('⚠️ Sila ON Bahasa dahulu sebelum aktifkan Queue.', 4000);
-          return; // Keluar terus, tiada perubahan
+          // Auto ON bahasa
+          const btnBhs = document.getElementById('btn-toggle-bahasa');
+          bahasaMode = true;
+          factMode = false;
+          routineMode = false;
+          btnToggleFact.textContent = 'Fakta: OFF';
+          btnToggleFact.classList.remove('btn-active');
+          btnToggleRutin.textContent = 'Rutin: OFF';
+          btnToggleRutin.classList.remove('btn-active');
+          ['quran','doa','hadis'].forEach(s => {
+            const b = document.getElementById(`btn-toggle-${s}`);
+            if(b){ b.textContent=`${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
+          });
+          if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
+          learningMode = 2;
+          btnToggleMode.textContent = 'Mode: Rest';
+          btnToggleMode.style.display = 'none';
+          comboStep = 0;
+          isFlipped = false;
+          isBlocked = false;
+          srModeAktif = false;
+          srLaciSemasa = null;
+          srQueue = [];
+          srSemuaSelesai = false;
+          window._bahasaNextLaciHandler = null;
+          factDisplayBox.classList.add('show');
+          const btnSkip = document.getElementById('btn-skip-bahasa-laci');
+          if (btnSkip) btnSkip.style.display = 'inline-flex';
+          rebuildBahasa();
         }
-        // Bahasa aktif — boleh ON Queue
+
+        // Auto OFF rehat
+        rehatMode = false;
+        const btnRehat = document.getElementById('btn-toggle-rehat');
+        if (btnRehat) {
+          btnRehat.textContent = '💤 Rehat: OFF';
+          btnRehat.classList.remove('btn-active');
+          btnRehat.style.color = 'var(--subtext)';
+          btnRehat.style.borderColor = 'var(--border-mid)';
+        }
+
+        // ON Queue
         queueMode = true;
         queueBahasaSavedIndex = currentFactIndex;
         btn.textContent = '🔄 Queue: ON';
@@ -3257,16 +3295,26 @@ document.getElementById('btn-toggle-queue').addEventListener('click', () => {
         btn.style.borderColor = 'transparent';
         applyQueueBlock(true);
         showToast('🔄 Queue ON — Bahasa → Quran → Bahasa (loop)', 4000);
+        updateTasbihUI();
       } else {
-        // OFF Queue
+        // OFF Queue — restore rehat ke ON
         queueMode = false;
         queueBahasaSavedIndex = 0;
+        rehatMode = true;
+        const btnRehat = document.getElementById('btn-toggle-rehat');
+        if (btnRehat) {
+          btnRehat.textContent = '💤 Rehat: ON';
+          btnRehat.classList.add('btn-active');
+          btnRehat.style.color = '#c4b5fd';
+          btnRehat.style.borderColor = '#a78bfa';
+        }
         btn.textContent = '🔄 Queue: OFF';
         btn.classList.remove('btn-active');
         btn.style.color = '#34d399';
         btn.style.borderColor = '#34d399';
         applyQueueBlock(false);
         showToast('🔄 Queue OFF', 2000);
+        updateTasbihUI();
       }
     });
     
