@@ -3270,10 +3270,31 @@ if (!queueMode) {
           srQueue = [];
           srSemuaSelesai = false;
           window._bahasaNextLaciHandler = null;
-          factDisplayBox.classList.add('show');
+factDisplayBox.classList.add('show');
           const btnSkip = document.getElementById('btn-skip-bahasa-laci');
           if (btnSkip) btnSkip.style.display = 'inline-flex';
-          rebuildBahasa();
+
+          // Block dulu, bagi masa sistem settle
+          isBlocked = true;
+          factTitleEl.textContent = '[ Memuat... ]';
+          factContentEl.textContent = '⏳ Menyemak ulangan SR...';
+          factContentEl.style.color = '#fcd34d';
+
+          setTimeout(async () => {
+            factContentEl.style.color = '';
+            await refreshSRQueueIds();
+            const adaSR = await checkSRQueue();
+
+            if (adaSR && muatSRLaciSeterusnya()) {
+              tunjukPopupSR(srLaciSemasa);
+              await muatLaciSRKeDalamFacts(srLaciSemasa);
+            } else {
+              srSemuaSelesai = false;
+              rebuildBahasa();
+            }
+            isBlocked = false;
+            updateTasbihUI();
+          }, 1200);
         }
 
         // Auto OFF rehat
