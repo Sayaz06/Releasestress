@@ -3315,19 +3315,119 @@ function bukaBahasaRehatPopup(callback) {
     let rehatMode = true; // Default: ON, reset setiap buka app
     let queueMode = false;
     let queueBahasaSavedIndex = 0;
-    let joggingQueueMode = false;
+let joggingQueueMode = false;
     let allJoggingMotivasi = [];
     let currentJoggingMotivasiIdx = 0;
     let joggingMotivasiFlipped = false;
-    let perjanjianQueueMode = false;
-    let allPerjanjian = [];
-    let currentPerjanjianIdx = 0;
-    let perjanjianFlipped = false;
     let globalWallpaperUrl = '';
-    let globalWallpaperType = ''; // 'image' atau 'video'
-    let globalWallpaperRate = 1;  // playback rate
+    let globalWallpaperType = '';
+    let globalWallpaperRate = 1;
 
     const wallpaperVideoEl = document.getElementById('wallpaper-video-el');
+
+    function applyWallpaper(url, type, rate) {
+      const sec = document.getElementById('section-tasbih');
+      const card = document.querySelector('.card');
+
+      if (url && type === 'video') {
+        // Reset gambar
+        if (sec) {
+          sec.style.backgroundImage = '';
+          sec.style.backgroundSize = '';
+          sec.style.backgroundPosition = '';
+          sec.style.backgroundRepeat = '';
+        }
+        // Apply video
+        wallpaperVideoEl.src = url;
+        wallpaperVideoEl.playbackRate = rate || 1;
+        wallpaperVideoEl.style.cssText = `
+          display:block;position:fixed;top:0;left:0;
+          width:100vw;height:100vh;object-fit:cover;
+          z-index:-1;pointer-events:none;
+        `;
+        wallpaperVideoEl.play().catch(() => {
+          document.addEventListener('touchstart', () => {
+            wallpaperVideoEl.play().catch(() => {});
+          }, { once: true });
+        });
+        if (card) {
+          card.style.background = 'rgba(2,6,23,0.75)';
+          card.style.backdropFilter = 'blur(12px)';
+        }
+        updateWallpaperStatusBar(`🎬 Video aktif — ${rate || 1}x`);
+        document.getElementById('btn-padam-wallpaper').style.display = 'flex';
+        document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
+        document.getElementById('wallpaper-playback-section').style.display = 'block';
+        document.querySelectorAll('.btn-playback-rate').forEach(b => {
+          b.classList.toggle('btn-active', parseFloat(b.getAttribute('data-rate')) === (rate || 1));
+        });
+
+      } else if (url && type === 'image') {
+        // Reset video
+        wallpaperVideoEl.pause();
+        wallpaperVideoEl.src = '';
+        wallpaperVideoEl.style.cssText = 'display:none;';
+        // Apply gambar — sama macam code asal yang berfungsi
+        if (sec) {
+          sec.style.backgroundImage = `url('${url}')`;
+          sec.style.backgroundSize = 'cover';
+          sec.style.backgroundPosition = 'center';
+          sec.style.backgroundRepeat = 'no-repeat';
+        }
+        if (card) {
+          card.style.background = 'rgba(2,6,23,0.75)';
+          card.style.backdropFilter = 'blur(12px)';
+        }
+        updateWallpaperStatusBar('📷 Gambar aktif');
+        document.getElementById('btn-padam-wallpaper').style.display = 'flex';
+        document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
+        document.getElementById('wallpaper-playback-section').style.display = 'none';
+
+      } else {
+        // Reset semua
+        wallpaperVideoEl.pause();
+        wallpaperVideoEl.src = '';
+        wallpaperVideoEl.style.cssText = 'display:none;';
+        if (sec) {
+          sec.style.backgroundImage = '';
+          sec.style.backgroundSize = '';
+          sec.style.backgroundPosition = '';
+          sec.style.backgroundRepeat = '';
+        }
+        if (card) {
+          card.style.background = '';
+          card.style.backdropFilter = '';
+        }
+        updateWallpaperStatusBar('Tiada wallpaper');
+        document.getElementById('btn-padam-wallpaper').style.display = 'none';
+        document.getElementById('btn-set-wallpaper').textContent = '🖼️ Wallpaper';
+        document.getElementById('wallpaper-playback-section').style.display = 'none';
+      }
+    }
+
+    function updateWallpaperStatusBar(msg) {
+      const el = document.getElementById('wallpaper-status-bar');
+      if (el) el.textContent = msg;
+    }
+
+    function subscribeWallpaper() {
+      if (!currentUser) return;
+      const refSetting = doc(db, "users", currentUser.uid, "settings", "preferences");
+      onSnapshot(refSetting, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          globalWallpaperUrl  = data.wallpaperUrl  || '';
+          globalWallpaperType = data.wallpaperType || 'image';
+          globalWallpaperRate = data.wallpaperRate || 1;
+          applyWallpaper(globalWallpaperUrl, globalWallpaperType, globalWallpaperRate);
+        } else {
+          globalWallpaperUrl = '';
+          globalWallpaperType = '';
+          globalWallpaperRate = 1;
+          applyWallpaper('', '', 1);
+        }
+      });
+    }
 
 function applyWallpaper(url, type, rate) {
       const card = document.querySelector('.card');
