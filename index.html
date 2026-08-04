@@ -1430,9 +1430,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
     </div>
   </div>
 <!-- VIDEO WALLPAPER BACKGROUND -->
-  <video id="wallpaper-video-el" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;" muted loop playsinline></video>
+  <video id="wallpaper-video-el" style="display:none;" muted loop playsinline></video>
 
-  <div class="app-shell" style="position:relative;z-index:1;">
+  <div class="app-shell">
     <div class="card">
 
       <div id="toast-notification">Topik Aktif: ...</div>
@@ -3330,28 +3330,26 @@ function bukaBahasaRehatPopup(callback) {
     const wallpaperVideoEl = document.getElementById('wallpaper-video-el');
 
 function applyWallpaper(url, type, rate) {
-      const sec = document.getElementById('section-tasbih');
       const card = document.querySelector('.card');
+      const appShell = document.querySelector('.app-shell');
 
       if (url && type === 'image') {
         // Padam video dulu
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
         wallpaperVideoEl.style.display = 'none';
-        // Apply gambar pada section-tasbih
-        if (sec) {
-          sec.style.backgroundImage = `url('${url}')`;
-          sec.style.backgroundSize = 'cover';
-          sec.style.backgroundPosition = 'center';
-          sec.style.backgroundRepeat = 'no-repeat';
-          sec.style.borderRadius = '18px';
-          sec.style.overflow = 'hidden';
-        }
+        // Apply gambar pada body — penuh skrin
+        document.body.style.backgroundImage = `url('${url}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundRepeat = 'no-repeat';
+        document.body.style.backgroundAttachment = 'fixed';
+        // Transparent card supaya gambar nampak
         if (card) {
-          card.style.background = 'rgba(2,6,23,0.0)';
-          card.style.backdropFilter = 'none';
-          card.style.boxShadow = 'none';
-          card.style.border = 'none';
+          card.style.background = 'rgba(2,6,23,0.55)';
+          card.style.backdropFilter = 'blur(2px)';
+          card.style.boxShadow = '';
+          card.style.border = '';
         }
         updateWallpaperStatusBar('📷 Gambar aktif');
         document.getElementById('btn-padam-wallpaper').style.display = 'flex';
@@ -3360,34 +3358,38 @@ function applyWallpaper(url, type, rate) {
 
       } else if (url && type === 'video') {
         // Padam gambar dulu
-        if (sec) {
-          sec.style.backgroundImage = '';
-          sec.style.backgroundSize = '';
-          sec.style.backgroundPosition = '';
-          sec.style.backgroundRepeat = '';
-        }
-        // Posisikan video dalam section-tasbih
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
+        document.body.style.backgroundAttachment = '';
+        // Video penuh skrin di belakang semua
         wallpaperVideoEl.src = url;
         wallpaperVideoEl.playbackRate = rate || 1;
-        wallpaperVideoEl.style.display = 'block';
-        wallpaperVideoEl.style.position = 'fixed';
-        wallpaperVideoEl.style.top = '0';
-        wallpaperVideoEl.style.left = '0';
-        wallpaperVideoEl.style.width = '100%';
-        wallpaperVideoEl.style.height = '100%';
-        wallpaperVideoEl.style.objectFit = 'cover';
-        wallpaperVideoEl.style.zIndex = '0';
+        wallpaperVideoEl.style.cssText = `
+          display:block;
+          position:fixed;
+          top:0;
+          left:0;
+          width:100vw;
+          height:100vh;
+          object-fit:cover;
+          z-index:-1;
+          pointer-events:none;
+        `;
+        // App shell dan card perlu transparent
+        if (appShell) appShell.style.position = 'relative';
+        if (card) {
+          card.style.background = 'rgba(2,6,23,0.55)';
+          card.style.backdropFilter = 'blur(2px)';
+          card.style.boxShadow = '';
+          card.style.border = '';
+        }
         wallpaperVideoEl.play().catch(() => {
           document.addEventListener('touchstart', () => {
             wallpaperVideoEl.play().catch(() => {});
           }, { once: true });
         });
-        if (card) {
-          card.style.background = 'rgba(2,6,23,0.65)';
-          card.style.backdropFilter = 'blur(4px)';
-          card.style.boxShadow = '';
-          card.style.border = '';
-        }
         updateWallpaperStatusBar(`🎬 Video aktif — ${rate || 1}x`);
         document.getElementById('btn-padam-wallpaper').style.display = 'flex';
         document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
@@ -3401,15 +3403,12 @@ function applyWallpaper(url, type, rate) {
         // Tiada wallpaper — reset semua
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
-        wallpaperVideoEl.style.display = 'none';
-        if (sec) {
-          sec.style.backgroundImage = '';
-          sec.style.backgroundSize = '';
-          sec.style.backgroundPosition = '';
-          sec.style.backgroundRepeat = '';
-          sec.style.borderRadius = '';
-          sec.style.overflow = '';
-        }
+        wallpaperVideoEl.style.cssText = 'display:none;';
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
+        document.body.style.backgroundAttachment = '';
         if (card) {
           card.style.background = '';
           card.style.backdropFilter = '';
@@ -3422,7 +3421,7 @@ function applyWallpaper(url, type, rate) {
         document.getElementById('wallpaper-playback-section').style.display = 'none';
       }
     }
-
+    
     function updateWallpaperStatusBar(msg) {
       const el = document.getElementById('wallpaper-status-bar');
       if (el) el.textContent = msg;
