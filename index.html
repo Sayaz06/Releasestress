@@ -3311,13 +3311,17 @@ function bukaBahasaRehatPopup(callback) {
     }
 
 // ── TOGGLE REHAT ──
-// ── TOGGLE REHAT ──
     let rehatMode = true; // Default: ON, reset setiap buka app
     let queueMode = false;
     let queueBahasaSavedIndex = 0;
-let joggingQueueMode = false;
+    let joggingQueueMode = false;
     let allJoggingMotivasi = [];
     let currentJoggingMotivasiIdx = 0;
+    let joggingMotivasiFlipped = false;
+    let perjanjianQueueMode = false;
+    let allPerjanjian = [];
+    let currentPerjanjianIdx = 0;
+    let perjanjianFlipped = false;
     let joggingMotivasiFlipped = false;
     let globalWallpaperUrl = '';
     let globalWallpaperType = '';
