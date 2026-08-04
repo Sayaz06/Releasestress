@@ -1496,6 +1496,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <button id="btn-go-motivasi-jogging" class="btn btn-secondary" style="border-color: #f97316; color: #fb923c;">
             <span>🏃 Motivasi Jogging</span>
           </button>
+          <button id="btn-go-perjanjian" class="btn btn-secondary" style="border-color: #38bdf8; color: #7dd3fc;">
+            <span>🤝 Laci Perjanjian</span>
+          </button>
           <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
           </button>
@@ -1552,6 +1555,33 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </button>
 
         <div class="list" id="motivasi-list" style="padding:10px;"></div>
+      </section>
+
+<!-- ══ LACI PERJANJIAN ══ -->
+      <section id="section-perjanjian" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-home-perjanjian" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#7dd3fc;">🤝 Laci Perjanjian</div>
+            <div class="topbar-sub">Playlist perjanjian peribadi</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:6px;">📌 Cara Guna</div>
+          <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+            • Tambah perjanjian mengikut susunan yang anda nak<br>
+            • Guna <strong>↑ ↓</strong> untuk susun semula<br>
+            • Guna <strong>=</strong> dalam teks untuk bahagian flip<br>
+            • Contoh: <em>Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya</em>
+          </div>
+        </div>
+
+        <button id="btn-add-perjanjian" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+          + Tambah Perjanjian
+        </button>
+
+        <div class="list" id="perjanjian-list" style="padding:10px;"></div>
       </section>
 
 <!-- ══ JOURNAL HUB ══ -->
@@ -1960,6 +1990,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-rehat" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">💤 Rehat: ON</button>
             <button id="btn-toggle-queue" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">🔄 Queue: OFF</button>
             <button id="btn-toggle-jq" class="btn btn-secondary btn-sm" style="border-color:#f97316;color:#fb923c;">🏃 JQ: OFF</button>
+            <button id="btn-toggle-pj" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;color:#7dd3fc;">🤝 PJ: OFF</button>
             <button id="btn-set-wallpaper" class="btn btn-secondary btn-sm" style="border-color:#818cf8;color:#a5b4fc;">🖼️ Wallpaper</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 5r5</button>
@@ -3284,11 +3315,15 @@ function bukaBahasaRehatPopup(callback) {
     let rehatMode = true; // Default: ON, reset setiap buka app
     let queueMode = false;
     let queueBahasaSavedIndex = 0;
-let joggingQueueMode = false;
+    let joggingQueueMode = false;
     let allJoggingMotivasi = [];
     let currentJoggingMotivasiIdx = 0;
     let joggingMotivasiFlipped = false;
-let globalWallpaperUrl = '';
+    let perjanjianQueueMode = false;
+    let allPerjanjian = [];
+    let currentPerjanjianIdx = 0;
+    let perjanjianFlipped = false;
+    let globalWallpaperUrl = '';
     let globalWallpaperType = ''; // 'image' atau 'video'
     let globalWallpaperRate = 1;  // playback rate
 
@@ -3433,7 +3468,7 @@ function applyWallpaper(url, type, rate) {
           return;
         }
 
-        // Mutex — OFF Queue Quran kalau ON
+// Mutex — OFF Queue Quran dan PJ kalau ON
         if (queueMode) {
           queueMode = false;
           queueBahasaSavedIndex = 0;
@@ -3445,6 +3480,17 @@ function applyWallpaper(url, type, rate) {
             btnQ.style.borderColor = '#34d399';
           }
           applyQueueBlock(false);
+        }
+        if (perjanjianQueueMode) {
+          perjanjianQueueMode = false;
+          currentPerjanjianIdx = 0;
+          const btnPJ = document.getElementById('btn-toggle-pj');
+          if (btnPJ) {
+            btnPJ.textContent = '🤝 PJ: OFF';
+            btnPJ.classList.remove('btn-active');
+            btnPJ.style.color = '#7dd3fc';
+            btnPJ.style.borderColor = '#38bdf8';
+          }
         }
 
         // Auto ON bahasa kalau belum on
@@ -3546,6 +3592,140 @@ function applyWallpaper(url, type, rate) {
       }
     });
 
+// ── TOGGLE PJ (PERJANJIAN QUEUE) ──
+    document.getElementById('btn-toggle-pj').addEventListener('click', () => {
+      const btn = document.getElementById('btn-toggle-pj');
+
+      if (!perjanjianQueueMode) {
+        // Semak ada perjanjian
+        if (!allPerjanjian.length) {
+          showToast('⚠️ Sila tambah perjanjian dahulu.', 4000);
+          return;
+        }
+
+        // Mutex — OFF Queue Quran dan JQ
+        if (queueMode) {
+          queueMode = false;
+          queueBahasaSavedIndex = 0;
+          const btnQ = document.getElementById('btn-toggle-queue');
+          if (btnQ) {
+            btnQ.textContent = '🔄 Queue: OFF';
+            btnQ.classList.remove('btn-active');
+            btnQ.style.color = '#34d399';
+            btnQ.style.borderColor = '#34d399';
+          }
+          applyQueueBlock(false);
+        }
+        if (joggingQueueMode) {
+          joggingQueueMode = false;
+          currentJoggingMotivasiIdx = 0;
+          const btnJQ = document.getElementById('btn-toggle-jq');
+          if (btnJQ) {
+            btnJQ.textContent = '🏃 JQ: OFF';
+            btnJQ.classList.remove('btn-active');
+            btnJQ.style.color = '#fb923c';
+            btnJQ.style.borderColor = '#f97316';
+          }
+        }
+
+        // Auto ON bahasa kalau belum on
+        if (!bahasaMode) {
+          const btnBhs = document.getElementById('btn-toggle-bahasa');
+          bahasaMode = true;
+          factMode = false;
+          routineMode = false;
+          btnToggleFact.textContent = 'Fakta: OFF';
+          btnToggleFact.classList.remove('btn-active');
+          btnToggleRutin.textContent = 'Rutin: OFF';
+          btnToggleRutin.classList.remove('btn-active');
+          ['quran','doa','hadis'].forEach(s => {
+            const b = document.getElementById(`btn-toggle-${s}`);
+            if(b){ b.textContent=`${getModeLabel(s)}: OFF`; b.classList.remove('btn-active'); }
+          });
+          if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
+          learningMode = 2;
+          btnToggleMode.textContent = 'Mode: Rest';
+          btnToggleMode.style.display = 'none';
+          comboStep = 0;
+          isFlipped = false;
+          isBlocked = false;
+          srModeAktif = false;
+          srLaciSemasa = null;
+          srQueue = [];
+          srSemuaSelesai = false;
+          window._bahasaNextLaciHandler = null;
+          factDisplayBox.classList.add('show');
+          const btnSkip = document.getElementById('btn-skip-bahasa-laci');
+          if (btnSkip) btnSkip.style.display = 'inline-flex';
+
+          isBlocked = true;
+          factTitleEl.textContent = '[ Memuat... ]';
+          factContentEl.textContent = '⏳ Menyemak ulangan SR...';
+          factContentEl.style.color = '#fcd34d';
+
+          setTimeout(async () => {
+            factContentEl.style.color = '';
+            await refreshSRQueueIds();
+            const adaSR = await checkSRQueue();
+            if (adaSR && muatSRLaciSeterusnya()) {
+              tunjukPopupSR(srLaciSemasa);
+              await muatLaciSRKeDalamFacts(srLaciSemasa);
+            } else {
+              srSemuaSelesai = false;
+              rebuildBahasa();
+            }
+            isBlocked = false;
+            updateTasbihUI();
+          }, 1200);
+        }
+
+        // Auto OFF rehat
+        rehatMode = false;
+        const btnRehat = document.getElementById('btn-toggle-rehat');
+        if (btnRehat) {
+          btnRehat.textContent = '💤 Rehat: OFF';
+          btnRehat.classList.remove('btn-active');
+          btnRehat.style.color = 'var(--subtext)';
+          btnRehat.style.borderColor = 'var(--border-mid)';
+        }
+
+        // ON PJ
+        perjanjianQueueMode = true;
+        currentPerjanjianIdx = 0;
+        perjanjianFlipped = false;
+        queueBahasaSavedIndex = currentFactIndex;
+        btn.textContent = '🤝 PJ: ON';
+        btn.classList.add('btn-active');
+        btn.style.color = 'white';
+        btn.style.borderColor = 'transparent';
+        applyQueueBlock(true);
+        showToast('🤝 Perjanjian Queue ON — Bahasa → Perjanjian → Bahasa (loop)', 4000);
+        updateTasbihUI();
+
+      } else {
+        // OFF PJ
+        perjanjianQueueMode = false;
+        currentPerjanjianIdx = 0;
+        perjanjianFlipped = false;
+        queueBahasaSavedIndex = 0;
+        rehatMode = true;
+        const btnRehat = document.getElementById('btn-toggle-rehat');
+        if (btnRehat) {
+          btnRehat.textContent = '💤 Rehat: ON';
+          btnRehat.classList.add('btn-active');
+          btnRehat.style.color = '#c4b5fd';
+          btnRehat.style.borderColor = '#a78bfa';
+        }
+        btn.textContent = '🤝 PJ: OFF';
+        btn.classList.remove('btn-active');
+        btn.style.color = '#7dd3fc';
+        btn.style.borderColor = '#38bdf8';
+        applyQueueBlock(false);
+        showToast('🤝 Perjanjian Queue OFF', 2000);
+        updateTasbihUI();
+      }
+    });
+
     // ── TOGGLE QUEUE ──
     const QUEUE_BLOCK_IDS = [
       'btn-go-subjects','btn-go-routine-times','btn-go-bahasa-times',
@@ -3641,7 +3821,7 @@ factDisplayBox.classList.add('show');
           btnRehat.style.borderColor = 'var(--border-mid)';
         }
 
-// Mutex — OFF JQ kalau ON
+// Mutex — OFF JQ dan PJ kalau ON
         if (joggingQueueMode) {
           joggingQueueMode = false;
           currentJoggingMotivasiIdx = 0;
@@ -3651,6 +3831,17 @@ factDisplayBox.classList.add('show');
             btnJQ.classList.remove('btn-active');
             btnJQ.style.color = '#fb923c';
             btnJQ.style.borderColor = '#f97316';
+          }
+        }
+        if (perjanjianQueueMode) {
+          perjanjianQueueMode = false;
+          currentPerjanjianIdx = 0;
+          const btnPJ = document.getElementById('btn-toggle-pj');
+          if (btnPJ) {
+            btnPJ.textContent = '🤝 PJ: OFF';
+            btnPJ.classList.remove('btn-active');
+            btnPJ.style.color = '#7dd3fc';
+            btnPJ.style.borderColor = '#38bdf8';
           }
         }
 
@@ -5106,6 +5297,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       if (sectionBahasaDrawer) sectionBahasaDrawer.classList.remove("active");
       document.getElementById('section-arahan-list')?.classList.remove("active");
       document.getElementById('section-motivasi-jogging')?.classList.remove("active");
+      document.getElementById('section-perjanjian')?.classList.remove("active");
       document.getElementById('section-kerangka')?.classList.remove("active");
       document.getElementById('section-bacaan-tambahan')?.classList.remove("active");
       document.getElementById('section-bacaan-laci')?.classList.remove("active");
@@ -5796,6 +5988,73 @@ function decrementTasbih() {
         const handler = window._queueRetrievalHandler;
         window._queueRetrievalHandler = null;
         handler();
+        return;
+      }
+
+// Intersep tap untuk perjanjian PJ
+      if (window._pjHandler) {
+        const perjanjian = allPerjanjian[currentPerjanjianIdx];
+        const adaFlip = perjanjian && perjanjian.text && perjanjian.text.includes('=');
+
+        if (adaFlip && !perjanjianFlipped) {
+          perjanjianFlipped = true;
+          const bahagianFlip = perjanjian.text.split('=')[1]?.trim() || '';
+          factTitleEl.textContent = `[ 🤝 ${perjanjian.title || 'Perjanjian'} — Penerangan Lanjutan ]`;
+          factContentEl.textContent = bahagianFlip;
+          factContentEl.style.color = '#bae6fd';
+          factHintEl.textContent = '(Tap untuk teruskan ke bahasa)';
+          return;
+        }
+
+        perjanjianFlipped = false;
+        currentPerjanjianIdx = (currentPerjanjianIdx + 1) % allPerjanjian.length;
+
+        factContentEl.style.fontSize = '';
+        factContentEl.style.fontFamily = '';
+        factContentEl.style.direction = '';
+        factContentEl.style.textAlign = '';
+        factContentEl.style.color = '';
+        factHintEl.style.display = '';
+
+        const handler = window._pjHandler;
+        window._pjHandler = null;
+
+        isBlocked = true;
+        factTitleEl.textContent = '[ Memuat... ]';
+        factContentEl.textContent = '⏳ Menyemak ulangan SR...';
+        factContentEl.style.color = '#fcd34d';
+
+        setTimeout(async () => {
+          factContentEl.style.color = '';
+          await refreshSRQueueIds();
+          const adaSR = await checkSRQueue();
+
+          if (adaSR && muatSRLaciSeterusnya()) {
+            bahasaMode = true;
+            const btnBhs = document.getElementById('btn-toggle-bahasa');
+            if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
+            factDisplayBox.classList.add('show');
+            tunjukPopupSR(srLaciSemasa);
+            await muatLaciSRKeDalamFacts(srLaciSemasa);
+          } else {
+            srSemuaSelesai = false;
+            bahasaMode = true;
+            const btnBhs = document.getElementById('btn-toggle-bahasa');
+            if (btnBhs) { btnBhs.textContent = '📝 Bahasa: ON'; btnBhs.classList.add('btn-active'); }
+            factDisplayBox.classList.add('show');
+            rebuildBahasa();
+            setTimeout(() => {
+              currentFactIndex = queueBahasaSavedIndex;
+              renderCurrentFact();
+              updateTasbihUI();
+            }, 100);
+          }
+
+          isBlocked = false;
+          updateTasbihUI();
+          handler();
+        }, 1200);
+
         return;
       }
 
@@ -7149,6 +7408,43 @@ setTimeout(async () => {
                 isBlocked = false;
                 // Override cycleFact untuk 1 tap seterusnya → pergi laci + popup
 const tapSeterusnya = async () => {
+// ── PERJANJIAN QUEUE MODE: terus papar perjanjian ──
+                  if (perjanjianQueueMode) {
+                    if (!allPerjanjian.length) {
+                      showToast('⚠️ Tiada perjanjian. Tambah dalam menu Laci Perjanjian.', 3000);
+                      return;
+                    }
+                    queueBahasaSavedIndex = targetIdx;
+                    srSemuaSelesai = false;
+                    srLaciSemasa = null;
+
+                    const perjanjian = allPerjanjian[currentPerjanjianIdx];
+                    const adaFlip = perjanjian.text && perjanjian.text.includes('=');
+                    const bahagianUtama = adaFlip ? perjanjian.text.split('=')[0].trim() : (perjanjian.text || '');
+                    perjanjianFlipped = false;
+
+                    bahasaMode = false;
+                    const btnBhs = document.getElementById('btn-toggle-bahasa');
+                    if (btnBhs) { btnBhs.textContent = '📝 Bahasa: OFF'; btnBhs.classList.remove('btn-active'); }
+
+                    factDisplayBox.classList.add('show');
+                    factTitleEl.textContent = `[ 🤝 ${perjanjian.title || 'Perjanjian'} — ${currentPerjanjianIdx + 1}/${allPerjanjian.length} ]`;
+                    factContentEl.textContent = bahagianUtama;
+                    factContentEl.style.fontSize = '1.1rem';
+                    factContentEl.style.fontFamily = 'inherit';
+                    factContentEl.style.direction = 'ltr';
+                    factContentEl.style.textAlign = 'left';
+                    factContentEl.style.color = '#7dd3fc';
+                    factHintEl.textContent = adaFlip ? '(Tap untuk penerangan lanjutan / tap lagi untuk teruskan)' : '(Tap untuk teruskan ke bahasa)';
+                    factHintEl.style.display = 'block';
+                    btnSpeak.style.display = 'none';
+
+                    await new Promise(resolve => {
+                      window._pjHandler = resolve;
+                    });
+                    return;
+                  }
+
                   // ── JOGGING QUEUE MODE: terus papar motivasi ──
                   if (joggingQueueMode) {
                     if (!allJoggingMotivasi.length) {
@@ -8165,6 +8461,7 @@ showSection(secToShow);
         subscribeReminders();
         mulakanReminderCheck();
         subscribeJoggingMotivasi();
+        subscribePerjanjian();
         subscribeWallpaper();
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
@@ -9873,6 +10170,95 @@ if (result.score > 0) {
           if (!confirm(`Padam motivasi ini?`)) return;
           await deleteDoc(doc(db, "users", currentUser.uid, "jogging_motivasi", data.id));
           showToast('🗑️ Motivasi dipadam.');
+        });
+
+        list.appendChild(div);
+      });
+    }
+
+// ── LACI PERJANJIAN ──
+    const sectionPerjanjian = document.getElementById('section-perjanjian');
+
+    document.getElementById('btn-go-perjanjian').addEventListener('click', () => {
+      showSection(sectionPerjanjian);
+      renderPerjanjianList();
+    });
+
+    document.getElementById('btn-back-home-perjanjian').addEventListener('click', () => {
+      showSection(sectionHome);
+    });
+
+    document.getElementById('btn-add-perjanjian').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const order = allPerjanjian.length > 0
+        ? Math.max(...allPerjanjian.map(m => m.order || 0)) + 1
+        : 0;
+      await addDoc(collection(db, "users", currentUser.uid, "jogging_perjanjian"), {
+        title: '',
+        text: '',
+        order,
+        createdAt: Date.now()
+      });
+    });
+
+    function renderPerjanjianList() {
+      const list = document.getElementById('perjanjian-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (!allPerjanjian.length) {
+        list.innerHTML = '<div class="empty-state">Belum ada perjanjian. Tekan "+ Tambah".</div>';
+        return;
+      }
+
+      allPerjanjian.forEach((data, idx) => {
+        const div = document.createElement('div');
+        div.className = 'drawer-card';
+        div.style.cssText = 'border:1px solid rgba(56,189,248,0.3);';
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <button class="btn-perjanjian-up btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.7rem;" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''}>↑</button>
+              <button class="btn-perjanjian-down btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.7rem;" ${idx === allPerjanjian.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>↓</button>
+            </div>
+            <span style="font-size:0.75rem;background:rgba(56,189,248,0.2);color:#7dd3fc;padding:2px 8px;border-radius:999px;font-weight:700;">#${idx + 1}</span>
+            <input class="perjanjian-title" value="${data.title || ''}" placeholder="Tajuk perjanjian..." style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:0.9rem;">
+            <button class="btn-del-perjanjian btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">X</button>
+          </div>
+          <textarea class="perjanjian-text drawer-notes" placeholder="Tulis perjanjian di sini...&#10;Guna = untuk bahagian flip&#10;Contoh: Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya">${data.text || ''}</textarea>
+          ${data.text && data.text.includes('=') ? `<div style="font-size:0.68rem;color:#7dd3fc;margin-top:4px;">✓ Ada flip — bahagian selepas "=" jadi "Penerangan Lanjutan"</div>` : ''}
+        `;
+
+        div.querySelector('.perjanjian-title').addEventListener('change', e => {
+          updateDoc(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { title: e.target.value });
+        });
+
+        div.querySelector('.perjanjian-text').addEventListener('change', e => {
+          updateDoc(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { text: e.target.value });
+        });
+
+        div.querySelector('.btn-perjanjian-up').addEventListener('click', async () => {
+          if (idx === 0) return;
+          const prev = allPerjanjian[idx - 1];
+          const batch = writeBatch(db);
+          batch.update(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { order: prev.order });
+          batch.update(doc(db, "users", currentUser.uid, "jogging_perjanjian", prev.id), { order: data.order });
+          await batch.commit();
+        });
+
+        div.querySelector('.btn-perjanjian-down').addEventListener('click', async () => {
+          if (idx === allPerjanjian.length - 1) return;
+          const next = allPerjanjian[idx + 1];
+          const batch = writeBatch(db);
+          batch.update(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { order: next.order });
+          batch.update(doc(db, "users", currentUser.uid, "jogging_perjanjian", next.id), { order: data.order });
+          await batch.commit();
+        });
+
+        div.querySelector('.btn-del-perjanjian').addEventListener('click', async () => {
+          if (!confirm('Padam perjanjian ini?')) return;
+          await deleteDoc(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id));
+          showToast('🗑️ Perjanjian dipadam.');
         });
 
         list.appendChild(div);
@@ -16545,6 +16931,18 @@ function subscribeJoggingMotivasi() {
           allJoggingMotivasi = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           const sec = document.getElementById('section-motivasi-jogging');
           if (sec && sec.classList.contains('active')) renderMotivasiList();
+        }
+      );
+    }
+
+    function subscribePerjanjian() {
+      if (!currentUser) return;
+      onSnapshot(
+        query(collection(db, "users", currentUser.uid, "jogging_perjanjian"), orderBy("order", "asc")),
+        snap => {
+          allPerjanjian = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const sec = document.getElementById('section-perjanjian');
+          if (sec && sec.classList.contains('active')) renderPerjanjianList();
         }
       );
     }
