@@ -3325,28 +3325,27 @@ let joggingQueueMode = false;
 
     const wallpaperVideoEl = document.getElementById('wallpaper-video-el');
 
-
 function applyWallpaper(url, type, rate) {
       const card = document.querySelector('.card');
-      const appShell = document.querySelector('.app-shell');
 
       if (url && type === 'image') {
         // Padam video dulu
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
-        wallpaperVideoEl.style.display = 'none';
-        // Apply gambar pada body — penuh skrin
-        document.body.style.backgroundImage = `url('${url}')`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center';
-        document.body.style.backgroundRepeat = 'no-repeat';
-        document.body.style.backgroundAttachment = 'fixed';
-        // Transparent card supaya gambar nampak
+        wallpaperVideoEl.style.cssText = 'display:none;';
+        // Reset body
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
+        document.body.style.backgroundAttachment = '';
+        // Apply gambar pada card — frame kekal sama saiz
         if (card) {
-          card.style.background = 'rgba(2,6,23,0.55)';
-          card.style.backdropFilter = 'blur(2px)';
-          card.style.boxShadow = '';
-          card.style.border = '';
+          card.style.backgroundImage = `url('${url}')`;
+          card.style.backgroundSize = 'cover';
+          card.style.backgroundPosition = 'center';
+          card.style.backgroundRepeat = 'no-repeat';
+          card.style.background = `url('${url}') center/cover no-repeat`;
         }
         updateWallpaperStatusBar('📷 Gambar aktif');
         document.getElementById('btn-padam-wallpaper').style.display = 'flex';
@@ -3360,27 +3359,40 @@ function applyWallpaper(url, type, rate) {
         document.body.style.backgroundPosition = '';
         document.body.style.backgroundRepeat = '';
         document.body.style.backgroundAttachment = '';
-        // Video penuh skrin di belakang semua
+        if (card) {
+          card.style.backgroundImage = '';
+          card.style.backgroundSize = '';
+          card.style.backgroundPosition = '';
+          card.style.backgroundRepeat = '';
+        }
+        // Video duduk dalam card — guna position absolute
         wallpaperVideoEl.src = url;
         wallpaperVideoEl.playbackRate = rate || 1;
+        // Pastikan card ada position relative
+        if (card) {
+          card.style.position = 'relative';
+          card.style.overflow = 'hidden';
+        }
         wallpaperVideoEl.style.cssText = `
           display:block;
-          position:fixed;
+          position:absolute;
           top:0;
           left:0;
-          width:100vw;
-          height:100vh;
+          width:100%;
+          height:100%;
           object-fit:cover;
-          z-index:-1;
+          z-index:0;
           pointer-events:none;
         `;
-        // App shell dan card perlu transparent
-        if (appShell) appShell.style.position = 'relative';
-        if (card) {
-          card.style.background = 'rgba(2,6,23,0.55)';
-          card.style.backdropFilter = 'blur(2px)';
-          card.style.boxShadow = '';
-          card.style.border = '';
+        // Pastikan content dalam card nampak di atas video
+        const cardContent = card ? card.querySelectorAll(':scope > *:not(#wallpaper-video-el)') : [];
+        cardContent.forEach(el => {
+          if (el.style.position !== 'absolute') el.style.position = 'relative';
+          el.style.zIndex = '1';
+        });
+        // Pindahkan video ke dalam card
+        if (card && wallpaperVideoEl.parentElement !== card) {
+          card.insertBefore(wallpaperVideoEl, card.firstChild);
         }
         wallpaperVideoEl.play().catch(() => {
           document.addEventListener('touchstart', () => {
@@ -3392,25 +3404,37 @@ function applyWallpaper(url, type, rate) {
         document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
         document.getElementById('wallpaper-playback-section').style.display = 'block';
         document.querySelectorAll('.btn-playback-rate').forEach(b => {
-          const isActive = parseFloat(b.getAttribute('data-rate')) === (rate || 1);
-          b.classList.toggle('btn-active', isActive);
+          b.classList.toggle('btn-active', parseFloat(b.getAttribute('data-rate')) === (rate || 1));
         });
 
       } else {
-        // Tiada wallpaper — reset semua
+        // Reset semua
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
         wallpaperVideoEl.style.cssText = 'display:none;';
+        // Pindah video balik ke luar card kalau perlu
+        if (wallpaperVideoEl.parentElement !== document.body) {
+          document.body.appendChild(wallpaperVideoEl);
+        }
         document.body.style.backgroundImage = '';
         document.body.style.backgroundSize = '';
         document.body.style.backgroundPosition = '';
         document.body.style.backgroundRepeat = '';
         document.body.style.backgroundAttachment = '';
         if (card) {
+          card.style.backgroundImage = '';
+          card.style.backgroundSize = '';
+          card.style.backgroundPosition = '';
+          card.style.backgroundRepeat = '';
           card.style.background = '';
           card.style.backdropFilter = '';
           card.style.boxShadow = '';
           card.style.border = '';
+          // Reset semua child zIndex
+          card.querySelectorAll(':scope > *').forEach(el => {
+            el.style.position = '';
+            el.style.zIndex = '';
+          });
         }
         updateWallpaperStatusBar('Tiada wallpaper');
         document.getElementById('btn-padam-wallpaper').style.display = 'none';
