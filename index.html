@@ -3294,7 +3294,8 @@ let globalWallpaperUrl = '';
 
     const wallpaperVideoEl = document.getElementById('wallpaper-video-el');
 
-    function applyWallpaper(url, type, rate) {
+function applyWallpaper(url, type, rate) {
+      const sec = document.getElementById('section-tasbih');
       const card = document.querySelector('.card');
 
       if (url && type === 'image') {
@@ -3302,14 +3303,20 @@ let globalWallpaperUrl = '';
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
         wallpaperVideoEl.style.display = 'none';
-        // Apply gambar
-        document.body.style.backgroundImage = `url('${url}')`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center';
-        document.body.style.backgroundRepeat = 'no-repeat';
+        // Apply gambar pada section-tasbih
+        if (sec) {
+          sec.style.backgroundImage = `url('${url}')`;
+          sec.style.backgroundSize = 'cover';
+          sec.style.backgroundPosition = 'center';
+          sec.style.backgroundRepeat = 'no-repeat';
+          sec.style.borderRadius = '18px';
+          sec.style.overflow = 'hidden';
+        }
         if (card) {
-          card.style.background = 'rgba(2,6,23,0.75)';
-          card.style.backdropFilter = 'blur(12px)';
+          card.style.background = 'rgba(2,6,23,0.0)';
+          card.style.backdropFilter = 'none';
+          card.style.boxShadow = 'none';
+          card.style.border = 'none';
         }
         updateWallpaperStatusBar('📷 Gambar aktif');
         document.getElementById('btn-padam-wallpaper').style.display = 'flex';
@@ -3318,46 +3325,61 @@ let globalWallpaperUrl = '';
 
       } else if (url && type === 'video') {
         // Padam gambar dulu
-        document.body.style.backgroundImage = '';
-        document.body.style.backgroundSize = '';
-        document.body.style.backgroundPosition = '';
-        document.body.style.backgroundRepeat = '';
-        // Apply video
+        if (sec) {
+          sec.style.backgroundImage = '';
+          sec.style.backgroundSize = '';
+          sec.style.backgroundPosition = '';
+          sec.style.backgroundRepeat = '';
+        }
+        // Posisikan video dalam section-tasbih
         wallpaperVideoEl.src = url;
         wallpaperVideoEl.playbackRate = rate || 1;
         wallpaperVideoEl.style.display = 'block';
+        wallpaperVideoEl.style.position = 'fixed';
+        wallpaperVideoEl.style.top = '0';
+        wallpaperVideoEl.style.left = '0';
+        wallpaperVideoEl.style.width = '100%';
+        wallpaperVideoEl.style.height = '100%';
+        wallpaperVideoEl.style.objectFit = 'cover';
+        wallpaperVideoEl.style.zIndex = '0';
         wallpaperVideoEl.play().catch(() => {
-          // Autoplay blocked — akan play bila user touch
           document.addEventListener('touchstart', () => {
             wallpaperVideoEl.play().catch(() => {});
           }, { once: true });
         });
         if (card) {
           card.style.background = 'rgba(2,6,23,0.65)';
-          card.style.backdropFilter = 'blur(8px)';
+          card.style.backdropFilter = 'blur(4px)';
+          card.style.boxShadow = '';
+          card.style.border = '';
         }
         updateWallpaperStatusBar(`🎬 Video aktif — ${rate || 1}x`);
         document.getElementById('btn-padam-wallpaper').style.display = 'flex';
         document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
         document.getElementById('wallpaper-playback-section').style.display = 'block';
-        // Highlight rate button
         document.querySelectorAll('.btn-playback-rate').forEach(b => {
           const isActive = parseFloat(b.getAttribute('data-rate')) === (rate || 1);
           b.classList.toggle('btn-active', isActive);
         });
 
       } else {
-        // Tiada wallpaper
+        // Tiada wallpaper — reset semua
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
         wallpaperVideoEl.style.display = 'none';
-        document.body.style.backgroundImage = '';
-        document.body.style.backgroundSize = '';
-        document.body.style.backgroundPosition = '';
-        document.body.style.backgroundRepeat = '';
+        if (sec) {
+          sec.style.backgroundImage = '';
+          sec.style.backgroundSize = '';
+          sec.style.backgroundPosition = '';
+          sec.style.backgroundRepeat = '';
+          sec.style.borderRadius = '';
+          sec.style.overflow = '';
+        }
         if (card) {
           card.style.background = '';
           card.style.backdropFilter = '';
+          card.style.boxShadow = '';
+          card.style.border = '';
         }
         updateWallpaperStatusBar('Tiada wallpaper');
         document.getElementById('btn-padam-wallpaper').style.display = 'none';
