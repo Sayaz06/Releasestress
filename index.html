@@ -9677,11 +9677,16 @@ if (result.score > 0) {
       showToast(`⏳ Sedang upload ${type === 'image' ? 'gambar' : 'video'}...`, 0);
 
       try {
-        // Padam wallpaper lama dari Storage
+// Padam wallpaper lama dari Storage — cuba semua kemungkinan path
         if (globalWallpaperUrl) {
-          const oldStoragePath = `users/${currentUser.uid}/wallpaper/tasbih`;
-          const oldRef = ref(storage, oldStoragePath);
-          await deleteObject(oldRef).catch(() => {});
+          const pathsToTry = [
+            `users/${currentUser.uid}/wallpaper/tasbih`,
+            `users/${currentUser.uid}/wallpaper/tasbih.jpg`,
+            `users/${currentUser.uid}/wallpaper/tasbih.mp4`
+          ];
+          for (const p of pathsToTry) {
+            await deleteObject(ref(storage, p)).catch(() => {});
+          }
         }
 
         const ext = type === 'image' ? 'jpg' : 'mp4';
