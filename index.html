@@ -912,6 +912,51 @@ body.dark-mode {
 
 <input type="file" id="video-upload-input" accept="video/*" style="display: none;">
 <input type="file" id="wallpaper-upload-input" accept="image/*" style="display: none;">
+<input type="file" id="wallpaper-video-upload-input" accept="video/*" style="display: none;">
+
+<!-- POPUP WALLPAPER -->
+<div id="wallpaper-popup" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0a1628;border:1px solid #818cf8;border-radius:18px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <div style="font-size:1.1rem;font-weight:700;color:#a5b4fc;margin-bottom:4px;">🖼️ Wallpaper Tasbih</div>
+    <div style="font-size:0.75rem;color:#9ca3af;margin-bottom:16px;">Upload gambar atau video sebagai latar belakang</div>
+
+    <!-- Status semasa -->
+    <div id="wallpaper-status-bar" style="padding:8px 12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;margin-bottom:14px;font-size:0.75rem;color:#a5b4fc;text-align:center;">
+      Tiada wallpaper
+    </div>
+
+    <!-- Upload buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="btn-upload-wallpaper-gambar" style="flex:1;padding:10px;border-radius:999px;background:rgba(99,102,241,0.15);border:1px solid #6366f1;color:#a5b4fc;font-size:0.82rem;font-weight:600;cursor:pointer;">
+        📷 Upload Gambar
+      </button>
+      <button id="btn-upload-wallpaper-video" style="flex:1;padding:10px;border-radius:999px;background:rgba(99,102,241,0.15);border:1px solid #6366f1;color:#a5b4fc;font-size:0.82rem;font-weight:600;cursor:pointer;">
+        🎬 Upload Video
+      </button>
+    </div>
+
+    <!-- Playback rate — hanya tunjuk kalau video -->
+    <div id="wallpaper-playback-section" style="display:none;margin-bottom:14px;">
+      <div style="font-size:0.75rem;color:#a5b4fc;font-weight:700;margin-bottom:8px;">⚡ Kelajuan Video</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-playback-rate btn btn-secondary btn-sm" data-rate="0.25" style="flex:1;font-size:0.78rem;">0.25x</button>
+        <button class="btn-playback-rate btn btn-secondary btn-sm" data-rate="0.5" style="flex:1;font-size:0.78rem;">0.5x</button>
+        <button class="btn-playback-rate btn btn-secondary btn-sm" data-rate="0.75" style="flex:1;font-size:0.78rem;">0.75x</button>
+        <button class="btn-playback-rate btn btn-secondary btn-sm btn-active" data-rate="1" style="flex:1;font-size:0.78rem;">1x</button>
+      </div>
+    </div>
+
+    <!-- Padam + Tutup -->
+    <div style="display:flex;gap:8px;">
+      <button id="btn-padam-wallpaper" style="flex:1;padding:10px;border-radius:999px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.4);color:#f87171;font-size:0.82rem;font-weight:600;cursor:pointer;display:none;">
+        ✕ Padam Wallpaper
+      </button>
+      <button id="btn-tutup-wallpaper-popup" style="flex:1;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;font-size:0.82rem;font-weight:600;cursor:pointer;">
+        Tutup
+      </button>
+    </div>
+  </div>
+</div>
   <input type="file" id="quran-import-input" accept=".json" style="display: none;">
   
   <div id="video-rest-overlay">
@@ -1384,7 +1429,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
       <div id="fullscreen-fact-hint" style="flex-shrink:0;padding:8px 16px 16px 16px;font-size:0.65rem;color:var(--grad1);font-weight:600;text-align:center;"></div>
     </div>
   </div>
-  <div class="app-shell">
+<!-- VIDEO WALLPAPER BACKGROUND -->
+  <video id="wallpaper-video-el" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;" muted loop playsinline></video>
+
+  <div class="app-shell" style="position:relative;z-index:1;">
     <div class="card">
 
       <div id="toast-notification">Topik Aktif: ...</div>
@@ -1913,7 +1961,6 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-queue" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">🔄 Queue: OFF</button>
             <button id="btn-toggle-jq" class="btn btn-secondary btn-sm" style="border-color:#f97316;color:#fb923c;">🏃 JQ: OFF</button>
             <button id="btn-set-wallpaper" class="btn btn-secondary btn-sm" style="border-color:#818cf8;color:#a5b4fc;">🖼️ Wallpaper</button>
-            <button id="btn-remove-wallpaper" class="btn btn-secondary btn-sm" style="border-color:#6b7280;color:#9ca3af;display:none;">✕ Wallpaper</button>
             <button id="btn-toggle-mode" class="btn btn-secondary btn-sm btn-active" style="display: none;">Mode: Rest</button>
             <button id="btn-toggle-main-rest-max" class="btn btn-secondary btn-sm" style="display: none; border-color: var(--grad2);">Target: 5r5</button>
             <button id="btn-main-plus5" class="btn btn-secondary btn-sm" style="display:none; border-color:#34d399; color:#34d399;">+5</button>
@@ -3240,50 +3287,104 @@ let joggingQueueMode = false;
     let allJoggingMotivasi = [];
     let currentJoggingMotivasiIdx = 0;
     let joggingMotivasiFlipped = false;
-    let globalWallpaperUrl = '';
+let globalWallpaperUrl = '';
+    let globalWallpaperType = ''; // 'image' atau 'video'
+    let globalWallpaperRate = 1;  // playback rate
 
-    function applyWallpaper(url) {
-      const sec = document.getElementById('section-tasbih');
+    const wallpaperVideoEl = document.getElementById('wallpaper-video-el');
+
+    function applyWallpaper(url, type, rate) {
       const card = document.querySelector('.card');
-      if (url) {
-        if (sec) {
-          sec.style.backgroundImage = `url('${url}')`;
-          sec.style.backgroundSize = 'cover';
-          sec.style.backgroundPosition = 'center';
-          sec.style.backgroundRepeat = 'no-repeat';
-        }
+
+      if (url && type === 'image') {
+        // Padam video dulu
+        wallpaperVideoEl.pause();
+        wallpaperVideoEl.src = '';
+        wallpaperVideoEl.style.display = 'none';
+        // Apply gambar
+        document.body.style.backgroundImage = `url('${url}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundRepeat = 'no-repeat';
         if (card) {
           card.style.background = 'rgba(2,6,23,0.75)';
           card.style.backdropFilter = 'blur(12px)';
         }
-        document.getElementById('btn-remove-wallpaper').style.display = 'inline-flex';
+        updateWallpaperStatusBar('📷 Gambar aktif');
+        document.getElementById('btn-padam-wallpaper').style.display = 'flex';
         document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
-      } else {
-        if (sec) {
-          sec.style.backgroundImage = '';
-          sec.style.backgroundSize = '';
-          sec.style.backgroundPosition = '';
-          sec.style.backgroundRepeat = '';
+        document.getElementById('wallpaper-playback-section').style.display = 'none';
+
+      } else if (url && type === 'video') {
+        // Padam gambar dulu
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
+        // Apply video
+        wallpaperVideoEl.src = url;
+        wallpaperVideoEl.playbackRate = rate || 1;
+        wallpaperVideoEl.style.display = 'block';
+        wallpaperVideoEl.play().catch(() => {
+          // Autoplay blocked — akan play bila user touch
+          document.addEventListener('touchstart', () => {
+            wallpaperVideoEl.play().catch(() => {});
+          }, { once: true });
+        });
+        if (card) {
+          card.style.background = 'rgba(2,6,23,0.65)';
+          card.style.backdropFilter = 'blur(8px)';
         }
+        updateWallpaperStatusBar(`🎬 Video aktif — ${rate || 1}x`);
+        document.getElementById('btn-padam-wallpaper').style.display = 'flex';
+        document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
+        document.getElementById('wallpaper-playback-section').style.display = 'block';
+        // Highlight rate button
+        document.querySelectorAll('.btn-playback-rate').forEach(b => {
+          const isActive = parseFloat(b.getAttribute('data-rate')) === (rate || 1);
+          b.classList.toggle('btn-active', isActive);
+        });
+
+      } else {
+        // Tiada wallpaper
+        wallpaperVideoEl.pause();
+        wallpaperVideoEl.src = '';
+        wallpaperVideoEl.style.display = 'none';
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
         if (card) {
           card.style.background = '';
           card.style.backdropFilter = '';
         }
-        document.getElementById('btn-remove-wallpaper').style.display = 'none';
+        updateWallpaperStatusBar('Tiada wallpaper');
+        document.getElementById('btn-padam-wallpaper').style.display = 'none';
         document.getElementById('btn-set-wallpaper').textContent = '🖼️ Wallpaper';
+        document.getElementById('wallpaper-playback-section').style.display = 'none';
       }
+    }
+
+    function updateWallpaperStatusBar(msg) {
+      const el = document.getElementById('wallpaper-status-bar');
+      if (el) el.textContent = msg;
     }
 
     function subscribeWallpaper() {
       if (!currentUser) return;
       const refSetting = doc(db, "users", currentUser.uid, "settings", "preferences");
       onSnapshot(refSetting, (snap) => {
-        if (snap.exists() && snap.data().wallpaperUrl) {
-          globalWallpaperUrl = snap.data().wallpaperUrl;
-          applyWallpaper(globalWallpaperUrl);
+        if (snap.exists()) {
+          const data = snap.data();
+          globalWallpaperUrl = data.wallpaperUrl || '';
+          globalWallpaperType = data.wallpaperType || '';
+          globalWallpaperRate = data.wallpaperRate || 1;
+          applyWallpaper(globalWallpaperUrl, globalWallpaperType, globalWallpaperRate);
         } else {
           globalWallpaperUrl = '';
-          applyWallpaper('');
+          globalWallpaperType = '';
+          globalWallpaperRate = 1;
+          applyWallpaper('', '', 1);
         }
       });
     }
@@ -9533,78 +9634,123 @@ if (result.score > 0) {
 
 // ── WALLPAPER TASBIH ──
     document.getElementById('btn-set-wallpaper').addEventListener('click', () => {
+      document.getElementById('wallpaper-popup').style.display = 'flex';
+    });
+
+    document.getElementById('btn-tutup-wallpaper-popup').addEventListener('click', () => {
+      document.getElementById('wallpaper-popup').style.display = 'none';
+    });
+
+    // Upload gambar
+    document.getElementById('btn-upload-wallpaper-gambar').addEventListener('click', () => {
       document.getElementById('wallpaper-upload-input').click();
     });
 
     document.getElementById('wallpaper-upload-input').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
+      if (file.size > 100 * 1024 * 1024) { showToast('Gagal: Saiz terlalu besar (Max 100MB).'); return; }
+      await uploadWallpaper(file, 'image');
+      document.getElementById('wallpaper-upload-input').value = '';
+    });
 
-      if (file.size > 100 * 1024 * 1024) {
-        showToast('Gagal: Saiz gambar terlalu besar (Max 100MB).');
-        return;
-      }
+    // Upload video
+    document.getElementById('btn-upload-wallpaper-video').addEventListener('click', () => {
+      document.getElementById('wallpaper-video-upload-input').click();
+    });
 
-      // Tunjuk progress
+    document.getElementById('wallpaper-video-upload-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 100 * 1024 * 1024) { showToast('Gagal: Saiz terlalu besar (Max 100MB).'); return; }
+      await uploadWallpaper(file, 'video');
+      document.getElementById('wallpaper-video-upload-input').value = '';
+    });
+
+    // Fungsi upload wallpaper (gambar atau video)
+    async function uploadWallpaper(file, type) {
+      if (!currentUser) return;
+      document.getElementById('wallpaper-popup').style.display = 'none';
       uploadProgressContainer.style.display = 'block';
       uploadProgressBar.style.width = '0%';
-      showToast('⏳ Sedang upload wallpaper...', 0);
+      showToast(`⏳ Sedang upload ${type === 'image' ? 'gambar' : 'video'}...`, 0);
 
       try {
-        // Padam gambar lama dulu kalau ada
+        // Padam wallpaper lama dari Storage
         if (globalWallpaperUrl) {
-          try {
-            const { ref: storageRef, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js");
-            const oldRef = storageRef(storage, `users/${currentUser.uid}/wallpaper/tasbih`);
-            await deleteObject(oldRef);
-          } catch(e) {
-            // Gambar lama tak ada — teruskan sahaja
-          }
+          const oldStoragePath = `users/${currentUser.uid}/wallpaper/tasbih`;
+          const oldRef = ref(storage, oldStoragePath);
+          await deleteObject(oldRef).catch(() => {});
         }
 
-        const storageRefPath = ref(storage, `users/${currentUser.uid}/wallpaper/tasbih`);
+        const ext = type === 'image' ? 'jpg' : 'mp4';
+        const storageRefPath = ref(storage, `users/${currentUser.uid}/wallpaper/tasbih.${ext}`);
         const uploadTask = uploadBytesResumable(storageRefPath, file);
 
         uploadTask.on('state_changed',
           (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             uploadProgressBar.style.width = progress + '%';
-            showToast(`⏳ Upload wallpaper... ${Math.round(progress)}%`, 0);
+            showToast(`⏳ Upload ${type === 'image' ? 'gambar' : 'video'}... ${Math.round(progress)}%`, 0);
           },
           (error) => {
             uploadProgressContainer.style.display = 'none';
-            showToast('Gagal upload wallpaper. Sila cuba lagi.', 3500);
+            showToast('Gagal upload. Sila cuba lagi.', 3500);
           },
           async () => {
             uploadProgressContainer.style.display = 'none';
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             const refSetting = doc(db, "users", currentUser.uid, "settings", "preferences");
-            await setDoc(refSetting, { wallpaperUrl: downloadURL }, { merge: true });
-            showToast('✅ Wallpaper berjaya dikemaskini!', 3500);
-            document.getElementById('wallpaper-upload-input').value = '';
+            await setDoc(refSetting, {
+              wallpaperUrl: downloadURL,
+              wallpaperType: type,
+              wallpaperRate: globalWallpaperRate || 1
+            }, { merge: true });
+            showToast(`✅ ${type === 'image' ? 'Gambar' : 'Video'} wallpaper berjaya!`, 3500);
           }
         );
       } catch(e) {
         uploadProgressContainer.style.display = 'none';
         showToast('Gagal: ' + e.message);
       }
+    }
+
+    // Playback rate buttons
+    document.querySelectorAll('.btn-playback-rate').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const rate = parseFloat(btn.getAttribute('data-rate'));
+        globalWallpaperRate = rate;
+        // Apply terus ke video
+        if (wallpaperVideoEl) wallpaperVideoEl.playbackRate = rate;
+        // Highlight button
+        document.querySelectorAll('.btn-playback-rate').forEach(b => {
+          b.classList.toggle('btn-active', parseFloat(b.getAttribute('data-rate')) === rate);
+        });
+        // Simpan ke Firestore
+        if (currentUser) {
+          const refSetting = doc(db, "users", currentUser.uid, "settings", "preferences");
+          await setDoc(refSetting, { wallpaperRate: rate }, { merge: true });
+        }
+        showToast(`⚡ Kelajuan video: ${rate}x`, 2000);
+      });
     });
 
-    document.getElementById('btn-remove-wallpaper').addEventListener('click', async () => {
+    // Padam wallpaper
+    document.getElementById('btn-padam-wallpaper').addEventListener('click', async () => {
       if (!currentUser) return;
       if (!confirm('Padam wallpaper dan guna background asal?')) return;
-
+      document.getElementById('wallpaper-popup').style.display = 'none';
       showToast('⏳ Memadamkan wallpaper...', 0);
       try {
         // Padam dari Storage
-        const { ref: storageRef, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js");
-        const oldRef = storageRef(storage, `users/${currentUser.uid}/wallpaper/tasbih`);
-        await deleteObject(oldRef).catch(() => {});
-
-        // Padam URL dari Firestore
+        if (globalWallpaperUrl) {
+          const ext = globalWallpaperType === 'image' ? 'jpg' : 'mp4';
+          const oldRef = ref(storage, `users/${currentUser.uid}/wallpaper/tasbih.${ext}`);
+          await deleteObject(oldRef).catch(() => {});
+        }
+        // Padam dari Firestore
         const refSetting = doc(db, "users", currentUser.uid, "settings", "preferences");
-        await setDoc(refSetting, { wallpaperUrl: '' }, { merge: true });
-
+        await setDoc(refSetting, { wallpaperUrl: '', wallpaperType: '', wallpaperRate: 1 }, { merge: true });
         showToast('✅ Wallpaper dipadam.', 3000);
       } catch(e) {
         showToast('Gagal: ' + e.message);
