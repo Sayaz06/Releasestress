@@ -3416,39 +3416,24 @@ if (url && type === 'image') {
         document.getElementById('btn-set-wallpaper').textContent = '🖼️ Tukar';
         document.getElementById('wallpaper-playback-section').style.display = 'none';
 
-      } else if (url && type === 'video') {
+} else if (url && type === 'video') {
         // Padam gambar dulu
         document.body.style.backgroundImage = '';
-        document.body.style.backgroundSize = '';
-        document.body.style.backgroundPosition = '';
-        document.body.style.backgroundRepeat = '';
-        document.body.style.backgroundAttachment = '';
         if (card) {
           card.style.backgroundImage = '';
-          card.style.backgroundSize = '';
-          card.style.backgroundPosition = '';
-          card.style.backgroundRepeat = '';
+          card.style.background = '';
         }
-// Video kekal di tempat asal dalam card — hanya tukar src & tunjuk
-        if (wallpaperVideoEl.src !== url) {
+        // Tukar src kalau lain
+        if (wallpaperVideoEl.getAttribute('data-loaded-src') !== url) {
           wallpaperVideoEl.pause();
           wallpaperVideoEl.src = url;
           wallpaperVideoEl.load();
+          wallpaperVideoEl.setAttribute('data-loaded-src', url);
         }
         wallpaperVideoEl.playbackRate = rate || 1;
+        // Tunjuk video — JANGAN ubah position/zIndex mana-mana element lain
+        wallpaperVideoEl.style.visibility = 'visible';
         wallpaperVideoEl.style.display = 'block';
-        // Pastikan card ada position relative
-        if (card) {
-          card.style.position = 'relative';
-          card.style.overflow = 'hidden';
-        }
-        // Pastikan content dalam card nampak di atas video
-        const cardContent = card ? card.querySelectorAll(':scope > *:not(#wallpaper-video-el)') : [];
-        cardContent.forEach(el => {
-          if (el.id === 'wallpaper-video-el') return;
-          if (el.style.position !== 'absolute') el.style.position = 'relative';
-          el.style.zIndex = '1';
-        });
         wallpaperVideoEl.play().catch(() => {
           document.addEventListener('touchstart', () => {
             wallpaperVideoEl.play().catch(() => {});
@@ -3517,12 +3502,23 @@ function updateWallpaperStatusBar(msg) {
       }
     }
 
-    document.getElementById('btn-global-hide-wallpaper').addEventListener('click', () => {
+document.getElementById('btn-global-hide-wallpaper').addEventListener('click', () => {
       wallpaperHidden = !wallpaperHidden;
-      if (wallpaperHidden) {
-        applyWallpaper('', '', 1);
-      } else {
-        applyWallpaper(globalWallpaperUrl, globalWallpaperType, globalWallpaperRate);
+      if (globalWallpaperType === 'video') {
+        // Video — guna visibility sahaja, jangan kacau layout langsung
+        if (wallpaperHidden) {
+          wallpaperVideoEl.style.visibility = 'hidden';
+          wallpaperVideoEl.pause();
+        } else {
+          wallpaperVideoEl.style.visibility = 'visible';
+          wallpaperVideoEl.play().catch(() => {});
+        }
+      } else if (globalWallpaperType === 'image') {
+        // Gambar — toggle background card
+        const card = document.querySelector('.card');
+        if (card) {
+          card.style.background = wallpaperHidden ? '' : `url('${globalWallpaperUrl}') center/cover no-repeat`;
+        }
       }
       updateGlobalWallpaperBtn();
     });
