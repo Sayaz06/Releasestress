@@ -1429,16 +1429,16 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
       <div id="fullscreen-fact-hint" style="flex-shrink:0;padding:8px 16px 16px 16px;font-size:0.65rem;color:var(--grad1);font-weight:600;text-align:center;"></div>
     </div>
   </div>
-<!-- VIDEO WALLPAPER BACKGROUND -->
-  <video id="wallpaper-video-el" style="display:none;" muted loop playsinline></video>
-
 <div class="app-shell">
     <div class="card">
+      <!-- VIDEO WALLPAPER — Duduk kekal di sini, jangan pindah -->
+      <video id="wallpaper-video-el" muted loop playsinline style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;will-change:transform;transform:translateZ(0);-webkit-transform:translateZ(0);"></video>
 
       <div id="toast-notification">Topik Aktif: ...</div>
 
       <!-- BUTTON OFF WALLPAPER — GLOBAL, SEMUA PAGE -->
 <button id="btn-global-hide-wallpaper" title="Sembunyikan/Tunjuk Wallpaper" style="display:none;position:absolute;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:rgba(255,255,255,0.8);font-size:0.68rem;padding:3px 10px;cursor:pointer;backdrop-filter:blur(4px);min-width:72px;text-align:center;">🖼️ BG: ON</button>
+      <button id="btn-global-refresh-wallpaper" title="Refresh Video Wallpaper" style="display:none;position:absolute;top:10px;right:90px;z-index:9999;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:rgba(255,255,255,0.8);font-size:0.68rem;padding:3px 10px;cursor:pointer;backdrop-filter:blur(4px);min-width:36px;text-align:center;">↺</button>
       
       <section id="section-login" class="section active">
         <div style="margin: auto 0;">
@@ -1570,12 +1570,17 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
         </div>
 
-        <!-- ══ COP IKRAR ══ -->
-<div id="perjanjian-cop-card" style="background:rgba(56,189,248,0.06);border:2px solid rgba(56,189,248,0.4);border-radius:14px;padding:14px;margin-bottom:10px;flex-shrink:0;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+<!-- ══ COP IKRAR ══ -->
+        <div id="perjanjian-cop-card" style="background:rgba(56,189,248,0.06);border:2px solid rgba(56,189,248,0.4);border-radius:14px;padding:14px;margin-bottom:10px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;">📋 Cop Ikrar</div>
-            <span id="perjanjian-cop-save-status" style="font-size:0.68rem;color:#34d399;">✓ Tersimpan</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span id="perjanjian-cop-save-status" style="font-size:0.68rem;color:#34d399;">✓ Tersimpan</span>
+              <button id="btn-cop-toggle" style="font-size:0.68rem;padding:2px 10px;border-radius:999px;background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.4);color:#7dd3fc;cursor:pointer;">Tunjuk ▾</button>
+            </div>
           </div>
+          <!-- BODY COP — tersembunyi by default -->
+          <div id="perjanjian-cop-body" style="display:none;">
 
           <!-- Ayat cop — boleh edit -->
           <textarea id="perjanjian-cop-ayat" rows="3" placeholder="Tulis ayat ikrar anda di sini...&#10;Contoh: Saya berikrar dengan nama Allah bahawa saya akan menunaikan janji-janji ini dengan sepenuh hati." style="width:100%;resize:none;border-radius:10px;border:1px solid rgba(56,189,248,0.4);background:rgba(0,0,0,0.25);color:var(--text);padding:10px;font-size:0.88rem;line-height:1.6;outline:none;margin-bottom:10px;"></textarea>
@@ -1614,9 +1619,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
               <button id="btn-perjanjian-pin-confirm" style="flex:1;padding:11px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#0369a1);border:none;color:white;font-size:0.85rem;font-weight:700;cursor:pointer;">Sahkan</button>
             </div>
           </div>
-        </div>
+</div><!-- tutup perjanjian-cop-body -->
+        </div><!-- tutup perjanjian-cop-card -->
 
-<div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
+        <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
 
           <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:12px;margin-bottom:10px;">
             <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:6px;">📌 Cara Guna</div>
@@ -3385,11 +3391,12 @@ function bukaBahasaRehatPopup(callback) {
 function applyWallpaper(url, type, rate) {
       const card = document.querySelector('.card');
 
-      if (url && type === 'image') {
-        // Padam video dulu
+if (url && type === 'image') {
+        // Padam video dulu — kekal di tempat, hanya sembunyi
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
-        wallpaperVideoEl.style.cssText = 'display:none;';
+        wallpaperVideoEl.load();
+        wallpaperVideoEl.style.display = 'none';
         // Reset body
         document.body.style.backgroundImage = '';
         document.body.style.backgroundSize = '';
@@ -3422,35 +3429,26 @@ function applyWallpaper(url, type, rate) {
           card.style.backgroundPosition = '';
           card.style.backgroundRepeat = '';
         }
-        // Video duduk dalam card — guna position absolute
-        wallpaperVideoEl.src = url;
+// Video kekal di tempat asal dalam card — hanya tukar src & tunjuk
+        if (wallpaperVideoEl.src !== url) {
+          wallpaperVideoEl.pause();
+          wallpaperVideoEl.src = url;
+          wallpaperVideoEl.load();
+        }
         wallpaperVideoEl.playbackRate = rate || 1;
+        wallpaperVideoEl.style.display = 'block';
         // Pastikan card ada position relative
         if (card) {
           card.style.position = 'relative';
           card.style.overflow = 'hidden';
         }
-        wallpaperVideoEl.style.cssText = `
-          display:block;
-          position:absolute;
-          top:0;
-          left:0;
-          width:100%;
-          height:100%;
-          object-fit:cover;
-          z-index:0;
-          pointer-events:none;
-        `;
         // Pastikan content dalam card nampak di atas video
         const cardContent = card ? card.querySelectorAll(':scope > *:not(#wallpaper-video-el)') : [];
         cardContent.forEach(el => {
+          if (el.id === 'wallpaper-video-el') return;
           if (el.style.position !== 'absolute') el.style.position = 'relative';
           el.style.zIndex = '1';
         });
-        // Pindahkan video ke dalam card
-        if (card && wallpaperVideoEl.parentElement !== card) {
-          card.insertBefore(wallpaperVideoEl, card.firstChild);
-        }
         wallpaperVideoEl.play().catch(() => {
           document.addEventListener('touchstart', () => {
             wallpaperVideoEl.play().catch(() => {});
@@ -3465,14 +3463,11 @@ function applyWallpaper(url, type, rate) {
         });
 
       } else {
-        // Reset semua
+// Reset semua — video kekal di tempat, hanya sembunyi
         wallpaperVideoEl.pause();
         wallpaperVideoEl.src = '';
-        wallpaperVideoEl.style.cssText = 'display:none;';
-        // Pindah video balik ke luar card kalau perlu
-        if (wallpaperVideoEl.parentElement !== document.body) {
-          document.body.appendChild(wallpaperVideoEl);
-        }
+        wallpaperVideoEl.load();
+        wallpaperVideoEl.style.display = 'none';
         document.body.style.backgroundImage = '';
         document.body.style.backgroundSize = '';
         document.body.style.backgroundPosition = '';
@@ -3505,28 +3500,61 @@ function updateWallpaperStatusBar(msg) {
       if (el) el.textContent = msg;
     }
 
-    // ── TOGGLE HIDE/SHOW WALLPAPER (GLOBAL) ──
+// ── TOGGLE HIDE/SHOW WALLPAPER (GLOBAL) ──
     let wallpaperHidden = false;
 
     function updateGlobalWallpaperBtn() {
       const btn = document.getElementById('btn-global-hide-wallpaper');
+      const btnRefresh = document.getElementById('btn-global-refresh-wallpaper');
       if (!btn) return;
       const adaWallpaper = !!(globalWallpaperUrl);
       btn.style.display = adaWallpaper ? 'block' : 'none';
       btn.textContent = wallpaperHidden ? '🖼️ BG: OFF' : '🖼️ BG: ON';
       btn.style.opacity = wallpaperHidden ? '0.5' : '1';
+      // Refresh button hanya tunjuk kalau video & tak hidden
+      if (btnRefresh) {
+        btnRefresh.style.display = (adaWallpaper && globalWallpaperType === 'video' && !wallpaperHidden) ? 'block' : 'none';
+      }
     }
 
     document.getElementById('btn-global-hide-wallpaper').addEventListener('click', () => {
       wallpaperHidden = !wallpaperHidden;
       if (wallpaperHidden) {
-        // Sembunyikan — apply kosong tanpa padam dari Firestore
         applyWallpaper('', '', 1);
       } else {
-        // Tunjuk balik — apply semula dari global state
         applyWallpaper(globalWallpaperUrl, globalWallpaperType, globalWallpaperRate);
       }
       updateGlobalWallpaperBtn();
+    });
+
+    // ── REFRESH VIDEO WALLPAPER ──
+    document.getElementById('btn-global-refresh-wallpaper').addEventListener('click', () => {
+      if (!globalWallpaperUrl || globalWallpaperType !== 'video') return;
+      const btn = document.getElementById('btn-global-refresh-wallpaper');
+      btn.textContent = '⏳';
+      btn.disabled = true;
+      wallpaperVideoEl.pause();
+      wallpaperVideoEl.load();
+      wallpaperVideoEl.play().then(() => {
+        btn.textContent = '↺';
+        btn.disabled = false;
+      }).catch(() => {
+        // Cuba sekali lagi lepas interact
+        document.addEventListener('touchstart', () => {
+          wallpaperVideoEl.play().catch(() => {});
+          btn.textContent = '↺';
+          btn.disabled = false;
+        }, { once: true });
+        btn.textContent = '↺';
+        btn.disabled = false;
+      });
+    });
+
+    // ── AUTO RESUME VIDEO BILA BALIK KE TAB / BUKA BALIK SCREEN ──
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && globalWallpaperType === 'video' && !wallpaperHidden && globalWallpaperUrl) {
+        wallpaperVideoEl.play().catch(() => {});
+      }
     });
 
     function subscribeWallpaper() {
@@ -10400,6 +10428,16 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
     document.getElementById('btn-perjanjian-pin-confirm').addEventListener('click', sahkanPinDone);
     document.getElementById('perjanjian-pin-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') sahkanPinDone();
+    });
+
+// ── TOGGLE COP IKRAR ──
+    document.getElementById('btn-cop-toggle').addEventListener('click', () => {
+      const body = document.getElementById('perjanjian-cop-body');
+      const btn = document.getElementById('btn-cop-toggle');
+      if (!body || !btn) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      btn.textContent = isOpen ? 'Tunjuk ▾' : 'Sembunyikan ▴';
     });
 
     document.getElementById('btn-go-perjanjian').addEventListener('click', () => {
