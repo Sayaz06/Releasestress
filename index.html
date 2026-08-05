@@ -1567,6 +1567,38 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
         </div>
 
+        <!-- ══ COP IKRAR ══ -->
+        <div id="perjanjian-cop-card" style="background:rgba(56,189,248,0.06);border:2px solid rgba(56,189,248,0.4);border-radius:14px;padding:14px;margin-bottom:10px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;">📋 Cop Ikrar</div>
+            <span id="perjanjian-cop-save-status" style="font-size:0.68rem;color:#34d399;">✓ Tersimpan</span>
+          </div>
+
+          <!-- Ayat cop — boleh edit -->
+          <textarea id="perjanjian-cop-ayat" rows="3" placeholder="Tulis ayat ikrar anda di sini...&#10;Contoh: Saya berikrar dengan nama Allah bahawa saya akan menunaikan janji-janji ini dengan sepenuh hati." style="width:100%;resize:none;border-radius:10px;border:1px solid rgba(56,189,248,0.4);background:rgba(0,0,0,0.25);color:var(--text);padding:10px;font-size:0.88rem;line-height:1.6;outline:none;margin-bottom:10px;"></textarea>
+
+          <!-- Baris tarikh -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <label style="font-size:0.72rem;color:#7dd3fc;font-weight:600;white-space:nowrap;">📅 Tarikh Ikrar:</label>
+            <input type="date" id="perjanjian-cop-tarikh" style="flex:1;background:rgba(0,0,0,0.25);border:1px solid rgba(56,189,248,0.4);border-radius:8px;color:var(--text);padding:6px 10px;font-size:0.82rem;outline:none;">
+          </div>
+
+          <!-- Kotak sebelum / selepas solat -->
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:0.72rem;color:#7dd3fc;font-weight:600;">🕌 Refleksi Solat</div>
+
+            <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(56,189,248,0.25);border-radius:10px;padding:10px;">
+              <div style="font-size:0.68rem;color:#93c5fd;font-weight:700;margin-bottom:5px;">SEBELUM SOLAT — Apa azam saya untuk solat ini?</div>
+              <textarea id="perjanjian-cop-sebelum" rows="2" placeholder="Cth: Saya akan khusyuk dan fikirkan perjanjian saya semasa sujud..." style="width:100%;resize:none;border:none;background:transparent;color:var(--text);font-size:0.82rem;line-height:1.6;outline:none;"></textarea>
+            </div>
+
+            <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(56,189,248,0.25);border-radius:10px;padding:10px;">
+              <div style="font-size:0.68rem;color:#93c5fd;font-weight:700;margin-bottom:5px;">SELEPAS SOLAT — Apa yang saya rasa / janji kepada Allah selepas solat?</div>
+              <textarea id="perjanjian-cop-selepas" rows="2" placeholder="Cth: Alhamdulillah, saya berasa lebih tenang. Saya janji tidak akan mengulangi..." style="width:100%;resize:none;border:none;background:transparent;color:var(--text);font-size:0.82rem;line-height:1.6;outline:none;"></textarea>
+            </div>
+          </div>
+        </div>
+
         <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
           <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:6px;">📌 Cara Guna</div>
           <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
@@ -10202,9 +10234,57 @@ if (result.score > 0) {
 // ── LACI PERJANJIAN ──
     const sectionPerjanjian = document.getElementById('section-perjanjian');
 
+// ── COP IKRAR: LOAD & AUTO-SAVE ──
+    let perjanjianCopSaveTimer = null;
+
+    async function loadPerjanjianCop() {
+      if (!currentUser) return;
+      try {
+        const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "perjanjianCop"));
+        if (snap.exists()) {
+          const d = snap.data();
+          const ayatEl = document.getElementById('perjanjian-cop-ayat');
+          const tarikhEl = document.getElementById('perjanjian-cop-tarikh');
+          const sebelumEl = document.getElementById('perjanjian-cop-sebelum');
+          const selepasEl = document.getElementById('perjanjian-cop-selepas');
+          if (ayatEl) ayatEl.value = d.ayat || '';
+          if (tarikhEl) tarikhEl.value = d.tarikh || '';
+          if (sebelumEl) sebelumEl.value = d.sebelum || '';
+          if (selepasEl) selepasEl.value = d.selepas || '';
+        }
+      } catch(e) { console.log("Gagal load cop ikrar:", e); }
+    }
+
+    function autoSavePerjanjianCop() {
+      const statusEl = document.getElementById('perjanjian-cop-save-status');
+      if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
+      if (perjanjianCopSaveTimer) clearTimeout(perjanjianCopSaveTimer);
+      perjanjianCopSaveTimer = setTimeout(async () => {
+        if (!currentUser) return;
+        const ayat    = document.getElementById('perjanjian-cop-ayat')?.value || '';
+        const tarikh  = document.getElementById('perjanjian-cop-tarikh')?.value || '';
+        const sebelum = document.getElementById('perjanjian-cop-sebelum')?.value || '';
+        const selepas = document.getElementById('perjanjian-cop-selepas')?.value || '';
+        try {
+          await setDoc(doc(db, "users", currentUser.uid, "settings", "perjanjianCop"), {
+            ayat, tarikh, sebelum, selepas, updatedAt: Date.now()
+          }, { merge: true });
+          if (statusEl) { statusEl.textContent = '✓ Tersimpan'; statusEl.style.color = '#34d399'; }
+        } catch(e) {
+          if (statusEl) { statusEl.textContent = '❌ Gagal simpan'; statusEl.style.color = '#f87171'; }
+        }
+      }, 800);
+    }
+
+    ['perjanjian-cop-ayat','perjanjian-cop-sebelum','perjanjian-cop-selepas'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', autoSavePerjanjianCop);
+    });
+    document.getElementById('perjanjian-cop-tarikh')?.addEventListener('change', autoSavePerjanjianCop);
+
     document.getElementById('btn-go-perjanjian').addEventListener('click', () => {
       showSection(sectionPerjanjian);
       renderPerjanjianList();
+      loadPerjanjianCop();
     });
 
     document.getElementById('btn-back-home-perjanjian').addEventListener('click', () => {
