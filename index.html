@@ -1432,10 +1432,13 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <!-- VIDEO WALLPAPER BACKGROUND -->
   <video id="wallpaper-video-el" style="display:none;" muted loop playsinline></video>
 
-  <div class="app-shell">
+<div class="app-shell">
     <div class="card">
 
       <div id="toast-notification">Topik Aktif: ...</div>
+
+      <!-- BUTTON OFF WALLPAPER — GLOBAL, SEMUA PAGE -->
+      <button id="btn-global-hide-wallpaper" title="Sembunyikan/Tunjuk Wallpaper" style="display:none;position:absolute;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:rgba(255,255,255,0.8);font-size:0.68rem;padding:3px 10px;cursor:pointer;backdrop-filter:blur(4px);">🖼️ BG: ON</button>
 
       <section id="section-login" class="section active">
         <div style="margin: auto 0;">
@@ -3474,27 +3477,52 @@ function applyWallpaper(url, type, rate) {
       }
     }
     
-    function updateWallpaperStatusBar(msg) {
+function updateWallpaperStatusBar(msg) {
       const el = document.getElementById('wallpaper-status-bar');
       if (el) el.textContent = msg;
     }
+
+    // ── TOGGLE HIDE/SHOW WALLPAPER (GLOBAL) ──
+    let wallpaperHidden = false;
+
+    function updateGlobalWallpaperBtn() {
+      const btn = document.getElementById('btn-global-hide-wallpaper');
+      if (!btn) return;
+      const adaWallpaper = !!(globalWallpaperUrl);
+      btn.style.display = adaWallpaper ? 'block' : 'none';
+      btn.textContent = wallpaperHidden ? '🖼️ BG: OFF' : '🖼️ BG: ON';
+      btn.style.opacity = wallpaperHidden ? '0.5' : '1';
+    }
+
+    document.getElementById('btn-global-hide-wallpaper').addEventListener('click', () => {
+      wallpaperHidden = !wallpaperHidden;
+      if (wallpaperHidden) {
+        // Sembunyikan — apply kosong tanpa padam dari Firestore
+        applyWallpaper('', '', 1);
+      } else {
+        // Tunjuk balik — apply semula dari global state
+        applyWallpaper(globalWallpaperUrl, globalWallpaperType, globalWallpaperRate);
+      }
+      updateGlobalWallpaperBtn();
+    });
 
     function subscribeWallpaper() {
       if (!currentUser) return;
       const refSetting = doc(db, "users", currentUser.uid, "settings", "preferences");
       onSnapshot(refSetting, (snap) => {
-        if (snap.exists()) {
+if (snap.exists()) {
           const data = snap.data();
           globalWallpaperUrl = data.wallpaperUrl || '';
           globalWallpaperType = data.wallpaperType || '';
           globalWallpaperRate = data.wallpaperRate || 1;
-          applyWallpaper(globalWallpaperUrl, globalWallpaperType, globalWallpaperRate);
+          if (!wallpaperHidden) applyWallpaper(globalWallpaperUrl, globalWallpaperType, globalWallpaperRate);
         } else {
           globalWallpaperUrl = '';
           globalWallpaperType = '';
           globalWallpaperRate = 1;
           applyWallpaper('', '', 1);
         }
+        updateGlobalWallpaperBtn();
       });
     }
 
