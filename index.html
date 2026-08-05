@@ -1592,6 +1592,28 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div style="font-size:0.65rem;color:var(--subtext);margin-bottom:6px;font-style:italic;">Cth: Solat untuk perjanjian ini dilakukan sebelum solat Asar · Solat untuk perjanjian ini dilakukan selepas solat Zohor</div>
             <textarea id="perjanjian-cop-solat" rows="2" placeholder="Tulis di sini bila solat ini dilakukan..." style="width:100%;resize:none;border:none;background:transparent;color:var(--text);font-size:0.88rem;line-height:1.6;outline:none;"></textarea>
           </div>
+
+          <!-- Status Done + Button -->
+          <div style="margin-top:10px;">
+            <div id="perjanjian-cop-done-status" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);border-radius:10px;padding:10px 12px;font-size:0.82rem;color:#34d399;font-weight:600;margin-bottom:8px;text-align:center;line-height:1.6;"></div>
+            <button id="btn-perjanjian-cop-done" style="width:100%;padding:11px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#0369a1);border:none;color:white;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(14,165,233,0.35);">
+              ✅ Done — Solat Taubat Telah Dilakukan
+            </button>
+          </div>
+        </div>
+
+        <!-- POPUP VERIFY PIN UNTUK DONE -->
+        <div id="perjanjian-pin-popup" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.95);align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);">
+          <div style="background:rgba(15,23,42,0.98);border:2px solid rgba(56,189,248,0.5);border-radius:18px;padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.9);">
+            <div style="font-size:1.1rem;font-weight:700;color:#7dd3fc;text-align:center;margin-bottom:4px;">🔐 Sahkan dengan PIN</div>
+            <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:18px;">Masukkan PIN anda untuk mengesahkan solat taubat telah dilakukan</div>
+            <input id="perjanjian-pin-input" type="password" inputmode="numeric" maxlength="6" placeholder="PIN (4-6 digit)" style="width:100%;background:rgba(15,23,42,0.9);border:1px solid rgba(56,189,248,0.5);border-radius:10px;color:#fff;padding:12px;font-size:1.4rem;text-align:center;outline:none;letter-spacing:0.4em;margin-bottom:8px;">
+            <div id="perjanjian-pin-pesan" style="font-size:0.72rem;color:#f87171;text-align:center;min-height:18px;margin-bottom:12px;"></div>
+            <div style="display:flex;gap:10px;">
+              <button id="btn-perjanjian-pin-batal" style="flex:1;padding:11px;border-radius:999px;background:transparent;border:1px solid var(--border-mid);color:var(--subtext);font-size:0.85rem;cursor:pointer;">Batal</button>
+              <button id="btn-perjanjian-pin-confirm" style="flex:1;padding:11px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#0369a1);border:none;color:white;font-size:0.85rem;font-weight:700;cursor:pointer;">Sahkan</button>
+            </div>
+          </div>
         </div>
 
 <div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
@@ -2991,7 +3013,8 @@ import {
       EmailAuthProvider,
       linkWithCredential,
       signInWithEmailAndPassword,
-      updatePassword
+      updatePassword,
+      reauthenticateWithCredential
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
 import {
@@ -10273,6 +10296,7 @@ const ayatEl   = document.getElementById('perjanjian-cop-ayat');
           if (ayatEl)   ayatEl.value   = d.ayat   || '';
           if (tarikhEl) tarikhEl.value = d.tarikh  || '';
           if (solatEl)  solatEl.value  = d.solat   || '';
+          renderCopDoneStatus(d.doneTs || null);
         }
       } catch(e) { console.log("Gagal load cop ikrar:", e); }
     }
@@ -10301,6 +10325,82 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
       document.getElementById(id)?.addEventListener('input', autoSavePerjanjianCop);
     });
     document.getElementById('perjanjian-cop-tarikh')?.addEventListener('change', autoSavePerjanjianCop);
+
+    // ── DONE BUTTON — VERIFY PIN ──
+    function renderCopDoneStatus(doneTs) {
+      const el = document.getElementById('perjanjian-cop-done-status');
+      if (!el) return;
+      if (!doneTs) { el.style.display = 'none'; return; }
+      const dt = new Date(doneTs);
+      const h = dt.getHours();
+      const m = String(dt.getMinutes()).padStart(2,'0');
+      const ampm = h >= 12 ? 'petang' : 'pagi';
+      const h12 = h % 12 || 12;
+      const hari = dt.toLocaleDateString('ms-MY', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      el.style.display = 'block';
+      el.innerHTML = `🕌 Solat taubat berjaya dilakukan pada pukul <strong>${h12}:${m} ${ampm}</strong><br><span style="font-size:0.72rem;color:#6ee7b7;">${hari}</span>`;
+    }
+
+    document.getElementById('btn-perjanjian-cop-done').addEventListener('click', () => {
+      const popup = document.getElementById('perjanjian-pin-popup');
+      const input = document.getElementById('perjanjian-pin-input');
+      const pesan = document.getElementById('perjanjian-pin-pesan');
+      if (!popup) return;
+      input.value = '';
+      pesan.textContent = '';
+      popup.style.display = 'flex';
+      setTimeout(() => input.focus(), 80);
+    });
+
+    document.getElementById('btn-perjanjian-pin-batal').addEventListener('click', () => {
+      document.getElementById('perjanjian-pin-popup').style.display = 'none';
+    });
+
+    async function sahkanPinDone() {
+      const input = document.getElementById('perjanjian-pin-input');
+      const pesan = document.getElementById('perjanjian-pin-pesan');
+      const btnConfirm = document.getElementById('btn-perjanjian-pin-confirm');
+      const pin = input.value.trim();
+
+      if (!pin || !/^\d{4,6}$/.test(pin)) {
+        pesan.textContent = '⚠️ PIN mesti 4-6 digit angka.'; return;
+      }
+      if (!currentUser) { pesan.textContent = '⚠️ Sila login dahulu.'; return; }
+
+      btnConfirm.textContent = 'Mengesahkan...';
+      btnConfirm.disabled = true;
+
+      try {
+        const credential = EmailAuthProvider.credential(ADMIN_EMAIL, pin);
+        await reauthenticateWithCredential(currentUser, credential);
+
+        // PIN betul — simpan timestamp done
+        const doneTs = Date.now();
+        await setDoc(doc(db, "users", currentUser.uid, "settings", "perjanjianCop"), {
+          doneTs, updatedAt: Date.now()
+        }, { merge: true });
+
+        document.getElementById('perjanjian-pin-popup').style.display = 'none';
+        input.value = '';
+        renderCopDoneStatus(doneTs);
+        showToast('✅ Solat taubat telah disahkan!', 3500);
+
+      } catch(e) {
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+          pesan.textContent = '❌ PIN salah. Cuba lagi.';
+        } else {
+          pesan.textContent = '❌ ' + e.message;
+        }
+      } finally {
+        btnConfirm.textContent = 'Sahkan';
+        btnConfirm.disabled = false;
+      }
+    }
+
+    document.getElementById('btn-perjanjian-pin-confirm').addEventListener('click', sahkanPinDone);
+    document.getElementById('perjanjian-pin-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sahkanPinDone();
+    });
 
     document.getElementById('btn-go-perjanjian').addEventListener('click', () => {
       showSection(sectionPerjanjian);
