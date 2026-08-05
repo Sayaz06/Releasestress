@@ -1568,8 +1568,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         </div>
 
         <!-- ══ COP IKRAR ══ -->
-<div id="perjanjian-cop-card" style="background:rgba(56,189,248,0.06);border:2px solid rgba(56,189,248,0.4);border-radius:14px;padding:14px;margin-bottom:10px;flex-shrink:0;max-height:55vh;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+<div id="perjanjian-cop-card" style="background:rgba(56,189,248,0.06);border:2px solid rgba(56,189,248,0.4);border-radius:14px;padding:14px;margin-bottom:10px;flex-shrink:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;">📋 Cop Ikrar</div>
             <span id="perjanjian-cop-save-status" style="font-size:0.68rem;color:#34d399;">✓ Tersimpan</span>
           </div>
@@ -1591,21 +1591,25 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
         </div>
 
-        <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
-          <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:6px;">📌 Cara Guna</div>
-          <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
-            • Tambah perjanjian mengikut susunan yang anda nak<br>
-            • Guna <strong>↑ ↓</strong> untuk susun semula<br>
-            • Guna <strong>=</strong> dalam teks untuk bahagian flip<br>
-            • Contoh: <em>Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya</em>
+<div class="scrollable-container" style="flex:1;min-height:0;padding-bottom:20px;">
+
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:12px;margin-bottom:10px;">
+            <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:6px;">📌 Cara Guna</div>
+            <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+              • Tambah perjanjian mengikut susunan yang anda nak<br>
+              • Guna <strong>↑ ↓</strong> untuk susun semula<br>
+              • Guna <strong>=</strong> dalam teks untuk bahagian flip<br>
+              • Contoh: <em>Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya</em>
+            </div>
           </div>
+
+          <button id="btn-add-perjanjian" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:white;margin-bottom:10px;">
+            + Tambah Perjanjian
+          </button>
+
+          <div id="perjanjian-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+
         </div>
-
-        <button id="btn-add-perjanjian" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
-          + Tambah Perjanjian
-        </button>
-
-        <div class="list" id="perjanjian-list" style="padding:10px;"></div>
       </section>
 
 <!-- ══ JOURNAL HUB ══ -->
