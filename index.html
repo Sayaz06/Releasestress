@@ -2047,6 +2047,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
             <button id="btn-go-sr-queue" class="btn btn-secondary btn-sm" style="border-color:#fcd34d;color:#fcd34d;">⏰ SR Queue</button>
             <button id="btn-toggle-rehat" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">💤 Rehat: ON</button>
+            <button id="btn-toggle-audio-mode" class="btn btn-secondary btn-sm" style="border-color:#f43f5e;color:#fb7185;">🎧 Audio: OFF</button>
             <button id="btn-toggle-queue" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">🔄 Queue: OFF</button>
             <button id="btn-toggle-jq" class="btn btn-secondary btn-sm" style="border-color:#f97316;color:#fb923c;">🏃 JQ: OFF</button>
             <button id="btn-toggle-pj" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;color:#7dd3fc;">🤝 PJ: OFF</button>
@@ -6109,6 +6110,13 @@ function decrementTasbih() {
       if (document.getElementById('tips-sebutan-overlay')?.style.display === 'flex') return;
       if (document.getElementById('tips-fakta-overlay')?.style.display === 'flex') return;
       if (document.getElementById('reminder-overlay')?.style.display === 'flex') return;
+      // ── AUDIO MODE: block touch semasa audio jalan, trigger audio bila tap ──
+      if (audioModeAktif) {
+        if (audioSedangMain) return; // ignore semua touch semasa audio
+        // Trigger audio untuk konten semasa
+        mainAudioSemasa();
+        return;
+      }
 // Intersep tap untuk retrieval practice Queue
       if (window._queueRetrievalHandler) {
         const handler = window._queueRetrievalHandler;
@@ -17228,6 +17236,320 @@ function mulakanReminderCheck() {
   setTimeout(() => semakReminderAktif(), 3000);
 }
             
+// ══════════════════════════════════════════
+// AUDIO MODE SYSTEM
+// ══════════════════════════════════════════
+
+let audioModeAktif = false;
+let audioSedangMain = false; // semasa building method sedang jalan — block touch
+
+// ── DETECT BAHASA TEKS ──
+function detectLang(teks) {
+  // Arab — skip
+  if (/[\u0600-\u06FF]/.test(teks)) return null;
+  // English — ada banyak huruf latin tanpa 'aw','ai','ei','ou' pola Melayu
+  const words = teks.split(/\s+/);
+  let engScore = 0;
+  words.forEach(w => {
+    if (/^[a-zA-Z]+$/.test(w)) {
+      // pola English
+      if (/tion|ness|ment|ough|ight|ould|ould|ance|ence|ible|able/.test(w.toLowerCase())) engScore += 2;
+      else engScore += 1;
+    }
+  });
+  if (engScore >= words.length * 0.6) return 'en-US';
+  return 'ms-MY';
+}
+
+// ── BINA URUTAN PERKATAAN (BUILDING METHOD) ──
+// Contoh: "her suggestion was" → ["her", "her suggestion", "her suggestion was"]
+function binaUrutan(teks) {
+  // Buang tanda baca di tepi
+  const bersih = teks.replace(/[.,!?;:]+$/g, '').trim();
+  const words = bersih.split(/\s+/).filter(w => w.length > 0);
+  const urutan = [];
+  for (let i = 0; i < words.length; i++) {
+    urutan.push(words.slice(0, i + 1).join(' '));
+  }
+  return urutan; // ['her', 'her suggestion', ...]
+}
+
+// ── EJA HURUF DEMI HURUF ──
+// Contoh: "her suggestion" → "H E R S U G G E S T I O N"
+function ejaHuruf(teks) {
+  return teks.replace(/\s+/g, '').toUpperCase().split('').join(' ');
+}
+
+// ── SEBUT SATU FRASA DENGAN WEB SPEECH ──
+function audioSebut(teks, lang, rate = 0.85) {
+  return new Promise((resolve) => {
+    if (!teks || !teks.trim()) { resolve(); return; }
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(teks);
+    utt.lang = lang;
+    utt.rate = rate;
+    utt.pitch = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+    if (preferred) utt.voice = preferred;
+    utt.onend = () => resolve();
+    utt.onerror = () => resolve();
+    window.speechSynthesis.speak(utt);
+  });
+}
+
+// ── JEDA KECIL ANTARA SEBUTAN ──
+function jedaAudio(ms = 300) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ── BUILDING METHOD UNTUK SATU AYAT (1 ULANGAN) ──
+async function buildingMethodSekali(teks, lang, updateFn) {
+  const urutan = binaUrutan(teks);
+  for (let i = 0; i < urutan.length; i++) {
+    if (!audioModeAktif || !audioSedangMain) return;
+    const fasa = urutan[i];
+    // Tunjuk teks semasa
+    if (updateFn) updateFn(fasa);
+    // Sebut perkataan/frasa
+    await audioSebut(fasa, lang, 0.85);
+    if (!audioModeAktif || !audioSedangMain) return;
+    await jedaAudio(150);
+    // Eja huruf (tanpa spasi antara perkataan)
+    const ejaan = ejaHuruf(fasa);
+    if (updateFn) updateFn(`[ ${ejaan} ]`);
+    await audioSebut(ejaan, lang, 0.9);
+    if (!audioModeAktif || !audioSedangMain) return;
+    await jedaAudio(200);
+  }
+  // Sebut ayat penuh sekali lagi di hujung
+  if (updateFn) updateFn(teks);
+  await audioSebut(teks, lang, 0.85);
+  await jedaAudio(400);
+}
+
+// ── BUILDING METHOD × 5 ULANGAN ──
+async function buildingMethod5x(teks, lang, updateFn) {
+  if (!teks || !teks.trim()) return;
+  for (let ulang = 1; ulang <= 5; ulang++) {
+    if (!audioModeAktif || !audioSedangMain) return;
+    // Tunjuk bilangan ulangan
+    const labelUlang = `(Ulangan ${ulang}/5) ${teks}`;
+    if (updateFn) updateFn(labelUlang);
+    await buildingMethodSekali(teks, lang, updateFn);
+    if (!audioModeAktif || !audioSedangMain) return;
+    await jedaAudio(500);
+  }
+}
+
+// ── AUDIO UNTUK LACI BAHASA ──
+async function audioLaciBahasa(data) {
+  if (!data || !audioModeAktif) return;
+  const updateFn = (teks) => {
+    factContentEl.textContent = teks;
+  };
+
+  // Fasa 1 — perkataan (tajuk laci)
+  const tajuk = data.title || '';
+  const langTajuk = detectLang(tajuk) || 'en-US';
+  if (tajuk && langTajuk) {
+    factTitleEl.textContent = `[ 🎧 Fasa 1 — Perkataan ]`;
+    await buildingMethod5x(tajuk, langTajuk, updateFn);
+  }
+
+  if (!audioModeAktif || !audioSedangMain) return;
+
+  // Fasa 2 & 3 — baris dalam notes
+  if (data.notes) {
+    const lines = data.notes.split('\n').filter(l => l.trim());
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      if (!audioModeAktif || !audioSedangMain) return;
+      const parts = lines[lineIdx].split('=');
+      const ayatBI = parts[0] ? parts[0].trim() : '';
+      const terjemahan = parts[1] ? parts.slice(1).join('=').trim() : '';
+
+      // Fasa 2 — ayat BI
+      if (ayatBI) {
+        const langBI = detectLang(ayatBI) || 'en-US';
+        factTitleEl.textContent = `[ 🎧 Fasa 2 — Baris ${lineIdx + 1}/${lines.length} ]`;
+        await buildingMethod5x(ayatBI, langBI, updateFn);
+      }
+
+      if (!audioModeAktif || !audioSedangMain) return;
+
+      // Fasa 3 — terjemahan
+      if (terjemahan) {
+        const langBM = detectLang(terjemahan) || 'ms-MY';
+        factTitleEl.textContent = `[ 🎧 Fasa 3 — Terjemahan Baris ${lineIdx + 1}/${lines.length} ]`;
+        await buildingMethod5x(terjemahan, langBM, updateFn);
+      }
+    }
+  }
+}
+
+// ── AUDIO UNTUK LACI FAKTA ──
+async function audioLaciFakta(data) {
+  if (!data || !audioModeAktif) return;
+  const updateFn = (teks) => { factContentEl.textContent = teks; };
+
+  const teks = data.text || '';
+  if (!teks || /[\u0600-\u06FF]/.test(teks)) return; // skip Arab
+
+  const adaFlip = teks.includes('=');
+  if (adaFlip) {
+    const parts = teks.split('=');
+    const bahagian1 = parts[0].trim();
+    const bahagian2 = parts.slice(1).join('=').trim();
+
+    if (bahagian1) {
+      const lang1 = detectLang(bahagian1) || 'ms-MY';
+      if (lang1) {
+        factTitleEl.textContent = `[ 🎧 Fakta ]`;
+        await buildingMethod5x(bahagian1, lang1, updateFn);
+      }
+    }
+    if (!audioModeAktif || !audioSedangMain) return;
+    if (bahagian2) {
+      const lang2 = detectLang(bahagian2) || 'ms-MY';
+      if (lang2) {
+        factTitleEl.textContent = `[ 🎧 Fakta — Penerangan ]`;
+        await buildingMethod5x(bahagian2, lang2, updateFn);
+      }
+    }
+  } else {
+    const lang = detectLang(teks) || 'ms-MY';
+    if (lang) {
+      factTitleEl.textContent = `[ 🎧 Fakta ]`;
+      await buildingMethod5x(teks, lang, updateFn);
+    }
+  }
+}
+
+// ── AUDIO UNTUK JOGGING MOTIVASI (sebut sekali sahaja) ──
+async function audioMotivasi(motivasi) {
+  if (!motivasi || !audioModeAktif) return;
+  const teks = motivasi.text || '';
+  const adaFlip = teks.includes('=');
+  const bahagianUtama = adaFlip ? teks.split('=')[0].trim() : teks.trim();
+  if (!bahagianUtama) return;
+  const lang = detectLang(bahagianUtama) || 'ms-MY';
+  factTitleEl.textContent = `[ 🎧 Motivasi Jogging ]`;
+  factContentEl.textContent = bahagianUtama;
+  await audioSebut(bahagianUtama, lang, 0.9);
+  await jedaAudio(500);
+}
+
+// ── AUDIO UNTUK PERJANJIAN (sebut sekali sahaja) ──
+async function audioPerjanjian(perjanjian) {
+  if (!perjanjian || !audioModeAktif) return;
+  const teks = perjanjian.text || '';
+  const adaFlip = teks.includes('=');
+  const bahagianUtama = adaFlip ? teks.split('=')[0].trim() : teks.trim();
+  if (!bahagianUtama) return;
+  const lang = detectLang(bahagianUtama) || 'ms-MY';
+  factTitleEl.textContent = `[ 🎧 Perjanjian ]`;
+  factContentEl.textContent = bahagianUtama;
+  await audioSebut(bahagianUtama, lang, 0.9);
+  await jedaAudio(500);
+}
+
+// ── TOGGLE BUTTON ──
+document.getElementById('btn-toggle-audio-mode').addEventListener('click', () => {
+  audioModeAktif = !audioModeAktif;
+  const btn = document.getElementById('btn-toggle-audio-mode');
+  btn.textContent = `🎧 Audio: ${audioModeAktif ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('btn-active', audioModeAktif);
+  btn.style.color = audioModeAktif ? 'white' : '#fb7185';
+  btn.style.borderColor = audioModeAktif ? 'transparent' : '#f43f5e';
+
+  if (audioModeAktif) {
+    // Auto OFF rehat
+    rehatMode = false;
+    const btnRehat = document.getElementById('btn-toggle-rehat');
+    if (btnRehat) {
+      btnRehat.textContent = '💤 Rehat: OFF';
+      btnRehat.classList.remove('btn-active');
+      btnRehat.style.color = 'var(--subtext)';
+      btnRehat.style.borderColor = 'var(--border-mid)';
+    }
+    // Block btn-toggle-main-rest-max
+    const btnTarget = document.getElementById('btn-toggle-main-rest-max');
+    if (btnTarget) {
+      btnTarget.setAttribute('data-audio-locked', 'true');
+      btnTarget.style.opacity = '0.3';
+      btnTarget.style.pointerEvents = 'none';
+    }
+    showToast('🎧 Audio Mode ON — Rehat auto-OFF. Target dikunci.', 3500);
+  } else {
+    // Stop audio
+    window.speechSynthesis.cancel();
+    audioSedangMain = false;
+    // Unlock btn-toggle-main-rest-max
+    const btnTarget = document.getElementById('btn-toggle-main-rest-max');
+    if (btnTarget) {
+      btnTarget.removeAttribute('data-audio-locked');
+      btnTarget.style.opacity = '';
+      btnTarget.style.pointerEvents = '';
+    }
+    // Restore rehat
+    rehatMode = true;
+    const btnRehat = document.getElementById('btn-toggle-rehat');
+    if (btnRehat) {
+      btnRehat.textContent = '💤 Rehat: ON';
+      btnRehat.classList.add('btn-active');
+      btnRehat.style.color = '#c4b5fd';
+      btnRehat.style.borderColor = '#a78bfa';
+    }
+    showToast('🎧 Audio Mode OFF', 2000);
+    renderCurrentFact();
+  }
+});
+
+// ── FUNGSI UTAMA: MAIN AUDIO IKUT KONTEKS SEMASA ──
+async function mainAudioSemasa() {
+  if (!audioModeAktif || audioSedangMain) return;
+  audioSedangMain = true;
+
+  try {
+    if (bahasaMode) {
+      // ── Bahasa Mode ──
+      const data = allFacts[currentFactIndex];
+      if (!data || data.isTamat) { audioSedangMain = false; return; }
+
+      if (data.isFasaEjaan) {
+        // Fasa 0 — sebut tajuk sahaja × 5
+        const lang = detectLang(data.text) || 'en-US';
+        await buildingMethod5x(data.text, lang, (t) => { factContentEl.textContent = t; });
+      } else {
+        // Cari drawer parent
+        const drawer = allBahasaDrawers.find(d => d.id === data.drawerId);
+        if (drawer) await audioLaciBahasa(drawer);
+      }
+
+    } else if (factMode) {
+      // ── Fakta Mode ──
+      const data = allFacts[currentFactIndex];
+      if (!data || data.isTamat) { audioSedangMain = false; return; }
+      await audioLaciFakta(data);
+
+    } else if (window._jqMotivasiHandler) {
+      // ── Jogging Queue — motivasi ──
+      const motivasi = allJoggingMotivasi[currentJoggingMotivasiIdx];
+      if (motivasi) await audioMotivasi(motivasi);
+
+    } else if (window._pjHandler) {
+      // ── Perjanjian Queue ──
+      const perjanjian = allPerjanjian[currentPerjanjianIdx];
+      if (perjanjian) await audioPerjanjian(perjanjian);
+    }
+  } catch(e) {
+    console.log("Audio error:", e);
+  }
+
+  audioSedangMain = false;
+  if (audioModeAktif) renderCurrentFact();
+}
+
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
