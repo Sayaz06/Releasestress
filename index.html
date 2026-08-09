@@ -17301,14 +17301,7 @@ function binaUrutan(teks) {
 }
 
 // ── EJA HURUF DEMI HURUF (SEBUT HURUF SATU PERSATU, PERLAHAN) ──
-async function ejaHurufPerlahan(teks, lang) {
-  const huruf = teks.replace(/\s+/g, '').toUpperCase().split('');
-  for (const h of huruf) {
-    if (!audioModeAktif || !audioSedangMain) return;
-    await audioSebut(h, lang, 0.6);  // rate 0.6 = sangat perlahan
-    await jedaAudio(250);             // jeda 250ms antara tiap huruf
-  }
-}
+// Fungsi ini kini ada dalam blok audioSebut di bawah — placeholder kosong
 
 // ── SEBUT SATU FRASA DENGAN WEB SPEECH ──
 function audioSebut(teks, lang, rate = 0.85) {
@@ -17318,6 +17311,42 @@ function audioSebut(teks, lang, rate = 0.85) {
 
     // Handle JEDA marker
     const bahagian = teks.split('JEDA');
+    let idx = 0;
+
+    function sebutBahagian() {
+      if (idx >= bahagian.length) { resolve(); return; }
+      const b = bahagian[idx].trim();
+      idx++;
+      if (!b) { setTimeout(sebutBahagian, 500); return; }
+      const utt = new SpeechSynthesisUtterance(b);
+      utt.lang = lang; // Guna lang yang diberi terus — jangan override
+      utt.rate = rate;
+      utt.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      // Cari suara yang tepat mengikut lang
+      const preferred = voices.find(v => v.lang === lang)
+        || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+      if (preferred) utt.voice = preferred;
+      utt.onend = () => sebutBahagian();
+      utt.onerror = () => sebutBahagian();
+      window.speechSynthesis.speak(utt);
+    }
+    sebutBahagian();
+  });
+}
+
+// ── SEBUT HURUF PERLAHAN DENGAN BAHASA TEPAT ──
+async function ejaHurufPerlahan(teks, lang) {
+  const huruf = teks.replace(/\s+/g, '').toUpperCase().split('');
+  for (const h of huruf) {
+    if (!audioModeAktif || !audioSedangMain) return;
+    await audioSebut(h, lang, 0.6);
+    await jedaAudio(250);
+  }
+}
+
+// ── DUMMY untuk elak duplicate definition ──
+function _audioSebutPlaceholder() {
     let idx = 0;
 
     function sebutBahagian() {
@@ -17392,8 +17421,13 @@ async function buildingMethodSekali(teks, lang, updateFn) {
 }
 
 // ── BUILDING METHOD — HANYA 1 KALI PER TAP ──
-// (countdown countdown bertanggungjawab untuk 5 kali melalui tap user)
 async function buildingMethodSekaliTap(teks, lang, updateFn) {
+  if (!teks || !teks.trim()) return;
+  await buildingMethodSekali(teks, lang, updateFn);
+}
+
+// ── BUILDING METHOD — PAKSA BAHASA TERTENTU (tanpa detect) ──
+async function buildingMethodSekaliLang(teks, lang, updateFn) {
   if (!teks || !teks.trim()) return;
   await buildingMethodSekali(teks, lang, updateFn);
 }
@@ -17582,29 +17616,29 @@ if (data.isFasaEjaan) {
         factTitleEl.textContent = `[ 🎧 Fasa 0 — Ejaan Tajuk ]`;
         const tajuk = data.text || '';
         const anak = tajuk.indexOf('→');
-        if (anak !== -1) {
-          // Ada pemisah → : sebut BM dulu, jeda, sebut EN
+if (anak !== -1) {
+          // Ada pemisah → : kiri = ms-MY, kanan = en-US (hardcode, jangan detect)
           const bahBM = tajuk.slice(0, anak).trim();
           const bahEN = tajuk.slice(anak + 1).trim();
-          // Buang nombor awalan dari bahBM (cth: "2.diabaikan" → "diabaikan")
+          // Buang nombor awalan (cth: "2.diabaikan" → "diabaikan")
           const bmBersih = bahBM.replace(/^\d+[\.\)]\s*/, '').trim();
           if (bmBersih) {
             if (updateFn) updateFn(bmBersih);
-            await buildingMethodSekaliTap(bmBersih, 'ms-MY', updateFn);
+            await buildingMethodSekaliLang(bmBersih, 'ms-MY', updateFn);
           }
           if (!audioModeAktif || !audioSedangMain) { audioSedangMain = false; return; }
           // Jeda antara BM dan EN
-          if (updateFn) updateFn(`${bmBersih} → ...`);
+          if (updateFn) updateFn(`${bmBersih}  →  ${bahEN}`);
           await jedaAudio(800);
           if (bahEN) {
             if (updateFn) updateFn(bahEN);
-            await buildingMethodSekaliTap(bahEN, 'en-US', updateFn);
+            await buildingMethodSekaliLang(bahEN, 'en-US', updateFn);
           }
         } else {
-          // Tiada → : detect bahasa biasa, buang nombor awalan
+          // Tiada → : buang nombor, detect bahasa
           const tajukBersih = tajuk.replace(/^\d+[\.\)]\s*/, '').trim();
           const lang = detectLang(tajukBersih) || 'ms-MY';
-          await buildingMethodSekaliTap(tajukBersih, lang, updateFn);
+          await buildingMethodSekaliLang(tajukBersih, lang, updateFn);
         }
       } else {
         // Cari baris dalam notes yang berkaitan dengan fact semasa
