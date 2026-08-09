@@ -6113,12 +6113,13 @@ function decrementTasbih() {
 // ── AUDIO MODE: block touch semasa audio jalan, trigger audio bila tap ──
       if (audioModeAktif) {
         if (audioSedangMain) return; // ignore touch semasa audio sedang main
-        // Kalau audio dah habis — jalankan audio untuk content semasa
-        // Countdown sebenar akan berlaku melalui cycleFact biasa SELEPAS audio
+        // Jalankan audio, lepas habis auto-trigger countdown sekali
         mainAudioSemasa().then(() => {
-          // Selepas audio habis, countdown sekali automatik
           if (audioModeAktif && !audioSedangMain) {
-            // Biarkan user tap lagi untuk countdown — jangan auto
+            // Audio habis — trigger countdown biasa secara automatik
+            audioModeAktif = false; // matikan sementara supaya decrementTasbih jalan normal
+            decrementTasbih();
+            audioModeAktif = true;
           }
         });
         return;
@@ -17349,32 +17350,43 @@ function jedaAudio(ms = 300) {
 }
 
 // ── BUILDING METHOD UNTUK SATU AYAT (1 ULANGAN SAHAJA) ──
-// Setiap tap = 1 kali building method penuh dari mula hingga ayat penuh
 async function buildingMethodSekali(teks, lang, updateFn) {
   const bersih = bersihkanTeksAudio(teks);
-  const urutan = binaUrutan(bersih);
+  // Buang token JEDA dari urutan — JEDA bukan perkataan, tak perlu dieja
+  const words = bersih.split(/\s+/).filter(w => w && w !== 'JEDA');
+  const urutan = [];
+  for (let i = 0; i < words.length; i++) {
+    urutan.push(words.slice(0, i + 1).join(' '));
+  }
 
   for (let i = 0; i < urutan.length; i++) {
     if (!audioModeAktif || !audioSedangMain) return;
     const fasa = urutan[i];
+    const perkataanSahaja = fasa.split(/\s+/).filter(w => w && w !== 'JEDA');
 
-    // Tunjuk teks semasa
-    if (updateFn) updateFn(fasa);
+    // Tunjuk teks semasa (guna teks asal tanpa JEDA)
+    if (updateFn) updateFn(perkataanSahaja.join(' '));
     // Sebut frasa
     await audioSebut(fasa, lang, 0.85);
     if (!audioModeAktif || !audioSedangMain) return;
     await jedaAudio(200);
 
-    // Eja huruf demi huruf — perlahan
-    const ejaanLabel = fasa.replace(/\s+/g, '').toUpperCase().split('').join(' · ');
+    // Eja huruf demi huruf — hanya huruf, buang JEDA
+    const hurufSahaja = perkataanSahaja.join('').toUpperCase();
+    const ejaanLabel = hurufSahaja.split('').join(' · ');
     if (updateFn) updateFn(`[ ${ejaanLabel} ]`);
-    await ejaHurufPerlahan(fasa, lang);
+    // Eja setiap huruf dalam frasa semasa (tanpa JEDA)
+    for (const h of hurufSahaja) {
+      if (!audioModeAktif || !audioSedangMain) return;
+      await audioSebut(h, lang, 0.6);
+      await jedaAudio(250);
+    }
     if (!audioModeAktif || !audioSedangMain) return;
     await jedaAudio(300);
   }
 
-  // Sebut ayat penuh sekali lagi di hujung
-  if (updateFn) updateFn(bersih);
+  // Sebut ayat penuh sekali lagi di hujung (guna teks asal dengan jeda semula jadi)
+  if (updateFn) updateFn(teks.replace(/JEDA/g, '').replace(/\s+/g, ' ').trim());
   await audioSebut(bersih, lang, 0.85);
   await jedaAudio(600);
 }
