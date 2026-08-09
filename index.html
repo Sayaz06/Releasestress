@@ -17342,33 +17342,6 @@ function audioSebut(teks, lang, rate = 0.85) {
   });
 }
 
-
-    let idx = 0;
-
-    function sebutBahagian() {
-      if (idx >= bahagian.length) { resolve(); return; }
-      const b = bahagian[idx].trim();
-      idx++;
-      if (!b) {
-        // Ini adalah jeda (koma/titik)
-        setTimeout(sebutBahagian, 500);
-        return;
-      }
-      const utt = new SpeechSynthesisUtterance(b);
-      utt.lang = lang;
-      utt.rate = rate;
-      utt.pitch = 1.0;
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
-      if (preferred) utt.voice = preferred;
-      utt.onend = () => sebutBahagian();
-      utt.onerror = () => sebutBahagian();
-      window.speechSynthesis.speak(utt);
-    }
-    sebutBahagian();
-  });
-}
-
 // ── JEDA KECIL ANTARA SEBUTAN ──
 function jedaAudio(ms = 300) {
   return new Promise(resolve => setTimeout(resolve, ms));
