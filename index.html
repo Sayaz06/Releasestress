@@ -17577,11 +17577,35 @@ async function mainAudioSemasa() {
       const data = allFacts[currentFactIndex];
       if (!data || data.isTamat) { audioSedangMain = false; return; }
 
-      if (data.isFasaEjaan) {
-        // Fasa 0 — 1 kali building method untuk tajuk
-        const lang = detectLang(data.text) || 'en-US';
+if (data.isFasaEjaan) {
+        // Fasa 0 — tajuk format "BM → EN" atau biasa
         factTitleEl.textContent = `[ 🎧 Fasa 0 — Ejaan Tajuk ]`;
-        await buildingMethodSekaliTap(data.text, lang, updateFn);
+        const tajuk = data.text || '';
+        const anak = tajuk.indexOf('→');
+        if (anak !== -1) {
+          // Ada pemisah → : sebut BM dulu, jeda, sebut EN
+          const bahBM = tajuk.slice(0, anak).trim();
+          const bahEN = tajuk.slice(anak + 1).trim();
+          // Buang nombor awalan dari bahBM (cth: "2.diabaikan" → "diabaikan")
+          const bmBersih = bahBM.replace(/^\d+[\.\)]\s*/, '').trim();
+          if (bmBersih) {
+            if (updateFn) updateFn(bmBersih);
+            await buildingMethodSekaliTap(bmBersih, 'ms-MY', updateFn);
+          }
+          if (!audioModeAktif || !audioSedangMain) { audioSedangMain = false; return; }
+          // Jeda antara BM dan EN
+          if (updateFn) updateFn(`${bmBersih} → ...`);
+          await jedaAudio(800);
+          if (bahEN) {
+            if (updateFn) updateFn(bahEN);
+            await buildingMethodSekaliTap(bahEN, 'en-US', updateFn);
+          }
+        } else {
+          // Tiada → : detect bahasa biasa, buang nombor awalan
+          const tajukBersih = tajuk.replace(/^\d+[\.\)]\s*/, '').trim();
+          const lang = detectLang(tajukBersih) || 'ms-MY';
+          await buildingMethodSekaliTap(tajukBersih, lang, updateFn);
+        }
       } else {
         // Cari baris dalam notes yang berkaitan dengan fact semasa
         const drawer = allBahasaDrawers.find(d => d.id === data.drawerId);
