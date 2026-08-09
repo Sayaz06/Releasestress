@@ -17301,7 +17301,14 @@ function binaUrutan(teks) {
 }
 
 // ── EJA HURUF DEMI HURUF (SEBUT HURUF SATU PERSATU, PERLAHAN) ──
-// Fungsi ini kini ada dalam blok audioSebut di bawah — placeholder kosong
+async function ejaHurufPerlahan(teks, lang) {
+  const huruf = teks.replace(/\s+/g, '').toUpperCase().split('');
+  for (const h of huruf) {
+    if (!audioModeAktif || !audioSedangMain) return;
+    await audioSebut(h, lang, 0.6);
+    await jedaAudio(250);
+  }
+}
 
 // ── SEBUT SATU FRASA DENGAN WEB SPEECH ──
 function audioSebut(teks, lang, rate = 0.85) {
@@ -17345,8 +17352,6 @@ async function ejaHurufPerlahan(teks, lang) {
   }
 }
 
-// ── DUMMY untuk elak duplicate definition ──
-function _audioSebutPlaceholder() {
     let idx = 0;
 
     function sebutBahagian() {
