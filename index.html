@@ -11880,10 +11880,34 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', async () => {
       if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
-      showToast('⏳ Menjana PDF flashcard...', 0);
+      // Loading bar — sama macam export AI
+      const loadBar = document.createElement('div');
+      loadBar.id = 'export-pdf-load-bar';
+      loadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
+      loadBar.innerHTML = `
+        <div style="height:4px;background:rgba(255,255,255,0.1);">
+          <div id="export-pdf-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0891b2,#22d3ee);transition:width 0.3s ease;box-shadow:0 0 10px #0891b2;"></div>
+        </div>
+        <div style="background:rgba(8,145,178,0.95);color:white;font-size:0.78rem;font-weight:600;padding:6px 16px;text-align:center;" id="export-pdf-msg">
+          ⏳ Mengambil semua laci dari Firestore...
+        </div>`;
+      document.body.appendChild(loadBar);
+
+      const setProgress = (pct, msg) => {
+        const fill = document.getElementById('export-pdf-fill');
+        const msgEl = document.getElementById('export-pdf-msg');
+        if (fill) fill.style.width = pct + '%';
+        if (msgEl && msg) msgEl.textContent = msg;
+      };
+      const removeLoadBar = () => {
+        const el = document.getElementById('export-pdf-load-bar');
+        if (el) el.remove();
+      };
 
       try {
-        // Ambil semua laci dari Firestore
+        setProgress(20, '⏳ Menghubungi Firestore...');
+
+        // ── AMBIL TERUS DARI FIRESTORE — sama macam export AI ──
         const snap = await getDocs(
           query(
             collection(db, "users", currentUser.uid, "bahasa_drawers"),
@@ -11891,12 +11915,14 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
           )
         );
 
+        setProgress(60, `✅ ${snap.size} laci ditemui — memproses...`);
+
         const semuaLaci = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(d => d.jenisId === currentJenisKataId && d.notes && d.notes.trim())
           .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
 
-        if (!semuaLaci.length) { showToast('⚠️ Tiada laci dengan kandungan.'); return; }
+        if (!semuaLaci.length) { removeLoadBar(); showToast('⚠️ Tiada laci dengan kandungan.'); return; }
 
         // Kumpul semua flashcard
         const flashcards = [];
@@ -11922,29 +11948,35 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
         const tajukPDF = jenisData?.name || 'Flashcard';
         const tarikhExport = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
 
-        // Bina HTML page
+setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
+
+        // Bina HTML page — 3 kolum × 3 baris = 9 cards per page
+        // Tinggi setiap card = 210mm ÷ 3 = 70mm (tepat penuh)
+        const CARDS_PER_PAGE = 9;
         let pagesHtml = '';
-        const CARDS_PER_PAGE = 9; // 3 kolum x 3 baris
+
         for (let i = 0; i < flashcards.length; i += CARDS_PER_PAGE) {
           const batch = flashcards.slice(i, i + CARDS_PER_PAGE);
-          // Pad supaya sentiasa 9 cards (untuk grid consistent)
           while (batch.length < CARDS_PER_PAGE) batch.push(null);
 
           pagesHtml += `<div class="page">`;
           batch.forEach((card, idx) => {
+            const nombor = i + idx + 1;
             if (!card) {
               pagesHtml += `<div class="card empty"></div>`;
               return;
             }
-            const nombor = i + idx + 1;
+            // Potong teks panjang supaya muat dalam card
+            const ayatPendek = card.ayatBI.length > 120 ? card.ayatBI.substring(0, 120) + '...' : card.ayatBI;
+            const terjPendek = card.terjemahan.length > 100 ? card.terjemahan.substring(0, 100) + '...' : card.terjemahan;
             pagesHtml += `
               <div class="card">
                 <div class="card-num">${nombor}</div>
                 <div class="card-tajuk">${card.tajuk}</div>
                 <div class="card-divider"></div>
-                <div class="card-ayat">${card.ayatBI}</div>
+                <div class="card-ayat">${ayatPendek}</div>
                 <div class="card-divider"></div>
-                <div class="card-terjemahan">${card.terjemahan || '—'}</div>
+                <div class="card-terjemahan">${terjPendek || '—'}</div>
               </div>`;
           });
           pagesHtml += `</div>`;
@@ -11972,27 +12004,30 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
   .cover p { font-size: 12pt; color: #6b7280; }
   .cover .stats { margin-top: 20px; font-size: 11pt; color: #374151; }
 
-  .page {
+.page {
     width: 297mm;
     height: 210mm;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 99mm);
+    grid-template-rows: repeat(3, 70mm);
     gap: 0;
     page-break-after: always;
-    border: 0.5pt solid #e5e7eb;
+    overflow: hidden;
   }
 
-  .card {
+.card {
+    width: 99mm;
+    height: 70mm;
     border: 0.5pt solid #d1d5db;
     border-left: 3pt solid #0891b2;
-    padding: 6mm 5mm;
+    padding: 4mm 4mm 3mm 5mm;
     display: flex;
     flex-direction: column;
-    gap: 3mm;
+    gap: 2mm;
     position: relative;
     overflow: hidden;
     background: white;
+    box-sizing: border-box;
   }
 
   .card.empty {
@@ -12090,22 +12125,27 @@ ${pagesHtml}
 </body>
 </html>`;
 
+setProgress(100, '✅ Buka tetingkap print...');
+
         // Buka dalam tab baru untuk print
         const printWindow = window.open('', '_blank');
         printWindow.document.write(htmlContent);
         printWindow.document.close();
         printWindow.focus();
 
+        removeLoadBar();
+
         // Tunggu load lepas tu trigger print dialog
         printWindow.onload = () => {
           setTimeout(() => {
             printWindow.print();
-          }, 500);
+          }, 600);
         };
 
-        showToast(`✅ ${flashcards.length} flashcard berjaya dijana!`, 4000);
+        showToast(`✅ ${flashcards.length} flashcard dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
 
       } catch(e) {
+        removeLoadBar();
         showToast('❌ Gagal: ' + e.message);
       }
     });
