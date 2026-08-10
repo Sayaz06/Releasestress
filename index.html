@@ -18155,8 +18155,8 @@ if (anak !== -1) {
 // ══════════════════════════════════════════
 // CROP TOOL SYSTEM (Nisbah 6:5)
 // ══════════════════════════════════════════
-const CROP_RATIO = 6 / 5; // lebar:tinggi = 1.2
-
+const CROP_RATIO = 70 / 22; // ikut nisbah bahagian ayat dalam flashcard (~3.18:1)
+    
 let cropImg = null;
 let cropCallback = null;
 let cropState = {
@@ -18357,7 +18357,7 @@ document.getElementById('btn-crop-confirm').addEventListener('click', () => {
   if (!canvas || !cropImg) return;
 
   // Buat canvas output saiz 1180×1000 (nisbah 6:5, resolusi tinggi)
-  const outW = 1180, outH = 1000;
+  const outW = 1180, outH = 370;
   const outCanvas = document.createElement('canvas');
   outCanvas.width = outW;
   outCanvas.height = outH;
