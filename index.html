@@ -17381,10 +17381,9 @@ function jedaAudio(ms = 300) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ── BUILDING METHOD UNTUK SATU AYAT (1 ULANGAN SAHAJA) ──
+// ── BUILDING METHOD DENGAN EJAAN (untuk EN) ──
 async function buildingMethodSekali(teks, lang, updateFn) {
   const bersih = bersihkanTeksAudio(teks);
-  // Buang token JEDA dari urutan — JEDA bukan perkataan, tak perlu dieja
   const words = bersih.split(/\s+/).filter(w => w && w !== 'JEDA');
   const urutan = [];
   for (let i = 0; i < words.length; i++) {
@@ -17396,18 +17395,16 @@ async function buildingMethodSekali(teks, lang, updateFn) {
     const fasa = urutan[i];
     const perkataanSahaja = fasa.split(/\s+/).filter(w => w && w !== 'JEDA');
 
-    // Tunjuk teks semasa (guna teks asal tanpa JEDA)
+    // Sebut frasa semasa
     if (updateFn) updateFn(perkataanSahaja.join(' '));
-    // Sebut frasa
     await audioSebut(fasa, lang, 0.85);
     if (!audioModeAktif || !audioSedangMain) return;
     await jedaAudio(200);
 
-    // Eja huruf demi huruf — hanya huruf, buang JEDA
+    // Eja huruf demi huruf
     const hurufSahaja = perkataanSahaja.join('').toUpperCase();
     const ejaanLabel = hurufSahaja.split('').join(' · ');
     if (updateFn) updateFn(`[ ${ejaanLabel} ]`);
-    // Eja setiap huruf dalam frasa semasa (tanpa JEDA)
     for (const h of hurufSahaja) {
       if (!audioModeAktif || !audioSedangMain) return;
       await audioSebut(h, lang, 0.6);
@@ -17417,7 +17414,33 @@ async function buildingMethodSekali(teks, lang, updateFn) {
     await jedaAudio(300);
   }
 
-  // Sebut ayat penuh sekali lagi di hujung (guna teks asal dengan jeda semula jadi)
+  // Sebut ayat penuh sekali lagi di hujung
+  if (updateFn) updateFn(teks.replace(/JEDA/g, '').replace(/\s+/g, ' ').trim());
+  await audioSebut(bersih, lang, 0.85);
+  await jedaAudio(600);
+}
+
+// ── BUILDING METHOD TANPA EJAAN (untuk BM) ──
+async function buildingMethodTanpaEjaan(teks, lang, updateFn) {
+  const bersih = bersihkanTeksAudio(teks);
+  const words = bersih.split(/\s+/).filter(w => w && w !== 'JEDA');
+  const urutan = [];
+  for (let i = 0; i < words.length; i++) {
+    urutan.push(words.slice(0, i + 1).join(' '));
+  }
+
+  for (let i = 0; i < urutan.length; i++) {
+    if (!audioModeAktif || !audioSedangMain) return;
+    const fasa = urutan[i].split(/\s+/).filter(w => w && w !== 'JEDA').join(' ');
+
+    // Sebut frasa sahaja — tanpa eja
+    if (updateFn) updateFn(fasa);
+    await audioSebut(fasa, lang, 0.85);
+    if (!audioModeAktif || !audioSedangMain) return;
+    await jedaAudio(350);
+  }
+
+  // Sebut ayat penuh sekali lagi di hujung
   if (updateFn) updateFn(teks.replace(/JEDA/g, '').replace(/\s+/g, ' ').trim());
   await audioSebut(bersih, lang, 0.85);
   await jedaAudio(600);
@@ -17675,9 +17698,9 @@ if (anak !== -1) {
           if (!isFlipped && ayatBI) {
             factTitleEl.textContent = `[ 🎧 Fasa 2 — Ayat BI ]`;
             await buildingMethodSekaliLang(ayatBI, 'en-US', updateFn);
-          } else if (terjemahan) {
+} else if (terjemahan) {
             factTitleEl.textContent = `[ 🎧 Fasa 3 — Terjemahan BM ]`;
-            await buildingMethodSekaliLang(terjemahan, 'ms-MY', updateFn);
+            await buildingMethodTanpaEjaan(terjemahan, 'ms-MY', updateFn);
           }
         }
       }
