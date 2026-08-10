@@ -1973,11 +1973,11 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
             <div class="topbar-sub" id="parent-bahasa-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <div style="font-size: 0.75rem; color: var(--subtext); text-align: center; margin-bottom: 8px;">
-          Tanda (tick) SATU untuk aktifkan sebagai sumber countdown.
+<div style="font-size: 0.75rem; color: var(--subtext); text-align: center; margin-bottom: 8px;">
+          Tanda (tick) SATU kotak sahaja untuk aktifkan.
         </div>
-        <button id="btn-add-jenis-kata" class="btn btn-sm">+ Tambah Jenis Kata</button>
-        <div class="list mt-8" id="jenis-kata-list" style="padding: 10px;"></div>
+<button id="btn-add-topic" class="btn btn-sm">Tambah Topik</button>
+<div class="list mt-8" id="topics-list" style="padding: 10px;"></div>
       </section>
 
 <section id="section-bahasa-drawer" class="section">
@@ -2207,6 +2207,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           </div>
         </div>
         <button id="btn-add-laci" class="btn btn-sm mt-8">Tambah Laci</button>
+        <button id="btn-export-pdf-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Export PDF Flashcard Fakta (A4 Portrait 2×3)</button>
         <div class="list mt-8" id="drawer-list" style="padding: 10px;"></div>
       </section>
 
@@ -8892,8 +8893,30 @@ if(btnToggleMainRestMax) {
     });
 }
     
-btnToggleFact.addEventListener("click", () => {
+btnToggleFact.addEventListener("click", async () => {
       factMode = !factMode;
+      // Auto-sync pdfNombor fakta dalam Jogging Kad bila ON fakta
+      if (factMode && currentUser) {
+        setTimeout(async () => {
+          try {
+            // Sync pdfTopikId dalam allDrawers supaya Jogging Kad papar kod betul
+            const snap = await getDocs(
+              collection(db, "users", currentUser.uid, "drawer")
+            );
+            snap.docs.forEach(d => {
+              const idx = allDrawers.findIndex(dr => dr.id === d.id);
+              if (idx !== -1) {
+                allDrawers[idx].pdfNombor = d.data().pdfNombor || null;
+                allDrawers[idx].pdfTopik = d.data().pdfTopik || null;
+                allDrawers[idx].pdfTopikId = d.data().pdfTopikId || null;
+              }
+            });
+            if (jbAktif) jbUpdateUI();
+          } catch(e) {
+            console.log("Gagal sync pdfNombor fakta:", e);
+          }
+        }, 1500);
+      }
 if (factMode && (routineMode || bahasaMode)) {
          routineMode = false;
          bahasaMode = false;
@@ -11957,6 +11980,363 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     });
 
 // ── EXPORT PDF FLASHCARD ──
+    document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async () => {
+      if (!currentUser || !currentTopicId) { showToast('⚠️ Sila buka topik dahulu.'); return; }
+
+      const loadBar = document.createElement('div');
+      loadBar.id = 'export-fakta-load-bar';
+      loadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
+      loadBar.innerHTML = `
+        <div style="height:4px;background:rgba(255,255,255,0.1);">
+          <div id="export-fakta-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#f59e0b,#fcd34d);transition:width 0.3s ease;box-shadow:0 0 10px #f59e0b;"></div>
+        </div>
+        <div style="background:rgba(245,158,11,0.95);color:white;font-size:0.78rem;font-weight:600;padding:6px 16px;text-align:center;" id="export-fakta-msg">
+          ⏳ Mengambil laci dari Firestore...
+        </div>`;
+      document.body.appendChild(loadBar);
+
+      const setProgress = (pct, msg) => {
+        const fill = document.getElementById('export-fakta-fill');
+        const msgEl = document.getElementById('export-fakta-msg');
+        if (fill) fill.style.width = pct + '%';
+        if (msgEl && msg) msgEl.textContent = msg;
+      };
+      const removeLoadBar = () => {
+        const el = document.getElementById('export-fakta-load-bar');
+        if (el) el.remove();
+      };
+
+      try {
+        setProgress(20, '⏳ Menghubungi Firestore...');
+
+        // Ambil nama topik dan subjek
+        const topicData = allTopics.find(t => t.id === currentTopicId);
+        const subjectData = allSubjects.find(s => s.id === topicData?.subjectId);
+        const topicNama = (topicData?.name || 'Topik').replace(/\s+/g, '');
+        const subjectNama = (subjectData?.name || 'Subjek').replace(/\s+/g, '');
+
+        // Ambil semua laci dalam topik ini dari Firestore
+        const snap = await getDocs(
+          query(
+            collection(db, "users", currentUser.uid, "drawer"),
+            orderBy("title", "asc")
+          )
+        );
+
+        setProgress(40, '✅ Laci ditemui — memproses...');
+
+        const semuaLaciRaw = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(d => d.topicId === currentTopicId && d.notes && d.notes.trim());
+
+        // Susun ikut title numerik
+        const semuaLaci = semuaLaciRaw.sort((a, b) =>
+          (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
+        );
+
+        if (!semuaLaci.length) {
+          removeLoadBar();
+          showToast('⚠️ Tiada laci dengan kandungan dalam topik ini.');
+          return;
+        }
+
+        setProgress(60, `📝 Membina ${semuaLaci.length} kad...`);
+
+        // ── PROSES SETIAP LACI → KAD ──
+        // Format nota: "teks sebelum =" → bahagian atas
+        //              "selepas =" → bahagian bawah, buang K1/K2 → 1 : ... 2 : ...
+        function prosesNotaFakta(notes) {
+          const baris = notes.split('\n').filter(l => l.trim());
+          const kad = [];
+          baris.forEach((baris, idx) => {
+            const eqIdx = baris.indexOf('=');
+            const atas = eqIdx !== -1 ? baris.slice(0, eqIdx).trim() : baris.trim();
+            const bawahRaw = eqIdx !== -1 ? baris.slice(eqIdx + 1).trim() : '';
+
+            // Format bawah: buang "1.K1 :" → "1 :", "K1 :" → "1 :"
+            // Pisahkan ikut corak K
+            const bawahFormat = bawahRaw
+              .replace(/(\d+)\.K\d+\s*:/g, '\n$1 :')
+              .replace(/\bK(\d+)\s*:/g, '\n$1 :')
+              .split('\n')
+              .map(l => l.trim())
+              .filter(l => l)
+              .join('\n');
+
+            kad.push({
+              nombor: idx + 1,
+              kod: `${topicNama}-${idx + 1}`,
+              tajuk: (topicData?.name || '') + (semuaLaci.length > 1 ? ` — ${idx + 1}/${semuaLaci.length}` : ''),
+              atas,
+              bawah: bawahFormat,
+              imageUrl: semuaLaci[idx]?.imageUrl || ''
+            });
+          });
+          return kad;
+        }
+
+        // Kumpul semua kad dari semua laci
+        const semuaKad = [];
+        let nomborKadGlobal = 0;
+
+        semuaLaci.forEach((laci, laciIdx) => {
+          const kadDariLaci = prosesNotaFakta(laci.notes);
+          kadDariLaci.forEach((kad, kadIdx) => {
+            nomborKadGlobal++;
+            semuaKad.push({
+              ...kad,
+              nombor: nomborKadGlobal,
+              kod: `${topicNama}-${laciIdx + 1}`,
+              tajuk: laci.title || `Laci ${laciIdx + 1}`,
+              imageUrl: laci.imageUrl || ''
+            });
+          });
+        });
+
+        // Convert imageUrl ke base64
+        async function urlKeBase64(url) {
+          if (!url) return '';
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+              } catch(e) { resolve(url); }
+            };
+            img.onerror = () => resolve('');
+            img.src = url + (url.includes('?') ? '&' : '?') + 'alt=media&t=' + Date.now();
+          });
+        }
+
+        const urlUnik = [...new Set(semuaKad.map(k => k.imageUrl).filter(u => u))];
+        const base64Map = {};
+        for (let i = 0; i < urlUnik.length; i++) {
+          setProgress(60 + Math.round((i / Math.max(urlUnik.length, 1)) * 15), `🖼️ Memuat gambar ${i+1}/${urlUnik.length}...`);
+          base64Map[urlUnik[i]] = await urlKeBase64(urlUnik[i]);
+        }
+
+        setProgress(80, `📄 Membina PDF — ${semuaKad.length} kad...`);
+
+        // ── BINA HTML PDF — A4 Portrait, 2 kolum × 3 baris ──
+        const CARDS_PER_PAGE = 6;
+        const tarikhExport = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
+        let pagesHtml = '';
+
+        for (let i = 0; i < semuaKad.length; i += CARDS_PER_PAGE) {
+          const batch = semuaKad.slice(i, i + CARDS_PER_PAGE);
+          while (batch.length < CARDS_PER_PAGE) batch.push(null);
+
+          pagesHtml += `<div class="page">`;
+          batch.forEach((kad) => {
+            if (!kad) { pagesHtml += `<div class="kad empty"></div>`; return; }
+            const imgBlock = kad.imageUrl && base64Map[kad.imageUrl]
+              ? `<div class="kad-img" style="background-image:url('${base64Map[kad.imageUrl]}');"></div>`
+              : `<div class="kad-img-kosong"></div>`;
+
+            // Format bawah untuk HTML — setiap baris pada garisan baru
+            const bawahHtml = kad.bawah
+              ? kad.bawah.split('\n').map(l => `<div class="baris-bawah">${l}</div>`).join('')
+              : '<div class="baris-bawah" style="color:#9ca3af;">—</div>';
+
+            pagesHtml += `
+              <div class="kad">
+                <div class="kad-header">
+                  <span class="kad-kod">${kad.kod}</span>
+                  <span class="kad-tajuk">${kad.tajuk}</span>
+                </div>
+                ${imgBlock}
+                <div class="kad-atas">${kad.atas}</div>
+                <div class="kad-bawah">${bawahHtml}</div>
+              </div>`;
+          });
+          pagesHtml += `</div>`;
+        }
+
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Flashcard Fakta — ${topicData?.name || 'Topik'}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',Arial,sans-serif; background:white; }
+
+  .cover {
+    width:210mm; height:297mm;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    page-break-after:always;
+  }
+  .cover h1 { font-size:24pt; color:#f59e0b; margin-bottom:8px; }
+  .cover h2 { font-size:16pt; color:#374151; margin-bottom:4px; }
+  .cover p { font-size:11pt; color:#6b7280; }
+  .cover .stats { margin-top:20px; font-size:11pt; color:#374151; }
+
+  @page { size:A4 portrait; margin:0; }
+
+  .page {
+    width:210mm; height:297mm;
+    display:grid;
+    grid-template-columns:repeat(2, 105mm);
+    grid-template-rows:repeat(3, 99mm);
+    gap:0;
+    page-break-after:always;
+    break-after:page;
+    overflow:hidden;
+  }
+
+  .kad {
+    width:105mm; height:99mm;
+    border:0.5pt solid #d1d5db;
+    border-left:4pt solid #f59e0b;
+    padding:2mm 3mm 2mm 6mm;
+    display:flex; flex-direction:column;
+    gap:1mm; position:relative;
+    overflow:hidden; background:white;
+    box-sizing:border-box;
+  }
+
+  .kad.empty {
+    background:#f9fafb;
+    border-color:#f3f4f6;
+    border-left-color:#e5e7eb;
+  }
+
+  .kad-header {
+    display:flex; align-items:flex-start;
+    gap:4mm; flex-shrink:0;
+  }
+
+  .kad-kod {
+    font-size:7pt; font-weight:700;
+    color:#f59e0b; white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  .kad-tajuk {
+    font-size:7.5pt; font-weight:700;
+    color:#1f2937; line-height:1.3;
+  }
+
+  .kad-img {
+    width:100%; height:22mm;
+    background-size:cover;
+    background-position:center;
+    flex-shrink:0; border-radius:1mm;
+    border:0.5pt solid #e5e7eb;
+  }
+
+  .kad-img-kosong {
+    width:100%; height:8mm;
+    flex-shrink:0;
+  }
+
+  .kad-atas {
+    font-size:7.5pt; color:#1f2937;
+    line-height:1.4; flex:1;
+    overflow:hidden;
+    border-bottom:0.5pt dashed #d1d5db;
+    padding-bottom:1mm;
+  }
+
+  .kad-bawah {
+    font-size:7pt; color:#374151;
+    line-height:1.4; flex-shrink:0;
+    max-height:28mm; overflow:hidden;
+  }
+
+  .baris-bawah {
+    padding:0.3mm 0;
+    border-bottom:0.3pt solid #f3f4f6;
+  }
+
+  .baris-bawah:last-child { border-bottom:none; }
+
+  @media print {
+    body { margin:0; }
+    .page { page-break-after:always; }
+    .cover { page-break-after:always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>📚 Flashcard Fakta</h1>
+  <h2>${subjectData?.name || ''}</h2>
+  <p>${topicData?.name || ''}</p>
+  <div class="stats">
+    ${semuaKad.length} kad · ${semuaLaci.length} laci · ${Math.ceil(semuaKad.length / CARDS_PER_PAGE)} muka surat
+  </div>
+  <div style="margin-top:30px;font-size:10pt;color:#374151;text-align:center;line-height:2;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:16px 20px;">
+    <strong style="color:#f59e0b;">⚙️ Tetapan Print:</strong><br>
+    Kertas: <strong>A4</strong> · Orientasi: <strong>Portrait</strong><br>
+    Margin: <strong>Tiada / None</strong> · Skala: <strong>100%</strong><br>
+    Nyahtick <strong>"Headers and footers"</strong>
+  </div>
+</div>
+
+${pagesHtml}
+
+</body>
+</html>`;
+
+// ── SIMPAN pdfNombor KE FIRESTORE ──
+        setProgress(90, '💾 Menyimpan nombor kad...');
+        try {
+          let nomborSemasa = 0;
+          const batchFirestore = writeBatch(db);
+          let batchCount = 0;
+
+          semuaLaci.forEach((laci, laciIdx) => {
+            const kadDariLaci = laci.notes.split('\n').filter(l => l.trim());
+            kadDariLaci.forEach((_, kadIdx) => {
+              nomborSemasa++;
+            });
+            // Simpan nombor kad pertama laci ini
+            const nomborPertama = nomborSemasa - kadDariLaci.length + 1;
+            batchFirestore.update(
+              doc(db, "users", currentUser.uid, "drawer", laci.id),
+              {
+                pdfNombor: nomborPertama,
+                pdfTopik: topicNama,
+                pdfTopikId: currentTopicId,
+                updatedAt: Date.now()
+              }
+            );
+            batchCount++;
+            if (batchCount >= 499) {
+              batchFirestore.commit();
+              batchCount = 0;
+            }
+          });
+          if (batchCount > 0) await batchFirestore.commit();
+        } catch(e) {
+          console.log("Gagal simpan pdfNombor fakta:", e);
+        }
+
+        setProgress(95, '✅ Membuka tetingkap print...');
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.onload = () => { setTimeout(() => printWindow.print(), 600); };
+
+        removeLoadBar();
+        showToast(`✅ ${semuaKad.length} kad dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
+
+      } catch(e) {
+        removeLoadBar();
+        showToast('❌ Gagal: ' + e.message);
+      }
+    });
+
     document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', async () => {
       if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
@@ -18532,7 +18912,7 @@ function jbUpdateUI() {
     return;
   }
 
-  // ── FAKTA MODE — warna oren ──
+// ── FAKTA MODE — warna oren ──
   if (info.isFakta) {
     kodEl.textContent = info.kod;
     kodEl.style.color = '#fb923c';
@@ -18547,6 +18927,43 @@ function jbUpdateUI() {
     setTimeout(() => jbAutoFitFont(), 10);
     return;
   }
+
+  // ── BAHASA MODE ──
+  if (info.isSR) {
+    kodEl.textContent = info.kod;
+    kodEl.style.color = '#fbbf24';
+    kodEl.style.fontSize = '16vw';
+    if (tapArea) {
+      tapArea.style.background = 'linear-gradient(135deg,#1c1400,#2d1f00)';
+      tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,191,36,0.2)';
+    }
+    if (srBadge) srBadge.style.display = 'block';
+    jbBuangAmaran();
+  } else if (info.isSementara) {
+    kodEl.textContent = info.kod;
+    kodEl.style.color = '#93c5fd';
+    kodEl.style.fontSize = '14vw';
+    if (tapArea) {
+      tapArea.style.background = 'rgba(2,6,23,0.97)';
+      tapArea.style.boxShadow = 'none';
+    }
+    if (srBadge) srBadge.style.display = 'none';
+    jbTunjukAmaran();
+  } else {
+    kodEl.textContent = info.kod;
+    kodEl.style.color = '#34d399';
+    kodEl.style.fontSize = '18vw';
+    if (tapArea) {
+      tapArea.style.background = 'rgba(2,6,23,0.97)';
+      tapArea.style.boxShadow = 'none';
+    }
+    if (srBadge) srBadge.style.display = 'none';
+    jbBuangAmaran();
+  }
+
+  if (progressEl) progressEl.textContent = info.progress;
+  setTimeout(() => jbAutoFitFont(), 10);
+}
 
   kodEl.textContent = info.kod;
 
