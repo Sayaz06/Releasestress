@@ -11939,10 +11939,28 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
         setProgress(60, `✅ ${snap.size} laci ditemui — memproses...`);
 
-        const semuaLaci = snap.docs
+// Sort perkataan ikut susunan app — sama macam renderPerkataan()
+        const perkataanDalamJenis = allBahasaPerkataan
+          .filter(p => p.jenisId === currentJenisKataId)
+          .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+        // Kumpul semua laci ikut urutan perkataan
+        const semuaLaciRaw = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(d => d.jenisId === currentJenisKataId && d.notes && d.notes.trim())
-          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+          .filter(d => d.jenisId === currentJenisKataId && d.notes && d.notes.trim());
+
+        // Susun laci mengikut urutan perkataan dulu, lepas tu title dalam perkataan
+        const semuaLaci = [];
+        perkataanDalamJenis.forEach(perkataan => {
+          const laciDalamPerkataan = semuaLaciRaw
+            .filter(d => d.perkataanId === perkataan.id)
+            .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+          semuaLaci.push(...laciDalamPerkataan);
+        });
+
+        // Laci yang tiada perkataanId — letak di hujung
+        const laciOrfan = semuaLaciRaw.filter(d => !d.perkataanId || !perkataanDalamJenis.find(p => p.id === d.perkataanId));
+        semuaLaci.push(...laciOrfan.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })));
 
         if (!semuaLaci.length) { removeLoadBar(); showToast('⚠️ Tiada laci dengan kandungan.'); return; }
 
