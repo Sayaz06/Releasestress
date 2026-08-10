@@ -13547,8 +13547,58 @@ async function loadSROverdue() {
       renderSRQueuePage();
     });
 
+async function syncSRQueuePdfKod() {
+      if (!currentUser) return;
+      try {
+        const srSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_sr_queue"));
+        if (srSnap.empty) return;
+
+        const laciSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
+        const laciMap = new Map();
+        laciSnap.docs.forEach(d => laciMap.set(d.id, { id: d.id, ...d.data() }));
+
+        const batch = writeBatch(db);
+        let updateCount = 0;
+
+        srSnap.docs.forEach(srDoc => {
+          const srData = srDoc.data();
+          const laci = laciMap.get(srData.drawerId);
+          if (!laci) return;
+
+          const pdfNombor = laci.pdfNombor || null;
+          const pdfJenis = laci.pdfJenis || null;
+
+          if (!pdfNombor || !pdfJenis) return;
+
+          const kodBaru = `${pdfJenis}-${pdfNombor}`;
+          const kodLama = srData.pdfKod || null;
+
+          if (kodBaru !== kodLama || srData.pdfNombor !== pdfNombor || srData.pdfJenis !== pdfJenis) {
+            batch.update(doc(db, "users", currentUser.uid, "bahasa_sr_queue", srDoc.id), {
+              pdfKod: kodBaru,
+              pdfNombor: pdfNombor,
+              pdfJenis: pdfJenis,
+              updatedAt: Date.now()
+            });
+            updateCount++;
+          }
+        });
+
+        if (updateCount > 0) {
+          await batch.commit();
+          console.log(`✅ SR Queue sync: ${updateCount} kod dikemas kini`);
+        }
+      } catch(e) {
+        console.log("Gagal sync SR queue pdfKod:", e);
+      }
+    }
+
     function subscribeBahasa() {
       if (!currentUser) return;
+
+      // Auto-sync SR queue kod setiap kali bahasa data loaded
+      setTimeout(() => syncSRQueuePdfKod(), 3000);
+
       onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_list")), snap => {
         allBahasaList = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionBahasa && sectionBahasa.classList.contains('active')) renderBahasaList();
