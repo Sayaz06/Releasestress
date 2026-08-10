@@ -11948,21 +11948,28 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
         // Kumpul semua flashcard
         const flashcards = [];
-// Convert semua imageUrl ke base64 dulu (selesaikan CORS)
+// Convert imageUrl ke base64 via canvas (elak CORS)
         async function urlKeBase64(url) {
           if (!url) return '';
-          try {
-            const resp = await fetch(url);
-            const blob = await resp.blob();
-            return await new Promise((res) => {
-              const reader = new FileReader();
-              reader.onload = () => res(reader.result);
-              reader.readAsDataURL(blob);
-            });
-          } catch(e) {
-            console.log('Gagal convert gambar:', e);
-            return '';
-          }
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+              } catch(e) {
+                // Canvas tainted — cuba guna URL terus
+                resolve(url);
+              }
+            };
+            img.onerror = () => resolve('');
+            // Tambah cache-busting supaya Firebase bagi response baru dengan CORS header
+            img.src = url + (url.includes('?') ? '&' : '?') + 'alt=media&t=' + Date.now();
+          });
         }
 
         // Kumpul semua URL unik untuk convert
