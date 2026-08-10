@@ -17694,13 +17694,20 @@ if (anak !== -1) {
           const ayatBI = parts[0].trim();
           const terjemahan = parts.slice(1).join('=').trim();
 
-// Fasa 2 — ayat BI (hardcode en-US), Fasa 3 — terjemahan BM (hardcode ms-MY)
-          if (!isFlipped && ayatBI) {
-            factTitleEl.textContent = `[ 🎧 Fasa 2 — Ayat BI ]`;
+// Fasa 1 — ayat BI dengan building method + ejaan (en-US)
+          // Fasa 2 — terjemahan BM auto flip, building method tanpa ejaan (ms-MY)
+          if (ayatBI) {
+            factTitleEl.textContent = `[ 🎧 Fasa 1 — Ayat BI ]`;
             await buildingMethodSekaliLang(ayatBI, 'en-US', updateFn);
-} else if (terjemahan) {
-            factTitleEl.textContent = `[ 🎧 Fasa 3 — Terjemahan BM ]`;
+          }
+          if (!audioModeAktif || !audioSedangMain) { audioSedangMain = false; return; }
+          if (terjemahan) {
+            // Auto flip ke terjemahan
+            isFlipped = true;
+            factTitleEl.textContent = `[ 🎧 Fasa 2 — Terjemahan BM ]`;
             await buildingMethodTanpaEjaan(terjemahan, 'ms-MY', updateFn);
+            // Reset flip selepas habis
+            isFlipped = false;
           }
         }
       }
