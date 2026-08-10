@@ -7314,18 +7314,23 @@ function syncIndexToFirestore(newIndex) {
     }
 
 // ── POPUP SR NOTIFIKASI ──
-function tunjukPopupSR(srData) {
+async function tunjukPopupSR(srData) {
       // Buang popup lama kalau ada
       const oldPopup = document.getElementById('sr-notif-popup');
       if (oldPopup) oldPopup.remove();
 
       // Cari nombor PDF dari allBahasaDrawers
       const drawerData = allBahasaDrawers.find(d => d.id === srData.drawerId);
-// Guna pdfKod dari SR queue kalau ada (lebih terkini), atau dari drawer
-      const srSnap2 = await getDoc(doc(db, "users", currentUser.uid, "bahasa_sr_queue", srData.drawerId));
-      const pdfKodSR = srSnap2.exists() ? srSnap2.data().pdfKod : null;
-      const pdfNombor = drawerData?.pdfNombor || null;
+const pdfNombor = drawerData?.pdfNombor || null;
       const pdfJenis = drawerData?.pdfJenis || null;
+      // Guna pdfKod dari SR queue (disimpan masa export PDF) atau bina dari drawer
+      const srQueueData = await (async () => {
+        try {
+          const s = await getDoc(doc(db, "users", currentUser.uid, "bahasa_sr_queue", srData.drawerId));
+          return s.exists() ? s.data() : null;
+        } catch(e) { return null; }
+      })();
+      const pdfKodSR = srQueueData?.pdfKod || null;
       const labelPDF = pdfKodSR
         ? `📄 Flashcard: ${pdfKodSR}`
         : (pdfNombor && pdfJenis ? `📄 Flashcard: ${pdfJenis}-${pdfNombor}` : '');
