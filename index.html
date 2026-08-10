@@ -18384,15 +18384,35 @@ function jbDapatKodSemasa() {
     kod = `${pdfJenis}-${pdfNombor}`;
     isSementara = false;
   } else {
-    // Jana kod sementara dari index allFacts
+    // Jana kod sementara ikut susunan PDF export (perkataan → laci dalam perkataan)
+    // SAMA dengan susunan dalam btn-export-pdf-flashcard
+    const perkataanDalamJenis = allBahasaPerkataan
+      .filter(p => p.jenisId === currentJenisKataId)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+    const semuaLaciIkutPDF = [];
+    perkataanDalamJenis.forEach(perkataan => {
+      const laciDalamPerkataan = allBahasaDrawers
+        .filter(d => d.perkataanId === perkataan.id && d.notes && d.notes.trim())
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+      semuaLaciIkutPDF.push(...laciDalamPerkataan);
+    });
+    // Laci orphan (tiada perkataanId) — letak di hujung
+    const laciOrfan = allBahasaDrawers.filter(d =>
+      d.jenisId === currentJenisKataId &&
+      d.notes && d.notes.trim() &&
+      !perkataanDalamJenis.find(p => p.id === d.perkataanId)
+    );
+    semuaLaciIkutPDF.push(...laciOrfan.sort((a, b) =>
+      (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
+    ));
+
     const jenisAktif = allJenisKata.find(j => j.id === currentJenisKataId);
     const jenisNamaSementara = (jenisAktif?.name || 'Laci').replace(/\s+/g, '');
-    // Kira nombor sementara — berapa kedudukan laci ini dalam koleksi
-    const semua = allBahasaDrawers
-      .filter(d => d.jenisId === currentJenisKataId)
-      .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
-    const idxSementara = semua.findIndex(d => d.id === drawer.id);
-    kod = `${jenisNamaSementara}-T${idxSementara + 1}`;
+    const idxSementara = semuaLaciIkutPDF.findIndex(d => d.id === drawer.id);
+    kod = idxSementara !== -1
+      ? `${jenisNamaSementara}-T${idxSementara + 1}`
+      : `${jenisNamaSementara}-T?`;
     isSementara = true;
   }
 
@@ -18400,7 +18420,6 @@ function jbDapatKodSemasa() {
     kod,
     isSR,
     isSementara,
-    drawerId: data.drawerId,
     drawerId: drawer.id,
     progress: `${currentFactIndex + 1} / ${allFacts.length}`
   };
