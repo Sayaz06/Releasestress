@@ -11991,9 +11991,9 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: white; }
 
-  .cover {
-    width: 297mm;
-    height: 210mm;
+.cover {
+    width: 210mm;
+    height: 297mm;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -12005,16 +12005,16 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
   .cover .stats { margin-top: 20px; font-size: 11pt; color: #374151; }
 
 @page {
-    size: A4 landscape;
+    size: A4 portrait;
     margin: 0;
   }
 
   .page {
-    width: 297mm;
-    height: 210mm;
+    width: 210mm;
+    height: 297mm;
     display: grid;
-    grid-template-columns: repeat(3, 99mm);
-    grid-template-rows: repeat(5, 42mm);
+    grid-template-columns: repeat(3, 70mm);
+    grid-template-rows: repeat(5, 59.4mm);
     gap: 0;
     page-break-after: always;
     break-after: page;
@@ -12022,8 +12022,8 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
   }
 
 .card {
-    width: 99mm;
-    height: 42mm;
+    width: 70mm;
+    height: 59.4mm;
     border: 0.5pt solid #d1d5db;
     border-left: 3pt solid #0891b2;
     padding: 2mm 3mm 2mm 4mm;
