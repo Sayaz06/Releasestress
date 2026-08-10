@@ -18466,16 +18466,7 @@ function jbDapatKodSemasa() {
     isSementara = true;
   }
 
-  return {
-    kod,
-    isSR,
-    isSementara,
-    isFakta: false,
-    drawerId: drawer.id,
-    progress: `${currentFactIndex + 1} / ${allFacts.length}`
-  };
-}
-  const pdfNombor = drawer.pdfNombor || null;
+const pdfNombor = drawer.pdfNombor || null;
   const pdfJenis = drawer.pdfJenis || null;
   const isSR = !!(data.isSRMode);
 
