@@ -17329,11 +17329,27 @@ function audioSebut(teks, lang, rate = 0.85) {
       utt.lang = lang; // Guna lang yang diberi terus — jangan override
       utt.rate = rate;
       utt.pitch = 1.0;
-      const voices = window.speechSynthesis.getVoices();
-      // Cari suara yang tepat mengikut lang
-      const preferred = voices.find(v => v.lang === lang)
-        || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+const voices = window.speechSynthesis.getVoices();
+      // Cari suara yang tepat mengikut lang — dengan fallback bertingkat
+      let preferred = null;
+      if (lang === 'ms-MY') {
+        preferred = voices.find(v => v.lang === 'ms-MY')
+          || voices.find(v => v.lang === 'ms')
+          || voices.find(v => v.lang.startsWith('ms'))
+          || voices.find(v => v.name.toLowerCase().includes('malay'))
+          || voices.find(v => v.lang === 'id-ID') // Indonesia sebagai fallback terdekat
+          || voices.find(v => v.lang.startsWith('id'));
+      } else if (lang === 'en-US') {
+        preferred = voices.find(v => v.lang === 'en-US')
+          || voices.find(v => v.lang === 'en-GB')
+          || voices.find(v => v.lang.startsWith('en'));
+      } else {
+        preferred = voices.find(v => v.lang === lang)
+          || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+      }
       if (preferred) utt.voice = preferred;
+      // Set lang pada utt walaupun tiada voice — browser akan cuba
+      utt.lang = lang;
       utt.onend = () => sebutBahagian();
       utt.onerror = () => sebutBahagian();
       window.speechSynthesis.speak(utt);
