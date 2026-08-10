@@ -1502,8 +1502,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <button id="btn-go-perjanjian" class="btn btn-secondary" style="border-color: #38bdf8; color: #7dd3fc;">
             <span>🤝 Laci Perjanjian</span>
           </button>
-          <button id="btn-go-jogging-bahasa" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
-            <span>🏃 Jogging Bahasa</span>
+<button id="btn-go-jogging-bahasa" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
+            <span>🏃 Jogging Kad</span>
           </button>
           <button id="btn-go-amt-ak" class="btn btn-secondary" style="border-color: #10b981; color: #34d399;">
             <span>🎧 AMT-AK — Aktivasi Solat</span>
@@ -1650,9 +1650,9 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <section id="section-jogging-bahasa" class="section" style="background:#020617;">
 
   <!-- TOPBAR — boleh hide bila landscape -->
-  <div id="jb-topbar" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;flex-shrink:0;background:rgba(15,23,42,0.9);border-bottom:1px solid rgba(16,185,129,0.2);">
+    <div id="jb-topbar" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;flex-shrink:0;background:rgba(15,23,42,0.9);border-bottom:1px solid rgba(16,185,129,0.2);">
     <button id="btn-back-jogging-bahasa" class="btn btn-secondary btn-sm">← Menu</button>
-    <div style="font-size:0.78rem;color:#34d399;font-weight:700;">🏃 Jogging Bahasa</div>
+    <div id="jb-topbar-label" style="font-size:0.78rem;color:#34d399;font-weight:700;">🏃 Jogging Kad</div>
     <button id="btn-jb-landscape" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">⛶ Penuh</button>
   </div>
 
@@ -5556,10 +5556,15 @@ saveAppState();
 
 function formatTextToHtmlList(text) {
       if (!text) return "";
-      return text
+      // Buang "K1", "K2" dll — ganti dengan nombor sahaja
+      // Format: "1.K1 : Teks" → "1 : Teks" atau "K1 : Teks" → "1 : Teks"
+      let processed = text
+        .replace(/(\d+)\.K\d+\s*:/g, '$1 :')   // "1.K1 :" → "1 :"
+        .replace(/\bK(\d+)\s*:/g, '$1 :');       // "K1 :" → "1 :"
+      return processed
         .replace(/\n/g, '<br>')
         .replace(/(?:^|<br>)\s*(\d+\.)/g, '<br>$1')
-        .replace(/(?:^|<br>)\s*(k\d+\s)/g, '<br>$1')
+        .replace(/(?:^|<br>)\s*(\d+\s:)/g, '<br>$1')
         .replace(/^(<br>)+/, '');
     }
 
@@ -18368,11 +18373,108 @@ let jbAktif = false;
 let jbSyncDariCountdown = false; // flag elak infinite loop
 
 function jbDapatKodSemasa() {
-  if (!bahasaMode || !allFacts.length) return null;
+  // Auto-detect mode — bahasa atau fakta
+  const isFaktaMode = factMode && !bahasaMode;
+  const isBahasaMode = bahasaMode && !factMode;
+
+  if (!isFaktaMode && !isBahasaMode) return null;
+  if (!allFacts.length) return null;
+
   const data = allFacts[currentFactIndex];
   if (!data) return null;
+
+  // ── FAKTA MODE ──
+  if (isFaktaMode) {
+    const drawer = allDrawers.find(d => d.id === data.drawerId);
+    if (!drawer) return null;
+
+    const topic = allTopics.find(t => t.id === drawer.topicId);
+    const topicNama = (topic?.name || 'Topik').replace(/\s+/g, '');
+
+    // Kira nombor per topik — ikut susunan laci dalam topik
+    const laciDalamTopik = allDrawers
+      .filter(d => d.topicId === drawer.topicId)
+      .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+    const idxDalamTopik = laciDalamTopik.findIndex(d => d.id === drawer.id);
+    const nomborLaci = idxDalamTopik !== -1 ? idxDalamTopik + 1 : '?';
+
+    // Kira nombor baris dalam laci (currentFactIndex dalam laci semasa)
+    // Cari index baris semasa dalam laci
+    let nomorBaris = 1;
+    for (let i = currentFactIndex; i >= 0; i--) {
+      if (allFacts[i].drawerId !== data.drawerId) break;
+      if (!allFacts[i].isTamat && !allFacts[i].isFasaEjaan) {
+        nomorBaris = currentFactIndex - i + 1;
+      }
+    }
+    // Kira dari mula laci semasa
+    let barisStart = currentFactIndex;
+    while (barisStart > 0 && allFacts[barisStart - 1]?.drawerId === data.drawerId && !allFacts[barisStart - 1]?.isTamat) {
+      barisStart--;
+    }
+    const nomorBarisSebenar = currentFactIndex - barisStart + 1;
+    const totalBaris = laciDalamTopik.find(d => d.id === drawer.id)
+      ? (allDrawers.find(d => d.id === drawer.id)?.notes || '').split('\n').filter(l => l.trim()).length
+      : 1;
+
+    const kod = `${topicNama}-${nomborLaci}`;
+    return {
+      kod,
+      subKod: `baris ${nomorBarisSebenar}`,
+      isSR: false,
+      isSementara: false,
+      isFakta: true,
+      drawerId: drawer.id,
+      progress: `${currentFactIndex + 1} / ${allFacts.length}`
+    };
+  }
+
+  // ── BAHASA MODE ──
   const drawer = allBahasaDrawers.find(d => d.id === data.drawerId);
   if (!drawer) return null;
+  const pdfNombor = drawer.pdfNombor || null;
+  const pdfJenis = drawer.pdfJenis || null;
+  const isSR = !!(data.isSRMode);
+
+  let kod, isSementara;
+  if (pdfNombor && pdfJenis) {
+    kod = `${pdfJenis}-${pdfNombor}`;
+    isSementara = false;
+  } else {
+    const perkataanDalamJenis = allBahasaPerkataan
+      .filter(p => p.jenisId === currentJenisKataId)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+    const semuaLaciIkutPDF = [];
+    perkataanDalamJenis.forEach(perkataan => {
+      const laciDalamPerkataan = allBahasaDrawers
+        .filter(d => d.perkataanId === perkataan.id && d.notes && d.notes.trim())
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+      semuaLaciIkutPDF.push(...laciDalamPerkataan);
+    });
+    const laciOrfan = allBahasaDrawers.filter(d =>
+      d.jenisId === currentJenisKataId &&
+      d.notes && d.notes.trim() &&
+      !perkataanDalamJenis.find(p => p.id === d.perkataanId)
+    );
+    semuaLaciIkutPDF.push(...laciOrfan.sort((a, b) =>
+      (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
+    ));
+    const jenisAktif = allJenisKata.find(j => j.id === currentJenisKataId);
+    const jenisNamaSementara = (jenisAktif?.name || 'Laci').replace(/\s+/g, '');
+    const idxSementara = semuaLaciIkutPDF.findIndex(d => d.id === drawer.id);
+    kod = idxSementara !== -1 ? `${jenisNamaSementara}-T${idxSementara + 1}` : `${jenisNamaSementara}-T?`;
+    isSementara = true;
+  }
+
+  return {
+    kod,
+    isSR,
+    isSementara,
+    isFakta: false,
+    drawerId: drawer.id,
+    progress: `${currentFactIndex + 1} / ${allFacts.length}`
+  };
+}
   const pdfNombor = drawer.pdfNombor || null;
   const pdfJenis = drawer.pdfJenis || null;
   const isSR = !!(data.isSRMode);
@@ -18452,7 +18554,22 @@ function jbUpdateUI() {
   const progressEl = document.getElementById('jb-progress');
   const srBadge = document.getElementById('jb-sr-badge');
   const tapArea = document.getElementById('jb-tap-area');
+  const labelEl = document.getElementById('jb-topbar-label');
   if (!kodEl) return;
+
+  // Update label topbar ikut mode
+  if (labelEl) {
+    if (factMode && !bahasaMode) {
+      labelEl.textContent = '🏃 Jogging Kad — Fakta';
+      labelEl.style.color = '#fb923c';
+    } else if (bahasaMode) {
+      labelEl.textContent = '🏃 Jogging Kad — Bahasa';
+      labelEl.style.color = '#34d399';
+    } else {
+      labelEl.textContent = '🏃 Jogging Kad';
+      labelEl.style.color = '#34d399';
+    }
+  }
 
   if (!info) {
     kodEl.textContent = '?';
@@ -18460,8 +18577,24 @@ function jbUpdateUI() {
     kodEl.style.fontSize = '18vw';
     if (tapArea) { tapArea.style.background = 'rgba(15,23,42,0.95)'; tapArea.style.boxShadow = 'none'; }
     if (srBadge) srBadge.style.display = 'none';
-    if (progressEl) progressEl.textContent = 'Tiada bahasa aktif — ON Bahasa dulu';
+    if (progressEl) progressEl.textContent = 'ON Bahasa atau Fakta dulu';
     jbBuangAmaran();
+    return;
+  }
+
+  // ── FAKTA MODE — warna oren ──
+  if (info.isFakta) {
+    kodEl.textContent = info.kod;
+    kodEl.style.color = '#fb923c';
+    kodEl.style.fontSize = '16vw';
+    if (tapArea) {
+      tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
+      tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
+    }
+    if (srBadge) srBadge.style.display = 'none';
+    jbBuangAmaran();
+    if (progressEl) progressEl.textContent = info.progress;
+    setTimeout(() => jbAutoFitFont(), 10);
     return;
   }
 
