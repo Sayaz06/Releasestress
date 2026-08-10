@@ -17620,19 +17620,28 @@ if (data.isFasaEjaan) {
         const tajuk = data.text || '';
         const anak = tajuk.indexOf('→');
 if (anak !== -1) {
-          // Ada pemisah → : kiri = ms-MY, kanan = en-US (hardcode, jangan detect)
+          // Ada pemisah → : kiri = ms-MY (sebut sahaja, tak eja), kanan = en-US (building method)
           const bahBM = tajuk.slice(0, anak).trim();
           const bahEN = tajuk.slice(anak + 1).trim();
           // Buang nombor awalan (cth: "2.diabaikan" → "diabaikan")
           const bmBersih = bahBM.replace(/^\d+[\.\)]\s*/, '').trim();
+
+          // BM — sebut 3 kali sahaja, tanpa eja
           if (bmBersih) {
-            if (updateFn) updateFn(bmBersih);
-            await buildingMethodSekaliLang(bmBersih, 'ms-MY', updateFn);
+            for (let u = 1; u <= 3; u++) {
+              if (!audioModeAktif || !audioSedangMain) { audioSedangMain = false; return; }
+              if (updateFn) updateFn(`(${u}/3) ${bmBersih}`);
+              await audioSebut(bmBersih, 'ms-MY', 0.85);
+              await jedaAudio(400);
+            }
           }
+
           if (!audioModeAktif || !audioSedangMain) { audioSedangMain = false; return; }
           // Jeda antara BM dan EN
           if (updateFn) updateFn(`${bmBersih}  →  ${bahEN}`);
           await jedaAudio(800);
+
+          // EN — building method penuh dengan ejaan
           if (bahEN) {
             if (updateFn) updateFn(bahEN);
             await buildingMethodSekaliLang(bahEN, 'en-US', updateFn);
