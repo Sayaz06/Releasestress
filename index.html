@@ -1664,7 +1664,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 
   <!-- KOD UTAMA — memenuhi skrin -->
   <div id="jb-tap-area" style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:pan-y;">
-    <div id="jb-kod" style="font-size:18vw;font-weight:900;color:white;text-align:center;letter-spacing:0.05em;line-height:1;padding:20px;word-break:break-all;transition:all 0.3s ease;user-select:none;">
+<div id="jb-kod" style="font-size:18vw;font-weight:900;color:white;text-align:center;letter-spacing:0.02em;line-height:1;padding:10px 20px;white-space:nowrap;transition:all 0.3s ease;user-select:none;max-width:100%;overflow:hidden;">
       —
     </div>
 <div id="jb-hint" style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:0.7rem;color:rgba(255,255,255,0.3);">Swipe ← → untuk tukar laci · Tap 3x untuk keluar fullscreen</div>
@@ -18356,6 +18356,27 @@ function jbDapatKodSemasa() {
   };
 }
 
+function jbAutoFitFont() {
+  const kodEl = document.getElementById('jb-kod');
+  const tapArea = document.getElementById('jb-tap-area');
+  if (!kodEl || !tapArea) return;
+  const maxW = tapArea.clientWidth - 40;
+  const maxH = tapArea.clientHeight - 40;
+  // Mula besar, kecilkan sehingga muat
+  let size = Math.min(maxW, maxH * 1.2);
+  kodEl.style.fontSize = size + 'px';
+  // Kecilkan sehingga lebar muat
+  while (kodEl.scrollWidth > maxW && size > 20) {
+    size -= 4;
+    kodEl.style.fontSize = size + 'px';
+  }
+  // Kecilkan lagi sehingga tinggi muat
+  while (kodEl.scrollHeight > maxH && size > 20) {
+    size -= 4;
+    kodEl.style.fontSize = size + 'px';
+  }
+}
+
 function jbUpdateUI() {
   if (!jbAktif) return;
   const info = jbDapatKodSemasa();
@@ -18410,7 +18431,10 @@ function jbUpdateUI() {
     jbBuangAmaran();
   }
 
-  if (progressEl) progressEl.textContent = info.progress;
+if (progressEl) progressEl.textContent = info.progress;
+
+  // Auto-fit font supaya satu baris penuh
+  setTimeout(() => jbAutoFitFont(), 10);
 }
 
 function jbTunjukAmaran() {
