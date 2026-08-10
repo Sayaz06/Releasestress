@@ -12024,19 +12024,19 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
             // Potong teks panjang supaya muat dalam card
             const ayatPendek = card.ayatBI.length > 120 ? card.ayatBI.substring(0, 120) + '...' : card.ayatBI;
             const terjPendek = card.terjemahan.length > 100 ? card.terjemahan.substring(0, 100) + '...' : card.terjemahan;
-const tajukBgStyle = card.imageUrl
+const ayatBgStyle = card.imageUrl
               ? `background-image:url('${card.imageUrl}');background-size:cover;background-position:center;`
-              : 'background:#e0f2fe;';
+              : 'background:#f0f9ff;';
             pagesHtml += `
               <div class="card">
                 <div class="card-num">${nombor}</div>
-<div class="card-tajuk-wrapper" style="${tajukBgStyle}">
-                  <div style="background:rgba(0,0,0,0.45);height:18mm;display:flex;align-items:center;padding:0 3mm 0 4mm;">
-                    <div class="card-tajuk">${card.tajuk}</div>
+                <div class="card-tajuk">${card.tajuk}</div>
+                <div class="card-divider"></div>
+                <div class="card-ayat-wrapper" style="${ayatBgStyle}">
+                  <div style="background:rgba(0,0,0,0.45);flex:1;display:flex;align-items:center;padding:3mm 3mm 3mm 4mm;min-height:18mm;">
+                    <div class="card-ayat">${ayatPendek}</div>
                   </div>
                 </div>
-                <div class="card-divider"></div>
-                <div class="card-ayat">${ayatPendek}</div>
                 <div class="card-divider"></div>
                 <div class="card-terjemahan">${terjPendek || '—'}</div>
               </div>`;
@@ -12113,19 +12113,17 @@ const tajukBgStyle = card.imageUrl
     font-weight: 600;
   }
 
-.card-tajuk-wrapper {
-    border-radius: 3mm;
-    overflow: hidden;
-    flex-shrink: 0;
-    margin: -2mm -3mm 0 -4mm;
-  }
-
-  .card-tajuk {
+.card-tajuk {
     font-size: 11pt;
     font-weight: 700;
-    color: white;
+    color: #0891b2;
     line-height: 1.3;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  }
+
+  .card-ayat-wrapper {
+    overflow: hidden;
+    flex: 1;
+    margin: 0 -3mm;
   }
 
   .card-divider {
@@ -12136,11 +12134,10 @@ const tajukBgStyle = card.imageUrl
 
 .card-ayat {
     font-size: 9.5pt;
-    color: #1f2937;
+    color: white;
     line-height: 1.4;
-    flex: 1;
-    overflow: hidden;
-    font-weight: 500;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
   }
 
   .card-terjemahan {
