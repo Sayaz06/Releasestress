@@ -18508,12 +18508,10 @@ function jbDapatKodSemasa() {
       (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
     ));
 
-    const jenisAktif = allJenisKata.find(j => j.id === currentJenisKataId);
+const jenisAktif = allJenisKata.find(j => j.id === currentJenisKataId);
     const jenisNamaSementara = (jenisAktif?.name || 'Laci').replace(/\s+/g, '');
     const idxSementara = semuaLaciIkutPDF.findIndex(d => d.id === drawer.id);
-    kod = idxSementara !== -1
-      ? `${jenisNamaSementara}-T${idxSementara + 1}`
-      : `${jenisNamaSementara}-T?`;
+    kod = idxSementara !== -1 ? `${jenisNamaSementara}-T${idxSementara + 1}` : `${jenisNamaSementara}-T?`;
     isSementara = true;
   }
 
@@ -18521,6 +18519,7 @@ function jbDapatKodSemasa() {
     kod,
     isSR,
     isSementara,
+    isFakta: false,
     drawerId: drawer.id,
     progress: `${currentFactIndex + 1} / ${allFacts.length}`
   };
