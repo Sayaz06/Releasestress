@@ -1667,7 +1667,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
     <div id="jb-kod" style="font-size:18vw;font-weight:900;color:white;text-align:center;letter-spacing:0.05em;line-height:1;padding:20px;word-break:break-all;transition:all 0.3s ease;user-select:none;">
       —
     </div>
-    <div id="jb-hint" style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:0.7rem;color:rgba(255,255,255,0.3);">Swipe ← → untuk tukar laci</div>
+<div id="jb-hint" style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:0.7rem;color:rgba(255,255,255,0.3);">Swipe ← → untuk tukar laci · Tap 3x untuk keluar fullscreen</div>
+    <button id="btn-jb-exit-full" style="display:none;position:absolute;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:rgba(255,255,255,0.6);font-size:0.68rem;padding:4px 12px;cursor:pointer;">← Keluar</button>    
   </div>
 
 </section>
@@ -18485,19 +18486,56 @@ document.getElementById('btn-jb-landscape')?.addEventListener('click', () => {
   const status = document.getElementById('jb-status');
   const hint = document.getElementById('jb-hint');
   const btn = document.getElementById('btn-jb-landscape');
+  const btnExit = document.getElementById('btn-jb-exit-full');
   const isHidden = topbar?.style.display === 'none';
   if (isHidden) {
     if (topbar) topbar.style.display = 'flex';
     if (status) status.style.display = 'flex';
     if (hint) hint.style.display = 'block';
     if (btn) btn.textContent = '⛶ Penuh';
+    if (btnExit) btnExit.style.display = 'none';
   } else {
     if (topbar) topbar.style.display = 'none';
     if (status) status.style.display = 'none';
-    if (hint) hint.style.display = 'none';
+    if (hint) hint.style.display = 'block';
     if (btn) btn.textContent = '↙ Kecil';
+    if (btnExit) btnExit.style.display = 'block';
   }
   document.getElementById('jb-kod').style.fontSize = isHidden ? '18vw' : '22vw';
+});
+
+// ── Button keluar dari fullscreen ──
+document.getElementById('btn-jb-exit-full')?.addEventListener('click', () => {
+  const topbar = document.getElementById('jb-topbar');
+  const status = document.getElementById('jb-status');
+  const hint = document.getElementById('jb-hint');
+  const btn = document.getElementById('btn-jb-landscape');
+  const btnExit = document.getElementById('btn-jb-exit-full');
+  if (topbar) topbar.style.display = 'flex';
+  if (status) status.style.display = 'flex';
+  if (hint) hint.style.display = 'block';
+  if (btn) btn.textContent = '⛶ Penuh';
+  if (btnExit) btnExit.style.display = 'none';
+  document.getElementById('jb-kod').style.fontSize = '18vw';
+});
+
+// ── Tap 3x untuk keluar fullscreen ──
+let jbTapCount = 0;
+let jbTapTimer = null;
+document.getElementById('jb-tap-area')?.addEventListener('click', (e) => {
+  // Jangan kira tap pada button
+  if (e.target.closest('button')) return;
+  const topbar = document.getElementById('jb-topbar');
+  if (topbar?.style.display !== 'none') return; // hanya aktif bila fullscreen
+  jbTapCount++;
+  if (jbTapTimer) clearTimeout(jbTapTimer);
+  jbTapTimer = setTimeout(() => { jbTapCount = 0; }, 600);
+  if (jbTapCount >= 3) {
+    jbTapCount = 0;
+    clearTimeout(jbTapTimer);
+    // Keluar fullscreen
+    document.getElementById('btn-jb-exit-full')?.click();
+  }
 });
 
 // ══════════════════════════════════════════
