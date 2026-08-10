@@ -11948,9 +11948,34 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
         // Kumpul semua flashcard
         const flashcards = [];
-semuaLaci.forEach(laci => {
+// Convert semua imageUrl ke base64 dulu (selesaikan CORS)
+        async function urlKeBase64(url) {
+          if (!url) return '';
+          try {
+            const resp = await fetch(url);
+            const blob = await resp.blob();
+            return await new Promise((res) => {
+              const reader = new FileReader();
+              reader.onload = () => res(reader.result);
+              reader.readAsDataURL(blob);
+            });
+          } catch(e) {
+            console.log('Gagal convert gambar:', e);
+            return '';
+          }
+        }
+
+        // Kumpul semua URL unik untuk convert
+        const urlUnik = [...new Set(semuaLaci.map(l => l.imageUrl).filter(u => u))];
+        const base64Map = {};
+        for (let i = 0; i < urlUnik.length; i++) {
+          setProgress(60 + Math.round((i / urlUnik.length) * 20), `🖼️ Memuat gambar ${i+1}/${urlUnik.length}...`);
+          base64Map[urlUnik[i]] = await urlKeBase64(urlUnik[i]);
+        }
+
+        semuaLaci.forEach(laci => {
           const tajuk = laci.title || '';
-          const imageUrl = laci.imageUrl || '';
+          const imageUrl = laci.imageUrl ? (base64Map[laci.imageUrl] || '') : '';
           const lines = laci.notes.split('\n').filter(l => l.trim());
           lines.forEach(line => {
             const parts = line.split('=');
