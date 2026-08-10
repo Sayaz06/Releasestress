@@ -12004,7 +12004,12 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
   .cover p { font-size: 12pt; color: #6b7280; }
   .cover .stats { margin-top: 20px; font-size: 11pt; color: #374151; }
 
-.page {
+@page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  .page {
     width: 297mm;
     height: 210mm;
     display: grid;
@@ -12012,6 +12017,7 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
     grid-template-rows: repeat(5, 42mm);
     gap: 0;
     page-break-after: always;
+    break-after: page;
     overflow: hidden;
   }
 
