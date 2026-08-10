@@ -17311,45 +17311,63 @@ async function ejaHurufPerlahan(teks, lang) {
 }
 
 // ── SEBUT SATU FRASA DENGAN WEB SPEECH ──
+// ── CACHE VOICES SEKALI SAHAJA ──
+let _cachedVoices = [];
+function getVoices() {
+  if (_cachedVoices.length) return _cachedVoices;
+  _cachedVoices = window.speechSynthesis.getVoices();
+  return _cachedVoices;
+}
+window.speechSynthesis.onvoiceschanged = () => {
+  _cachedVoices = window.speechSynthesis.getVoices();
+};
 
+// ── PILIH VOICE IKUT BAHASA ──
+function pilihVoice(lang) {
+  const voices = getVoices();
+  if (lang === 'ms-MY') {
+    return voices.find(v => v.lang === 'ms-MY')
+      || voices.find(v => v.lang === 'ms')
+      || voices.find(v => v.lang.startsWith('ms'))
+      || voices.find(v => v.name.toLowerCase().includes('malay'))
+      || null;
+  }
+  if (lang === 'en-US') {
+    return voices.find(v => v.lang === 'en-US')
+      || voices.find(v => v.lang === 'en-GB')
+      || voices.find(v => v.lang.startsWith('en'))
+      || null;
+  }
+  return voices.find(v => v.lang === lang)
+    || voices.find(v => v.lang.startsWith(lang.split('-')[0]))
+    || null;
+}
 
 function audioSebut(teks, lang, rate = 0.85) {
   return new Promise((resolve) => {
     if (!teks || !teks.trim()) { resolve(); return; }
+
+    // Cancel hanya sekali di awal — jangan cancel dalam loop
     window.speechSynthesis.cancel();
 
-    // Handle JEDA marker
     const bahagian = teks.split('JEDA');
     let idx = 0;
+    // Cache voice untuk bahasa ini — pilih sekali sahaja
+    const voice = pilihVoice(lang);
 
     function sebutBahagian() {
       if (idx >= bahagian.length) { resolve(); return; }
       const b = bahagian[idx].trim();
       idx++;
       if (!b) { setTimeout(sebutBahagian, 500); return; }
+
       const utt = new SpeechSynthesisUtterance(b);
-      utt.lang = lang; // Guna lang yang diberi terus — jangan override
+      utt.lang = lang;
       utt.rate = rate;
       utt.pitch = 1.0;
-const voices = window.speechSynthesis.getVoices();
-      // Cari suara yang tepat mengikut lang — dengan fallback bertingkat
-      let preferred = null;
-if (lang === 'ms-MY') {
-        preferred = voices.find(v => v.lang === 'ms-MY')
-          || voices.find(v => v.lang === 'ms')
-          || voices.find(v => v.lang.startsWith('ms'))
-          || voices.find(v => v.name.toLowerCase().includes('malay'));
-      } else if (lang === 'en-US') {
-        preferred = voices.find(v => v.lang === 'en-US')
-          || voices.find(v => v.lang === 'en-GB')
-          || voices.find(v => v.lang.startsWith('en'));
-      } else {
-        preferred = voices.find(v => v.lang === lang)
-          || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
-      }
+      // Set voice yang sama untuk semua bahagian — jangan cari semula
+      if (voice) utt.voice = voice;
 
-      if (preferred) utt.voice = preferred;
-      utt.lang = lang;
       utt.onend = () => sebutBahagian();
       utt.onerror = () => sebutBahagian();
       window.speechSynthesis.speak(utt);
