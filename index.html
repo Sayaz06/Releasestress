@@ -17311,6 +17311,19 @@ async function ejaHurufPerlahan(teks, lang) {
 }
 
 // ── SEBUT SATU FRASA DENGAN WEB SPEECH ──
+// ── SEBUT GUNA GOOGLE TTS (fallback untuk ms-MY) ──
+function audioSebutGoogle(teks, lang) {
+  return new Promise((resolve) => {
+    if (!teks || !teks.trim()) { resolve(); return; }
+    const langCode = lang === 'ms-MY' ? 'ms' : lang === 'en-US' ? 'en' : lang;
+    const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(teks)}&tl=${langCode}&client=gtx`;
+    const audio = new Audio(url);
+    audio.onended = () => resolve();
+    audio.onerror = () => resolve(); // kalau gagal pun teruskan
+    audio.play().catch(() => resolve());
+  });
+}
+
 function audioSebut(teks, lang, rate = 0.85) {
   return new Promise((resolve) => {
     if (!teks || !teks.trim()) { resolve(); return; }
@@ -17337,7 +17350,6 @@ if (lang === 'ms-MY') {
           || voices.find(v => v.lang === 'ms')
           || voices.find(v => v.lang.startsWith('ms'))
           || voices.find(v => v.name.toLowerCase().includes('malay'));
-        // Kalau tiada langsung — biarkan preferred = null, browser guna default dengan lang ms-MY
       } else if (lang === 'en-US') {
         preferred = voices.find(v => v.lang === 'en-US')
           || voices.find(v => v.lang === 'en-GB')
@@ -17346,8 +17358,16 @@ if (lang === 'ms-MY') {
         preferred = voices.find(v => v.lang === lang)
           || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
       }
+
+      // Kalau ms-MY tiada voice — guna Google TTS sebagai fallback
+      if (!preferred && lang === 'ms-MY') {
+        resolve(); // tutup promise ini
+        // Sebut guna Google TTS, lepas tu sambung sebutBahagian
+        audioSebutGoogle(b, 'ms-MY').then(() => sebutBahagian());
+        return;
+      }
+
       if (preferred) utt.voice = preferred;
-      // Set lang pada utt walaupun tiada voice — browser akan cuba
       utt.lang = lang;
       utt.onend = () => sebutBahagian();
       utt.onerror = () => sebutBahagian();
