@@ -17311,18 +17311,7 @@ async function ejaHurufPerlahan(teks, lang) {
 }
 
 // ── SEBUT SATU FRASA DENGAN WEB SPEECH ──
-// ── SEBUT GUNA GOOGLE TTS (fallback untuk ms-MY) ──
-function audioSebutGoogle(teks, lang) {
-  return new Promise((resolve) => {
-    if (!teks || !teks.trim()) { resolve(); return; }
-    const langCode = lang === 'ms-MY' ? 'ms' : lang === 'en-US' ? 'en' : lang;
-    const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(teks)}&tl=${langCode}&client=gtx`;
-    const audio = new Audio(url);
-    audio.onended = () => resolve();
-    audio.onerror = () => resolve(); // kalau gagal pun teruskan
-    audio.play().catch(() => resolve());
-  });
-}
+
 
 function audioSebut(teks, lang, rate = 0.85) {
   return new Promise((resolve) => {
@@ -17357,14 +17346,6 @@ if (lang === 'ms-MY') {
       } else {
         preferred = voices.find(v => v.lang === lang)
           || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
-      }
-
-      // Kalau ms-MY tiada voice — guna Google TTS sebagai fallback
-      if (!preferred && lang === 'ms-MY') {
-        resolve(); // tutup promise ini
-        // Sebut guna Google TTS, lepas tu sambung sebutBahagian
-        audioSebutGoogle(b, 'ms-MY').then(() => sebutBahagian());
-        return;
       }
 
       if (preferred) utt.voice = preferred;
@@ -17663,15 +17644,13 @@ if (anak !== -1) {
           const ayatBI = parts[0].trim();
           const terjemahan = parts.slice(1).join('=').trim();
 
-          // Fasa 2 atau 3 — ikut isFlipped
+// Fasa 2 — ayat BI (hardcode en-US), Fasa 3 — terjemahan BM (hardcode ms-MY)
           if (!isFlipped && ayatBI) {
-            const lang = detectLang(ayatBI) || 'en-US';
-            factTitleEl.textContent = `[ 🎧 Fasa 2 — Ayat ]`;
-            await buildingMethodSekaliTap(ayatBI, lang, updateFn);
+            factTitleEl.textContent = `[ 🎧 Fasa 2 — Ayat BI ]`;
+            await buildingMethodSekaliLang(ayatBI, 'en-US', updateFn);
           } else if (terjemahan) {
-            const lang = detectLang(terjemahan) || 'ms-MY';
-            factTitleEl.textContent = `[ 🎧 Fasa 3 — Terjemahan ]`;
-            await buildingMethodSekaliTap(terjemahan, lang, updateFn);
+            factTitleEl.textContent = `[ 🎧 Fasa 3 — Terjemahan BM ]`;
+            await buildingMethodSekaliLang(terjemahan, 'ms-MY', updateFn);
           }
         }
       }
