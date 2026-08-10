@@ -18473,13 +18473,10 @@ document.getElementById('btn-go-jogging-bahasa')?.addEventListener('click', () =
 
 document.getElementById('btn-back-jogging-bahasa')?.addEventListener('click', () => {
   jbAktif = false;
-  // Pastikan semua section lain di-remove dulu sebelum tunjuk home
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  sectionHome.classList.add('active');
-  // Unlock orientasi
   if (screen.orientation && screen.orientation.unlock) {
     screen.orientation.unlock();
   }
+  showSection(sectionHome);
 });
 
 document.getElementById('btn-jb-landscape')?.addEventListener('click', () => {
