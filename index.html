@@ -1965,7 +1965,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         <div class="list mt-8" id="bahasa-list" style="padding: 10px;"></div>
       </section>
 
-      <section id="section-jenis-kata" class="section">
+<section id="section-jenis-kata" class="section">
         <div class="topbar">
           <button id="btn-back-bahasa-jenis" class="btn btn-secondary btn-sm">← Bahasa</button>
           <div style="text-align: right;">
@@ -1976,8 +1976,8 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
 <div style="font-size: 0.75rem; color: var(--subtext); text-align: center; margin-bottom: 8px;">
           Tanda (tick) SATU kotak sahaja untuk aktifkan.
         </div>
-<button id="btn-add-topic" class="btn btn-sm">Tambah Topik</button>
-<div class="list mt-8" id="topics-list" style="padding: 10px;"></div>
+<button id="btn-add-jenis-kata" class="btn btn-sm">Tambah Topik</button>
+<div class="list mt-8" id="jenis-kata-list" style="padding: 10px;"></div>
       </section>
 
 <section id="section-bahasa-drawer" class="section">
@@ -7084,17 +7084,28 @@ function getRemainingInLaci() {
 
 // Cache SR queue IDs supaya tak perlu fetch Firestore setiap render
     let srQueueIds = new Set();
+    let faktaSRQueueIds = new Set();
 
     async function refreshSRQueueIds() {
       if (!currentUser) return;
       try {
-        const snap = await getDocs(
-          collection(db, "users", currentUser.uid, "bahasa_sr_queue")
-        );
-        srQueueIds = new Set(snap.docs.map(d => d.id));
+        const [bahasaSnap, faktaSnap] = await Promise.all([
+          getDocs(collection(db, "users", currentUser.uid, "bahasa_sr_queue")),
+          getDocs(collection(db, "users", currentUser.uid, "fakta_sr_queue"))
+        ]);
+        srQueueIds = new Set(bahasaSnap.docs.map(d => d.id));
+        faktaSRQueueIds = new Set(faktaSnap.docs.map(d => d.id));
       } catch(e) {
         console.log("Gagal refresh SR queue IDs:", e);
       }
+    }
+
+    async function deleteFaktaSRRekod(drawerId) {
+      if (!currentUser) return;
+      try {
+        await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId));
+        faktaSRQueueIds.delete(drawerId);
+      } catch(e) {}
     }
 
 function renderCurrentFact() {
@@ -7418,7 +7429,7 @@ const pdfNombor = drawerData?.pdfNombor || null;
           }
         }
 
-        if (learningMode === 2) {
+if (learningMode === 2) {
           setTimeout(async () => {
             isBlocked = false;
             comboStep = 0;
@@ -7427,13 +7438,17 @@ const pdfNombor = drawerData?.pdfNombor || null;
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
+            // ── DAFTAR SR FAKTA bila laci selesai ──
+            if (factMode && !bahasaMode && currentData.drawerId) {
+              await daftarSRBaru(currentData.drawerId, 'fakta');
+              showToast('⏰ Laci fakta didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
+            }
+
             // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
             if (bahasaMode) {
               const adaSR = await checkSRQueue();
               if (adaSR && muatSRLaciSeterusnya()) {
-                // Tunjuk popup notifikasi
                 tunjukPopupSR(srLaciSemasa);
-                // Muat laci SR
                 await muatLaciSRKeDalamFacts(srLaciSemasa);
                 return;
               }
@@ -7446,6 +7461,12 @@ const pdfNombor = drawerData?.pdfNombor || null;
         } else {
           setTimeout(async () => {
             isBlocked = false;
+
+            // ── DAFTAR SR FAKTA bila laci selesai ──
+            if (factMode && !bahasaMode && currentData.drawerId) {
+              await daftarSRBaru(currentData.drawerId, 'fakta');
+              showToast('⏰ Laci fakta didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
+            }
 
             // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
             if (bahasaMode) {
@@ -8122,14 +8143,19 @@ const sortedDrawers = filteredDrawers.sort((a, b) => {
   return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
 });
         
-      sortedDrawers.forEach(data => {
+sortedDrawers.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
+        const adaSRFakta = faktaSRQueueIds.has(data.id);
+        if (adaSRFakta) div.style.borderColor = 'rgba(245,158,11,0.4)';
         
         div.innerHTML = `
           <div class="drawer-title-wrapper">
              <input class="drawer-title" value="${data.title || ''}" placeholder="Tajuk Laci">
-             <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
+             <div style="display:flex;gap:4px;align-items:center;">
+               ${adaSRFakta ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;">⏰ SR</span>' : ''}
+               <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
+             </div>
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan">${data.notes || ''}</textarea>
           
@@ -11965,6 +11991,13 @@ document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
       addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
     });
 
+    // Listener bahasa → jenis kata navigation
+    document.getElementById('btn-go-bahasa-times')?.removeEventListener('click', ()=>{});
+    document.getElementById('btn-go-bahasa-times')?.addEventListener('click', () => {
+      const sec = document.getElementById('section-bahasa');
+      if (sec) { showSection(sec); renderBahasaList(); }
+    });
+
 document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
   if (!currentUser || !currentPerkataanId) return;
 addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
@@ -13170,8 +13203,9 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
       });
     }
 
-    function renderJenisKata() {
-      const list = document.getElementById('jenis-kata-list');
+function renderJenisKata() {
+      const list = document.getElementById('topics-list') || document.getElementById('jenis-kata-list');
+      if (!list) return;
       list.innerHTML = "";
       const filtered = allJenisKata.filter(j => j.bahasaId === currentBahasaId);
       const sorted = [...filtered].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
@@ -13797,21 +13831,35 @@ let srQueue = [];           // Queue overdue yang sedang aktif
     let srLaciSemasa = null;    // Rekod SR laci yang sedang diulang
     let srSemuaSelesai = false; // Flag — semua SR dalam sesi ini dah selesai
 
-    // Daftar laci baru dalam SR queue bila hit isTamat
-async function daftarSRBaru(drawerId) {
+// Daftar laci baru dalam SR queue bila hit isTamat
+async function daftarSRBaru(drawerId, mode = 'bahasa') {
       if (!currentUser) return;
-      const drawer = allBahasaDrawers.find(d => d.id === drawerId);
-      if (!drawer) return;
 
-      const now = Date.now();
+      let drawer, drawerTitle, srColl, originalColl;
+
+      if (mode === 'fakta') {
+        drawer = allDrawers.find(d => d.id === drawerId);
+        if (!drawer) return;
+        drawerTitle = drawer.title || '';
+        srColl = 'fakta_sr_queue';
+        originalColl = 'drawer';
+      } else {
+        drawer = allBahasaDrawers.find(d => d.id === drawerId);
+        if (!drawer) return;
+        drawerTitle = drawer.title || '';
+        srColl = 'bahasa_sr_queue';
+        originalColl = 'bahasa_drawers';
+      }
+
+const now = Date.now();
       const nextDueAt = now + SR_INTERVALS[0]; // +20 minit
 
       // Semak kalau dah ada rekod SR untuk laci ini
-      const refSR = doc(db, "users", currentUser.uid, "bahasa_sr_queue", drawerId);
+      const srCollPath = mode === 'fakta' ? 'fakta_sr_queue' : 'bahasa_sr_queue';
+      const refSR = doc(db, "users", currentUser.uid, srCollPath, drawerId);
       const snap = await getDoc(refSR);
 
       if (snap.exists()) {
-        // Dah ada — tunjuk toast berbeza
         const data = snap.data();
         const fasaLabel = getLabelFasaSR(data.fasaSemasa);
         const masaUlangan = formatTarikhMasaSR(data.nextDueAt);
@@ -13820,21 +13868,32 @@ async function daftarSRBaru(drawerId) {
       }
 
       // Buat rekod SR baru
-      await setDoc(refSR, {
+      const srData = {
         drawerId,
-        drawerTitle: drawer.title || '',
-        perkataanId: drawer.perkataanId || '',
-        jenisId: drawer.jenisId || '',
+        drawerTitle,
         hafalAt: now,
         fasaSemasa: 0,
         nextDueAt,
         sejarahFasa: [],
-        createdAt: now
-      });
+        createdAt: now,
+        mode
+      };
+
+      if (mode === 'bahasa') {
+        srData.perkataanId = drawer.perkataanId || '';
+        srData.jenisId = drawer.jenisId || '';
+      } else {
+        srData.topicId = drawer.topicId || '';
+      }
+
+      await setDoc(refSR, srData);
 
       // Kemaskini cache
-      srQueueIds.add(drawerId);
-      // Refresh display
+      if (mode === 'fakta') {
+        faktaSRQueueIds.add(drawerId);
+      } else {
+        srQueueIds.add(drawerId);
+      }
       renderCurrentFact();
     }
 
