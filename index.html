@@ -17332,13 +17332,12 @@ function audioSebut(teks, lang, rate = 0.85) {
 const voices = window.speechSynthesis.getVoices();
       // Cari suara yang tepat mengikut lang — dengan fallback bertingkat
       let preferred = null;
-      if (lang === 'ms-MY') {
+if (lang === 'ms-MY') {
         preferred = voices.find(v => v.lang === 'ms-MY')
           || voices.find(v => v.lang === 'ms')
           || voices.find(v => v.lang.startsWith('ms'))
-          || voices.find(v => v.name.toLowerCase().includes('malay'))
-          || voices.find(v => v.lang === 'id-ID') // Indonesia sebagai fallback terdekat
-          || voices.find(v => v.lang.startsWith('id'));
+          || voices.find(v => v.name.toLowerCase().includes('malay'));
+        // Kalau tiada langsung — biarkan preferred = null, browser guna default dengan lang ms-MY
       } else if (lang === 'en-US') {
         preferred = voices.find(v => v.lang === 'en-US')
           || voices.find(v => v.lang === 'en-GB')
