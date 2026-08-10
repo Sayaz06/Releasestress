@@ -12155,8 +12155,8 @@ const imgBlock = card.imageUrl
               : `<div class="card-img-placeholder"></div>`;
             pagesHtml += `
               <div class="card">
-                <div class="card-num">${jenisNama}-${card.nombor}</div>
-                <div class="card-tajuk">${card.tajuk}</div>
+<div class="card-num">${jenisNama}-${card.nombor}</div>
+                <div class="card-tajuk" style="padding-right:14mm;">${card.tajuk}</div>
                 ${imgBlock}
                 <div class="card-ayat">${ayatPendek}</div>
                 <div class="card-terjemahan">${terjPendek || '—'}</div>
@@ -12209,7 +12209,7 @@ const imgBlock = card.imageUrl
     height: 59.4mm;
     border: 0.5pt solid #d1d5db;
     border-left: 4pt solid #0891b2;
-    padding: 2mm 3mm 2mm 7mm;  /* kiri 7mm = ruang stapler */
+    padding: 2mm 3mm 2mm 8mm;
     display: flex;
     flex-direction: column;
     gap: 1mm;
@@ -18473,7 +18473,9 @@ document.getElementById('btn-go-jogging-bahasa')?.addEventListener('click', () =
 
 document.getElementById('btn-back-jogging-bahasa')?.addEventListener('click', () => {
   jbAktif = false;
-  showSection(sectionHome);
+  // Pastikan semua section lain di-remove dulu sebelum tunjuk home
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  sectionHome.classList.add('active');
   // Unlock orientasi
   if (screen.orientation && screen.orientation.unlock) {
     screen.orientation.unlock();
