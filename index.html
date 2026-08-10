@@ -2998,7 +2998,29 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
   </div>
 </div>
 
-<div id="prompter-view">
+<!-- CROP IMAGE OVERLAY -->
+<div id="crop-overlay" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(2,6,23,0.98);flex-direction:column;align-items:center;justify-content:center;padding:16px;">
+  <div style="width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;height:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="font-size:1rem;font-weight:700;color:#f59e0b;">✂️ Crop Gambar</div>
+      <div style="font-size:0.72rem;color:var(--subtext);">Nisbah 6:5 — Cubit zum, seret untuk gerak</div>
+    </div>
+
+    <!-- Canvas crop area -->
+    <div id="crop-container" style="flex:1;min-height:0;position:relative;overflow:hidden;border-radius:12px;background:#000;touch-action:none;">
+      <canvas id="crop-canvas" style="position:absolute;top:0;left:0;"></canvas>
+      <!-- Overlay gelap dengan lubang crop -->
+      <canvas id="crop-mask" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-shrink:0;">
+      <button id="btn-crop-batal" style="flex:1;padding:12px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid var(--border-mid);color:var(--subtext);font-weight:600;font-size:0.9rem;cursor:pointer;">Batal</button>
+      <button id="btn-crop-confirm" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;">✅ Guna Gambar Ini</button>
+    </div>
+  </div>
+</div>
+
+<div id="prompter-view">  
     <div id="prompter-zone">
       <div class="prompter-focus-line"></div>
       <div id="scrolling-text"></div>
@@ -11926,15 +11948,16 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
         // Kumpul semua flashcard
         const flashcards = [];
-        semuaLaci.forEach(laci => {
+semuaLaci.forEach(laci => {
           const tajuk = laci.title || '';
+          const imageUrl = laci.imageUrl || '';
           const lines = laci.notes.split('\n').filter(l => l.trim());
           lines.forEach(line => {
             const parts = line.split('=');
             const ayatBI = parts[0] ? parts[0].trim() : '';
             const terjemahan = parts[1] ? parts.slice(1).join('=').trim() : '';
             if (ayatBI) {
-              flashcards.push({ tajuk, ayatBI, terjemahan });
+              flashcards.push({ tajuk, ayatBI, terjemahan, imageUrl });
             }
           });
         });
@@ -11969,8 +11992,15 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
             // Potong teks panjang supaya muat dalam card
             const ayatPendek = card.ayatBI.length > 120 ? card.ayatBI.substring(0, 120) + '...' : card.ayatBI;
             const terjPendek = card.terjemahan.length > 100 ? card.terjemahan.substring(0, 100) + '...' : card.terjemahan;
+const bgStyle = card.imageUrl
+              ? `background-image:url('${card.imageUrl}');background-size:cover;background-position:center;`
+              : '';
+            const overlayDiv = card.imageUrl
+              ? `<div style="position:absolute;inset:0;background:rgba(255,255,255,0.82);"></div>`
+              : '';
             pagesHtml += `
-              <div class="card">
+              <div class="card" style="${bgStyle}">
+                ${overlayDiv}
                 <div class="card-num">${nombor}</div>
                 <div class="card-tajuk">${card.tajuk}</div>
                 <div class="card-divider"></div>
@@ -12753,15 +12783,22 @@ sorted.forEach(data => {
             </div>
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan / Contoh ayat">${data.notes||''}</textarea>
-          <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
             <button class="btn btn-secondary btn-sm btn-tips-bd-f0" style="border-color:#a78bfa;color:${adaTipsFasa0 ? '#c4b5fd' : 'var(--subtext)'};${adaTipsFasa0 ? 'background:rgba(167,139,250,0.12);' : ''}">
               📝 F0${adaTipsFasa0 ? ' ✓' : ''}
             </button>
             <button class="btn btn-secondary btn-sm btn-tips-bd" style="border-color:#06b6d4;color:${adaTips ? '#22d3ee' : 'var(--subtext)'};${adaTips ? 'background:rgba(6,182,212,0.12);' : ''}">
               📝 F1&2${adaTips ? ' ✓' : ''}
             </button>
+            <button class="btn btn-secondary btn-sm btn-upload-img-bd" style="border-color:#f59e0b;color:${data.imageUrl ? '#fcd34d' : 'var(--subtext)'};${data.imageUrl ? 'background:rgba(245,158,11,0.12);' : ''}">
+              🖼️${data.imageUrl ? ' ✓' : ''}
+            </button>
             <button class="btn btn-secondary btn-sm btn-del-bd" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
+          ${data.imageUrl ? `<div style="margin-top:6px;border-radius:8px;overflow:hidden;height:80px;position:relative;">
+            <img src="${data.imageUrl}" style="width:100%;height:100%;object-fit:cover;opacity:0.7;">
+            <button class="btn-del-img-bd" style="position:absolute;top:4px;right:4px;background:rgba(239,68,68,0.9);border:none;border-radius:999px;color:white;font-size:0.7rem;padding:2px 8px;cursor:pointer;">✕ Buang</button>
+          </div>` : ''}
         `;  
         
 const tajukEl = div.querySelector('.drawer-title');
@@ -12791,7 +12828,52 @@ div.querySelector('.btn-tips-bd').addEventListener('click', () => {
           bukaTipsSebutan(data, '0');
         });
 
-div.querySelector('.btn-del-bd').addEventListener('click', async () => {
+// ── UPLOAD GAMBAR LACI — dengan crop tool ──
+        div.querySelector('.btn-upload-img-bd').addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            bukaCropTool(file, async (blob) => {
+              showToast('⏳ Mengupload gambar...', 0);
+              try {
+                const storageRefPath = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}.jpg`);
+                const uploadTask = uploadBytesResumable(storageRefPath, blob);
+                uploadTask.on('state_changed', null, (err) => {
+                  showToast('❌ Gagal upload: ' + err.message);
+                }, async () => {
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
+                    imageUrl: url, updatedAt: Date.now()
+                  }, { merge: true });
+                  showToast('✅ Gambar berjaya diupload!');
+                });
+              } catch(e) {
+                showToast('❌ Gagal: ' + e.message);
+              }
+            });
+          });
+          input.click();
+        });
+
+        // ── BUANG GAMBAR LACI ──
+        div.querySelector('.btn-del-img-bd')?.addEventListener('click', async () => {
+          if (!confirm('Buang gambar laci ini?')) return;
+          try {
+            const oldRef = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}.jpg`);
+            await deleteObject(oldRef).catch(() => {});
+            await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
+              imageUrl: '', updatedAt: Date.now()
+            }, { merge: true });
+            showToast('🗑️ Gambar dibuang.');
+          } catch(e) {
+            showToast('❌ Gagal: ' + e.message);
+          }
+        });
+
+        div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           showToast(`Debug: ID=${data.id} | jenisId=${data.jenisId || 'KOSONG'}`, 6000);
           try {
@@ -18028,7 +18110,240 @@ if (anak !== -1) {
   if (audioModeAktif) renderCurrentFact();
 }
 
-    if ("serviceWorker" in navigator) {
+// ══════════════════════════════════════════
+// CROP TOOL SYSTEM (Nisbah 6:5)
+// ══════════════════════════════════════════
+const CROP_RATIO = 6 / 5; // lebar:tinggi = 1.2
+
+let cropImg = null;
+let cropCallback = null;
+let cropState = {
+  imgX: 0, imgY: 0,       // kedudukan gambar dalam canvas
+  imgW: 0, imgH: 0,       // saiz gambar dipapar
+  scale: 1,               // zoom
+  lastDist: 0,            // untuk pinch zoom
+  isDragging: false,
+  lastTouchX: 0, lastTouchY: 0,
+  startX: 0, startY: 0
+};
+
+function bukaCropTool(file, callback) {
+  cropCallback = callback;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      cropImg = img;
+      const overlay = document.getElementById('crop-overlay');
+      overlay.style.display = 'flex';
+      initCrop();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function initCrop() {
+  const container = document.getElementById('crop-container');
+  const canvas = document.getElementById('crop-canvas');
+  const mask = document.getElementById('crop-mask');
+
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+
+  canvas.width = W;
+  canvas.height = H;
+  mask.width = W;
+  mask.height = H;
+
+  // Kira saiz crop box (6:5) dalam container
+  let cropW, cropH;
+  if (W / H > CROP_RATIO) {
+    cropH = H * 0.85;
+    cropW = cropH * CROP_RATIO;
+  } else {
+    cropW = W * 0.85;
+    cropH = cropW / CROP_RATIO;
+  }
+  canvas._cropW = cropW;
+  canvas._cropH = cropH;
+  canvas._cropX = (W - cropW) / 2;
+  canvas._cropY = (H - cropH) / 2;
+
+  // Scale gambar supaya penuh crop box
+  const scaleW = cropW / cropImg.naturalWidth;
+  const scaleH = cropH / cropImg.naturalHeight;
+  cropState.scale = Math.max(scaleW, scaleH);
+  cropState.imgW = cropImg.naturalWidth * cropState.scale;
+  cropState.imgH = cropImg.naturalHeight * cropState.scale;
+  // Tengah-tengah dalam crop box
+  cropState.imgX = canvas._cropX + (cropW - cropState.imgW) / 2;
+  cropState.imgY = canvas._cropY + (cropH - cropState.imgH) / 2;
+
+  drawCrop();
+}
+
+function drawCrop() {
+  const canvas = document.getElementById('crop-canvas');
+  const mask = document.getElementById('crop-mask');
+  if (!canvas || !mask || !cropImg) return;
+  const ctx = canvas.getContext('2d');
+  const mCtx = mask.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = canvas._cropX, cy = canvas._cropY;
+  const cw = canvas._cropW, ch = canvas._cropH;
+
+  // Lukis gambar
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(cropImg, cropState.imgX, cropState.imgY, cropState.imgW, cropState.imgH);
+
+  // Lukis mask gelap dengan lubang
+  mCtx.clearRect(0, 0, W, H);
+  mCtx.fillStyle = 'rgba(0,0,0,0.6)';
+  mCtx.fillRect(0, 0, W, H);
+  mCtx.clearRect(cx, cy, cw, ch);
+
+  // Border kotak crop
+  mCtx.strokeStyle = '#f59e0b';
+  mCtx.lineWidth = 2;
+  mCtx.strokeRect(cx, cy, cw, ch);
+
+  // Grid 3×3 dalam crop box
+  mCtx.strokeStyle = 'rgba(245,158,11,0.3)';
+  mCtx.lineWidth = 0.5;
+  for (let i = 1; i < 3; i++) {
+    mCtx.beginPath();
+    mCtx.moveTo(cx + (cw / 3) * i, cy);
+    mCtx.lineTo(cx + (cw / 3) * i, cy + ch);
+    mCtx.stroke();
+    mCtx.beginPath();
+    mCtx.moveTo(cx, cy + (ch / 3) * i);
+    mCtx.lineTo(cx + cw, cy + (ch / 3) * i);
+    mCtx.stroke();
+  }
+}
+
+function clampCrop() {
+  const canvas = document.getElementById('crop-canvas');
+  if (!canvas) return;
+  const cx = canvas._cropX, cy = canvas._cropY;
+  const cw = canvas._cropW, ch = canvas._cropH;
+  // Pastikan gambar sentiasa cover crop box
+  if (cropState.imgX > cx) cropState.imgX = cx;
+  if (cropState.imgY > cy) cropState.imgY = cy;
+  if (cropState.imgX + cropState.imgW < cx + cw) cropState.imgX = cx + cw - cropState.imgW;
+  if (cropState.imgY + cropState.imgH < cy + ch) cropState.imgY = cy + ch - cropState.imgH;
+}
+
+// ── TOUCH EVENTS ──
+const cropContainer = document.getElementById('crop-container');
+
+cropContainer.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    cropState.isDragging = true;
+    cropState.lastTouchX = e.touches[0].clientX;
+    cropState.lastTouchY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    cropState.isDragging = false;
+    cropState.lastDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}, { passive: false });
+
+cropContainer.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1 && cropState.isDragging) {
+    const dx = e.touches[0].clientX - cropState.lastTouchX;
+    const dy = e.touches[0].clientY - cropState.lastTouchY;
+    cropState.imgX += dx;
+    cropState.imgY += dy;
+    cropState.lastTouchX = e.touches[0].clientX;
+    cropState.lastTouchY = e.touches[0].clientY;
+    clampCrop();
+    drawCrop();
+  } else if (e.touches.length === 2) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const delta = dist / cropState.lastDist;
+    const canvas = document.getElementById('crop-canvas');
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+    // Zoom dari titik tengah jari
+    cropState.imgX = midX - (midX - cropState.imgX) * delta;
+    cropState.imgY = midY - (midY - cropState.imgY) * delta;
+    cropState.imgW *= delta;
+    cropState.imgH *= delta;
+    cropState.scale *= delta;
+    cropState.lastDist = dist;
+
+    // Minimum scale — gambar mesti cover crop box
+    const minScaleW = canvas._cropW / cropImg.naturalWidth;
+    const minScaleH = canvas._cropH / cropImg.naturalHeight;
+    const minScale = Math.max(minScaleW, minScaleH);
+    if (cropState.scale < minScale) {
+      const ratio = minScale / cropState.scale;
+      cropState.imgW *= ratio;
+      cropState.imgH *= ratio;
+      cropState.scale = minScale;
+    }
+
+    clampCrop();
+    drawCrop();
+  }
+}, { passive: false });
+
+cropContainer.addEventListener('touchend', () => {
+  cropState.isDragging = false;
+});
+
+// ── BUTTON BATAL ──
+document.getElementById('btn-crop-batal').addEventListener('click', () => {
+  document.getElementById('crop-overlay').style.display = 'none';
+  cropImg = null;
+  cropCallback = null;
+});
+
+// ── BUTTON CONFIRM — export crop area jadi blob ──
+document.getElementById('btn-crop-confirm').addEventListener('click', () => {
+  const canvas = document.getElementById('crop-canvas');
+  if (!canvas || !cropImg) return;
+
+  // Buat canvas output saiz 1180×1000 (nisbah 6:5, resolusi tinggi)
+  const outW = 1180, outH = 1000;
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = outW;
+  outCanvas.height = outH;
+  const outCtx = outCanvas.getContext('2d');
+
+  // Kira koordinat gambar dalam crop box
+  const cx = canvas._cropX, cy = canvas._cropY;
+  const cw = canvas._cropW, ch = canvas._cropH;
+
+  // Offset gambar relatif kepada crop box
+  const srcX = (cx - cropState.imgX) / cropState.scale;
+  const srcY = (cy - cropState.imgY) / cropState.scale;
+  const srcW = cw / cropState.scale;
+  const srcH = ch / cropState.scale;
+
+  outCtx.drawImage(cropImg, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
+
+  outCanvas.toBlob((blob) => {
+    document.getElementById('crop-overlay').style.display = 'none';
+    cropImg = null;
+    if (cropCallback) {
+      cropCallback(blob);
+      cropCallback = null;
+    }
+  }, 'image/jpeg', 0.9);
+});
+
+    if ("serviceWorker" in navigator) {    
       window.addEventListener("load", () => { 
         navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
       });
