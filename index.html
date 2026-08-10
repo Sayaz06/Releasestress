@@ -12024,15 +12024,17 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
             // Potong teks panjang supaya muat dalam card
             const ayatPendek = card.ayatBI.length > 120 ? card.ayatBI.substring(0, 120) + '...' : card.ayatBI;
             const terjPendek = card.terjemahan.length > 100 ? card.terjemahan.substring(0, 100) + '...' : card.terjemahan;
-const bgStyle = card.imageUrl
+const tajukBgStyle = card.imageUrl
               ? `background-image:url('${card.imageUrl}');background-size:cover;background-position:center;`
-              : '';
-const overlayDiv = '';
+              : 'background:#e0f2fe;';
             pagesHtml += `
-              <div class="card" style="${bgStyle}">
-                ${overlayDiv}
+              <div class="card">
                 <div class="card-num">${nombor}</div>
-                <div class="card-tajuk">${card.tajuk}</div>
+                <div class="card-tajuk-wrapper" style="${tajukBgStyle}">
+                  <div style="background:rgba(0,0,0,0.45);padding:2mm 3mm 2mm 4mm;">
+                    <div class="card-tajuk">${card.tajuk}</div>
+                  </div>
+                </div>
                 <div class="card-divider"></div>
                 <div class="card-ayat">${ayatPendek}</div>
                 <div class="card-divider"></div>
@@ -12111,13 +12113,19 @@ const overlayDiv = '';
     font-weight: 600;
   }
 
-.card-tajuk {
+.card-tajuk-wrapper {
+    border-radius: 3mm;
+    overflow: hidden;
+    flex-shrink: 0;
+    margin: -2mm -3mm 0 -4mm;
+  }
+
+  .card-tajuk {
     font-size: 11pt;
     font-weight: 700;
-    color: #0891b2;
+    color: white;
     line-height: 1.3;
-    padding-right: 8mm;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.9), 0 0 6px rgba(255,255,255,0.8);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
   }
 
   .card-divider {
@@ -12126,26 +12134,23 @@ const overlayDiv = '';
     flex-shrink: 0;
   }
 
-  .card-ayat {
+.card-ayat {
     font-size: 9.5pt;
-    color: #111827;
+    color: #1f2937;
     line-height: 1.4;
     flex: 1;
     overflow: hidden;
-    text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 4px rgba(255,255,255,0.8);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .card-terjemahan {
     font-size: 9pt;
-    color: #374151;
+    color: #6b7280;
     line-height: 1.3;
     font-style: italic;
-    border-top: 0.5pt dashed rgba(209,213,219,0.6);
+    border-top: 0.5pt dashed #d1d5db;
     padding-top: 1mm;
     flex-shrink: 0;
-    text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 4px rgba(255,255,255,0.8);
-    font-weight: 600;
   }
 
   /* Garis potong */
