@@ -12027,8 +12027,8 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
 const bgStyle = card.imageUrl
               ? `background-image:url('${card.imageUrl}');background-size:cover;background-position:center;`
               : '';
-            const overlayDiv = card.imageUrl
-              ? `<div style="position:absolute;inset:0;background:rgba(255,255,255,0.82);"></div>`
+const overlayDiv = card.imageUrl
+              ? `<div style="position:absolute;inset:0;background:rgba(255,255,255,0.45);"></div>`
               : '';
             pagesHtml += `
               <div class="card" style="${bgStyle}">
