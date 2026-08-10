@@ -2070,6 +2070,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
           <div style="display: flex; gap: 4px; flex-wrap: wrap;">
             <button id="btn-back-home-from-tasbih" class="btn btn-secondary btn-sm">← Menu</button>
             <button id="btn-toggle-fact" class="btn btn-secondary btn-sm">Fakta: OFF</button>
+            <button id="btn-toggle-fakta-sr" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;color:#fcd34d;display:none;">⏰ SR Fakta: OFF</button>
             <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
             <button id="btn-skip-bahasa-laci" class="btn btn-secondary btn-sm" style="display:none;border-color:#f59e0b;color:#fcd34d;">⏭ Skip Laci</button>
             <button id="btn-toggle-rutin" class="btn btn-secondary btn-sm">Rutin: OFF</button>
@@ -7086,6 +7087,13 @@ function getRemainingInLaci() {
     let srQueueIds = new Set();
     let faktaSRQueueIds = new Set();
 
+    // ── SR FAKTA STATE ──
+    let faktaSRModeAktif = false;
+    let faktaSRLaciSemasa = null;
+    let faktaSRQueue = [];
+    let faktaSRSemuaSelesai = false;
+    let faktaSRON = false; // suis ON/OFF SR Fakta
+
     async function refreshSRQueueIds() {
       if (!currentUser) return;
       try {
@@ -7098,6 +7106,141 @@ function getRemainingInLaci() {
       } catch(e) {
         console.log("Gagal refresh SR queue IDs:", e);
       }
+    }
+
+    async function deleteFaktaSRRekod(drawerId) {
+      if (!currentUser) return;
+      try {
+        await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId));
+        faktaSRQueueIds.delete(drawerId);
+      } catch(e) {}
+    }
+
+    async function checkFaktaSRQueue() {
+      if (!currentUser) return false;
+      const now = Date.now();
+      const snap = await getDocs(
+        query(collection(db, "users", currentUser.uid, "fakta_sr_queue"), orderBy("nextDueAt", "asc"))
+      );
+      const overdue = [];
+      snap.docs.forEach(d => {
+        const data = d.data();
+        const drawer = allDrawers.find(dr => dr.id === data.drawerId);
+        if (!drawer) {
+          deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
+          return;
+        }
+        if (data.nextDueAt <= now) overdue.push({ id: d.id, ...data });
+      });
+      faktaSRQueue = overdue.sort((a, b) => a.nextDueAt - b.nextDueAt);
+      return faktaSRQueue.length > 0;
+    }
+
+    function muatFaktaSRLaciSeterusnya() {
+      if (!faktaSRQueue.length) {
+        faktaSRModeAktif = false;
+        faktaSRLaciSemasa = null;
+        faktaSRSemuaSelesai = true;
+        return false;
+      }
+      faktaSRLaciSemasa = faktaSRQueue.shift();
+      faktaSRModeAktif = true;
+      faktaSRSemuaSelesai = false;
+      return true;
+    }
+
+    async function selesaiFaktaSRUlangan(drawerId) {
+      if (!currentUser) return;
+      const refSR = doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId);
+      const snap = await getDoc(refSR);
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const fasaBaru = data.fasaSemasa + 1;
+      const now = Date.now();
+      const nextDueAt = now + getSRInterval(fasaBaru);
+      const sejarahBaru = [...(data.sejarahFasa || []), {
+        fasa: data.fasaSemasa,
+        selesaiAt: now,
+        labelFasa: getLabelFasaSR(data.fasaSemasa)
+      }];
+      await updateDoc(refSR, { fasaSemasa: fasaBaru, nextDueAt, sejarahFasa: sejarahBaru, updatedAt: now });
+    }
+
+    async function muatFaktaSRKeDalamFacts(srData) {
+      if (!currentUser || !srData) return;
+      const drawer = allDrawers.find(d => d.id === srData.drawerId);
+      if (!drawer) {
+        await deleteFaktaSRRekod(srData.drawerId);
+        const adaSR = await checkFaktaSRQueue();
+        if (adaSR && muatFaktaSRLaciSeterusnya()) {
+          tunjukPopupSR(faktaSRLaciSemasa);
+          await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+        } else {
+          faktaSRModeAktif = false;
+          triggerFadeAnimation(renderCurrentFact);
+        }
+        return;
+      }
+
+      const tajukLaci = drawer.title || 'Tiada Tajuk';
+      const factsBaru = [];
+
+      // Fasa 0 — ejaan tajuk
+      factsBaru.push({
+        drawerId: drawer.id,
+        title: tajukLaci,
+        text: tajukLaci,
+        translation: null,
+        isTamat: false,
+        isFasaEjaan: true,
+        isSRMode: true,
+        isFaktaSR: true
+      });
+
+      // Fasa 1&2 — isi laci
+      if (drawer.notes) {
+        const lines = drawer.notes.split('\n').filter(l => l.trim() !== '');
+        lines.forEach(line => {
+          const parts = line.split('=');
+          const perkataan = parts[0].trim();
+          const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
+          const maksudFormatted = maksudRaw
+            ? maksudRaw.replace(/\s+k(\d+)\s*/g, '\nk$1 ').replace(/\s+(\d+)\.\s*/g, '\n$1. ').trim()
+            : null;
+          factsBaru.push({
+            drawerId: drawer.id,
+            title: tajukLaci,
+            text: perkataan,
+            translation: maksudFormatted,
+            isTamat: false,
+            isFasaEjaan: false,
+            isSRMode: true,
+            isFaktaSR: true
+          });
+        });
+      }
+
+      factsBaru.push({
+        drawerId: drawer.id,
+        title: tajukLaci,
+        text: `✅ SR Fakta selesai — ${getLabelFasaSR(srData.fasaSemasa)}`,
+        isTamat: true,
+        isSRMode: true,
+        isFaktaSR: true
+      });
+
+      allFacts = factsBaru;
+      currentFactIndex = 0;
+      mainRestCount = mainRestMax;
+      mainRestPhase = 1;
+      comboStep = 0;
+      isFlipped = false;
+      isBlocked = false;
+      factMode = true;
+      const btnFact = document.getElementById('btn-toggle-fact');
+      if (btnFact) { btnFact.textContent = 'Fakta: ON'; btnFact.classList.add('btn-active'); }
+      triggerFadeAnimation(renderCurrentFact);
+      updateTasbihUI();
     }
 
     async function deleteFaktaSRRekod(drawerId) {
@@ -7440,11 +7583,30 @@ if (learningMode === 2) {
 
             // ── DAFTAR SR FAKTA bila laci selesai ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              await daftarSRBaru(currentData.drawerId, 'fakta');
-              showToast('⏰ Laci fakta didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId;
+              if (isFaktaSRSession) {
+                await selesaiFaktaSRUlangan(currentData.drawerId);
+                faktaSRQueueIds.delete(currentData.drawerId);
+                faktaSRLaciSemasa = null;
+                showToast(`✅ SR Fakta selesai — ${getLabelFasaSR((faktaSRLaciSemasa?.fasaSemasa || 0))}`, 3000);
+              } else {
+                await daftarSRBaru(currentData.drawerId, 'fakta');
+                showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
+              }
             }
 
-            // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
+            // ── CHECK SR FAKTA seterusnya (kalau suis ON) ──
+            if (faktaSRON && factMode && !bahasaMode && !faktaSRSemuaSelesai) {
+              const adaSR = await checkFaktaSRQueue();
+              if (adaSR && muatFaktaSRLaciSeterusnya()) {
+                tunjukPopupSR(faktaSRLaciSemasa);
+                await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+                return;
+              }
+              faktaSRSemuaSelesai = false;
+            }
+
+            // ── CHECK SR BAHASA ──
             if (bahasaMode) {
               const adaSR = await checkSRQueue();
               if (adaSR && muatSRLaciSeterusnya()) {
@@ -7464,11 +7626,29 @@ if (learningMode === 2) {
 
             // ── DAFTAR SR FAKTA bila laci selesai ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              await daftarSRBaru(currentData.drawerId, 'fakta');
-              showToast('⏰ Laci fakta didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId;
+              if (isFaktaSRSession) {
+                await selesaiFaktaSRUlangan(currentData.drawerId);
+                faktaSRQueueIds.delete(currentData.drawerId);
+                faktaSRLaciSemasa = null;
+              } else {
+                await daftarSRBaru(currentData.drawerId, 'fakta');
+                showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
+              }
             }
 
-            // ── CHECK SR QUEUE SELEPAS LACI SELESAI ──
+            // ── CHECK SR FAKTA seterusnya (kalau suis ON) ──
+            if (faktaSRON && factMode && !bahasaMode && !faktaSRSemuaSelesai) {
+              const adaSR = await checkFaktaSRQueue();
+              if (adaSR && muatFaktaSRLaciSeterusnya()) {
+                tunjukPopupSR(faktaSRLaciSemasa);
+                await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+                return;
+              }
+              faktaSRSemuaSelesai = false;
+            }
+
+            // ── CHECK SR BAHASA ──
             if (bahasaMode) {
               const adaSR = await checkSRQueue();
               if (adaSR && muatSRLaciSeterusnya()) {
@@ -8919,7 +9099,17 @@ if(btnToggleMainRestMax) {
     });
 }
     
-btnToggleFact.addEventListener("click", async () => {
+document.getElementById('btn-toggle-fakta-sr')?.addEventListener('click', () => {
+      faktaSRON = !faktaSRON;
+      const btn = document.getElementById('btn-toggle-fakta-sr');
+      btn.textContent = `⏰ SR Fakta: ${faktaSRON ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('btn-active', faktaSRON);
+      btn.style.color = faktaSRON ? 'white' : '#fcd34d';
+      btn.style.borderColor = faktaSRON ? 'transparent' : '#f59e0b';
+      showToast(`⏰ SR Fakta ${faktaSRON ? 'ON — SR akan masuk dulu sebelum laci biasa' : 'OFF — skip SR terus ke laci biasa'}`, 3000);
+    });
+
+    btnToggleFact.addEventListener("click", async () => {
       factMode = !factMode;
       // Auto-sync pdfNombor fakta dalam Jogging Kad bila ON fakta
       if (factMode && currentUser) {
@@ -8958,16 +9148,42 @@ if (factMode && (routineMode || bahasaMode)) {
          });
       }
   
-      btnToggleFact.textContent = `Fakta: ${factMode ? 'ON' : 'OFF'}`;
+btnToggleFact.textContent = `Fakta: ${factMode ? 'ON' : 'OFF'}`;
       btnToggleFact.classList.toggle("btn-active", factMode);
+
+      const btnFaktaSR = document.getElementById('btn-toggle-fakta-sr');
+      if (btnFaktaSR) btnFaktaSR.style.display = factMode ? 'inline-flex' : 'none';
       
-if (factMode) { 
+      if (factMode) { 
         factDisplayBox.classList.add("show"); 
         btnToggleMode.style.display = "inline-flex";
         learningMode = 2; btnToggleMode.textContent = "Mode: Rest";
         btnToggleMainRestMax.style.display = "inline-flex";
-        rebuildFacts();
+
+        // Check SR Fakta bila ON (kalau suis ON)
+        if (faktaSRON) {
+          isBlocked = true;
+          factTitleEl.textContent = '[ Memuat... ]';
+          factContentEl.textContent = '⏳ Menyemak SR Fakta...';
+          factContentEl.style.color = '#fcd34d';
+          await refreshSRQueueIds();
+          const adaSR = await checkFaktaSRQueue();
+          if (adaSR && muatFaktaSRLaciSeterusnya()) {
+            tunjukPopupSR(faktaSRLaciSemasa);
+            await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+          } else {
+            faktaSRSemuaSelesai = false;
+            factContentEl.style.color = '';
+            rebuildFacts();
+          }
+          isBlocked = false;
+        } else {
+          rebuildFacts();
+        }
       } else { 
+        faktaSRModeAktif = false;
+        faktaSRLaciSemasa = null;
+        faktaSRSemuaSelesai = false;
         factDisplayBox.classList.remove("show"); 
         btnToggleMode.style.display = "none";
         btnToggleMainRestMax.style.display = "none";
@@ -17640,6 +17856,24 @@ async function renderSRQueuePage() {
 
       list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
 
+      // ── RENDER SR FAKTA juga — gabung dalam list yang sama ──
+      let faktaSRItems = [];
+      try {
+        const faktaSnap = await getDocs(
+          query(collection(db, "users", currentUser.uid, "fakta_sr_queue"), orderBy("nextDueAt", "asc"))
+        );
+        const now = Date.now();
+        faktaSnap.docs.forEach(d => {
+          const data = d.data();
+          const drawer = allDrawers.find(dr => dr.id === data.drawerId);
+          if (!drawer) {
+            deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
+            return;
+          }
+          faktaSRItems.push({ id: d.id, ...data, laciData: drawer, isFakta: true });
+        });
+      } catch(e) {}
+
       try {
         const snap = await getDocs(
           query(
@@ -17704,7 +17938,39 @@ async function renderSRQueuePage() {
 
         list.innerHTML = '';
 
-        toShow.forEach(data => {
+// Gabung SR bahasa + SR fakta
+        const faktaToShow = srTabAktif === 'overdue'
+          ? faktaSRItems.filter(s => s.nextDueAt <= now)
+          : srTabAktif === 'upcoming'
+          ? faktaSRItems.filter(s => s.nextDueAt > now)
+          : faktaSRItems;
+
+        const allToShow = [
+          ...toShow.map(s => ({ ...s, isFakta: false })),
+          ...faktaToShow
+        ].sort((a, b) => a.nextDueAt - b.nextDueAt);
+
+        // Kemaskini stats bar — tambah kiraan fakta
+        if (statsBar) {
+          const overdueB = semua.filter(s => s.nextDueAt <= now).length;
+          const overdueF = faktaSRItems.filter(s => s.nextDueAt <= now).length;
+          const upcomingB = semua.filter(s => s.nextDueAt > now).length;
+          const upcomingF = faktaSRItems.filter(s => s.nextDueAt > now).length;
+          statsBar.innerHTML = `
+            <div class="chip" style="border-color:#f59e0b;color:#fcd34d;">⚠️ Overdue: ${overdueB + overdueF} <span style="font-size:0.6rem;opacity:0.7;">(B:${overdueB} F:${overdueF})</span></div>
+            <div class="chip" style="border-color:#34d399;color:#6ee7b7;">📅 Upcoming: ${upcomingB + upcomingF}</div>
+            <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📋 Jumlah: ${semua.length + faktaSRItems.length}</div>
+          `;
+        }
+
+        if (!allToShow.length) {
+          list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
+          return;
+        }
+
+        list.innerHTML = '';
+
+        allToShow.forEach(data => {
           const isOverdue = data.nextDueAt <= now;
           const warnaBorder = isOverdue ? 'rgba(245,158,11,0.5)' : 'rgba(52,211,153,0.3)';
           const warnaLabel = isOverdue ? '#fcd34d' : '#34d399';
@@ -17730,12 +17996,18 @@ const drawerDataSR = allBahasaDrawers.find(d => d.id === data.drawerId);
           const pdfJenisSR = drawerDataSR?.pdfJenis || null;
           const labelPDFSR = pdfNomborSR && pdfJenisSR ? `${pdfJenisSR}-${pdfNomborSR}` : null;
 
-          const div = document.createElement('div');
+const div = document.createElement('div');
           div.className = 'drawer-card';
           div.style.cssText = `border:1px solid ${warnaBorder};margin-bottom:8px;`;
+          const modeBadge = data.isFakta
+            ? '<span style="font-size:0.62rem;background:rgba(251,146,60,0.2);color:#fb923c;padding:1px 7px;border-radius:999px;font-weight:700;">📚 Fakta</span>'
+            : '<span style="font-size:0.62rem;background:rgba(6,182,212,0.15);color:#22d3ee;padding:1px 7px;border-radius:999px;font-weight:700;">📝 Bahasa</span>';
           div.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <span style="font-size:0.68rem;background:${isOverdue ? 'rgba(245,158,11,0.2)' : 'rgba(52,211,153,0.15)'};color:${warnaLabel};padding:2px 10px;border-radius:999px;font-weight:700;">${ikonStatus} ${labelStatus}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:0.68rem;background:${isOverdue ? 'rgba(245,158,11,0.2)' : 'rgba(52,211,153,0.15)'};color:${warnaLabel};padding:2px 10px;border-radius:999px;font-weight:700;">${ikonStatus} ${labelStatus}</span>
+                ${modeBadge}
+              </div>
               <div style="display:flex;align-items:center;gap:6px;">
                 ${labelPDFSR ? `<span style="font-size:0.68rem;background:rgba(14,165,233,0.15);color:#38bdf8;padding:2px 8px;border-radius:999px;font-weight:700;">📄 ${labelPDFSR}</span>` : ''}
                 <span style="font-size:0.68rem;color:var(--subtext);">${labelFasa}</span>
@@ -17793,11 +18065,12 @@ const drawerDataSR = allBahasaDrawers.find(d => d.id === data.drawerId);
             });
           }
 
-          // Reset ke fasa 1
+// Reset ke fasa 1
           div.querySelector('.btn-sr-reset').addEventListener('click', async () => {
             if (!confirm(`Reset SR "${data.drawerTitle}" ke Fasa 1?\n\nSejarah ulangan akan dipadam.`)) return;
             const now = Date.now();
-            const refSR = doc(db, "users", currentUser.uid, "bahasa_sr_queue", data.drawerId);
+            const srCollName = data.isFakta ? 'fakta_sr_queue' : 'bahasa_sr_queue';
+            const refSR = doc(db, "users", currentUser.uid, srCollName, data.drawerId);
             await updateDoc(refSR, {
               fasaSemasa: 0,
               nextDueAt: now + SR_INTERVALS[0],
@@ -17811,7 +18084,11 @@ const drawerDataSR = allBahasaDrawers.find(d => d.id === data.drawerId);
           // Buang dari queue
           div.querySelector('.btn-sr-delete').addEventListener('click', async () => {
             if (!confirm(`Buang "${data.drawerTitle}" dari SR queue?\n\nLaci tidak akan diulang lagi.`)) return;
-            await deleteSRRekod(data.drawerId);
+            if (data.isFakta) {
+              await deleteFaktaSRRekod(data.drawerId);
+            } else {
+              await deleteSRRekod(data.drawerId);
+            }
             showToast(`🗑️ "${data.drawerTitle}" dibuang dari SR queue.`);
             renderSRQueuePage();
           });
@@ -18946,11 +19223,14 @@ function jbUpdateUI() {
   const labelEl = document.getElementById('jb-topbar-label');
   if (!kodEl) return;
 
+  // Tunjuk SR badge untuk fakta SR juga
+  const isFaktaSRActive = faktaSRModeAktif && factMode && !bahasaMode;
+
   // Update label topbar ikut mode
   if (labelEl) {
     if (factMode && !bahasaMode) {
-      labelEl.textContent = '🏃 Jogging Kad — Fakta';
-      labelEl.style.color = '#fb923c';
+      labelEl.textContent = isFaktaSRActive ? '🏃 Jogging Kad — SR Fakta ⏰' : '🏃 Jogging Kad — Fakta';
+      labelEl.style.color = isFaktaSRActive ? '#fcd34d' : '#fb923c';
     } else if (bahasaMode) {
       labelEl.textContent = '🏃 Jogging Kad — Bahasa';
       labelEl.style.color = '#34d399';
