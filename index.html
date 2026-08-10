@@ -7108,15 +7108,7 @@ function getRemainingInLaci() {
       }
     }
 
-    async function deleteFaktaSRRekod(drawerId) {
-      if (!currentUser) return;
-      try {
-        await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId));
-        faktaSRQueueIds.delete(drawerId);
-      } catch(e) {}
-    }
-
-    async function checkFaktaSRQueue() {
+async function checkFaktaSRQueue() {
       if (!currentUser) return false;
       const now = Date.now();
       const snap = await getDocs(
