@@ -12365,10 +12365,9 @@ setProgress(100, '✅ Buka tetingkap print...');
       }
     });
 
-    document.getElementById('btn-export-format-ai')?.addEventListener('click', async () => {
+document.getElementById('btn-export-format-ai')?.addEventListener('click', async () => {
     if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
-      // ── LOADING BAR ──
       const loadBar = document.createElement('div');
       loadBar.id = 'export-load-bar';
       loadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
@@ -12396,7 +12395,6 @@ setProgress(100, '✅ Buka tetingkap print...');
       try {
         setProgress(20, '⏳ Menghubungi Firestore...');
 
-        // ── AMBIL TERUS DARI FIRESTORE — bukan dari memory ──
         const snap = await getDocs(
           query(
             collection(db, "users", currentUser.uid, "bahasa_drawers"),
@@ -12406,17 +12404,15 @@ setProgress(100, '✅ Buka tetingkap print...');
 
         setProgress(60, `✅ ${snap.size} laci ditemui — memproses...`);
 
-// Sort perkataan ikut susunan app — sama macam renderPerkataan()
+        // ── SUSUNAN SAMA DENGAN PDF EXPORT ──
         const perkataanDalamJenis = allBahasaPerkataan
           .filter(p => p.jenisId === currentJenisKataId)
           .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
 
-        // Kumpul semua laci ikut urutan perkataan
         const semuaLaciRaw = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(d => d.jenisId === currentJenisKataId && d.notes && d.notes.trim());
 
-        // Susun laci mengikut urutan perkataan dulu, lepas tu title dalam perkataan
         const semuaLaci = [];
         perkataanDalamJenis.forEach(perkataan => {
           const laciDalamPerkataan = semuaLaciRaw
@@ -12425,9 +12421,13 @@ setProgress(100, '✅ Buka tetingkap print...');
           semuaLaci.push(...laciDalamPerkataan);
         });
 
-        // Laci yang tiada perkataanId — letak di hujung
-        const laciOrfan = semuaLaciRaw.filter(d => !d.perkataanId || !perkataanDalamJenis.find(p => p.id === d.perkataanId));
-        semuaLaci.push(...laciOrfan.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })));
+        // Laci orphan — letak di hujung
+        const laciOrfan = semuaLaciRaw.filter(d =>
+          !d.perkataanId || !perkataanDalamJenis.find(p => p.id === d.perkataanId)
+        );
+        semuaLaci.push(...laciOrfan.sort((a, b) =>
+          (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
+        ));
 
         if (!semuaLaci.length) {
           removeLoadBar();
@@ -12438,11 +12438,11 @@ setProgress(100, '✅ Buka tetingkap print...');
         setProgress(80, `📝 Membina output dari ${semuaLaci.length} laci...`);
 
         const outputLines = [];
+        let nomborLaci = 0;
 
         semuaLaci.forEach(laci => {
           if (!laci.notes || !laci.notes.trim()) return;
 
-          // Ambil bahagian english dari tajuk laci (selepas →)
           const tajuk = laci.title || '';
           const arrowIdx = tajuk.indexOf('→');
           if (arrowIdx === -1) return;
@@ -12450,9 +12450,9 @@ setProgress(100, '✅ Buka tetingkap print...');
           const english = tajuk.slice(arrowIdx + 1).trim();
           if (!english) return;
 
+          nomborLaci++;
           outputLines.push(`→ ${english}`);
 
-          // Proses notes — ambil bahagian SEBELUM = sahaja (ayat english)
           const lines = laci.notes.split('\n').filter(l => l.trim());
           lines.forEach(line => {
             const eqIdx = line.indexOf('=');
@@ -12467,13 +12467,12 @@ setProgress(100, '✅ Buka tetingkap print...');
 
         if (!finalText) {
           removeLoadBar();
-          showToast('⚠️ Tiada kandungan untuk diexport. Pastikan laci ada notes.');
+          showToast('⚠️ Tiada kandungan untuk diexport.');
           return;
         }
 
         setProgress(95, '💾 Menyimpan fail...');
 
-        // ── DOWNLOAD SEBAGAI FAIL TXT ──
         const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
         const namaFail = `export-${(jenisData?.name || 'bahasa').replace(/\s+/g, '-')}-${dateKeyQ(Date.now())}.txt`;
 
@@ -12490,7 +12489,7 @@ setProgress(100, '✅ Buka tetingkap print...');
         setProgress(100, '✅ Fail berjaya dimuat turun!');
         setTimeout(() => removeLoadBar(), 2000);
 
-        showToast(`✅ ${semuaLaci.filter(l => l.notes).length} laci diexport ke "${namaFail}"`, 5000);
+        showToast(`✅ ${nomborLaci} laci diexport ke "${namaFail}"`, 5000);
 
       } catch(e) {
         removeLoadBar();
