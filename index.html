@@ -7802,7 +7802,7 @@ const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].dr
 setTimeout(async () => {
                 isBlocked = false;
                 // Override cycleFact untuk 1 tap seterusnya → pergi laci + popup
-const tapSeterusnya = async () => {
+const tapSeterusnyaFn = async () => {
 // ── PERJANJIAN QUEUE MODE: terus papar perjanjian ──
                   if (perjanjianQueueMode) {
                     if (!allPerjanjian.length) {
@@ -7913,8 +7913,8 @@ const tapSeterusnya = async () => {
                   // Popup Al-Quran selepas render laci baru
                   setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
                 };
-                // Simpan handler sementara — akan dipanggil pada tap/swipe seterusnya
-                window._bahasaNextLaciHandler = tapSeterusnya;
+// Simpan handler sementara — akan dipanggil pada tap/swipe seterusnya
+                window._bahasaNextLaciHandler = tapSeterusnyaFn;
               }, 300);
             }
 } else {
@@ -17926,7 +17926,7 @@ if (subtitle) subtitle.textContent = `${semua.length + faktaSRItems.length} laci
         ].sort((a, b) => a.nextDueAt - b.nextDueAt);
 
         // Kemaskini stats bar — tambah kiraan fakta
-        if (statsBar) {
+if (statsBar) {
           const overdueB = semua.filter(s => s.nextDueAt <= now).length;
           const overdueF = faktaSRItems.filter(s => s.nextDueAt <= now).length;
           const upcomingB = semua.filter(s => s.nextDueAt > now).length;
@@ -17938,14 +17938,7 @@ if (subtitle) subtitle.textContent = `${semua.length + faktaSRItems.length} laci
           `;
         }
 
-        if (!allToShow.length) {
-          list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
-          return;
-        }
-
-        list.innerHTML = '';
-
-// Gabung SR bahasa + SR fakta
+        // Gabung SR bahasa + SR fakta
         const faktaToShow = srTabAktif === 'overdue'
           ? faktaSRItems.filter(s => s.nextDueAt <= now)
           : srTabAktif === 'upcoming'
@@ -17956,6 +17949,13 @@ if (subtitle) subtitle.textContent = `${semua.length + faktaSRItems.length} laci
           ...toShow.map(s => ({ ...s, isFakta: false })),
           ...faktaToShow
         ].sort((a, b) => a.nextDueAt - b.nextDueAt);
+
+        if (!allToShow.length) {
+          list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
+          return;
+        }
+
+        list.innerHTML = '';
 
         if (!allToShow.length) {
           list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
