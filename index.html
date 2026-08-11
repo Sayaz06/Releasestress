@@ -13093,14 +13093,17 @@ const printWindow = window.open('', '_blank');
         printWindow.document.close();
         printWindow.focus();
 printWindow.onload = () => {
-          // ── AUTO-SHRINK: ukur overflow secara manual (overflow:hidden buat scrollHeight fail) ──
+          // ── AUTO-SHRINK (DIBAIKI) ──
           const semua = printWindow.document.querySelectorAll('.kad');
+
           semua.forEach(kad => {
             if (kad.classList.contains('empty')) return;
 
             const elAtas  = kad.querySelector('.kad-atas');
             const elBawah = kad.querySelector('.kad-bawah');
-            if (!elBawah) return; // tiada bawah — tak perlu shrink
+
+            // Pastikan sekurang-kurangnya ada salah satu elemen
+            if (!elAtas && !elBawah) return;
 
             let ptAtas  = 8.5;
             let ptBawah = 7.5;
@@ -13114,7 +13117,6 @@ printWindow.onload = () => {
               if (elBawah) { elBawah.style.fontSize = `${ptBawah}pt`; elBawah.style.lineHeight = String(lhBawah); }
             }
 
-            // Kira jumlah tinggi sebenar semua children (bukan scrollHeight)
             function totalChildrenHeight() {
               let total = 0;
               Array.from(kad.children).forEach(child => {
@@ -13123,8 +13125,7 @@ printWindow.onload = () => {
                 const mb = parseFloat(s.marginBottom) || 0;
                 total += child.offsetHeight + mt + mb;
               });
-              // tambah gap (2mm ≈ 7.56px) antara children
-              const gap = (kad.children.length - 1) * 7.56;
+              const gap = (kad.children.length - 1) * 7.56; // 2mm gap
               return total + gap;
             }
 
@@ -13132,36 +13133,51 @@ printWindow.onload = () => {
               return totalChildrenHeight() > kad.clientHeight;
             }
 
-            // Fasa 1 — kecilkan font .kad-bawah dulu, lepas tu .kad-atas
+            // Terapkan font asal terlebih dahulu pada DOM
+            setFont();
+
+            // Fasa 1 — kecilkan font
             while (isOverflow()) {
               if (ptAtas <= PT_MIN && ptBawah <= PT_MIN) break;
-              if (ptBawah > PT_MIN) ptBawah = Math.max(PT_MIN, ptBawah - STEP);
-              else if (ptAtas > PT_MIN) ptAtas = Math.max(PT_MIN, ptAtas - STEP);
-              setFont();
+
+              if (elBawah && ptBawah > PT_MIN) {
+                ptBawah = Math.max(PT_MIN, ptBawah - STEP);
+              } else if (elAtas && ptAtas > PT_MIN) {
+                ptAtas = Math.max(PT_MIN, ptAtas - STEP);
+              }
+
+              setFont(); // Kemaskini ukuran pada DOM supaya isOverflow() dapat baca saiz baharu
             }
 
-            // Fasa 2 — kalau masih overflow, shrink line-height pula
+            // Fasa 2 — kecilkan line-height jika masih overflow
             while (isOverflow()) {
               if (lhBawah <= 1.0 && lhAtas <= 1.0) break;
-              if (lhBawah > 1.0) lhBawah = Math.max(1.0, lhBawah - 0.05);
-              else if (lhAtas > 1.0) lhAtas = Math.max(1.0, lhAtas - 0.05);
+
+              if (elBawah && lhBawah > 1.0) {
+                lhBawah = Math.max(1.0, lhBawah - 0.05);
+              } else if (elAtas && lhAtas > 1.0) {
+                lhAtas = Math.max(1.0, lhAtas - 0.05);
+              }
+
               setFont();
             }
 
-            // Fasa 3 — last resort: kecilkan padding .baris-bawah
-            if (isOverflow()) {
-              const barisBawah = elBawah.querySelectorAll('.baris-bawah');
+            // Fasa 3 — kecilkan padding jika masih overflow
+            if (isOverflow() && elBawah) {
+              const barisBawah = elBawah.querySelectorAll('.baris-bawah, div, p');
               let pad = 0.5;
               while (isOverflow() && pad > 0) {
                 pad = Math.max(0, pad - 0.1);
-                barisBawah.forEach(b => { b.style.paddingTop = `${pad}mm`; b.style.paddingBottom = `${pad}mm`; });
+                barisBawah.forEach(b => {
+                  b.style.paddingTop = `${pad}mm`;
+                  b.style.paddingBottom = `${pad}mm`;
+                });
               }
             }
           });
 
           setTimeout(() => printWindow.print(), 800);
         };
-
         removeLoadBar();
         showToast(`✅ ${semuaKad.length} kad dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
 
