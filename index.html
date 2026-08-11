@@ -6861,9 +6861,14 @@ const afterStr = afterInputs.length > 0
 
           showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
 
-        } else {
+} else {
           // ── FORMAT LAMA: tambah ke notes ──
-          const afterStr = afterInputs.map((val, index) => `${index + 1}.${val}`).join(" ");
+          const afterStr = afterInputs.map((val, idx) => {
+            let clean = val.replace(/^-+/, '').trim();
+            if (/^K\d+:/i.test(clean)) return clean;
+            if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
+            return `K${idx + 1}: ${clean}`;
+          }).join(' ');
           const combinedNewNote = beforeVal + " = " + afterStr;
 
           const currentNotes = joggingMainTextarea.value;
@@ -10555,9 +10560,14 @@ const afterStr = afterInputs.length > 0
 
                 showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
 
-              } else {
+} else {
                 // ── FORMAT LAMA: tambah ke notes ──
-                const afterStr = afterInputs.map((val, index) => `${index + 1}.${val}`).join(" ");
+                const afterStr = afterInputs.map((val, idx) => {
+                  let clean = val.replace(/^-+/, '').trim();
+                  if (/^K\d+:/i.test(clean)) return clean;
+                  if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
+                  return `K${idx + 1}: ${clean}`;
+                }).join(' ');
                 const combinedNewNote = beforeVal + " = " + afterStr;
                 const currentNotes = memanahMainTextarea.value;
                 const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
