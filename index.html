@@ -7388,24 +7388,36 @@ function renderCurrentFact() {
         return;
       }
 
+// ── Pisah text kepada depan (sebelum =) dan belakang (selepas =) ──
+      const eqIdxFact = data.text ? data.text.indexOf('=') : -1;
+      const textDepan = eqIdxFact !== -1 ? data.text.slice(0, eqIdxFact).trim() : (data.text || '');
+      const textBelakang = eqIdxFact !== -1 ? data.text.slice(eqIdxFact + 1).trim() : '';
+      const adaKFact = /K\d+:/i.test(textBelakang);
+
       if (!isFlipped) {
         factTitleEl.textContent = isSR
           ? `[ ⏰ SR — ${data.title} ]`
           : routineMode ? `[ Zikir: ${data.title} ]` : `[ ${data.title} ]`;
         factTitleEl.style.color = isSR ? srWarnaTajuk : normalWarnaTajuk;
         factContentEl.style.color = isSR ? srWarnaKandungan : normalWarnaKandungan;
-        factContentEl.innerHTML = formatTextToHtmlList(data.text);
+        // Papar depan sahaja (sebelum =) kalau ada format items baru
+        factContentEl.innerHTML = data.isItemFormat && eqIdxFact !== -1
+          ? formatTextToHtmlList(textDepan)
+          : formatTextToHtmlList(data.text);
       } else {
         factTitleEl.textContent = isSR
           ? `[ ⏰ SR — ${data.title} ] (Maksud)`
           : routineMode ? `[ Zikir: ${data.title} ] (Maksud)` : `[ ${data.title} ] (Maksud)`;
         factTitleEl.style.color = isSR ? srWarnaTajuk : normalWarnaTajuk;
         factContentEl.style.color = isSR ? srWarnaKandungan : normalWarnaKandungan;
-        if (data.translation) {
+        // Format baru — papar belakang (K1:, K2:) sebagai maksud
+        if (data.isItemFormat && adaKFact) {
+          factContentEl.innerHTML = formatTextToHtmlList(textBelakang);
+        } else if (data.translation) {
           factContentEl.innerHTML = formatTextToHtmlList(data.translation);
         } else {
           factContentEl.textContent = "Menterjemah... ⏳";
-          const cleanTextForTranslate = data.text.replace(/^\s*\d+[\.\)]\s*/, ''); 
+          const cleanTextForTranslate = data.text.replace(/^\s*\d+[\.\)]\s*/, '');
           const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ms&dt=t&q=${encodeURIComponent(cleanTextForTranslate)}`;
           
           fetch(url)
@@ -12742,24 +12754,26 @@ let pagesHtml = '';
           batch.forEach((kad) => {
             if (!kad) { pagesHtml += `<div class="kad empty"></div>`; return; }
 
-            // Pisah ayat kepada atas (sebelum =) dan bawah (selepas =)
+// Pisah ayat kepada atas (sebelum =) dan bawah (selepas =)
             const eqIdx = kad.ayat.indexOf('=');
             const atas = eqIdx !== -1 ? kad.ayat.slice(0, eqIdx).trim() : kad.ayat.trim();
             const bawahRaw = eqIdx !== -1 ? kad.ayat.slice(eqIdx + 1).trim() : '';
 
-            // Format bawah — k1/k2 → baris berasingan
+            // Format bawah — K1:/K2: → baris berasingan
             const adaK = /K\d+:/i.test(bawahRaw);
             let bawahHtml = '';
             if (adaK) {
-              const bawahFormat = formatMaksudUntukPdf(bawahRaw);
-              bawahHtml = bawahFormat
-                .split('\n')
-                .filter(l => l.trim())
-                .map(l => `<div class="baris-bawah">${l.trim()}</div>`)
+              // Split pada setiap K(n): — buang bahagian kosong
+              const bahagian = bawahRaw
+                .split(/(?=K\d+:)/i)
+                .map(s => s.replace(/^K(\d+):\s*/i, '$1 : ').trim())
+                .filter(s => s);
+              bawahHtml = bahagian
+                .map(l => `<div class="baris-bawah">${l}</div>`)
                 .join('');
             } else if (bawahRaw) {
               bawahHtml = `<div class="baris-bawah">${bawahRaw}</div>`;
-            }
+            }            
 
             // Frame gambar — tinggi tetap sama ada atau tiada gambar
             const imgBlock = kad.imageUrl && base64Map[kad.imageUrl]
