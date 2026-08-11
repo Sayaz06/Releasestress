@@ -8259,11 +8259,10 @@ faktaTopicsList.appendChild(div);
       });
     }
 
-    function renderDrawers() {
+function renderDrawers() {
       const topic = allTopics.find(t => t.id === currentTopicId);
       document.getElementById("parent-topic-name").textContent = topic && topic.name ? `Topik: ${topic.name}` : "";
 
-      // Floating button ke countdown — tunjuk bila ada topik aktif
       const existingFloat = document.getElementById('btn-float-countdown-fakta');
       if (existingFloat) existingFloat.remove();
       const activeTopic = allTopics.find(t => t.isActive);
@@ -8288,74 +8287,220 @@ faktaTopicsList.appendChild(div);
 
       drawerList.innerHTML = "";
       const filteredDrawers = allDrawers.filter(d => d.topicId === currentTopicId);
-const sortedDrawers = filteredDrawers.sort((a, b) => {
-  if ((a.title || "") === "~") return 1;
-  if ((b.title || "") === "~") return -1;
-  const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
-  return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
-});
-        
-sortedDrawers.forEach(data => {
+      const sortedDrawers = filteredDrawers.sort((a, b) => {
+        if ((a.title || "") === "~") return 1;
+        if ((b.title || "") === "~") return -1;
+        const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
+        return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
+      });
+
+      sortedDrawers.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
         const adaSRFakta = faktaSRQueueIds.has(data.id);
         if (adaSRFakta) div.style.borderColor = 'rgba(245,158,11,0.4)';
-        
+
+        // Semak ada pdfNombor — kod tetap atau sementara
+        const adaPdfKod = !!(data.pdfNombor && data.pdfTopik && data.pdfSubjek);
+        const subjek = allSubjects.find(s => s.id === allTopics.find(t => t.id === currentTopicId)?.subjectId);
+        const topicData = allTopics.find(t => t.id === currentTopicId);
+        const subjekNama = subjek?.name || '';
+        const topikNama = topicData?.name || '';
+
+        // Render items — guna items[] kalau ada, fallback ke notes lama
+        const items = data.items && data.items.length > 0 ? data.items : null;
+        const adaItems = !!items;
+
         div.innerHTML = `
           <div class="drawer-title-wrapper">
-             <input class="drawer-title" value="${data.title || ''}" placeholder="Tajuk Laci">
-             <div style="display:flex;gap:4px;align-items:center;">
-               ${adaSRFakta ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;">⏰ SR</span>' : ''}
-               <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
-             </div>
-          </div>
-          <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan">${data.notes || ''}</textarea>
-          
-          <div style="margin-top: 10px; text-align: center;">
-            <button class="btn btn-secondary btn-open-jogging" style="width: 100%; border-color: var(--grad1);">🏃‍♂️ Buka Skrin Jogging (Hafal & Tambah)</button>
+            <input class="drawer-title" value="${data.title || ''}" placeholder="Tajuk Slide (Cth: Slide 1)">
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              ${adaSRFakta ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;">⏰ SR</span>' : ''}
+              <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
+            </div>
           </div>
 
-          <div style="margin-top: 6px; text-align: center;">
-            <button class="btn btn-secondary btn-open-memanah" style="width: 100%; border-color: var(--grad2);">🏹 Buka Mode Memanah (Hafal & Main)</button>
+          ${adaPdfKod
+            ? `<div style="font-size:0.68rem;background:rgba(99,102,241,0.15);color:#a5b4fc;padding:3px 10px;border-radius:999px;margin-bottom:8px;display:inline-block;">📄 ${data.pdfSubjek}/${data.pdfTopik}/${data.title || ''} — Kod: ${data.pdfNombor}</div>`
+            : `<div style="font-size:0.68rem;background:rgba(245,158,11,0.1);color:#fcd34d;padding:3px 10px;border-radius:999px;margin-bottom:8px;display:inline-block;">⚠️ Belum export PDF — kod sementara</div>`
+          }
+
+          ${!adaItems ? `
+          <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;">
+            <div style="font-size:0.68rem;color:#a5b4fc;margin-bottom:4px;">📝 Format Lama (Notes)</div>
+            <textarea class="drawer-notes" placeholder="Format lama: Perkataan = Terjemahan">${data.notes || ''}</textarea>
+          </div>` : ''}
+
+          <div class="fakta-items-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
+            ${(items || []).map((item, idx) => `
+              <div class="fakta-item-card" data-idx="${idx}" style="background:rgba(30,41,59,0.6);border:1px solid var(--border-soft);border-radius:10px;padding:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <span style="font-size:0.72rem;font-weight:700;color:#a5b4fc;">Baris ${idx + 1}</span>
+                  <button class="btn-del-item btn btn-secondary btn-sm" data-idx="${idx}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
+                </div>
+                <textarea class="item-ayat drawer-notes" data-idx="${idx}" placeholder="Isi ayat/teks di sini..." style="min-height:60px;resize:none;width:100%;margin-bottom:6px;">${item.ayat || ''}</textarea>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <button class="btn-upload-item-img btn btn-secondary btn-sm" data-idx="${idx}" style="flex:1;font-size:0.72rem;border-color:#f59e0b;color:${item.imageUrl ? '#fcd34d' : 'var(--subtext)'};">
+                    🖼️ ${item.imageUrl ? 'Tukar Gambar ✓' : 'Upload Gambar'}
+                  </button>
+                  ${item.imageUrl ? `<button class="btn-del-item-img btn btn-secondary btn-sm" data-idx="${idx}" style="font-size:0.65rem;color:var(--danger);border-color:var(--danger);">✕ Gambar</button>` : ''}
+                </div>
+                ${item.imageUrl ? `<img src="${item.imageUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-top:6px;opacity:0.8;">` : ''}
+              </div>
+            `).join('')}
           </div>
 
-          <div style="text-align: right; margin-top: 10px;">
-            <button class="btn btn-secondary btn-sm btn-del-laci" style="color:var(--danger); border-color:var(--danger);">Padam</button>
+          <button class="btn-add-item btn btn-secondary btn-sm" style="width:100%;border-color:#6366f1;color:#a5b4fc;margin-bottom:10px;">+ Tambah Baris</button>
+
+          <div style="margin-top:6px;text-align:center;">
+            <button class="btn btn-secondary btn-open-jogging" style="width:100%;border-color:var(--grad1);">🏃‍♂️ Buka Skrin Jogging (Hafal & Tambah)</button>
+          </div>
+          <div style="margin-top:6px;text-align:center;">
+            <button class="btn btn-secondary btn-open-memanah" style="width:100%;border-color:var(--grad2);">🏹 Buka Mode Memanah (Hafal & Main)</button>
+          </div>
+          <div style="text-align:right;margin-top:10px;">
+            <button class="btn btn-secondary btn-sm btn-del-laci" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
         `;
-        
+
+        // ── HELPER: Simpan items ke Firestore ──
+        async function simpanItems(newItems) {
+          await updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), {
+            items: newItems,
+            repeatCount: 0
+          });
+        }
+
+        // ── TITLE CHANGE ──
         div.querySelector(".drawer-title").addEventListener("change", (e) => {
           updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), { title: e.target.value });
         });
-        
-        const textareaNotes = div.querySelector(".drawer-notes");
-        textareaNotes.addEventListener("change", (e) => {
-          updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), { 
-            notes: e.target.value,
-            repeatCount: 0 
+
+        // ── NOTES LAMA ──
+        const notesEl = div.querySelector(".drawer-notes");
+        if (notesEl) {
+          notesEl.addEventListener("change", (e) => {
+            updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), {
+              notes: e.target.value,
+              repeatCount: 0
+            });
+          });
+        }
+
+        // ── TAMBAH BARIS ──
+        div.querySelector(".btn-add-item").addEventListener("click", async () => {
+          const currentItems = data.items ? [...data.items] : [];
+          currentItems.push({ ayat: '', imageUrl: '' });
+          await simpanItems(currentItems);
+        });
+
+        // ── PADAM BARIS ──
+        div.querySelectorAll(".btn-del-item").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            const currentItems = data.items ? [...data.items] : [];
+            if (currentItems[idx]?.imageUrl) {
+              try {
+                await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`));
+              } catch(e) {}
+            }
+            currentItems.splice(idx, 1);
+            await simpanItems(currentItems);
           });
         });
 
+        // ── EDIT AYAT ──
+        div.querySelectorAll(".item-ayat").forEach(ta => {
+          ta.addEventListener("change", async (e) => {
+            const idx = parseInt(ta.getAttribute('data-idx'));
+            const currentItems = data.items ? [...data.items] : [];
+            if (currentItems[idx]) {
+              currentItems[idx].ayat = e.target.value;
+              await simpanItems(currentItems);
+            }
+          });
+        });
+
+        // ── UPLOAD GAMBAR ITEM ──
+        div.querySelectorAll(".btn-upload-item-img").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.addEventListener('change', async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              showToast('⏳ Mengupload gambar...', 0);
+              try {
+                const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`);
+                const uploadTask = uploadBytesResumable(storageRefPath, file);
+                uploadTask.on('state_changed', null, (err) => {
+                  showToast('❌ Gagal upload: ' + err.message);
+                }, async () => {
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  const currentItems = data.items ? [...data.items] : [];
+                  if (currentItems[idx]) {
+                    currentItems[idx].imageUrl = url;
+                    await simpanItems(currentItems);
+                  }
+                  showToast('✅ Gambar berjaya diupload!');
+                });
+              } catch(e) {
+                showToast('❌ Gagal: ' + e.message);
+              }
+            });
+            input.click();
+          });
+        });
+
+        // ── PADAM GAMBAR ITEM ──
+        div.querySelectorAll(".btn-del-item-img").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            try {
+              await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`)).catch(() => {});
+              const currentItems = data.items ? [...data.items] : [];
+              if (currentItems[idx]) {
+                currentItems[idx].imageUrl = '';
+                await simpanItems(currentItems);
+              }
+              showToast('🗑️ Gambar dibuang.');
+            } catch(e) {
+              showToast('❌ Gagal: ' + e.message);
+            }
+          });
+        });
+
+        // ── JOGGING & MEMANAH ──
         div.querySelector(".btn-open-jogging").addEventListener("click", () => {
           openJoggingMode(data);
         });
-
         div.querySelector(".btn-open-memanah").addEventListener("click", () => {
           openMemanahMode(data);
         });
-        
-div.querySelector(".btn-del-laci").addEventListener("click", async () => {
+
+        // ── PADAM LACI ──
+        div.querySelector(".btn-del-laci").addEventListener("click", async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          // Padam semua gambar item dari Storage
+          if (data.items) {
+            for (let i = 0; i < data.items.length; i++) {
+              if (data.items[i].imageUrl) {
+                await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${i}.jpg`)).catch(() => {});
+              }
+            }
+          }
           await hantarKeTrashUniversal('drawer', data.id, data, data.title || 'Laci');
           await deleteDoc(doc(db, "users", currentUser.uid, "drawer", data.id));
           showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
-        
+
         drawerList.appendChild(div);
       });
     }
 
-    function rebuildFacts() {
+function rebuildFacts() {
       allFacts = [];
       const activeTopic = allTopics.find(t => t.isActive);
       
@@ -8366,18 +8511,43 @@ div.querySelector(".btn-del-laci").addEventListener("click", async () => {
           hasShownStartupToast = true; 
         }
         
-        const activeDrawers = allDrawers.filter(d => d.topicId === activeTopic.id).sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
+        const activeDrawers = allDrawers
+          .filter(d => d.topicId === activeTopic.id)
+          .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
         
         activeDrawers.forEach(data => {
           const tajukLaci = data.title || "Tiada Tajuk";
-if(data.notes) {
+
+          // ── FORMAT BARU: guna items[] ──
+          if (data.items && data.items.length > 0) {
+            data.items.forEach((item, idx) => {
+              if (!item.ayat || !item.ayat.trim()) return;
+              allFacts.push({
+                drawerId: data.id,
+                title: tajukLaci,
+                text: item.ayat.trim(),
+                translation: null,
+                isTamat: false,
+                isItemFormat: true,
+                itemIndex: idx
+              });
+            });
+            allFacts.push({
+              drawerId: data.id,
+              title: tajukLaci,
+              text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.",
+              isTamat: true,
+              isItemFormat: true
+            });
+
+          // ── FORMAT LAMA: fallback ke notes ──
+          } else if (data.notes) {
             const lines = data.notes.split('\n').filter(l => l.trim() !== "");
             if (lines.length > 0) {
               lines.forEach(line => {
                 const parts = line.split('=');
                 const perkataan = parts[0].trim();
                 const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
-                // Support format k1, k2 DAN 1., 2. sebagai line break dalam maksud
                 const maksudFormatted = maksudRaw
                   ? maksudRaw
                       .replace(/\s+k(\d+)\s*/g, '\nk$1 ')
@@ -8389,14 +8559,16 @@ if(data.notes) {
                   title: tajukLaci, 
                   text: perkataan, 
                   translation: maksudFormatted, 
-                  isTamat: false 
+                  isTamat: false,
+                  isItemFormat: false
                 });
               });
               allFacts.push({ 
                 drawerId: data.id, 
                 title: tajukLaci, 
                 text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.", 
-                isTamat: true 
+                isTamat: true,
+                isItemFormat: false
               });
             }
           }
