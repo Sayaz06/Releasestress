@@ -6817,6 +6817,84 @@ function openJoggingMode(data) {
       }, 50);
     }
     
+// ── HELPER: Normalize afterInputs → K1: format ──
+    function normalizeAfterInputs(afterInputs) {
+      return afterInputs.length > 0
+        ? afterInputs.map((val, idx) => {
+            let clean = val.replace(/^-+/, '').trim();
+            if (/^K\d+:/i.test(clean)) return clean;
+            if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
+            return `K${idx + 1}: ${clean}`;
+          }).join(' ')
+        : '';
+    }
+
+    // ── HELPER: Migrate notes lama → items[] baru ──
+    async function migrateNotesKeItems(drawerId, notesStr) {
+      const lines = (notesStr || '').split('\n').filter(l => l.trim());
+      const items = lines.map(l => ({ ayat: l.trim(), imageUrl: '' }));
+      await updateDoc(doc(db, "users", currentUser.uid, "drawer", drawerId), {
+        items: items,
+        notes: '',
+        repeatCount: 0
+      });
+      // Kemaskini local allDrawers
+      const idx = allDrawers.findIndex(d => d.id === drawerId);
+      if (idx !== -1) { allDrawers[idx].items = items; allDrawers[idx].notes = ''; }
+      return items;
+    }
+
+    // ── POPUP TANYA MIGRATE ──
+    function tanyaMigrateFormat(drawerId, notesStr, callbackYa, callbackTidak) {
+      // Buang popup lama kalau ada
+      const lama = document.getElementById('migrate-popup');
+      if (lama) lama.remove();
+
+      const bilanganBaris = (notesStr || '').split('\n').filter(l => l.trim()).length;
+
+      const popup = document.createElement('div');
+      popup.id = 'migrate-popup';
+      popup.style.cssText = `
+        position:fixed; inset:0; z-index:9999999;
+        background:rgba(2,6,23,0.96);
+        display:flex; align-items:center; justify-content:center;
+        padding:20px; backdrop-filter:blur(6px);
+      `;
+      popup.innerHTML = `
+        <div style="background:rgba(15,23,42,0.98);border:2px solid #f59e0b;border-radius:18px;
+                    padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.9);">
+          <div style="font-size:1.1rem;font-weight:700;color:#fcd34d;margin-bottom:6px;">⚡ Migrate ke Format Baru?</div>
+          <div style="font-size:0.78rem;color:#9ca3af;line-height:1.7;margin-bottom:16px;">
+            Laci ini masih guna <strong style="color:#fbbf24;">format lama (notes)</strong>.<br>
+            Format baru <strong style="color:#34d399;">(items[])</strong> menyokong gambar, nombor baris, dan PDF yang lebih baik.<br><br>
+            <span style="color:#e5e7eb;">Baris sedia ada: <strong style="color:#fcd34d;">${bilanganBaris} baris</strong> — akan dipindahkan automatik.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button id="btn-migrate-ya" style="width:100%;padding:12px;border-radius:999px;
+              background:linear-gradient(135deg,#d97706,#b45309);border:none;
+              color:white;font-weight:700;font-size:0.9rem;cursor:pointer;">
+              ✅ Ya — Migrate & Simpan
+            </button>
+            <button id="btn-migrate-tidak" style="width:100%;padding:12px;border-radius:999px;
+              background:rgba(255,255,255,0.06);border:1px solid #4b5563;
+              color:#e5e7eb;font-weight:600;font-size:0.85rem;cursor:pointer;">
+              Tidak — Guna Format Lama Sahaja
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(popup);
+
+      document.getElementById('btn-migrate-ya').addEventListener('click', async () => {
+        popup.remove();
+        await callbackYa();
+      });
+      document.getElementById('btn-migrate-tidak').addEventListener('click', () => {
+        popup.remove();
+        callbackTidak();
+      });
+    }
+
 async function simpanKeLaciJogging() {
         const beforeVal = joggingInputBefore.value.trim();
         const afterInputs = Array.from(joggingAfterContainer.querySelectorAll('.jogging-input-after'))
@@ -6825,71 +6903,75 @@ async function simpanKeLaciJogging() {
 
         if (!currentJoggingDrawerId || !currentUser) return;
 
-        // Semak sama ada laci guna format items[] atau notes lama
         const drawer = allDrawers.find(d => d.id === currentJoggingDrawerId);
         const gunaItems = drawer && drawer.items && drawer.items.length > 0;
 
-        if (gunaItems) {
-          // ── FORMAT BARU: tambah sebagai item baru ──
-          // Gabung before + afters jadi satu ayat
-const afterStr = afterInputs.length > 0
-                  ? afterInputs.map((val, idx) => {
-                      let clean = val.replace(/^-+/, '').trim();
-                      if (/^K\d+:/i.test(clean)) return clean;
-                      if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
-                      return `K${idx + 1}: ${clean}`;
-                    }).join(' ')
-                  : '';
-                const ayatBaru = afterStr
-                  ? `${beforeVal} = ${afterStr}`
-                  : beforeVal;
+        // ── Bina ayat baru (normalize K format) ──
+        const afterStr = normalizeAfterInputs(afterInputs);
+        const ayatBaru = afterStr ? `${beforeVal} = ${afterStr}` : beforeVal;
 
-          const currentItems = [...(drawer.items || [])];
+        // ── Fungsi simpan dalam format BARU (items[]) ──
+        async function simpanSebagaiItems(drawerRef) {
+          const currentItems = [...(drawerRef.items || [])];
           currentItems.push({ ayat: ayatBaru, imageUrl: '' });
-
           await updateDoc(doc(db, "users", currentUser.uid, "drawer", currentJoggingDrawerId), {
             items: currentItems,
+            notes: '',
             repeatCount: 0
           });
-
-          // Kemaskini textarea paparan
-          const paparan = currentItems.map((item, idx) =>
-            `[Baris ${idx + 1}] ${item.ayat || ''}`
-          ).join('\n');
+          const idx = allDrawers.findIndex(d => d.id === currentJoggingDrawerId);
+          if (idx !== -1) { allDrawers[idx].items = currentItems; allDrawers[idx].notes = ''; }
+          const paparan = currentItems.map((item, i) => `[Baris ${i + 1}] ${item.ayat || ''}`).join('\n');
           joggingMainTextarea.value = paparan;
           joggingMainTextarea.scrollTop = joggingMainTextarea.scrollHeight;
+          showToast(`✅ Baris ${currentItems.length} ditambah ke laci! (Format Baru)`);
+        }
 
-          showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
-
-} else {
-          // ── FORMAT LAMA: tambah ke notes (normalize K format) ──
-          const afterStr = afterInputs.length > 0
-            ? afterInputs.map((val, idx) => {
-                let clean = val.replace(/^-+/, '').trim();
-                if (/^K\d+:/i.test(clean)) return clean;
-                if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
-                return `K${idx + 1}: ${clean}`;
-              }).join(' ')
-            : '';
-          const combinedNewNote = afterStr
-            ? `${beforeVal} = ${afterStr}`
-            : beforeVal;
-
+        // ── Fungsi simpan dalam format LAMA (notes) ──
+        async function simpanSebagaiNotes() {
           const currentNotes = joggingMainTextarea.value;
-          const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
-
+          const updatedNotes = currentNotes ? currentNotes + '\n' + ayatBaru : ayatBaru;
           joggingMainTextarea.value = updatedNotes;
           joggingMainTextarea.scrollTop = joggingMainTextarea.scrollHeight;
-
           await updateDoc(doc(db, "users", currentUser.uid, "drawer", currentJoggingDrawerId), {
             notes: updatedNotes,
             repeatCount: 0
           });
+          showToast(`✅ Ditambah ke laci! (Format Lama)`);
         }
 
-        joggingInputBefore.value = "";
-        joggingAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
-        clearJoggingDraft(currentJoggingDrawerId);
+        // ── Reset input ──
+        function resetInput() {
+          joggingInputBefore.value = "";
+          joggingAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
+          clearJoggingDraft(currentJoggingDrawerId);
+        }
+
+        if (gunaItems) {
+          // Laci dah dalam format baru — terus simpan
+          await simpanSebagaiItems(drawer);
+          resetInput();
+        } else {
+          // Laci masih format lama — tanya migrate dulu
+          const notesLama = drawer ? (drawer.notes || '') : '';
+          tanyaMigrateFormat(
+            currentJoggingDrawerId,
+            notesLama,
+            async () => {
+              // Ya — migrate dulu, lepas tu tambah item baru
+              const itemsSelepasmigrasi = await migrateNotesKeItems(currentJoggingDrawerId, notesLama);
+              const drawerBaru = { ...drawer, items: itemsSelepasmigrasi, notes: '' };
+              await simpanSebagaiItems(drawerBaru);
+              resetInput();
+              showToast(`✅ Migrated ${itemsSelepasmigrasi.length} baris + tambah baru!`, 3500);
+            },
+            async () => {
+              // Tidak — guna format lama sahaja
+              await simpanSebagaiNotes();
+              resetInput();
+            }
+          );
+        }
     }
 
     function decrementJogging() {
@@ -10577,28 +10659,60 @@ const afterStr = afterInputs.length > 0
                 showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
 
 } else {
-                // ── FORMAT LAMA: tambah ke notes (normalize K format) ──
-                const afterStr = afterInputs.length > 0
-                  ? afterInputs.map((val, idx) => {
-                      let clean = val.replace(/^-+/, '').trim();
-                      if (/^K\d+:/i.test(clean)) return clean;
-                      if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
-                      return `K${idx + 1}: ${clean}`;
-                    }).join(' ')
-                  : '';
-                const combinedNewNote = afterStr
-                  ? `${beforeVal} = ${afterStr}`
-                  : beforeVal;
-                const currentNotes = memanahMainTextarea.value;
-                const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
+                // ── FORMAT LAMA — tanya migrate ──
+                const notesLama = drawer ? (drawer.notes || '') : '';
+                const ayatBaruM = (() => {
+                  const aStr = normalizeAfterInputs(afterInputs);
+                  return aStr ? `${beforeVal} = ${aStr}` : beforeVal;
+                })();
 
-                memanahMainTextarea.value = updatedNotes;
-                memanahMainTextarea.scrollTop = memanahMainTextarea.scrollHeight;
+                async function simpanMemanahItems(drawerRef) {
+                  const currentItems = [...(drawerRef.items || [])];
+                  currentItems.push({ ayat: ayatBaruM, imageUrl: '' });
+                  updateDoc(doc(db, "users", currentUser.uid, "drawer", currentMemanahDrawerId), {
+                    items: currentItems, notes: '', repeatCount: 0
+                  });
+                  const idxD = allDrawers.findIndex(d => d.id === currentMemanahDrawerId);
+                  if (idxD !== -1) { allDrawers[idxD].items = currentItems; allDrawers[idxD].notes = ''; }
+                  const paparan = currentItems.map((item, i) => `[Baris ${i + 1}] ${item.ayat || ''}`).join('\n');
+                  memanahMainTextarea.value = paparan;
+                  memanahMainTextarea.scrollTop = memanahMainTextarea.scrollHeight;
+                  showToast(`✅ Baris ${currentItems.length} ditambah! (Format Baru)`);
+                }
 
-                updateDoc(doc(db, "users", currentUser.uid, "drawer", currentMemanahDrawerId), {
-                  notes: updatedNotes,
-                  repeatCount: 0
-                });
+                async function simpanMemanahNotes() {
+                  const currentNotes = memanahMainTextarea.value;
+                  const updatedNotes = currentNotes ? currentNotes + '\n' + ayatBaruM : ayatBaruM;
+                  memanahMainTextarea.value = updatedNotes;
+                  memanahMainTextarea.scrollTop = memanahMainTextarea.scrollHeight;
+                  updateDoc(doc(db, "users", currentUser.uid, "drawer", currentMemanahDrawerId), {
+                    notes: updatedNotes, repeatCount: 0
+                  });
+                  showToast(`✅ Ditambah ke laci! (Format Lama)`);
+                }
+
+                function resetMemanah() {
+                  memanahInputBefore.value = "";
+                  memanahAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
+                  clearMemanahDraft(currentMemanahDrawerId);
+                }
+
+                tanyaMigrateFormat(
+                  currentMemanahDrawerId,
+                  notesLama,
+                  async () => {
+                    const itemsMigrated = await migrateNotesKeItems(currentMemanahDrawerId, notesLama);
+                    const drawerBaru = { ...drawer, items: itemsMigrated, notes: '' };
+                    await simpanMemanahItems(drawerBaru);
+                    resetMemanah();
+                    showToast(`✅ Migrated ${itemsMigrated.length} baris + tambah baru!`, 3500);
+                  },
+                  async () => {
+                    await simpanMemanahNotes();
+                    resetMemanah();
+                  }
+                );
+                return; // jangan reset dulu — popup yang kawal
               }
             }
 
