@@ -7209,8 +7209,26 @@ async function checkFaktaSRQueue() {
         isFaktaSR: true
       });
 
-      // Fasa 1&2 — isi laci
-      if (drawer.notes) {
+// ── FORMAT BARU: guna items[] ──
+      if (drawer.items && drawer.items.length > 0) {
+        drawer.items.forEach((item, idx) => {
+          if (!item.ayat || !item.ayat.trim()) return;
+          factsBaru.push({
+            drawerId: drawer.id,
+            title: tajukLaci,
+            text: item.ayat.trim(),
+            translation: null,
+            isTamat: false,
+            isFasaEjaan: false,
+            isSRMode: true,
+            isFaktaSR: true,
+            isItemFormat: true,
+            itemIndex: idx
+          });
+        });
+
+      // ── FORMAT LAMA: fallback ke notes ──
+      } else if (drawer.notes) {
         const lines = drawer.notes.split('\n').filter(l => l.trim() !== '');
         lines.forEach(line => {
           const parts = line.split('=');
@@ -7227,7 +7245,8 @@ async function checkFaktaSRQueue() {
             isTamat: false,
             isFasaEjaan: false,
             isSRMode: true,
-            isFaktaSR: true
+            isFaktaSR: true,
+            isItemFormat: false
           });
         });
       }
@@ -14277,28 +14296,24 @@ let srQueue = [];           // Queue overdue yang sedang aktif
 async function daftarSRBaru(drawerId, mode = 'bahasa') {
       if (!currentUser) return;
 
-      let drawer, drawerTitle, srColl, originalColl;
+      let drawer, drawerTitle, srColl;
 
       if (mode === 'fakta') {
         drawer = allDrawers.find(d => d.id === drawerId);
         if (!drawer) return;
         drawerTitle = drawer.title || '';
         srColl = 'fakta_sr_queue';
-        originalColl = 'drawer';
       } else {
         drawer = allBahasaDrawers.find(d => d.id === drawerId);
         if (!drawer) return;
         drawerTitle = drawer.title || '';
         srColl = 'bahasa_sr_queue';
-        originalColl = 'bahasa_drawers';
       }
 
-const now = Date.now();
-      const nextDueAt = now + SR_INTERVALS[0]; // +20 minit
+      const now = Date.now();
+      const nextDueAt = now + SR_INTERVALS[0];
 
-      // Semak kalau dah ada rekod SR untuk laci ini
-      const srCollPath = mode === 'fakta' ? 'fakta_sr_queue' : 'bahasa_sr_queue';
-      const refSR = doc(db, "users", currentUser.uid, srCollPath, drawerId);
+      const refSR = doc(db, "users", currentUser.uid, srColl, drawerId);
       const snap = await getDoc(refSR);
 
       if (snap.exists()) {
@@ -14307,6 +14322,32 @@ const now = Date.now();
         const masaUlangan = formatTarikhMasaSR(data.nextDueAt);
         showToast(`⏰ Sudah disimpan sebelum ini — ${fasaLabel} — ${masaUlangan}`, 4000);
         return;
+      }
+
+      // ── Bina kod PDF untuk fakta ──
+      let pdfKod = null;
+      let isSementara = false;
+
+      if (mode === 'fakta') {
+        const topic = allTopics.find(t => t.id === drawer.topicId);
+        const subjek = allSubjects.find(s => s.id === topic?.subjectId);
+        const topicNama = topic?.name || 'Topik';
+        const subjekNama = subjek?.name || 'Subjek';
+        const tajukSlide = drawer.title || 'Slide';
+
+        if (drawer.pdfNombor && drawer.pdfTopik && drawer.pdfSubjek) {
+          // Kod tetap
+          pdfKod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-${drawer.pdfNombor}`;
+          isSementara = false;
+        } else {
+          // Kod sementara
+          const laciDalamTopik = allDrawers
+            .filter(d => d.topicId === drawer.topicId)
+            .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+          const idxSementara = laciDalamTopik.findIndex(d => d.id === drawerId);
+          pdfKod = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}`;
+          isSementara = true;
+        }
       }
 
       // Buat rekod SR baru
@@ -14326,11 +14367,12 @@ const now = Date.now();
         srData.jenisId = drawer.jenisId || '';
       } else {
         srData.topicId = drawer.topicId || '';
+        srData.pdfKod = pdfKod;
+        srData.isSementara = isSementara;
       }
 
       await setDoc(refSR, srData);
 
-      // Kemaskini cache
       if (mode === 'fakta') {
         faktaSRQueueIds.add(drawerId);
       } else {
@@ -18273,9 +18315,36 @@ async function renderSRQueuePage() {
 const drawerDataSR = data.isFakta
             ? allDrawers.find(d => d.id === data.drawerId)
             : allBahasaDrawers.find(d => d.id === data.drawerId);
-          const pdfNomborSR = drawerDataSR?.pdfNombor || null;
-          const pdfJenisSR = drawerDataSR?.pdfJenis || null;
-          const labelPDFSR = pdfNomborSR && pdfJenisSR ? `${pdfJenisSR}-${pdfNomborSR}` : null;
+
+          // ── Label PDF ikut mode ──
+          let labelPDFSR = null;
+          let isSementaraSR = false;
+
+          if (data.isFakta) {
+            // Fakta — guna pdfKod dari SR queue terus
+            if (data.pdfKod) {
+              labelPDFSR = data.pdfKod;
+              isSementaraSR = !!(data.isSementara);
+            } else if (drawerDataSR?.pdfNombor && drawerDataSR?.pdfSubjek && drawerDataSR?.pdfTopik) {
+              labelPDFSR = `${drawerDataSR.pdfSubjek}/${drawerDataSR.pdfTopik}/${drawerDataSR.title || 'Slide'}-${drawerDataSR.pdfNombor}`;
+              isSementaraSR = false;
+            } else {
+              // Kod sementara
+              const topic = allTopics.find(t => t.id === drawerDataSR?.topicId);
+              const subjek = allSubjects.find(s => s.id === topic?.subjectId);
+              const laciDalamTopik = allDrawers
+                .filter(d => d.topicId === drawerDataSR?.topicId)
+                .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+              const idxS = laciDalamTopik.findIndex(d => d.id === data.drawerId);
+              labelPDFSR = `${subjek?.name || 'Subjek'}/${topic?.name || 'Topik'}/${drawerDataSR?.title || 'Slide'}-T${idxS + 1}`;
+              isSementaraSR = true;
+            }
+          } else {
+            // Bahasa — sistem lama
+            const pdfNomborSR = drawerDataSR?.pdfNombor || null;
+            const pdfJenisSR = drawerDataSR?.pdfJenis || null;
+            labelPDFSR = pdfNomborSR && pdfJenisSR ? `${pdfJenisSR}-${pdfNomborSR}` : null;
+          }
 
 const div = document.createElement('div');
           div.className = 'drawer-card';
@@ -18290,7 +18359,7 @@ const div = document.createElement('div');
                 ${modeBadge}
               </div>
               <div style="display:flex;align-items:center;gap:6px;">
-                ${labelPDFSR ? `<span style="font-size:0.68rem;background:rgba(14,165,233,0.15);color:#38bdf8;padding:2px 8px;border-radius:999px;font-weight:700;">📄 ${labelPDFSR}</span>` : ''}
+                ${labelPDFSR ? `<span style="font-size:0.68rem;background:${isSementaraSR ? 'rgba(59,130,246,0.15)' : 'rgba(14,165,233,0.15)'};color:${isSementaraSR ? '#93c5fd' : '#38bdf8'};padding:2px 8px;border-radius:999px;font-weight:700;">${isSementaraSR ? '⚠️' : '📄'} ${labelPDFSR}</span>` : ''}
                 <span style="font-size:0.68rem;color:var(--subtext);">${labelFasa}</span>
               </div>
             </div>
