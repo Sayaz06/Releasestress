@@ -8538,34 +8538,37 @@ ${!adaItems ? `
           });
         });
 
-        // ── UPLOAD GAMBAR ITEM ──
+// ── UPLOAD GAMBAR ITEM ──
         div.querySelectorAll(".btn-upload-item-img").forEach(btn => {
           btn.addEventListener("click", () => {
             const idx = parseInt(btn.getAttribute('data-idx'));
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
-            input.addEventListener('change', async (e) => {
+            input.addEventListener('change', (e) => {
               const file = e.target.files[0];
               if (!file) return;
-              showToast('⏳ Mengupload gambar...', 0);
-              try {
-                const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`);
-                const uploadTask = uploadBytesResumable(storageRefPath, file);
-                uploadTask.on('state_changed', null, (err) => {
-                  showToast('❌ Gagal upload: ' + err.message);
-                }, async () => {
-                  const url = await getDownloadURL(uploadTask.snapshot.ref);
-                  const currentItems = data.items ? [...data.items] : [];
-                  if (currentItems[idx]) {
-                    currentItems[idx].imageUrl = url;
-                    await simpanItems(currentItems);
-                  }
-                  showToast('✅ Gambar berjaya diupload!');
-                });
-              } catch(e) {
-                showToast('❌ Gagal: ' + e.message);
-              }
+              // ── Guna crop tool sama macam bahasa ──
+              bukaCropTool(file, async (blob) => {
+                showToast('⏳ Mengupload gambar...', 0);
+                try {
+                  const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`);
+                  const uploadTask = uploadBytesResumable(storageRefPath, blob);
+                  uploadTask.on('state_changed', null, (err) => {
+                    showToast('❌ Gagal upload: ' + err.message);
+                  }, async () => {
+                    const url = await getDownloadURL(uploadTask.snapshot.ref);
+                    const currentItems = data.items ? [...data.items] : [];
+                    if (currentItems[idx]) {
+                      currentItems[idx].imageUrl = url;
+                      await simpanItems(currentItems);
+                    }
+                    showToast('✅ Gambar berjaya diupload!');
+                  });
+                } catch(e) {
+                  showToast('❌ Gagal: ' + e.message);
+                }
+              });
             });
             input.click();
           });
