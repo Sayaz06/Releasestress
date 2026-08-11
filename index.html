@@ -19284,7 +19284,6 @@ let jbAktif = false;
 let jbSyncDariCountdown = false; // flag elak infinite loop
 
 function jbDapatKodSemasa() {
-  // Auto-detect mode — bahasa atau fakta
   const isFaktaMode = factMode && !bahasaMode;
   const isBahasaMode = bahasaMode && !factMode;
 
@@ -19300,40 +19299,53 @@ function jbDapatKodSemasa() {
     if (!drawer) return null;
 
     const topic = allTopics.find(t => t.id === drawer.topicId);
-    const topicNama = (topic?.name || 'Topik').replace(/\s+/g, '');
+    const subjek = allSubjects.find(s => s.id === topic?.subjectId);
+    const topicNama = topic?.name || 'Topik';
+    const subjekNama = subjek?.name || 'Subjek';
+    const tajukSlide = drawer.title || 'Slide';
 
-    // Kira nombor per topik — ikut susunan laci dalam topik
-    const laciDalamTopik = allDrawers
-      .filter(d => d.topicId === drawer.topicId)
-      .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
-    const idxDalamTopik = laciDalamTopik.findIndex(d => d.id === drawer.id);
-    const nomborLaci = idxDalamTopik !== -1 ? idxDalamTopik + 1 : '?';
-
-    // Kira nombor baris dalam laci (currentFactIndex dalam laci semasa)
-    // Cari index baris semasa dalam laci
-    let nomorBaris = 1;
-    for (let i = currentFactIndex; i >= 0; i--) {
-      if (allFacts[i].drawerId !== data.drawerId) break;
-      if (!allFacts[i].isTamat && !allFacts[i].isFasaEjaan) {
-        nomorBaris = currentFactIndex - i + 1;
-      }
-    }
-    // Kira dari mula laci semasa
+    // Kira nombor baris semasa dalam laci
     let barisStart = currentFactIndex;
-    while (barisStart > 0 && allFacts[barisStart - 1]?.drawerId === data.drawerId && !allFacts[barisStart - 1]?.isTamat) {
+    while (
+      barisStart > 0 &&
+      allFacts[barisStart - 1]?.drawerId === data.drawerId &&
+      !allFacts[barisStart - 1]?.isTamat
+    ) {
       barisStart--;
     }
     const nomorBarisSebenar = currentFactIndex - barisStart + 1;
-    const totalBaris = laciDalamTopik.find(d => d.id === drawer.id)
-      ? (allDrawers.find(d => d.id === drawer.id)?.notes || '').split('\n').filter(l => l.trim()).length
-      : 1;
 
-    const kod = `${topicNama}-${nomborLaci}`;
+    // ── ADA pdfNombor — kod tetap ──
+    const adaPdfKod = !!(drawer.pdfNombor && drawer.pdfTopik && drawer.pdfSubjek);
+
+    if (adaPdfKod) {
+      // Nombor PDF = pdfNombor laci + offset baris semasa - 1
+      const nomborKadIni = drawer.pdfNombor + nomorBarisSebenar - 1;
+      const kod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-baris ${nomorBarisSebenar}`;
+      return {
+        kod,
+        nomborPdf: nomborKadIni,
+        isSR: !!(data.isSRMode),
+        isSementara: false,
+        isFakta: true,
+        drawerId: drawer.id,
+        progress: `${currentFactIndex + 1} / ${allFacts.length}`
+      };
+    }
+
+    // ── TIADA pdfNombor — kod sementara ──
+    const laciDalamTopik = allDrawers
+      .filter(d => d.topicId === drawer.topicId)
+      .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+    const idxSementara = laciDalamTopik.findIndex(d => d.id === drawer.id);
+    const kod = `${subjekNama}/${topicNama}/${tajukSlide}-baris ${nomorBarisSebenar}`;
+    const kodSementara = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}`;
+
     return {
-      kod,
-      subKod: `baris ${nomorBarisSebenar}`,
-      isSR: false,
-      isSementara: false,
+      kod: kodSementara,
+      kodLabel: kod,
+      isSR: !!(data.isSRMode),
+      isSementara: true,
       isFakta: true,
       drawerId: drawer.id,
       progress: `${currentFactIndex + 1} / ${allFacts.length}`
@@ -19435,7 +19447,7 @@ function jbUpdateUI() {
     }
   }
 
-  if (!info) {
+if (!info) {
     kodEl.textContent = '?';
     kodEl.style.color = 'rgba(255,255,255,0.3)';
     kodEl.style.fontSize = '18vw';
@@ -19446,17 +19458,36 @@ function jbUpdateUI() {
     return;
   }
 
-// ── FAKTA MODE — warna oren ──
+  // ── FAKTA MODE ──
   if (info.isFakta) {
-    kodEl.textContent = info.kod;
-    kodEl.style.color = '#fb923c';
-    kodEl.style.fontSize = '16vw';
-    if (tapArea) {
-      tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
-      tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
+    if (info.isSementara) {
+      // Kod sementara — warna biru muda + amaran
+      kodEl.textContent = info.kod;
+      kodEl.style.color = '#93c5fd';
+      kodEl.style.fontSize = '10vw';
+      if (tapArea) {
+        tapArea.style.background = 'rgba(2,6,23,0.97)';
+        tapArea.style.boxShadow = 'none';
+      }
+      if (srBadge) srBadge.style.display = 'none';
+      jbTunjukAmaranFakta();
+    } else {
+      // Kod tetap — warna oren
+      // Papar: kod label kecil di atas, nombor PDF besar di tengah
+      kodEl.innerHTML = `
+        <div style="font-size:3vw;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;">${info.kod}</div>
+        <div style="font-size:18vw;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
+      `;
+      kodEl.style.fontSize = '';
+      kodEl.style.color = '';
+      if (tapArea) {
+        tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
+        tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
+      }
+      if (srBadge) srBadge.style.display = info.isSR ? 'block' : 'none';
+      jbBuangAmaran();
+      jbBuangAmaranFakta();
     }
-    if (srBadge) srBadge.style.display = 'none';
-    jbBuangAmaran();
     if (progressEl) progressEl.textContent = info.progress;
     setTimeout(() => jbAutoFitFont(), 10);
     return;
@@ -19512,6 +19543,21 @@ function jbTunjukAmaran() {
 
 function jbBuangAmaran() {
   document.getElementById('jb-amaran')?.remove();
+}
+
+function jbTunjukAmaranFakta() {
+  let amaran = document.getElementById('jb-amaran-fakta');
+  if (!amaran) {
+    amaran = document.createElement('div');
+    amaran.id = 'jb-amaran-fakta';
+    amaran.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);border-radius:999px;padding:4px 14px;font-size:0.68rem;color:#93c5fd;font-weight:600;white-space:nowrap;pointer-events:none;';
+    amaran.textContent = '📄 Kod sementara — Export PDF Fakta dahulu untuk kod tetap';
+    document.getElementById('jb-tap-area')?.appendChild(amaran);
+  }
+}
+
+function jbBuangAmaranFakta() {
+  document.getElementById('jb-amaran-fakta')?.remove();
 }
 
 // ── SWIPE untuk tukar laci ──
