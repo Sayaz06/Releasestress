@@ -12386,7 +12386,7 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     });
 
 // ── EXPORT PDF FLASHCARD ──
-    document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async () => {
+document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async () => {
       if (!currentUser || !currentTopicId) { showToast('⚠️ Sila buka topik dahulu.'); return; }
 
       const loadBar = document.createElement('div');
@@ -12415,13 +12415,13 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
       try {
         setProgress(20, '⏳ Menghubungi Firestore...');
 
-        // Ambil nama topik dan subjek
+        // Ambil nama topik, subjek, sem
         const topicData = allTopics.find(t => t.id === currentTopicId);
         const subjectData = allSubjects.find(s => s.id === topicData?.subjectId);
-        const topicNama = (topicData?.name || 'Topik').replace(/\s+/g, '');
-        const subjectNama = (subjectData?.name || 'Subjek').replace(/\s+/g, '');
+        const topicNama = topicData?.name || 'Topik';
+        const subjectNama = subjectData?.name || 'Subjek';
 
-        // Ambil semua laci dalam topik ini dari Firestore
+        // Ambil semua laci dalam topik dari Firestore
         const snap = await getDocs(
           query(
             collection(db, "users", currentUser.uid, "drawer"),
@@ -12433,73 +12433,21 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
         const semuaLaciRaw = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(d => d.topicId === currentTopicId && d.notes && d.notes.trim());
+          .filter(d => d.topicId === currentTopicId);
 
-        // Susun ikut title numerik
         const semuaLaci = semuaLaciRaw.sort((a, b) =>
           (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
         );
 
         if (!semuaLaci.length) {
           removeLoadBar();
-          showToast('⚠️ Tiada laci dengan kandungan dalam topik ini.');
+          showToast('⚠️ Tiada laci dalam topik ini.');
           return;
         }
 
-        setProgress(60, `📝 Membina ${semuaLaci.length} kad...`);
+        setProgress(55, `📝 Membina kad...`);
 
-        // ── PROSES SETIAP LACI → KAD ──
-        // Format nota: "teks sebelum =" → bahagian atas
-        //              "selepas =" → bahagian bawah, buang K1/K2 → 1 : ... 2 : ...
-        function prosesNotaFakta(notes) {
-          const baris = notes.split('\n').filter(l => l.trim());
-          const kad = [];
-          baris.forEach((baris, idx) => {
-            const eqIdx = baris.indexOf('=');
-            const atas = eqIdx !== -1 ? baris.slice(0, eqIdx).trim() : baris.trim();
-            const bawahRaw = eqIdx !== -1 ? baris.slice(eqIdx + 1).trim() : '';
-
-            // Format bawah: buang "1.K1 :" → "1 :", "K1 :" → "1 :"
-            // Pisahkan ikut corak K
-            const bawahFormat = bawahRaw
-              .replace(/(\d+)\.K\d+\s*:/g, '\n$1 :')
-              .replace(/\bK(\d+)\s*:/g, '\n$1 :')
-              .split('\n')
-              .map(l => l.trim())
-              .filter(l => l)
-              .join('\n');
-
-            kad.push({
-              nombor: idx + 1,
-              kod: `${topicNama}-${idx + 1}`,
-              tajuk: (topicData?.name || '') + (semuaLaci.length > 1 ? ` — ${idx + 1}/${semuaLaci.length}` : ''),
-              atas,
-              bawah: bawahFormat,
-              imageUrl: semuaLaci[idx]?.imageUrl || ''
-            });
-          });
-          return kad;
-        }
-
-        // Kumpul semua kad dari semua laci
-        const semuaKad = [];
-        let nomborKadGlobal = 0;
-
-        semuaLaci.forEach((laci, laciIdx) => {
-          const kadDariLaci = prosesNotaFakta(laci.notes);
-          kadDariLaci.forEach((kad, kadIdx) => {
-            nomborKadGlobal++;
-            semuaKad.push({
-              ...kad,
-              nombor: nomborKadGlobal,
-              kod: `${topicNama}-${laciIdx + 1}`,
-              tajuk: laci.title || `Laci ${laciIdx + 1}`,
-              imageUrl: laci.imageUrl || ''
-            });
-          });
-        });
-
-        // Convert imageUrl ke base64
+        // ── CONVERT IMAGE URL KE BASE64 ──
         async function urlKeBase64(url) {
           if (!url) return '';
           return new Promise((resolve) => {
@@ -12519,10 +12467,70 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
           });
         }
 
+        // ── KUMPUL SEMUA KAD ──
+        // Setiap item dalam laci = 1 kad
+        // Format label: SubjekNama/TopikNama/TajukLaci-baris X
+        const semuaKad = [];
+        let nomborGlobal = 0;
+        const laciNomborMap = {}; // drawerId → nombor pertama
+
+        semuaLaci.forEach((laci, laciIdx) => {
+          const tajukSlide = laci.title || `Slide ${laciIdx + 1}`;
+          let firstNombor = null;
+
+          // ── FORMAT BARU: guna items[] ──
+          if (laci.items && laci.items.length > 0) {
+            laci.items.forEach((item, itemIdx) => {
+              if (!item.ayat || !item.ayat.trim()) return;
+              nomborGlobal++;
+              if (firstNombor === null) firstNombor = nomborGlobal;
+              semuaKad.push({
+                nombor: nomborGlobal,
+                label: `${subjectNama}/${topicNama}/${tajukSlide}-baris ${itemIdx + 1}`,
+                ayat: item.ayat.trim(),
+                imageUrl: item.imageUrl || '',
+                laciId: laci.id,
+                itemIdx
+              });
+            });
+
+          // ── FORMAT LAMA: fallback ke notes ──
+          } else if (laci.notes && laci.notes.trim()) {
+            const lines = laci.notes.split('\n').filter(l => l.trim());
+            lines.forEach((line, lineIdx) => {
+              const parts = line.split('=');
+              const ayat = parts[0].trim();
+              if (!ayat) return;
+              nomborGlobal++;
+              if (firstNombor === null) firstNombor = nomborGlobal;
+              semuaKad.push({
+                nombor: nomborGlobal,
+                label: `${subjectNama}/${topicNama}/${tajukSlide}-baris ${lineIdx + 1}`,
+                ayat,
+                imageUrl: '',
+                laciId: laci.id,
+                itemIdx: lineIdx
+              });
+            });
+          }
+
+          if (firstNombor !== null) {
+            laciNomborMap[laci.id] = firstNombor;
+          }
+        });
+
+        if (!semuaKad.length) {
+          removeLoadBar();
+          showToast('⚠️ Tiada kandungan untuk diexport.');
+          return;
+        }
+
+        // ── CONVERT SEMUA GAMBAR ──
         const urlUnik = [...new Set(semuaKad.map(k => k.imageUrl).filter(u => u))];
         const base64Map = {};
         for (let i = 0; i < urlUnik.length; i++) {
-          setProgress(60 + Math.round((i / Math.max(urlUnik.length, 1)) * 15), `🖼️ Memuat gambar ${i+1}/${urlUnik.length}...`);
+          setProgress(55 + Math.round((i / Math.max(urlUnik.length, 1)) * 20),
+            `🖼️ Memuat gambar ${i+1}/${urlUnik.length}...`);
           base64Map[urlUnik[i]] = await urlKeBase64(urlUnik[i]);
         }
 
@@ -12530,9 +12538,11 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
         // ── BINA HTML PDF — A4 Portrait, 2 kolum × 3 baris ──
         const CARDS_PER_PAGE = 6;
-        const tarikhExport = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
-        let pagesHtml = '';
+        const tarikhExport = new Date().toLocaleDateString('ms-MY', {
+          day: 'numeric', month: 'long', year: 'numeric'
+        });
 
+        let pagesHtml = '';
         for (let i = 0; i < semuaKad.length; i += CARDS_PER_PAGE) {
           const batch = semuaKad.slice(i, i + CARDS_PER_PAGE);
           while (batch.length < CARDS_PER_PAGE) batch.push(null);
@@ -12540,24 +12550,19 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
           pagesHtml += `<div class="page">`;
           batch.forEach((kad) => {
             if (!kad) { pagesHtml += `<div class="kad empty"></div>`; return; }
+
             const imgBlock = kad.imageUrl && base64Map[kad.imageUrl]
               ? `<div class="kad-img" style="background-image:url('${base64Map[kad.imageUrl]}');"></div>`
               : `<div class="kad-img-kosong"></div>`;
 
-            // Format bawah untuk HTML — setiap baris pada garisan baru
-            const bawahHtml = kad.bawah
-              ? kad.bawah.split('\n').map(l => `<div class="baris-bawah">${l}</div>`).join('')
-              : '<div class="baris-bawah" style="color:#9ca3af;">—</div>';
-
             pagesHtml += `
               <div class="kad">
                 <div class="kad-header">
-                  <span class="kad-kod">${kad.kod}</span>
-                  <span class="kad-tajuk">${kad.tajuk}</span>
+                  <span class="kad-kod">#${kad.nombor}</span>
+                  <span class="kad-label">${kad.label}</span>
                 </div>
                 ${imgBlock}
-                <div class="kad-atas">${kad.atas}</div>
-                <div class="kad-bawah">${bawahHtml}</div>
+                <div class="kad-ayat">${kad.ayat}</div>
               </div>`;
           });
           pagesHtml += `</div>`;
@@ -12567,7 +12572,7 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Flashcard Fakta — ${topicData?.name || 'Topik'}</title>
+<title>Flashcard Fakta — ${subjectNama} / ${topicNama}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Segoe UI',Arial,sans-serif; background:white; }
@@ -12578,10 +12583,10 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     align-items:center; justify-content:center;
     page-break-after:always;
   }
-  .cover h1 { font-size:24pt; color:#f59e0b; margin-bottom:8px; }
-  .cover h2 { font-size:16pt; color:#374151; margin-bottom:4px; }
-  .cover p { font-size:11pt; color:#6b7280; }
-  .cover .stats { margin-top:20px; font-size:11pt; color:#374151; }
+  .cover h1 { font-size:22pt; color:#f59e0b; margin-bottom:8px; }
+  .cover h2 { font-size:15pt; color:#374151; margin-bottom:4px; }
+  .cover p  { font-size:11pt; color:#6b7280; }
+  .cover .stats { margin-top:20px; font-size:11pt; color:#374151; line-height:2; }
 
   @page { size:A4 portrait; margin:0; }
 
@@ -12590,7 +12595,6 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     display:grid;
     grid-template-columns:repeat(2, 105mm);
     grid-template-rows:repeat(3, 99mm);
-    gap:0;
     page-break-after:always;
     break-after:page;
     overflow:hidden;
@@ -12600,13 +12604,11 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     width:105mm; height:99mm;
     border:0.5pt solid #d1d5db;
     border-left:4pt solid #f59e0b;
-    padding:2mm 3mm 2mm 6mm;
+    padding:3mm 3mm 3mm 6mm;
     display:flex; flex-direction:column;
-    gap:1mm; position:relative;
-    overflow:hidden; background:white;
-    box-sizing:border-box;
+    gap:2mm; overflow:hidden;
+    background:white; box-sizing:border-box;
   }
-
   .kad.empty {
     background:#f9fafb;
     border-color:#f3f4f6;
@@ -12617,51 +12619,30 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     display:flex; align-items:flex-start;
     gap:4mm; flex-shrink:0;
   }
-
   .kad-kod {
     font-size:7pt; font-weight:700;
-    color:#f59e0b; white-space:nowrap;
-    flex-shrink:0;
+    color:#f59e0b; white-space:nowrap; flex-shrink:0;
   }
-
-  .kad-tajuk {
-    font-size:7.5pt; font-weight:700;
-    color:#1f2937; line-height:1.3;
+  .kad-label {
+    font-size:6.5pt; color:#374151;
+    line-height:1.3; font-weight:600;
   }
 
   .kad-img {
-    width:100%; height:22mm;
-    background-size:cover;
-    background-position:center;
+    width:100%; height:28mm;
+    background-size:cover; background-position:center;
     flex-shrink:0; border-radius:1mm;
     border:0.5pt solid #e5e7eb;
   }
-
   .kad-img-kosong {
-    width:100%; height:8mm;
-    flex-shrink:0;
+    width:100%; height:6mm; flex-shrink:0;
   }
 
-  .kad-atas {
-    font-size:7.5pt; color:#1f2937;
-    line-height:1.4; flex:1;
+  .kad-ayat {
+    font-size:8pt; color:#1f2937;
+    line-height:1.5; flex:1;
     overflow:hidden;
-    border-bottom:0.5pt dashed #d1d5db;
-    padding-bottom:1mm;
   }
-
-  .kad-bawah {
-    font-size:7pt; color:#374151;
-    line-height:1.4; flex-shrink:0;
-    max-height:28mm; overflow:hidden;
-  }
-
-  .baris-bawah {
-    padding:0.3mm 0;
-    border-bottom:0.3pt solid #f3f4f6;
-  }
-
-  .baris-bawah:last-child { border-bottom:none; }
 
   @media print {
     body { margin:0; }
@@ -12674,10 +12655,10 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
 
 <div class="cover">
   <h1>📚 Flashcard Fakta</h1>
-  <h2>${subjectData?.name || ''}</h2>
-  <p>${topicData?.name || ''}</p>
+  <h2>${subjectNama}</h2>
+  <p>${topicNama}</p>
   <div class="stats">
-    ${semuaKad.length} kad · ${semuaLaci.length} laci · ${Math.ceil(semuaKad.length / CARDS_PER_PAGE)} muka surat
+    ${semuaKad.length} kad · ${semuaLaci.length} laci/slide · ${Math.ceil(semuaKad.length / CARDS_PER_PAGE)} muka surat
   </div>
   <div style="margin-top:30px;font-size:10pt;color:#374151;text-align:center;line-height:2;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:16px 20px;">
     <strong style="color:#f59e0b;">⚙️ Tetapan Print:</strong><br>
@@ -12692,35 +12673,35 @@ ${pagesHtml}
 </body>
 </html>`;
 
-// ── SIMPAN pdfNombor KE FIRESTORE ──
+        // ── SIMPAN pdfNombor KE FIRESTORE ──
         setProgress(90, '💾 Menyimpan nombor kad...');
         try {
-          let nomborSemasa = 0;
           const batchFirestore = writeBatch(db);
           let batchCount = 0;
 
-          semuaLaci.forEach((laci, laciIdx) => {
-            const kadDariLaci = laci.notes.split('\n').filter(l => l.trim());
-            kadDariLaci.forEach((_, kadIdx) => {
-              nomborSemasa++;
-            });
-            // Simpan nombor kad pertama laci ini
-            const nomborPertama = nomborSemasa - kadDariLaci.length + 1;
+          semuaLaci.forEach(laci => {
+            if (laciNomborMap[laci.id] === undefined) return;
             batchFirestore.update(
               doc(db, "users", currentUser.uid, "drawer", laci.id),
               {
-                pdfNombor: nomborPertama,
+                pdfNombor: laciNomborMap[laci.id],
                 pdfTopik: topicNama,
+                pdfSubjek: subjectNama,
                 pdfTopikId: currentTopicId,
                 updatedAt: Date.now()
               }
             );
             batchCount++;
-            if (batchCount >= 499) {
-              batchFirestore.commit();
-              batchCount = 0;
+            // Update cache tempatan
+            const idx = allDrawers.findIndex(d => d.id === laci.id);
+            if (idx !== -1) {
+              allDrawers[idx].pdfNombor = laciNomborMap[laci.id];
+              allDrawers[idx].pdfTopik = topicNama;
+              allDrawers[idx].pdfSubjek = subjectNama;
+              allDrawers[idx].pdfTopikId = currentTopicId;
             }
           });
+
           if (batchCount > 0) await batchFirestore.commit();
         } catch(e) {
           console.log("Gagal simpan pdfNombor fakta:", e);
@@ -12741,7 +12722,7 @@ ${pagesHtml}
         removeLoadBar();
         showToast('❌ Gagal: ' + e.message);
       }
-    });
+    });    
 
     document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', async () => {
       if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
