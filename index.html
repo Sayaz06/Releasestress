@@ -5536,16 +5536,20 @@ saveAppState();
 
 function formatTextToHtmlList(text) {
       if (!text) return "";
-      // Buang "K1", "K2" dll — ganti dengan nombor sahaja
-      // Format: "1.K1 : Teks" → "1 : Teks" atau "K1 : Teks" → "1 : Teks"
+      // k1, k2, k3 → setiap satu jadi baris berasingan "1 : ...", "2 : ..."
       let processed = text
-        .replace(/(\d+)\.K\d+\s*:/g, '$1 :')   // "1.K1 :" → "1 :"
-        .replace(/\bK(\d+)\s*:/g, '$1 :');       // "K1 :" → "1 :"
+        .replace(/\s*k(\d+)\s+/gi, '\n$1 : ');
       return processed
         .replace(/\n/g, '<br>')
-        .replace(/(?:^|<br>)\s*(\d+\.)/g, '<br>$1')
-        .replace(/(?:^|<br>)\s*(\d+\s:)/g, '<br>$1')
         .replace(/^(<br>)+/, '');
+    }
+
+    // Fungsi untuk PDF — render k1/k2 jadi baris berasingan (plain text)
+    function formatMaksudUntukPdf(text) {
+      if (!text) return '';
+      return text
+        .replace(/\s*k(\d+)\s+/gi, '\n$1 : ')
+        .trim();
     }
 
     // ==========================================
@@ -6828,8 +6832,8 @@ async function simpanKeLaciJogging() {
         if (gunaItems) {
           // ── FORMAT BARU: tambah sebagai item baru ──
           // Gabung before + afters jadi satu ayat
-          const afterStr = afterInputs.length > 0
-            ? afterInputs.map((val, idx) => `${idx + 1}.${val}`).join(' ')
+const afterStr = afterInputs.length > 0
+            ? afterInputs.map((val, idx) => `k${idx + 1} ${val}`).join(' ')
             : '';
           const ayatBaru = afterStr
             ? `${beforeVal} = ${afterStr}`
@@ -10505,10 +10509,10 @@ if (isMemanahVideoRestON && memanahPhase === 1 && rehatMode) {
               const drawer = allDrawers.find(d => d.id === currentMemanahDrawerId);
               const gunaItems = drawer && drawer.items && drawer.items.length > 0;
 
-              if (gunaItems) {
+if (gunaItems) {
                 // ── FORMAT BARU: tambah sebagai item baru ──
                 const afterStr = afterInputs.length > 0
-                  ? afterInputs.map((val, idx) => `${idx + 1}.${val}`).join(' ')
+                  ? afterInputs.map((val, idx) => `k${idx + 1} ${val}`).join(' ')
                   : '';
                 const ayatBaru = afterStr
                   ? `${beforeVal} = ${afterStr}`
@@ -12699,7 +12703,7 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async
           day: 'numeric', month: 'long', year: 'numeric'
         });
 
-        let pagesHtml = '';
+let pagesHtml = '';
         for (let i = 0; i < semuaKad.length; i += CARDS_PER_PAGE) {
           const batch = semuaKad.slice(i, i + CARDS_PER_PAGE);
           while (batch.length < CARDS_PER_PAGE) batch.push(null);
@@ -12708,9 +12712,29 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async
           batch.forEach((kad) => {
             if (!kad) { pagesHtml += `<div class="kad empty"></div>`; return; }
 
+            // Pisah ayat kepada atas (sebelum =) dan bawah (selepas =)
+            const eqIdx = kad.ayat.indexOf('=');
+            const atas = eqIdx !== -1 ? kad.ayat.slice(0, eqIdx).trim() : kad.ayat.trim();
+            const bawahRaw = eqIdx !== -1 ? kad.ayat.slice(eqIdx + 1).trim() : '';
+
+            // Format bawah — k1/k2 → baris berasingan
+            const adaK = /k\d+\s/i.test(bawahRaw);
+            let bawahHtml = '';
+            if (adaK) {
+              const bawahFormat = formatMaksudUntukPdf(bawahRaw);
+              bawahHtml = bawahFormat
+                .split('\n')
+                .filter(l => l.trim())
+                .map(l => `<div class="baris-bawah">${l.trim()}</div>`)
+                .join('');
+            } else if (bawahRaw) {
+              bawahHtml = `<div class="baris-bawah">${bawahRaw}</div>`;
+            }
+
+            // Frame gambar — tinggi tetap sama ada atau tiada gambar
             const imgBlock = kad.imageUrl && base64Map[kad.imageUrl]
               ? `<div class="kad-img" style="background-image:url('${base64Map[kad.imageUrl]}');"></div>`
-              : `<div class="kad-img-kosong"></div>`;
+              : `<div class="kad-img-frame"></div>`;
 
             pagesHtml += `
               <div class="kad">
@@ -12719,7 +12743,8 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async
                   <span class="kad-label">${kad.label}</span>
                 </div>
                 ${imgBlock}
-                <div class="kad-ayat">${kad.ayat}</div>
+                <div class="kad-atas">${atas}</div>
+                ${bawahHtml ? `<div class="kad-bawah">${bawahHtml}</div>` : ''}
               </div>`;
           });
           pagesHtml += `</div>`;
@@ -12772,34 +12797,52 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async
     border-left-color:#e5e7eb;
   }
 
-  .kad-header {
-    display:flex; align-items:flex-start;
-    gap:4mm; flex-shrink:0;
+.kad-header {
+    display:flex; flex-direction:column;
+    gap:1mm; flex-shrink:0;
   }
   .kad-kod {
-    font-size:7pt; font-weight:700;
-    color:#f59e0b; white-space:nowrap; flex-shrink:0;
+    font-size:6pt; font-weight:700;
+    color:#9ca3af; white-space:nowrap;
+    letter-spacing:0.02em;
   }
   .kad-label {
-    font-size:6.5pt; color:#374151;
-    line-height:1.3; font-weight:600;
+    font-size:7pt; color:#f59e0b;
+    line-height:1.3; font-weight:700;
   }
 
-  .kad-img {
-    width:100%; height:28mm;
+.kad-img {
+    width:100%; height:24mm;
     background-size:cover; background-position:center;
     flex-shrink:0; border-radius:1mm;
     border:0.5pt solid #e5e7eb;
   }
-  .kad-img-kosong {
-    width:100%; height:6mm; flex-shrink:0;
+  .kad-img-frame {
+    width:100%; height:24mm;
+    flex-shrink:0; border-radius:1mm;
+    border:0.5pt dashed #d1d5db;
+    background:#f9fafb;
   }
 
-  .kad-ayat {
-    font-size:8pt; color:#1f2937;
-    line-height:1.5; flex:1;
+  .kad-atas {
+    font-size:8.5pt; color:#1f2937;
+    line-height:1.4; font-weight:600;
+    flex-shrink:0;
+    border-bottom:0.5pt dashed #d1d5db;
+    padding-bottom:1.5mm;
+  }
+
+  .kad-bawah {
+    font-size:7.5pt; color:#374151;
+    line-height:1.4; flex:1;
     overflow:hidden;
   }
+
+  .baris-bawah {
+    padding:0.5mm 0;
+    border-bottom:0.3pt solid #f3f4f6;
+  }
+  .baris-bawah:last-child { border-bottom:none; }
 
   @media print {
     body { margin:0; }
