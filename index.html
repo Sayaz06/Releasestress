@@ -10126,8 +10126,8 @@ function saveMemanahDraft() {
       localStorage.removeItem('memanahDraft_' + drawerId);
     }
 
-    function openMemanahMode(data) {
-currentMemanahDrawerId = data.id;
+function openMemanahMode(data) {
+      currentMemanahDrawerId = data.id;
       memanahPhase = 1;
       memanahPlus5Used = false;
       updateMemanahPlus5Btn();
@@ -10136,14 +10136,22 @@ currentMemanahDrawerId = data.id;
       memanahTotalScore = 0;
       memanahTotalPausedTime = 0;
       memanahPaused = false;
-      isJoggingBlocked = false; 
-      
+      isJoggingBlocked = false;
+
       isMemanahNotaLocked = true;
       btnLockMemanahNota.textContent = "Lock Nota: ON";
       btnLockMemanahNota.classList.add("btn-active");
       memanahMainTextarea.readOnly = true;
-      
-      memanahMainTextarea.value = data.notes || "";
+
+      // ── Papar items[] atau notes lama ──
+      if (data.items && data.items.length > 0) {
+        const paparan = data.items.map((item, idx) =>
+          `[Baris ${idx + 1}] ${item.ayat || ''}`
+        ).join('\n');
+        memanahMainTextarea.value = paparan;
+      } else {
+        memanahMainTextarea.value = data.notes || '';
+      }
 
       memanahInputBefore.value = '';
       memanahAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
@@ -10406,36 +10414,72 @@ if (isMemanahVideoRestON && memanahPhase === 1 && rehatMode) {
                 memanahMiniCount.textContent = memanahTapCount;
                 memanahBigCount.textContent = memanahTapCount;
                 isJoggingBlocked = false;
-                memanahPaused = false; 
+                memanahPaused = false;
                 showToast("Fasa 2 bermula! Skor disambung.");
             });
         } else {
             // FASA TAMAT
-            memanahTapCount = maxMemanahCount; memanahTotalScore = 0; 
+            memanahTapCount = maxMemanahCount; memanahTotalScore = 0;
             memanahMiniCount.textContent = "✓"; memanahBigCount.textContent = "✓";
             showToast(`Selesai! Skor Keseluruhan: ${finalScore}`);
-            
-            setTimeout(() => { 
+
+            setTimeout(() => {
                 memanahPhase = 1;
                 document.getElementById('memanah-phase-label').textContent = "Fasa 1";
-                memanahMiniCount.textContent = memanahTapCount; 
-                memanahBigCount.textContent = memanahTapCount; 
-                isJoggingBlocked = false; 
+                memanahMiniCount.textContent = memanahTapCount;
+                memanahBigCount.textContent = memanahTapCount;
+                isJoggingBlocked = false;
             }, 2600);
 
-            // SIMPAN KE LACI
-            const afterStr = afterInputs.map((val, index) => `${index + 1}.${val}`).join(" ");
-            const combinedNewNote = beforeVal + " = " + afterStr;
-            const currentNotes = memanahMainTextarea.value;
-            const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
-            
-            memanahMainTextarea.value = updatedNotes;
-            memanahMainTextarea.scrollTop = memanahMainTextarea.scrollHeight;
-
+            // ── SIMPAN KE LACI — semak format items[] atau notes lama ──
             if (currentMemanahDrawerId && currentUser) {
-              updateDoc(doc(db, "users", currentUser.uid, "drawer", currentMemanahDrawerId), { notes: updatedNotes, repeatCount: 0 });
+              const drawer = allDrawers.find(d => d.id === currentMemanahDrawerId);
+              const gunaItems = drawer && drawer.items && drawer.items.length > 0;
+
+              if (gunaItems) {
+                // ── FORMAT BARU: tambah sebagai item baru ──
+                const afterStr = afterInputs.length > 0
+                  ? afterInputs.map((val, idx) => `${idx + 1}.${val}`).join(' ')
+                  : '';
+                const ayatBaru = afterStr
+                  ? `${beforeVal} = ${afterStr}`
+                  : beforeVal;
+
+                const currentItems = [...(drawer.items || [])];
+                currentItems.push({ ayat: ayatBaru, imageUrl: '' });
+
+                updateDoc(doc(db, "users", currentUser.uid, "drawer", currentMemanahDrawerId), {
+                  items: currentItems,
+                  repeatCount: 0
+                });
+
+                // Kemaskini textarea paparan
+                const paparan = currentItems.map((item, idx) =>
+                  `[Baris ${idx + 1}] ${item.ayat || ''}`
+                ).join('\n');
+                memanahMainTextarea.value = paparan;
+                memanahMainTextarea.scrollTop = memanahMainTextarea.scrollHeight;
+
+                showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
+
+              } else {
+                // ── FORMAT LAMA: tambah ke notes ──
+                const afterStr = afterInputs.map((val, index) => `${index + 1}.${val}`).join(" ");
+                const combinedNewNote = beforeVal + " = " + afterStr;
+                const currentNotes = memanahMainTextarea.value;
+                const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
+
+                memanahMainTextarea.value = updatedNotes;
+                memanahMainTextarea.scrollTop = memanahMainTextarea.scrollHeight;
+
+                updateDoc(doc(db, "users", currentUser.uid, "drawer", currentMemanahDrawerId), {
+                  notes: updatedNotes,
+                  repeatCount: 0
+                });
+              }
             }
-memanahInputBefore.value = "";
+
+            memanahInputBefore.value = "";
             memanahAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
             clearMemanahDraft(currentMemanahDrawerId);
         }
