@@ -17950,14 +17950,7 @@ if (statsBar) {
           ...faktaToShow
         ].sort((a, b) => a.nextDueAt - b.nextDueAt);
 
-        if (!allToShow.length) {
-          list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
-          return;
-        }
-
-        list.innerHTML = '';
-
-        if (!allToShow.length) {
+if (!allToShow.length) {
           list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
           return;
         }
