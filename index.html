@@ -13088,11 +13088,49 @@ ${pagesHtml}
 
         setProgress(95, '✅ Membuka tetingkap print...');
 
-        const printWindow = window.open('', '_blank');
+const printWindow = window.open('', '_blank');
         printWindow.document.write(htmlContent);
         printWindow.document.close();
         printWindow.focus();
-        printWindow.onload = () => { setTimeout(() => printWindow.print(), 600); };
+        printWindow.onload = () => {
+          // ── AUTO-SHRINK: kecilkan font kalau kandungan overflow kad ──
+          const semua = printWindow.document.querySelectorAll('.kad');
+          semua.forEach(kad => {
+            const elAtas  = kad.querySelector('.kad-atas');
+            const elBawah = kad.querySelector('.kad-bawah');
+
+            // Font asal (pt → float)
+            let ptAtas  = 8.5;
+            let ptBawah = 7.5;
+            let lhAtas  = 1.35;
+            let lhBawah = 1.3;
+            const PT_MIN = 4;
+            const STEP   = 0.3;
+
+            function setFont() {
+              if (elAtas)  { elAtas.style.fontSize  = `${ptAtas}pt`;  elAtas.style.lineHeight  = `${lhAtas}`; }
+              if (elBawah) { elBawah.style.fontSize = `${ptBawah}pt`; elBawah.style.lineHeight = `${lhBawah}`; }
+            }
+
+            // Fasa 1 — kecilkan font secara berperingkat
+            while (kad.scrollHeight > kad.clientHeight) {
+              if (ptAtas <= PT_MIN && ptBawah <= PT_MIN) break;
+              if (ptBawah > PT_MIN) ptBawah = Math.max(PT_MIN, ptBawah - STEP);
+              if (ptAtas  > PT_MIN) ptAtas  = Math.max(PT_MIN, ptAtas  - STEP);
+              setFont();
+            }
+
+            // Fasa 2 — kalau masih overflow, shrink line-height pula
+            while (kad.scrollHeight > kad.clientHeight) {
+              if (lhAtas <= 1.0 && lhBawah <= 1.0) break;
+              if (lhBawah > 1.0) lhBawah = Math.max(1.0, lhBawah - 0.05);
+              if (lhAtas  > 1.0) lhAtas  = Math.max(1.0, lhAtas  - 0.05);
+              setFont();
+            }
+          });
+
+          setTimeout(() => printWindow.print(), 600);
+        };
 
         removeLoadBar();
         showToast(`✅ ${semuaKad.length} kad dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
