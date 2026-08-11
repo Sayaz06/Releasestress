@@ -8548,8 +8548,10 @@ ${!adaItems ? `
             input.addEventListener('change', (e) => {
               const file = e.target.files[0];
               if (!file) return;
-              // ── Guna crop tool sama macam bahasa ──
+              // ── Guna crop tool dengan nisbah fakta 4:3 ──
+              CROP_RATIO = CROP_RATIO_FAKTA;
               bukaCropTool(file, async (blob) => {
+                CROP_RATIO = CROP_RATIO_BAHASA; // reset balik selepas crop
                 showToast('⏳ Mengupload gambar...', 0);
                 try {
                   const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`);
@@ -12816,13 +12818,13 @@ let pagesHtml = '';
   }
 
 .kad-img {
-    width:100%; height:24mm;
+    width:100%; height:71mm;
     background-size:cover; background-position:center;
     flex-shrink:0; border-radius:1mm;
     border:0.5pt solid #e5e7eb;
   }
   .kad-img-frame {
-    width:100%; height:24mm;
+    width:100%; height:71mm;
     flex-shrink:0; border-radius:1mm;
     border:0.5pt dashed #d1d5db;
     background:#f9fafb;
@@ -19953,7 +19955,9 @@ document.getElementById('jb-tap-area')?.addEventListener('click', (e) => {
 // ══════════════════════════════════════════
 // CROP TOOL SYSTEM (Nisbah 6:5)
 // ══════════════════════════════════════════
-const CROP_RATIO = 70 / 22; // ikut nisbah bahagian ayat dalam flashcard (~3.18:1)
+const CROP_RATIO_BAHASA = 70 / 22; // nisbah bahasa flashcard
+const CROP_RATIO_FAKTA = 4 / 3;    // nisbah fakta (landscape hampir square)
+let CROP_RATIO = CROP_RATIO_BAHASA; // default
     
 let cropImg = null;
 let cropCallback = null;
@@ -20154,8 +20158,9 @@ document.getElementById('btn-crop-confirm').addEventListener('click', () => {
   const canvas = document.getElementById('crop-canvas');
   if (!canvas || !cropImg) return;
 
-  // Buat canvas output saiz 1180×1000 (nisbah 6:5, resolusi tinggi)
-  const outW = 1180, outH = 370;
+// Saiz output ikut nisbah crop semasa
+  const outW = 1180;
+  const outH = Math.round(outW / CROP_RATIO);
   const outCanvas = document.createElement('canvas');
   outCanvas.width = outW;
   outCanvas.height = outH;
