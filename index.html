@@ -5536,19 +5536,19 @@ saveAppState();
 
 function formatTextToHtmlList(text) {
       if (!text) return "";
-      // k1, k2, k3 → setiap satu jadi baris berasingan "1 : ...", "2 : ..."
+      // K1: teks K2: teks → setiap satu jadi baris berasingan "1 : teks"
       let processed = text
-        .replace(/\s*k(\d+)\s+/gi, '\n$1 : ');
+        .replace(/\s*K(\d+):\s*/gi, '\n$1 : ');
       return processed
         .replace(/\n/g, '<br>')
         .replace(/^(<br>)+/, '');
     }
 
-    // Fungsi untuk PDF — render k1/k2 jadi baris berasingan (plain text)
+    // Fungsi untuk PDF — render K1:/K2: jadi baris berasingan (plain text)
     function formatMaksudUntukPdf(text) {
       if (!text) return '';
       return text
-        .replace(/\s*k(\d+)\s+/gi, '\n$1 : ')
+        .replace(/\s*K(\d+):\s*/gi, '\n$1 : ')
         .trim();
     }
 
@@ -6833,11 +6833,16 @@ async function simpanKeLaciJogging() {
           // ── FORMAT BARU: tambah sebagai item baru ──
           // Gabung before + afters jadi satu ayat
 const afterStr = afterInputs.length > 0
-            ? afterInputs.map((val, idx) => `k${idx + 1} ${val}`).join(' ')
-            : '';
-          const ayatBaru = afterStr
-            ? `${beforeVal} = ${afterStr}`
-            : beforeVal;
+                  ? afterInputs.map((val, idx) => {
+                      let clean = val.replace(/^-+/, '').trim();
+                      if (/^K\d+:/i.test(clean)) return clean;
+                      if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
+                      return `K${idx + 1}: ${clean}`;
+                    }).join(' ')
+                  : '';
+                const ayatBaru = afterStr
+                  ? `${beforeVal} = ${afterStr}`
+                  : beforeVal;
 
           const currentItems = [...(drawer.items || [])];
           currentItems.push({ ayat: ayatBaru, imageUrl: '' });
@@ -10517,12 +10522,21 @@ if (isMemanahVideoRestON && memanahPhase === 1 && rehatMode) {
 
 if (gunaItems) {
                 // ── FORMAT BARU: tambah sebagai item baru ──
-                const afterStr = afterInputs.length > 0
-                  ? afterInputs.map((val, idx) => `k${idx + 1} ${val}`).join(' ')
-                  : '';
-                const ayatBaru = afterStr
-                  ? `${beforeVal} = ${afterStr}`
-                  : beforeVal;
+const afterStr = afterInputs.length > 0
+            ? afterInputs.map((val, idx) => {
+                // Buang "-" di depan kalau ada
+                let clean = val.replace(/^-+/, '').trim();
+                // Kalau dah ada K(n): di depan — kekalkan
+                if (/^K\d+:/i.test(clean)) return clean;
+                // Kalau ada k(n) tanpa ":" — tambah ":"
+                if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
+                // Tiada K(n) — auto tambah K1:, K2:, dll
+                return `K${idx + 1}: ${clean}`;
+              }).join(' ')
+            : '';
+          const ayatBaru = afterStr
+            ? `${beforeVal} = ${afterStr}`
+            : beforeVal;
 
                 const currentItems = [...(drawer.items || [])];
                 currentItems.push({ ayat: ayatBaru, imageUrl: '' });
@@ -12724,7 +12738,7 @@ let pagesHtml = '';
             const bawahRaw = eqIdx !== -1 ? kad.ayat.slice(eqIdx + 1).trim() : '';
 
             // Format bawah — k1/k2 → baris berasingan
-            const adaK = /k\d+\s/i.test(bawahRaw);
+            const adaK = /K\d+:/i.test(bawahRaw);
             let bawahHtml = '';
             if (adaK) {
               const bawahFormat = formatMaksudUntukPdf(bawahRaw);
