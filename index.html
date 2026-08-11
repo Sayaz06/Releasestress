@@ -17839,7 +17839,7 @@ async function renderSRQueuePage() {
       const subtitle = document.getElementById('sr-queue-subtitle');
       if (!list) return;
 
-list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
 
       // ── LOAD SR FAKTA dulu sebelum apa-apa ──
       let faktaSRItems = [];
@@ -17867,7 +17867,7 @@ list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
           )
         );
 
-        if (snap.empty) {
+        if (snap.empty && !faktaSRItems.length) {
           list.innerHTML = '<div class="empty-state">Belum ada laci dalam SR queue. Habiskan laci bahasa untuk mula.</div>';
           if (statsBar) statsBar.innerHTML = '';
           if (subtitle) subtitle.textContent = '0 laci dalam queue';
@@ -17877,7 +17877,6 @@ list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
         const semua = [];
 
         // ── AMBIL SEMUA LACI DARI FIRESTORE DULU sebelum semak ──
-        // Jangan guna allBahasaDrawers (memory) — mungkin belum fully loaded
         const laciSnap = await getDocs(
           collection(db, "users", currentUser.uid, "bahasa_drawers")
         );
@@ -17888,7 +17887,6 @@ list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
           const data = d.data();
           const laciWujud = laciMap.get(data.drawerId);
           if (!laciWujud) {
-            // Laci betul-betul dah dipadam dari Firestore — baru boleh padam SR
             await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_sr_queue", d.id));
             continue;
           }
@@ -17898,38 +17896,13 @@ list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
         const overdue = semua.filter(s => s.nextDueAt <= now);
         const upcoming = semua.filter(s => s.nextDueAt > now);
 
-if (subtitle) subtitle.textContent = `${semua.length + faktaSRItems.length} laci dalam queue`;
+        if (subtitle) subtitle.textContent = `${semua.length + faktaSRItems.length} laci dalam queue`;
 
-        // Filter ikut tab
-        let toShow = [];
-        if (srTabAktif === 'overdue') toShow = overdue;
-        else if (srTabAktif === 'upcoming') toShow = upcoming;
-        else toShow = semua;
-
-        if (!toShow.length) {
-          list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
-          return;
-        }
-
-        list.innerHTML = '';
-
-// Gabung SR bahasa + SR fakta
-        const faktaToShow = srTabAktif === 'overdue'
-          ? faktaSRItems.filter(s => s.nextDueAt <= now)
-          : srTabAktif === 'upcoming'
-          ? faktaSRItems.filter(s => s.nextDueAt > now)
-          : faktaSRItems;
-
-        const allToShow = [
-          ...toShow.map(s => ({ ...s, isFakta: false })),
-          ...faktaToShow
-        ].sort((a, b) => a.nextDueAt - b.nextDueAt);
-
-        // Kemaskini stats bar — tambah kiraan fakta
-if (statsBar) {
-          const overdueB = semua.filter(s => s.nextDueAt <= now).length;
+        // Kemaskini stats bar
+        if (statsBar) {
+          const overdueB = overdue.length;
           const overdueF = faktaSRItems.filter(s => s.nextDueAt <= now).length;
-          const upcomingB = semua.filter(s => s.nextDueAt > now).length;
+          const upcomingB = upcoming.length;
           const upcomingF = faktaSRItems.filter(s => s.nextDueAt > now).length;
           statsBar.innerHTML = `
             <div class="chip" style="border-color:#f59e0b;color:#fcd34d;">⚠️ Overdue: ${overdueB + overdueF} <span style="font-size:0.6rem;opacity:0.7;">(B:${overdueB} F:${overdueF})</span></div>
@@ -17938,7 +17911,12 @@ if (statsBar) {
           `;
         }
 
-        // Gabung SR bahasa + SR fakta
+        // Filter ikut tab
+        let toShow = [];
+        if (srTabAktif === 'overdue') toShow = overdue;
+        else if (srTabAktif === 'upcoming') toShow = upcoming;
+        else toShow = semua;
+
         const faktaToShow = srTabAktif === 'overdue'
           ? faktaSRItems.filter(s => s.nextDueAt <= now)
           : srTabAktif === 'upcoming'
@@ -17950,7 +17928,7 @@ if (statsBar) {
           ...faktaToShow
         ].sort((a, b) => a.nextDueAt - b.nextDueAt);
 
-if (!allToShow.length) {
+        if (!allToShow.length) {
           list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
           return;
         }
