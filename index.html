@@ -8041,10 +8041,12 @@ function subscribeAllHierarchyData() {
         rebuildFacts();
       });
 
-      onSnapshot(query(collection(db, "users", currentUser.uid, "drawer")), snap => {
+onSnapshot(query(collection(db, "users", currentUser.uid, "drawer")), snap => {
         allDrawers = snap.docs.map(d => ({id: d.id, ...d.data()}));
         if(sectionDrawer.classList.contains('active')) renderDrawers();
         rebuildFacts();
+        // Auto-sync SR queue fakta bila drawer berubah
+        setTimeout(() => syncFaktaSRQueuePdfKod(), 2000);
       });
 
       onSnapshot(query(collection(db, "users", currentUser.uid, "routine_times")), snap => {
@@ -14383,18 +14385,91 @@ async function syncSRQueuePdfKod() {
 
         if (updateCount > 0) {
           await batch.commit();
-          console.log(`✅ SR Queue sync: ${updateCount} kod dikemas kini`);
+          console.log(`✅ SR Queue Bahasa sync: ${updateCount} kod dikemas kini`);
         }
       } catch(e) {
         console.log("Gagal sync SR queue pdfKod:", e);
       }
     }
 
-    function subscribeBahasa() {
+    // ── SYNC PDF KOD UNTUK SR QUEUE FAKTA ──
+    async function syncFaktaSRQueuePdfKod() {
+      if (!currentUser) return;
+      try {
+        const srSnap = await getDocs(collection(db, "users", currentUser.uid, "fakta_sr_queue"));
+        if (srSnap.empty) return;
+
+        const laciSnap = await getDocs(collection(db, "users", currentUser.uid, "drawer"));
+        const laciMap = new Map();
+        laciSnap.docs.forEach(d => laciMap.set(d.id, { id: d.id, ...d.data() }));
+
+        const batch = writeBatch(db);
+        let updateCount = 0;
+
+        srSnap.docs.forEach(srDoc => {
+          const srData = srDoc.data();
+          const laci = laciMap.get(srData.drawerId);
+          if (!laci) return;
+
+          const pdfNombor = laci.pdfNombor || null;
+          const pdfTopik  = laci.pdfTopik  || null;
+          const pdfSubjek = laci.pdfSubjek || null;
+
+          // Kalau belum export PDF — tag sebagai sementara
+          if (!pdfNombor || !pdfTopik || !pdfSubjek) {
+            // Kira nombor sementara berdasarkan susunan dalam allDrawers
+            const topic = allTopics.find(t => t.id === laci.topicId);
+            const subjek = allSubjects.find(s => s.id === topic?.subjectId);
+            const laciDalamTopik = allDrawers
+              .filter(d => d.topicId === laci.topicId)
+              .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+            const idxSementara = laciDalamTopik.findIndex(d => d.id === laci.id);
+            const kodSementara = `${subjek?.name || 'Subjek'}/${topic?.name || 'Topik'}/${laci.title || 'Slide'}-T${idxSementara + 1}`;
+
+            if (srData.pdfKod !== kodSementara || srData.isSementara !== true) {
+              batch.update(doc(db, "users", currentUser.uid, "fakta_sr_queue", srDoc.id), {
+                pdfKod: kodSementara,
+                isSementara: true,
+                updatedAt: Date.now()
+              });
+              updateCount++;
+            }
+            return;
+          }
+
+          // Ada pdfNombor — kod tetap
+          const kodBaru = `${pdfSubjek}/${pdfTopik}/${laci.title || 'Slide'}-${pdfNombor}`;
+          const kodLama = srData.pdfKod || null;
+
+          if (kodBaru !== kodLama || srData.isSementara === true) {
+            batch.update(doc(db, "users", currentUser.uid, "fakta_sr_queue", srDoc.id), {
+              pdfKod: kodBaru,
+              pdfNombor: pdfNombor,
+              pdfTopik: pdfTopik,
+              pdfSubjek: pdfSubjek,
+              isSementara: false,
+              updatedAt: Date.now()
+            });
+            updateCount++;
+          }
+        });
+
+        if (updateCount > 0) {
+          await batch.commit();
+          console.log(`✅ SR Queue Fakta sync: ${updateCount} kod dikemas kini`);
+        }
+      } catch(e) {
+        console.log("Gagal sync SR queue fakta pdfKod:", e);
+      }
+    }
+
+function subscribeBahasa() {
       if (!currentUser) return;
 
       // Auto-sync SR queue kod setiap kali bahasa data loaded
       setTimeout(() => syncSRQueuePdfKod(), 3000);
+      // Auto-sync SR queue fakta juga
+      setTimeout(() => syncFaktaSRQueuePdfKod(), 3500);
 
       onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_list")), snap => {
         allBahasaList = snap.docs.map(d => ({id:d.id,...d.data()}));
