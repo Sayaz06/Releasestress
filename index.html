@@ -6862,14 +6862,18 @@ const afterStr = afterInputs.length > 0
           showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
 
 } else {
-          // ── FORMAT LAMA: tambah ke notes ──
-          const afterStr = afterInputs.map((val, idx) => {
-            let clean = val.replace(/^-+/, '').trim();
-            if (/^K\d+:/i.test(clean)) return clean;
-            if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
-            return `K${idx + 1}: ${clean}`;
-          }).join(' ');
-          const combinedNewNote = beforeVal + " = " + afterStr;
+          // ── FORMAT LAMA: tambah ke notes (normalize K format) ──
+          const afterStr = afterInputs.length > 0
+            ? afterInputs.map((val, idx) => {
+                let clean = val.replace(/^-+/, '').trim();
+                if (/^K\d+:/i.test(clean)) return clean;
+                if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
+                return `K${idx + 1}: ${clean}`;
+              }).join(' ')
+            : '';
+          const combinedNewNote = afterStr
+            ? `${beforeVal} = ${afterStr}`
+            : beforeVal;
 
           const currentNotes = joggingMainTextarea.value;
           const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
@@ -10573,14 +10577,18 @@ const afterStr = afterInputs.length > 0
                 showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
 
 } else {
-                // ── FORMAT LAMA: tambah ke notes ──
-                const afterStr = afterInputs.map((val, idx) => {
-                  let clean = val.replace(/^-+/, '').trim();
-                  if (/^K\d+:/i.test(clean)) return clean;
-                  if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
-                  return `K${idx + 1}: ${clean}`;
-                }).join(' ');
-                const combinedNewNote = beforeVal + " = " + afterStr;
+                // ── FORMAT LAMA: tambah ke notes (normalize K format) ──
+                const afterStr = afterInputs.length > 0
+                  ? afterInputs.map((val, idx) => {
+                      let clean = val.replace(/^-+/, '').trim();
+                      if (/^K\d+:/i.test(clean)) return clean;
+                      if (/^K\d+\s/i.test(clean)) return clean.replace(/^(K\d+)\s+/i, '$1: ');
+                      return `K${idx + 1}: ${clean}`;
+                    }).join(' ')
+                  : '';
+                const combinedNewNote = afterStr
+                  ? `${beforeVal} = ${afterStr}`
+                  : beforeVal;
                 const currentNotes = memanahMainTextarea.value;
                 const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
 
@@ -12759,11 +12767,12 @@ let pagesHtml = '';
             const atas = eqIdx !== -1 ? kad.ayat.slice(0, eqIdx).trim() : kad.ayat.trim();
             const bawahRaw = eqIdx !== -1 ? kad.ayat.slice(eqIdx + 1).trim() : '';
 
-            // Format bawah — K1:/K2: → baris berasingan
-            const adaK = /K\d+:/i.test(bawahRaw);
+// Format bawah — handle K1:/K2: (baru) DAN 1.teks/k1 teks (lama)
+            const adaKBaru = /K\d+:/i.test(bawahRaw);
+            const adaKLama = /k\d+\s/i.test(bawahRaw) || /\d+\.\w/.test(bawahRaw);
             let bawahHtml = '';
-            if (adaK) {
-              // Split pada setiap K(n): — buang bahagian kosong
+            if (adaKBaru) {
+              // Format baru: "K1: teks K2: teks" → split dan render
               const bahagian = bawahRaw
                 .split(/(?=K\d+:)/i)
                 .map(s => s.replace(/^K(\d+):\s*/i, '$1 : ').trim())
@@ -12771,9 +12780,18 @@ let pagesHtml = '';
               bawahHtml = bahagian
                 .map(l => `<div class="baris-bawah">${l}</div>`)
                 .join('');
+            } else if (adaKLama) {
+              // Format lama: "k1 teks" atau "1.teks" → normalize dulu
+              const normalized = bawahRaw
+                .replace(/k(\d+)\s+/gi, '\n$1 : ')
+                .replace(/(\d+)\.\s*/g, '\n$1 : ');
+              bawahHtml = normalized.split('\n')
+                .filter(l => l.trim())
+                .map(l => `<div class="baris-bawah">${l.trim()}</div>`)
+                .join('');
             } else if (bawahRaw) {
               bawahHtml = `<div class="baris-bawah">${bawahRaw}</div>`;
-            }            
+            }
 
             // Frame gambar — tinggi tetap sama ada atau tiada gambar
             const imgBlock = kad.imageUrl && base64Map[kad.imageUrl]
