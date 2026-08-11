@@ -6775,15 +6775,15 @@ function saveJoggingDraft() {
       localStorage.removeItem('joggingDraft_' + drawerId);
     }
 
-    function openJoggingMode(data) {
-currentJoggingDrawerId = data.id;
+function openJoggingMode(data) {
+      currentJoggingDrawerId = data.id;
       joggingPhase = 1;
       joggingPlus5Used = false;
       updateJoggingPlus5Btn();
       document.getElementById('jogging-phase-label').textContent = "Fasa 1: Baki Hafalan";
       joggingTapCount = maxJoggingCount;
       isJoggingBlocked = false;
-      
+
       isJoggingNotaLocked = true;
       btnLockJoggingNota.textContent = "Lock Nota: ON";
       btnLockJoggingNota.classList.add("btn-active");
@@ -6791,39 +6791,81 @@ currentJoggingDrawerId = data.id;
 
       joggingInputBefore.value = '';
       joggingAfterContainer.innerHTML = '<input class="drawer-input-box jogging-input-after" placeholder="Maksud 1 (Selepas \'=\')">';
-      
-      joggingCount.textContent = joggingTapCount;
-      joggingMiniCount.textContent = joggingTapCount; 
-      joggingMainTextarea.value = data.notes || '';
 
-      // Pulih draft kalau ada
+      joggingCount.textContent = joggingTapCount;
+      joggingMiniCount.textContent = joggingTapCount;
+
+      // ── Papar items[] atau notes lama ──
+      if (data.items && data.items.length > 0) {
+        const paparan = data.items.map((item, idx) =>
+          `[Baris ${idx + 1}] ${item.ayat || ''}`
+        ).join('\n');
+        joggingMainTextarea.value = paparan;
+      } else {
+        joggingMainTextarea.value = data.notes || '';
+      }
+
       loadJoggingDraft(data.id);
-      
       showSection(sectionJogging);
-      
+
       setTimeout(() => {
         joggingMainTextarea.scrollTop = joggingMainTextarea.scrollHeight;
       }, 50);
     }
     
-function simpanKeLaciJogging() {
+async function simpanKeLaciJogging() {
         const beforeVal = joggingInputBefore.value.trim();
         const afterInputs = Array.from(joggingAfterContainer.querySelectorAll('.jogging-input-after'))
                                  .map(inp => inp.value.trim())
                                  .filter(val => val !== "");
-        const afterStr = afterInputs.map((val, index) => `${index + 1}.${val}`).join(" ");
-        const combinedNewNote = beforeVal + " = " + afterStr;
-        
-        const currentNotes = joggingMainTextarea.value;
-        const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
-        
-        joggingMainTextarea.value = updatedNotes;
-        joggingMainTextarea.scrollTop = joggingMainTextarea.scrollHeight;
 
-        if (currentJoggingDrawerId && currentUser) {
-          updateDoc(doc(db, "users", currentUser.uid, "drawer", currentJoggingDrawerId), { 
+        if (!currentJoggingDrawerId || !currentUser) return;
+
+        // Semak sama ada laci guna format items[] atau notes lama
+        const drawer = allDrawers.find(d => d.id === currentJoggingDrawerId);
+        const gunaItems = drawer && drawer.items && drawer.items.length > 0;
+
+        if (gunaItems) {
+          // ── FORMAT BARU: tambah sebagai item baru ──
+          // Gabung before + afters jadi satu ayat
+          const afterStr = afterInputs.length > 0
+            ? afterInputs.map((val, idx) => `${idx + 1}.${val}`).join(' ')
+            : '';
+          const ayatBaru = afterStr
+            ? `${beforeVal} = ${afterStr}`
+            : beforeVal;
+
+          const currentItems = [...(drawer.items || [])];
+          currentItems.push({ ayat: ayatBaru, imageUrl: '' });
+
+          await updateDoc(doc(db, "users", currentUser.uid, "drawer", currentJoggingDrawerId), {
+            items: currentItems,
+            repeatCount: 0
+          });
+
+          // Kemaskini textarea paparan
+          const paparan = currentItems.map((item, idx) =>
+            `[Baris ${idx + 1}] ${item.ayat || ''}`
+          ).join('\n');
+          joggingMainTextarea.value = paparan;
+          joggingMainTextarea.scrollTop = joggingMainTextarea.scrollHeight;
+
+          showToast(`✅ Baris ${currentItems.length} ditambah ke laci!`);
+
+        } else {
+          // ── FORMAT LAMA: tambah ke notes ──
+          const afterStr = afterInputs.map((val, index) => `${index + 1}.${val}`).join(" ");
+          const combinedNewNote = beforeVal + " = " + afterStr;
+
+          const currentNotes = joggingMainTextarea.value;
+          const updatedNotes = currentNotes ? currentNotes + '\n' + combinedNewNote : combinedNewNote;
+
+          joggingMainTextarea.value = updatedNotes;
+          joggingMainTextarea.scrollTop = joggingMainTextarea.scrollHeight;
+
+          await updateDoc(doc(db, "users", currentUser.uid, "drawer", currentJoggingDrawerId), {
             notes: updatedNotes,
-            repeatCount: 0 
+            repeatCount: 0
           });
         }
 
