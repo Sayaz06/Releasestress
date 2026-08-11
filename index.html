@@ -13092,14 +13092,16 @@ const printWindow = window.open('', '_blank');
         printWindow.document.write(htmlContent);
         printWindow.document.close();
         printWindow.focus();
-        printWindow.onload = () => {
-          // ── AUTO-SHRINK: kecilkan font kalau kandungan overflow kad ──
+printWindow.onload = () => {
+          // ── AUTO-SHRINK: ukur overflow secara manual (overflow:hidden buat scrollHeight fail) ──
           const semua = printWindow.document.querySelectorAll('.kad');
           semua.forEach(kad => {
+            if (kad.classList.contains('empty')) return;
+
             const elAtas  = kad.querySelector('.kad-atas');
             const elBawah = kad.querySelector('.kad-bawah');
+            if (!elBawah) return; // tiada bawah — tak perlu shrink
 
-            // Font asal (pt → float)
             let ptAtas  = 8.5;
             let ptBawah = 7.5;
             let lhAtas  = 1.35;
@@ -13108,28 +13110,56 @@ const printWindow = window.open('', '_blank');
             const STEP   = 0.3;
 
             function setFont() {
-              if (elAtas)  { elAtas.style.fontSize  = `${ptAtas}pt`;  elAtas.style.lineHeight  = `${lhAtas}`; }
-              if (elBawah) { elBawah.style.fontSize = `${ptBawah}pt`; elBawah.style.lineHeight = `${lhBawah}`; }
+              if (elAtas)  { elAtas.style.fontSize  = `${ptAtas}pt`;  elAtas.style.lineHeight  = String(lhAtas); }
+              if (elBawah) { elBawah.style.fontSize = `${ptBawah}pt`; elBawah.style.lineHeight = String(lhBawah); }
             }
 
-            // Fasa 1 — kecilkan font secara berperingkat
-            while (kad.scrollHeight > kad.clientHeight) {
+            // Kira jumlah tinggi sebenar semua children (bukan scrollHeight)
+            function totalChildrenHeight() {
+              let total = 0;
+              Array.from(kad.children).forEach(child => {
+                const s = printWindow.getComputedStyle(child);
+                const mt = parseFloat(s.marginTop) || 0;
+                const mb = parseFloat(s.marginBottom) || 0;
+                total += child.offsetHeight + mt + mb;
+              });
+              // tambah gap (2mm ≈ 7.56px) antara children
+              const gap = (kad.children.length - 1) * 7.56;
+              return total + gap;
+            }
+
+            function isOverflow() {
+              return totalChildrenHeight() > kad.clientHeight;
+            }
+
+            // Fasa 1 — kecilkan font .kad-bawah dulu, lepas tu .kad-atas
+            while (isOverflow()) {
               if (ptAtas <= PT_MIN && ptBawah <= PT_MIN) break;
               if (ptBawah > PT_MIN) ptBawah = Math.max(PT_MIN, ptBawah - STEP);
-              if (ptAtas  > PT_MIN) ptAtas  = Math.max(PT_MIN, ptAtas  - STEP);
+              else if (ptAtas > PT_MIN) ptAtas = Math.max(PT_MIN, ptAtas - STEP);
               setFont();
             }
 
             // Fasa 2 — kalau masih overflow, shrink line-height pula
-            while (kad.scrollHeight > kad.clientHeight) {
-              if (lhAtas <= 1.0 && lhBawah <= 1.0) break;
+            while (isOverflow()) {
+              if (lhBawah <= 1.0 && lhAtas <= 1.0) break;
               if (lhBawah > 1.0) lhBawah = Math.max(1.0, lhBawah - 0.05);
-              if (lhAtas  > 1.0) lhAtas  = Math.max(1.0, lhAtas  - 0.05);
+              else if (lhAtas > 1.0) lhAtas = Math.max(1.0, lhAtas - 0.05);
               setFont();
+            }
+
+            // Fasa 3 — last resort: kecilkan padding .baris-bawah
+            if (isOverflow()) {
+              const barisBawah = elBawah.querySelectorAll('.baris-bawah');
+              let pad = 0.5;
+              while (isOverflow() && pad > 0) {
+                pad = Math.max(0, pad - 0.1);
+                barisBawah.forEach(b => { b.style.paddingTop = `${pad}mm`; b.style.paddingBottom = `${pad}mm`; });
+              }
             }
           });
 
-          setTimeout(() => printWindow.print(), 600);
+          setTimeout(() => printWindow.print(), 800);
         };
 
         removeLoadBar();
