@@ -14021,9 +14021,10 @@ div.querySelector('.btn-tips-bd').addEventListener('click', () => {
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = 'image/*';
-          input.addEventListener('change', (e) => {
+input.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            CROP_RATIO = CROP_RATIO_BAHASA;
             bukaCropTool(file, async (blob) => {
               showToast('⏳ Mengupload gambar...', 0);
               try {
