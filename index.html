@@ -2184,7 +2184,7 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         <div class="list mt-8" id="subjects-list" style="padding: 10px;"></div>
       </section>
 
-      <section id="section-topics" class="section">
+<section id="section-topics" class="section">
         <div class="topbar">
           <button id="btn-back-subj-topics" class="btn btn-secondary btn-sm">← Subjek</button>
           <div style="text-align: right;">
@@ -2195,10 +2195,10 @@ Anda perlu membuat <strong style="color:#34d399;">aktiviti atau projek lain</str
         <div style="font-size: 0.75rem; color: var(--subtext); text-align: center; margin-bottom: 8px;">
           Tanda (tick) SATU kotak sahaja untuk aktifkan.
         </div>
-        <button id="btn-add-topic" class="btn btn-sm">Tambah Topik</button>
-        <div class="list mt-8" id="topics-list" style="padding: 10px;"></div>
+<button id="btn-add-fakta-topic" class="btn btn-sm">Tambah Topik</button>
+        <div class="list mt-8" id="fakta-topics-list" style="padding: 10px;"></div>
       </section>
-
+  
       <section id="section-drawer" class="section">
         <div class="topbar">
           <button id="btn-back-topics-drawer" class="btn btn-secondary btn-sm">← Topik</button>
@@ -3179,7 +3179,7 @@ const sectionBahasa = document.getElementById("section-bahasa");
     const notesList = document.getElementById("notes-list");
     
     const subjectsList = document.getElementById("subjects-list");
-    const topicsList = document.getElementById("topics-list");
+    const topicsList = document.getElementById("jenis-kata-list");
     const drawerList = document.getElementById("drawer-list");
     
     const routineTimesList = document.getElementById("routine-times-list");
@@ -3190,7 +3190,7 @@ const sectionBahasa = document.getElementById("section-bahasa");
     const btnBackSubjTopics = document.getElementById("btn-back-subj-topics");
     const btnBackTopicsDrawer = document.getElementById("btn-back-topics-drawer");
     const btnAddSubject = document.getElementById("btn-add-subject");
-    const btnAddTopic = document.getElementById("btn-add-topic");
+    const btnAddTopic = document.getElementById("btn-add-fakta-topic");
     const btnAddLaci = document.getElementById("btn-add-laci");
 
     const btnGoRoutineTimes = document.getElementById("btn-go-routine-times");
@@ -7244,8 +7244,8 @@ async function checkFaktaSRQueue() {
     }
 
 function renderCurrentFact() {
-      // Sync Jogging Bahasa bila countdown bergerak
-      if (jbAktif && bahasaMode) {
+      // Sync Jogging Kad bila countdown bergerak
+      if (jbAktif && (bahasaMode || factMode)) {
         setTimeout(() => jbUpdateUI(), 50);
       }
 
@@ -7551,16 +7551,14 @@ const pdfNombor = drawerData?.pdfNombor || null;
         triggerVibration([200, 100, 200, 100, 2000]); 
         isBlocked = true;
 
-        // ── DAFTAR SR BILA LACI BAHASA HIT isTamat ──
+// ── DAFTAR SR BILA LACI BAHASA HIT isTamat ──
         if (bahasaMode && currentData.drawerId) {
-          // Kalau ini SR session yang baru selesai
           if (srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === currentData.drawerId) {
             selesaiSRUlangan(currentData.drawerId).then(() => {
               srLaciSemasa = null;
             });
           } else {
-            // Laci baru habis dihafal — daftar dalam SR queue
-            daftarSRBaru(currentData.drawerId);
+            daftarSRBaru(currentData.drawerId, 'bahasa');
           }
         }
 
@@ -7573,15 +7571,17 @@ if (learningMode === 2) {
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
-            // ── DAFTAR SR FAKTA bila laci selesai ──
+// ── DAFTAR SR FAKTA bila laci selesai ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId;
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId && currentData.isFaktaSR;
               if (isFaktaSRSession) {
+                const fasaSemasa = faktaSRLaciSemasa?.fasaSemasa || 0;
                 await selesaiFaktaSRUlangan(currentData.drawerId);
                 faktaSRQueueIds.delete(currentData.drawerId);
+                faktaSRModeAktif = false;
                 faktaSRLaciSemasa = null;
-                showToast(`✅ SR Fakta selesai — ${getLabelFasaSR((faktaSRLaciSemasa?.fasaSemasa || 0))}`, 3000);
-              } else {
+                showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSemasa)}`, 3000);
+              } else if (!currentData.isFaktaSR) {
                 await daftarSRBaru(currentData.drawerId, 'fakta');
                 showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
               }
@@ -7616,14 +7616,17 @@ if (learningMode === 2) {
           setTimeout(async () => {
             isBlocked = false;
 
-            // ── DAFTAR SR FAKTA bila laci selesai ──
+// ── DAFTAR SR FAKTA bila laci selesai ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId;
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId && currentData.isFaktaSR;
               if (isFaktaSRSession) {
+                const fasaSemasa = faktaSRLaciSemasa?.fasaSemasa || 0;
                 await selesaiFaktaSRUlangan(currentData.drawerId);
                 faktaSRQueueIds.delete(currentData.drawerId);
+                faktaSRModeAktif = false;
                 faktaSRLaciSemasa = null;
-              } else {
+                showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSemasa)}`, 3000);
+              } else if (!currentData.isFaktaSR) {
                 await daftarSRBaru(currentData.drawerId, 'fakta');
                 showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
               }
@@ -7777,26 +7780,23 @@ if (rPhase === 1) {
               isFlipped = false;
               updateMainPlus5Btn();
 
-              // ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
+// ── DAFTAR SR BILA LACI BAHASA FASA 2 SELESAI ──
 const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].drawerId : null;
               const isSRSelesai = srModeAktif && srLaciSemasa && srLaciSemasa.drawerId === laciSelesaiId;
               const fasaSRSelesai = srLaciSemasa ? srLaciSemasa.fasaSemasa : 0;
 
               if (laciSelesaiId) {
                 if (isSRSelesai) {
-                  // SR session selesai — simpan dulu SEBELUM render tamat
                   selesaiSRUlangan(laciSelesaiId).then(() => {
                     srQueueIds.delete(laciSelesaiId);
                     srLaciSemasa = null;
                     showToast(`✅ SR Ulangan selesai — ${getLabelFasaSR(fasaSRSelesai)}`, 3000);
                   });
                 } else {
-                  // Laci biasa habis — daftar SR
-                  // Simpan index sebelum SR ambil alih (untuk Queue)
                   if (queueMode) {
                     queueBahasaSavedIndex = currentFactIndex;
                   }
-                  daftarSRBaru(laciSelesaiId).then(() => {
+                  daftarSRBaru(laciSelesaiId, 'bahasa').then(() => {
                     showToast('⏰ Laci didaftarkan dalam SR queue! Ulangan dalam 20 minit.', 3500);
                   });
                 }
@@ -8214,11 +8214,13 @@ div.querySelector(".btn-del-sub").addEventListener("click", async () => {
       });
     }
 
-    function renderTopics() {
+function renderTopics() {
       const subj = allSubjects.find(s => s.id === currentSubjectId);
       document.getElementById("parent-subject-name").textContent = subj && subj.name ? `Subjek: ${subj.name}` : "";
 
-      topicsList.innerHTML = "";
+      const faktaTopicsList = document.getElementById("fakta-topics-list");
+      if (!faktaTopicsList) return;
+      faktaTopicsList.innerHTML = "";
       const filteredTopics = allTopics.filter(t => t.subjectId === currentSubjectId);
       const sortedTopics = filteredTopics.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, {numeric: true}));
       
@@ -8275,11 +8277,11 @@ div.querySelector(".btn-del-topik").addEventListener("click", async () => {
           showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
         });
         
-        topicsList.appendChild(div);
+faktaTopicsList.appendChild(div);
       });
     }
 
-function renderDrawers() {
+    function renderDrawers() {
       const topic = allTopics.find(t => t.id === currentTopicId);
       document.getElementById("parent-topic-name").textContent = topic && topic.name ? `Topik: ${topic.name}` : "";
 
@@ -8932,12 +8934,19 @@ btnAddSubject.addEventListener("click", () => {
     document.getElementById('btn-add-sem').addEventListener("click", () => {
       addDoc(collection(db, "users", currentUser.uid, "sems"), { name: "", createdAt: Date.now() });
     });
-    
+
     btnAddTopic.addEventListener("click", () => { 
       if(currentSubjectId) {
         addDoc(collection(db, "users", currentUser.uid, "topics"), { name: "", subjectId: currentSubjectId, isActive: false, createdAt: Date.now() }); 
       }
     });
+
+    document.getElementById('btn-add-fakta-topic')?.addEventListener('click', () => {
+      if(currentSubjectId) {
+        addDoc(collection(db, "users", currentUser.uid, "topics"), { name: "", subjectId: currentSubjectId, isActive: false, createdAt: Date.now() });
+      }
+    });
+
 btnAddLaci.addEventListener("click", () => { 
   if(currentTopicId) {
 addDoc(collection(db, "users", currentUser.uid, "drawer"), { title: "~", notes: "", repeatCount: 0, topicId: currentTopicId, createdAt: Date.now() });
@@ -12195,6 +12204,12 @@ document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () =
     });
 
 document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
+      if (!currentUser || !currentBahasaId) return;
+      addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
+    });
+
+    // btn-add-topic dalam section-jenis-kata (bahasa) — ini sepatutnya tambah jenis_kata
+    document.getElementById('btn-add-topic')?.addEventListener('click', () => {
       if (!currentUser || !currentBahasaId) return;
       addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
     });
@@ -17846,15 +17861,15 @@ async function renderSRQueuePage() {
       const subtitle = document.getElementById('sr-queue-subtitle');
       if (!list) return;
 
-      list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
+list.innerHTML = '<div class="empty-state">Memuatkan...</div>';
 
-      // ── RENDER SR FAKTA juga — gabung dalam list yang sama ──
+      // ── LOAD SR FAKTA dulu sebelum apa-apa ──
       let faktaSRItems = [];
+      const now = Date.now();
       try {
         const faktaSnap = await getDocs(
           query(collection(db, "users", currentUser.uid, "fakta_sr_queue"), orderBy("nextDueAt", "asc"))
         );
-        const now = Date.now();
         faktaSnap.docs.forEach(d => {
           const data = d.data();
           const drawer = allDrawers.find(dr => dr.id === data.drawerId);
@@ -17881,7 +17896,6 @@ async function renderSRQueuePage() {
           return;
         }
 
-        const now = Date.now();
         const semua = [];
 
         // ── AMBIL SEMUA LACI DARI FIRESTORE DULU sebelum semak ──
@@ -17906,16 +17920,7 @@ async function renderSRQueuePage() {
         const overdue = semua.filter(s => s.nextDueAt <= now);
         const upcoming = semua.filter(s => s.nextDueAt > now);
 
-        // Stats bar
-        if (statsBar) {
-          statsBar.innerHTML = `
-            <div class="chip" style="border-color:#f59e0b;color:#fcd34d;">⚠️ Overdue: ${overdue.length}</div>
-            <div class="chip" style="border-color:#34d399;color:#6ee7b7;">📅 Upcoming: ${upcoming.length}</div>
-            <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📋 Jumlah: ${semua.length}</div>
-          `;
-        }
-
-        if (subtitle) subtitle.textContent = `${semua.length} laci dalam queue`;
+if (subtitle) subtitle.textContent = `${semua.length + faktaSRItems.length} laci dalam queue`;
 
         // Filter ikut tab
         let toShow = [];
@@ -17962,6 +17967,25 @@ async function renderSRQueuePage() {
 
         list.innerHTML = '';
 
+// Gabung SR bahasa + SR fakta
+        const faktaToShow = srTabAktif === 'overdue'
+          ? faktaSRItems.filter(s => s.nextDueAt <= now)
+          : srTabAktif === 'upcoming'
+          ? faktaSRItems.filter(s => s.nextDueAt > now)
+          : faktaSRItems;
+
+        const allToShow = [
+          ...toShow.map(s => ({ ...s, isFakta: false })),
+          ...faktaToShow
+        ].sort((a, b) => a.nextDueAt - b.nextDueAt);
+
+        if (!allToShow.length) {
+          list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
+          return;
+        }
+
+        list.innerHTML = '';
+
         allToShow.forEach(data => {
           const isOverdue = data.nextDueAt <= now;
           const warnaBorder = isOverdue ? 'rgba(245,158,11,0.5)' : 'rgba(52,211,153,0.3)';
@@ -17983,7 +18007,9 @@ async function renderSRQueuePage() {
           const sejarahCount = (data.sejarahFasa || []).length;
           const hafalTarikh = data.hafalAt ? formatTarikhMasaSR(data.hafalAt) : '';
 
-const drawerDataSR = allBahasaDrawers.find(d => d.id === data.drawerId);
+const drawerDataSR = data.isFakta
+            ? allDrawers.find(d => d.id === data.drawerId)
+            : allBahasaDrawers.find(d => d.id === data.drawerId);
           const pdfNomborSR = drawerDataSR?.pdfNombor || null;
           const pdfJenisSR = drawerDataSR?.pdfJenis || null;
           const labelPDFSR = pdfNomborSR && pdfJenisSR ? `${pdfJenisSR}-${pdfNomborSR}` : null;
@@ -19320,16 +19346,27 @@ document.getElementById('jb-tap-area')?.addEventListener('touchstart', (e) => {
   jbTouchStartY = e.touches[0].clientY;
 }, { passive: true });
 
-document.getElementById('jb-tap-area')?.addEventListener('touchend', (e) => {
-  if (!jbAktif || !bahasaMode) return;
+document.getElementById('jb-tap-area')?.addEventListener('touchend', async (e) => {
+  if (!jbAktif || (!bahasaMode && !factMode)) return;
   const dx = e.changedTouches[0].clientX - jbTouchStartX;
   const dy = e.changedTouches[0].clientY - jbTouchStartY;
   // Swipe horizontal lebih dominan
   if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
 
   jbSyncDariCountdown = false;
-  if (dx < 0) {
+if (dx < 0) {
     // Swipe kiri → next
+    // ── CHECK SR FAKTA dulu sebelum next (kalau fakta mode & SR ON) ──
+    if (factMode && !bahasaMode && faktaSRON && !faktaSRSemuaSelesai) {
+      const adaSR = await checkFaktaSRQueue();
+      if (adaSR && muatFaktaSRLaciSeterusnya()) {
+        tunjukPopupSR(faktaSRLaciSemasa);
+        await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+        jbUpdateUI();
+        return;
+      }
+      faktaSRSemuaSelesai = false;
+    }
     audioModeAktif = false;
     decrementTasbih();
     audioModeAktif = false;
