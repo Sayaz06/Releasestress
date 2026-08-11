@@ -8572,8 +8572,9 @@ ${!adaItems ? `
         });
 
         // ── PADAM GAMBAR ITEM ──
-        div.querySelectorAll(".btn-del-item-img").forEach(btn => {
+div.querySelectorAll(".btn-del-item-img").forEach(btn => {
           btn.addEventListener("click", async () => {
+            if (!confirm('Buang gambar item ini?')) return;
             const idx = parseInt(btn.getAttribute('data-idx'));
             try {
               await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`)).catch(() => {});
@@ -8597,7 +8598,7 @@ ${!adaItems ? `
           openMemanahMode(data);
         });
 
-        // ── PADAM LACI ──
+// ── PADAM LACI ──
         div.querySelector(".btn-del-laci").addEventListener("click", async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           // Padam semua gambar item dari Storage
