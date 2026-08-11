@@ -8388,9 +8388,12 @@ function renderDrawers() {
             : `<div style="font-size:0.68rem;background:rgba(245,158,11,0.1);color:#fcd34d;padding:3px 10px;border-radius:999px;margin-bottom:8px;display:inline-block;">⚠️ Belum export PDF — kod sementara</div>`
           }
 
-          ${!adaItems ? `
+${!adaItems ? `
           <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;">
-            <div style="font-size:0.68rem;color:#a5b4fc;margin-bottom:4px;">📝 Format Lama (Notes)</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div style="font-size:0.68rem;color:#a5b4fc;font-weight:700;">📝 Format Lama (Notes)</div>
+              ${data.notes && data.notes.trim() ? `<button class="btn-migrate-notes btn btn-secondary btn-sm" style="font-size:0.65rem;border-color:#34d399;color:#34d399;padding:2px 10px;">⚡ Migrate ke Format Baru</button>` : ''}
+            </div>
             <textarea class="drawer-notes" placeholder="Format lama: Perkataan = Terjemahan">${data.notes || ''}</textarea>
           </div>` : ''}
 
@@ -8439,7 +8442,7 @@ function renderDrawers() {
           updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), { title: e.target.value });
         });
 
-        // ── NOTES LAMA ──
+// ── NOTES LAMA ──
         const notesEl = div.querySelector(".drawer-notes");
         if (notesEl) {
           notesEl.addEventListener("change", (e) => {
@@ -8447,6 +8450,53 @@ function renderDrawers() {
               notes: e.target.value,
               repeatCount: 0
             });
+          });
+        }
+
+        // ── MIGRATE NOTES KE ITEMS[] ──
+        const btnMigrate = div.querySelector(".btn-migrate-notes");
+        if (btnMigrate) {
+          btnMigrate.addEventListener("click", async () => {
+            if (!data.notes || !data.notes.trim()) {
+              showToast('⚠️ Tiada kandungan notes untuk dimigrate.');
+              return;
+            }
+
+            const lines = data.notes.split('\n').filter(l => l.trim() !== '');
+            if (!lines.length) {
+              showToast('⚠️ Tiada baris dalam notes.');
+              return;
+            }
+
+            if (!confirm(
+              `Migrate ${lines.length} baris notes ke format baru?\n\n` +
+              `Setiap baris akan jadi 1 item.\n` +
+              `Notes lama akan dikosongkan.\n\n` +
+              `Tindakan ini tidak boleh diundur!`
+            )) return;
+
+            // Convert setiap baris jadi item
+            const itemsBaru = lines.map(line => ({
+              ayat: line.trim(),
+              imageUrl: ''
+            }));
+
+            btnMigrate.textContent = '⏳ Migrating...';
+            btnMigrate.disabled = true;
+
+            try {
+              await updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), {
+                items: itemsBaru,
+                notes: '',
+                repeatCount: 0,
+                updatedAt: Date.now()
+              });
+              showToast(`✅ ${itemsBaru.length} baris berjaya dimigrate ke format baru!`);
+            } catch(e) {
+              showToast('❌ Gagal migrate: ' + e.message);
+              btnMigrate.textContent = '⚡ Migrate ke Format Baru';
+              btnMigrate.disabled = false;
+            }
           });
         }
 
