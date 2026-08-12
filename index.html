@@ -6744,8 +6744,37 @@ btnAddJoggingAfter.addEventListener("click", () => {
       input.focus();
     });
 
-    joggingInputBefore.addEventListener('input', saveJoggingDraft);
+joggingInputBefore.addEventListener('input', saveJoggingDraft);
     joggingAfterContainer.addEventListener('input', saveJoggingDraft);
+
+    joggingInputBefore.addEventListener('paste', (e) => {
+      setTimeout(() => {
+        const nilai = joggingInputBefore.value;
+        const baris = nilai.split('\n').map(b => b.trim()).filter(b => b);
+        if (baris.length <= 1) return;
+        // Baris pertama jadi input sebelum "="
+        joggingInputBefore.value = baris[0];
+        // Baris seterusnya jadi input maksud
+        joggingAfterContainer.innerHTML = '';
+        baris.slice(1).forEach((b, idx) => {
+          const input = document.createElement('input');
+          input.className = 'drawer-input-box jogging-input-after';
+          input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
+          input.value = b;
+          input.addEventListener('input', saveJoggingDraft);
+          joggingAfterContainer.appendChild(input);
+        });
+        // Kalau tiada baris seterusnya, pastikan ada sekurang-kurangnya 1 input kosong
+        if (joggingAfterContainer.children.length === 0) {
+          const input = document.createElement('input');
+          input.className = 'drawer-input-box jogging-input-after';
+          input.placeholder = `Maksud 1 (Selepas '=')`;
+          input.addEventListener('input', saveJoggingDraft);
+          joggingAfterContainer.appendChild(input);
+        }
+        saveJoggingDraft();
+      }, 50);
+    });
 
 function saveJoggingDraft() {
       const beforeVal = joggingInputBefore.value;
@@ -10278,8 +10307,34 @@ btnAddMemanahAfter.addEventListener("click", () => {
       input.focus();
     });
 
-    memanahInputBefore.addEventListener('input', saveMemanahDraft);
+memanahInputBefore.addEventListener('input', saveMemanahDraft);
     memanahAfterContainer.addEventListener('input', saveMemanahDraft);
+
+    memanahInputBefore.addEventListener('paste', (e) => {
+      setTimeout(() => {
+        const nilai = memanahInputBefore.value;
+        const baris = nilai.split('\n').map(b => b.trim()).filter(b => b);
+        if (baris.length <= 1) return;
+        memanahInputBefore.value = baris[0];
+        memanahAfterContainer.innerHTML = '';
+        baris.slice(1).forEach((b, idx) => {
+          const input = document.createElement('input');
+          input.className = 'drawer-input-box jogging-input-after';
+          input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
+          input.value = b;
+          input.addEventListener('input', saveMemanahDraft);
+          memanahAfterContainer.appendChild(input);
+        });
+        if (memanahAfterContainer.children.length === 0) {
+          const input = document.createElement('input');
+          input.className = 'drawer-input-box jogging-input-after';
+          input.placeholder = `Maksud 1 (Selepas '=')`;
+          input.addEventListener('input', saveMemanahDraft);
+          memanahAfterContainer.appendChild(input);
+        }
+        saveMemanahDraft();
+      }, 50);
+    });
 
 function saveMemanahDraft() {
       const beforeVal = memanahInputBefore.value;
