@@ -20223,7 +20223,12 @@ function jbUpdateUI() {
       kodEl.style.fontSize = '';
       kodEl.style.color = '';
 
-// Step 1: Set teks biasa dulu — biar jbAutoFitFont() kira saiz betul
+// Pisah kod kepada dua baris: "subjek/topik/" dan "slide-baris"
+      const kodParts = info.kod.split('/');
+      const barisAtas = kodParts.slice(0, -1).join('/') + '/';
+      const slaideLabel = kodParts[kodParts.length - 1] || info.kod;
+
+      // Step 1: Set teks biasa dulu — biar jbAutoFitFont() kira saiz betul
       kodEl.textContent = `#${info.nomborPdf}`;
       kodEl.style.fontSize = '38vw';
       kodEl.style.color = 'white';
@@ -20234,12 +20239,13 @@ function jbUpdateUI() {
       // Step 2: Guna jbAutoFitFont() — sama seperti bahasa
       jbAutoFitFont();
 
-      // Step 3: Selepas saiz betul, tambah label kecil di atas
+      // Step 3: Selepas saiz betul, render dengan format dua baris label
       const saizAkhir = parseFloat(kodEl.style.fontSize) || 80;
       const saizLabel = Math.max(11, Math.floor(saizAkhir * 0.16));
       kodEl.innerHTML = `
-        <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
-        <div style="font-size:${saizAkhir}px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
+        <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.6;line-height:1.4;word-break:break-all;text-align:center;">${barisAtas}</div>
+        <div style="font-size:${Math.floor(saizLabel * 1.2)}px;color:#fb923c;opacity:0.9;line-height:1.4;word-break:break-all;text-align:center;font-weight:700;">${slaideLabel}</div>
+        <div style="font-size:${saizAkhir}px;color:white;line-height:1;font-weight:900;text-align:center;">#${info.nomborPdf}</div>
       `;
       kodEl.style.fontSize = '';
       kodEl.style.color = '';
