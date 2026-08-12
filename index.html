@@ -13082,8 +13082,15 @@ ${pagesHtml}
           });
 
           if (batchCount > 0) await batchFirestore.commit();
-        } catch(e) {
+} catch(e) {
           console.log("Gagal simpan pdfNombor fakta:", e);
+        }
+
+        // ── SYNC SR QUEUE FAKTA TERUS SELEPAS EXPORT — 100% CONFIRM ──
+        try {
+          await syncFaktaSRQueuePdfKod();
+        } catch(e) {
+          console.log("Gagal sync SR queue fakta selepas export:", e);
         }
 
         setProgress(95, '✅ Membuka tetingkap print...');
@@ -13355,8 +13362,17 @@ printWindow.onload = () => {
           if (srUpdateCount > 0) await srBatch.commit();
           if (srUpdateCount > 0) showToast(`✅ ${srUpdateCount} kod SR dikemas kini!`, 3000);
 
-        } catch(e) { console.log("Gagal simpan nombor PDF:", e); }
+} catch(e) {
+          console.log("Gagal simpan nombor PDF:", e);
+        }
 
+        // ── SYNC SR QUEUE TERUS SELEPAS EXPORT — 100% CONFIRM ──
+        try {
+          await syncSRQueuePdfKod();
+        } catch(e) {
+          console.log("Gagal sync SR queue selepas export:", e);
+        }
+          
         // Bina HTML untuk print
         // A4 landscape = 297mm x 210mm
         // 3 kolum = setiap kolum ~99mm lebar
