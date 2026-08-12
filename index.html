@@ -19822,25 +19822,13 @@ function jbDapatKodSemasa() {
   const data = allFacts[currentFactIndex];
   if (!data) return null;
 
-// ── FAKTA MODE ──
+  // ── FAKTA MODE ──
   if (isFaktaMode) {
-    const drawer = allDrawers.find(d => d.id === data.drawerId);
+    // Untuk SR Fakta — drawerId ada dalam data
+    const drawerId = data.drawerId;
+    // Baca terus dari allDrawers (sentiasa terkini dari Firestore subscription)
+    const drawer = allDrawers.find(d => d.id === drawerId);
     if (!drawer) return null;
-
-    const isSRFakta = !!(data.isSRMode && data.isFaktaSR);
-
-    // ── CUBA DAPATKAN KOD PDF DARI FAKTA SR QUEUE DULU ──
-    if (isSRFakta && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === data.drawerId && faktaSRLaciSemasa.pdfKod) {
-      return {
-        kod: faktaSRLaciSemasa.pdfKod,
-        nomborPdf: faktaSRLaciSemasa.pdfNombor || null,
-        isSR: true,
-        isSementara: !!(faktaSRLaciSemasa.isSementara),
-        isFakta: true,
-        drawerId: drawer.id,
-        progress: `${currentFactIndex + 1} / ${allFacts.length}`
-      };
-    }
 
     const topic = allTopics.find(t => t.id === drawer.topicId);
     const subjek = allSubjects.find(s => s.id === topic?.subjectId);
@@ -19852,14 +19840,17 @@ function jbDapatKodSemasa() {
     let barisStart = currentFactIndex;
     while (
       barisStart > 0 &&
-      allFacts[barisStart - 1]?.drawerId === data.drawerId &&
-      !allFacts[barisStart - 1]?.isTamat
+      allFacts[barisStart - 1]?.drawerId === drawerId &&
+      !allFacts[barisStart - 1]?.isTamat &&
+      !allFacts[barisStart - 1]?.isFasaEjaan
     ) {
       barisStart--;
     }
-    const nomorBarisSebenar = currentFactIndex - barisStart + 1;
+    // Kalau start pada fasa ejaan, baris 1 bermula selepas tu
+    if (allFacts[barisStart]?.isFasaEjaan) barisStart++;
+    const nomorBarisSebenar = Math.max(1, currentFactIndex - barisStart + 1);
 
-    // ── ADA pdfNombor — kod tetap ──
+    // ── Baca pdfNombor TERUS dari allDrawers (bukan dari SR queue) ──
     const adaPdfKod = !!(drawer.pdfNombor && drawer.pdfTopik && drawer.pdfSubjek);
 
     if (adaPdfKod) {
@@ -19868,7 +19859,7 @@ function jbDapatKodSemasa() {
       return {
         kod,
         nomborPdf: nomborKadIni,
-        isSR: isSRFakta,
+        isSR: !!(data.isSRMode || data.isFaktaSR),
         isSementara: false,
         isFakta: true,
         drawerId: drawer.id,
@@ -19881,13 +19872,11 @@ function jbDapatKodSemasa() {
       .filter(d => d.topicId === drawer.topicId)
       .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
     const idxSementara = laciDalamTopik.findIndex(d => d.id === drawer.id);
-    const kod = `${subjekNama}/${topicNama}/${tajukSlide}-baris ${nomorBarisSebenar}`;
     const kodSementara = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}`;
 
     return {
       kod: kodSementara,
-      kodLabel: kod,
-      isSR: isSRFakta,
+      isSR: !!(data.isSRMode || data.isFaktaSR),
       isSementara: true,
       isFakta: true,
       drawerId: drawer.id,
@@ -19895,53 +19884,30 @@ function jbDapatKodSemasa() {
     };
   }
 
-// ── BAHASA MODE ──
-  const drawer = allBahasaDrawers.find(d => d.id === data.drawerId);
+  // ── BAHASA MODE (termasuk SR Bahasa) ──
+  // drawerId dalam allFacts semasa SR mode = drawerId laci SR
+  const drawerId = data.drawerId;
+  // Baca TERUS dari allBahasaDrawers — sentiasa terkini dari Firestore subscription
+  const drawer = allBahasaDrawers.find(d => d.id === drawerId);
   if (!drawer) return null;
+
   const isSR = !!(data.isSRMode);
 
-  // ── CUBA DAPATKAN KOD PDF DARI SR QUEUE DULU (kalau SR mode) ──
-  let pdfNombor = drawer.pdfNombor || null;
-  let pdfJenis = drawer.pdfJenis || null;
-
-  // Kalau SR aktif dan srLaciSemasa ada pdfKod — guna terus
-  if (isSR && srLaciSemasa && srLaciSemasa.drawerId === data.drawerId && srLaciSemasa.pdfKod) {
-    return {
-      kod: srLaciSemasa.pdfKod,
-      isSR: true,
-      isSementara: !!(srLaciSemasa.isSementara),
-      isFakta: false,
-      drawerId: drawer.id,
-      progress: `${currentFactIndex + 1} / ${allFacts.length}`
-    };
-  }
-
-  // Kalau SR aktif tapi srLaciSemasa tiada pdfKod — cuba cari dari srQueueIds cache
-  if (isSR) {
-    // Cuba fetch dari allBahasaDrawers — mungkin pdfNombor dah ada dalam memory
-    // (disimpan masa export PDF sebelum ni)
-    if (!pdfNombor || !pdfJenis) {
-      // Tak ada dalam memory — tunjuk sementara berdasarkan SR drawerTitle
-      return {
-        kod: drawer.pdfNombor && drawer.pdfJenis
-          ? `${drawer.pdfJenis}-${drawer.pdfNombor}`
-          : `SR-${(drawer.title || '?').substring(0, 12)}`,
-        isSR: true,
-        isSementara: true,
-        isFakta: false,
-        drawerId: drawer.id,
-        progress: `${currentFactIndex + 1} / ${allFacts.length}`
-      };
-    }
-  }
+  // ── Baca pdfNombor TERUS dari allBahasaDrawers (bukan dari SR queue) ──
+  const pdfNombor = drawer.pdfNombor || null;
+  const pdfJenis = drawer.pdfJenis || null;
 
   let kod, isSementara;
   if (pdfNombor && pdfJenis) {
+    // Kod tetap — sama seperti dalam PDF yang diprint
     kod = `${pdfJenis}-${pdfNombor}`;
     isSementara = false;
   } else {
+    // Kod sementara — kira ikut susunan jenis kata semasa
+    // Guna jenisId dari drawer, bukan currentJenisKataId — supaya SR laci dari jenis lain pun betul
+    const jenisIdDrawer = drawer.jenisId || currentJenisKataId;
     const perkataanDalamJenis = allBahasaPerkataan
-      .filter(p => p.jenisId === currentJenisKataId)
+      .filter(p => p.jenisId === jenisIdDrawer)
       .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
     const semuaLaciIkutPDF = [];
     perkataanDalamJenis.forEach(perkataan => {
@@ -19951,16 +19917,16 @@ function jbDapatKodSemasa() {
       semuaLaciIkutPDF.push(...laciDalamPerkataan);
     });
     const laciOrfan = allBahasaDrawers.filter(d =>
-      d.jenisId === currentJenisKataId &&
+      d.jenisId === jenisIdDrawer &&
       d.notes && d.notes.trim() &&
       !perkataanDalamJenis.find(p => p.id === d.perkataanId)
     );
     semuaLaciIkutPDF.push(...laciOrfan.sort((a, b) =>
       (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
     ));
-    const jenisAktif = allJenisKata.find(j => j.id === currentJenisKataId);
+    const jenisAktif = allJenisKata.find(j => j.id === jenisIdDrawer);
     const jenisNamaSementara = (jenisAktif?.name || 'Laci').replace(/\s+/g, '');
-    const idxSementara = semuaLaciIkutPDF.findIndex(d => d.id === drawer.id);
+    const idxSementara = semuaLaciIkutPDF.findIndex(d => d.id === drawerId);
     kod = idxSementara !== -1 ? `${jenisNamaSementara}-T${idxSementara + 1}` : `${jenisNamaSementara}-T?`;
     isSementara = true;
   }
@@ -19996,54 +19962,8 @@ function jbAutoFitFont() {
   }
 }
 
-async function jbUpdateUI() {
+function jbUpdateUI() {
   if (!jbAktif) return;
-
-  // ── RACE CONDITION FIX: Kalau SR aktif dan drawer belum ada pdfNombor dalam memory,
-  // fetch terus dari Firestore sebelum papar ──
-  const srAktif = (bahasaMode && srModeAktif && srLaciSemasa) ||
-                  (factMode && faktaSRModeAktif && faktaSRLaciSemasa);
-
-  if (srAktif && currentUser) {
-    const drawerId = bahasaMode
-      ? srLaciSemasa?.drawerId
-      : faktaSRLaciSemasa?.drawerId;
-
-    if (drawerId) {
-      const collName = bahasaMode ? 'bahasa_drawers' : 'drawer';
-      const drawerDalamMemory = bahasaMode
-        ? allBahasaDrawers.find(d => d.id === drawerId)
-        : allDrawers.find(d => d.id === drawerId);
-
-      // Kalau pdfNombor kosong dalam memory — fetch dari Firestore
-      if (drawerDalamMemory && !drawerDalamMemory.pdfNombor) {
-        try {
-          const snap = await getDoc(doc(db, "users", currentUser.uid, collName, drawerId));
-          if (snap.exists()) {
-            const data = snap.data();
-            // Patch balik ke memory supaya kali seterusnya tak perlu fetch lagi
-            if (bahasaMode) {
-              const idx = allBahasaDrawers.findIndex(d => d.id === drawerId);
-              if (idx !== -1) {
-                allBahasaDrawers[idx].pdfNombor = data.pdfNombor || null;
-                allBahasaDrawers[idx].pdfJenis = data.pdfJenis || null;
-              }
-            } else {
-              const idx = allDrawers.findIndex(d => d.id === drawerId);
-              if (idx !== -1) {
-                allDrawers[idx].pdfNombor = data.pdfNombor || null;
-                allDrawers[idx].pdfTopik = data.pdfTopik || null;
-                allDrawers[idx].pdfSubjek = data.pdfSubjek || null;
-              }
-            }
-          }
-        } catch(e) {
-          console.log("Gagal fetch drawer untuk JB:", e);
-        }
-      }
-    }
-  }
-
   const info = jbDapatKodSemasa();
   const kodEl = document.getElementById('jb-kod');
   const progressEl = document.getElementById('jb-progress');
