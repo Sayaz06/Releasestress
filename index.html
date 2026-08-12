@@ -19996,8 +19996,54 @@ function jbAutoFitFont() {
   }
 }
 
-function jbUpdateUI() {
+async function jbUpdateUI() {
   if (!jbAktif) return;
+
+  // ── RACE CONDITION FIX: Kalau SR aktif dan drawer belum ada pdfNombor dalam memory,
+  // fetch terus dari Firestore sebelum papar ──
+  const srAktif = (bahasaMode && srModeAktif && srLaciSemasa) ||
+                  (factMode && faktaSRModeAktif && faktaSRLaciSemasa);
+
+  if (srAktif && currentUser) {
+    const drawerId = bahasaMode
+      ? srLaciSemasa?.drawerId
+      : faktaSRLaciSemasa?.drawerId;
+
+    if (drawerId) {
+      const collName = bahasaMode ? 'bahasa_drawers' : 'drawer';
+      const drawerDalamMemory = bahasaMode
+        ? allBahasaDrawers.find(d => d.id === drawerId)
+        : allDrawers.find(d => d.id === drawerId);
+
+      // Kalau pdfNombor kosong dalam memory — fetch dari Firestore
+      if (drawerDalamMemory && !drawerDalamMemory.pdfNombor) {
+        try {
+          const snap = await getDoc(doc(db, "users", currentUser.uid, collName, drawerId));
+          if (snap.exists()) {
+            const data = snap.data();
+            // Patch balik ke memory supaya kali seterusnya tak perlu fetch lagi
+            if (bahasaMode) {
+              const idx = allBahasaDrawers.findIndex(d => d.id === drawerId);
+              if (idx !== -1) {
+                allBahasaDrawers[idx].pdfNombor = data.pdfNombor || null;
+                allBahasaDrawers[idx].pdfJenis = data.pdfJenis || null;
+              }
+            } else {
+              const idx = allDrawers.findIndex(d => d.id === drawerId);
+              if (idx !== -1) {
+                allDrawers[idx].pdfNombor = data.pdfNombor || null;
+                allDrawers[idx].pdfTopik = data.pdfTopik || null;
+                allDrawers[idx].pdfSubjek = data.pdfSubjek || null;
+              }
+            }
+          }
+        } catch(e) {
+          console.log("Gagal fetch drawer untuk JB:", e);
+        }
+      }
+    }
+  }
+
   const info = jbDapatKodSemasa();
   const kodEl = document.getElementById('jb-kod');
   const progressEl = document.getElementById('jb-progress');
