@@ -20577,7 +20577,6 @@ cropContainer.addEventListener('touchmove', (e) => {
     const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
     const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
-    // Zoom dari titik tengah jari
     cropState.imgX = midX - (midX - cropState.imgX) * delta;
     cropState.imgY = midY - (midY - cropState.imgY) * delta;
     cropState.imgW *= delta;
@@ -20585,7 +20584,6 @@ cropContainer.addEventListener('touchmove', (e) => {
     cropState.scale *= delta;
     cropState.lastDist = dist;
 
-    // Minimum scale — gambar mesti cover crop box
     const minScaleW = canvas._cropW / cropImg.naturalWidth;
     const minScaleH = canvas._cropH / cropImg.naturalHeight;
     const minScale = Math.max(minScaleW, minScaleH);
@@ -20604,6 +20602,77 @@ cropContainer.addEventListener('touchmove', (e) => {
 cropContainer.addEventListener('touchend', () => {
   cropState.isDragging = false;
 });
+
+// ── MOUSE EVENTS (untuk laptop/desktop) ──
+cropContainer.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  cropState.isDragging = true;
+  cropState.lastTouchX = e.clientX;
+  cropState.lastTouchY = e.clientY;
+  cropContainer.style.cursor = 'grabbing';
+});
+
+cropContainer.addEventListener('mousemove', (e) => {
+  if (!cropState.isDragging) return;
+  const dx = e.clientX - cropState.lastTouchX;
+  const dy = e.clientY - cropState.lastTouchY;
+  cropState.imgX += dx;
+  cropState.imgY += dy;
+  cropState.lastTouchX = e.clientX;
+  cropState.lastTouchY = e.clientY;
+  clampCrop();
+  drawCrop();
+});
+
+cropContainer.addEventListener('mouseup', () => {
+  cropState.isDragging = false;
+  cropContainer.style.cursor = 'grab';
+});
+
+cropContainer.addEventListener('mouseleave', () => {
+  cropState.isDragging = false;
+  cropContainer.style.cursor = 'grab';
+});
+
+// ── SCROLL WHEEL / TOUCHPAD PINCH ZOOM ──
+cropContainer.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const canvas = document.getElementById('crop-canvas');
+  if (!canvas || !cropImg) return;
+
+  // Kira titik zoom dari kedudukan tetikus
+  const rect = cropContainer.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  // delta positif = zoom in, negatif = zoom out
+  const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+
+  cropState.imgX = mouseX - (mouseX - cropState.imgX) * zoomFactor;
+  cropState.imgY = mouseY - (mouseY - cropState.imgY) * zoomFactor;
+  cropState.imgW *= zoomFactor;
+  cropState.imgH *= zoomFactor;
+  cropState.scale *= zoomFactor;
+
+  // Minimum scale — gambar mesti cover crop box
+  const minScaleW = canvas._cropW / cropImg.naturalWidth;
+  const minScaleH = canvas._cropH / cropImg.naturalHeight;
+  const minScale = Math.max(minScaleW, minScaleH);
+  if (cropState.scale < minScale) {
+    const ratio = minScale / cropState.scale;
+    cropState.imgX = mouseX - (mouseX - cropState.imgX) * ratio;
+    cropState.imgY = mouseY - (mouseY - cropState.imgY) * ratio;
+    cropState.imgW *= ratio;
+    cropState.imgH *= ratio;
+    cropState.scale = minScale;
+  }
+
+  clampCrop();
+  drawCrop();
+}, { passive: false });
+
+// Set cursor awal
+cropContainer.style.cursor = 'grab';
 
 // ── BUTTON BATAL ──
 document.getElementById('btn-crop-batal').addEventListener('click', () => {
