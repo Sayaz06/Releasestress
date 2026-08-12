@@ -20033,19 +20033,34 @@ function jbDapatKodSemasa() {
     isSementara = true;
   }
 
-return {
+// Pisah kod kepada jenis + nombor untuk render 2 baris
+  let bahasaJenis = '', bahasaNombor = '';
+  if (pdfNombor && pdfJenis) {
+    // Kod tetap: "KataNama-3"
+    bahasaJenis = pdfJenis;
+    bahasaNombor = String(pdfNombor);
+  } else {
+    // Kod sementara: "KatakerjamS1-(1xdone)-T32"
+    // Nombor = bahagian "-T<digit>" di hujung
+    const matchT = kod.match(/^(.*)-T(\d+.*)$/);
+    if (matchT) {
+      bahasaJenis = matchT[1];
+      bahasaNombor = 'T' + matchT[2];
+    } else {
+      bahasaJenis = kod;
+      bahasaNombor = '';
+    }
+  }
+
+  return {
     kod,
     isSR,
     isSementara,
     isFakta: false,
     drawerId: drawer.id,
     progress: `${currentFactIndex + 1} / ${allFacts.length}`,
-    bahasaJenis: pdfJenis || ((() => {
-      const jenisIdDrawer = drawer.jenisId || currentJenisKataId;
-      const jenisAktif = allJenisKata.find(j => j.id === jenisIdDrawer);
-      return (jenisAktif?.name || 'Laci').replace(/\s+/g, '');
-    })()),
-    bahasaNombor: pdfNombor || null
+    bahasaJenis,
+    bahasaNombor
   };
 }
 
@@ -20287,7 +20302,7 @@ function jbUpdateUI() {
 // ── BAHASA MODE — helper render 2 baris ──
   function jbRenderBahasa2Baris(warnaNombor, warnaJenis, bgStyle, shadowStyle) {
     const jenisLabel = info.bahasaJenis || '';
-    const nomborLabel = info.bahasaNombor ? String(info.bahasaNombor) : null;
+    const nomborLabel = info.bahasaNombor || '';
 
     if (jenisLabel && nomborLabel) {
       // Ada 2 bahagian — render 2 baris: jenis kecil atas, nombor besar bawah
