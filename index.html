@@ -20215,14 +20215,27 @@ function jbUpdateUI() {
     } else {
       // Kod tetap — warna oren
       // Papar: kod label kecil di atas, nombor PDF besar di tengah
-const saizNombor = Math.min(Math.floor(tapArea.clientWidth * 0.38), Math.floor((tapArea.clientHeight - 120) * 0.7));
-      const saizLabel = Math.max(12, Math.floor(saizNombor * 0.16));
-      kodEl.innerHTML = `
-        <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
-        <div style="font-size:${saizNombor}px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
-      `;
-      kodEl.style.fontSize = '';
-      kodEl.style.color = '';
+const kiraSaizFakta = () => {
+        // Guna screen.height sebagai rujukan tetap — tidak bergantung pada layout render
+        const h = screen.height;
+        const w = screen.width;
+        // Ambil yang kecil antara lebar dan tinggi — handle portrait dan landscape
+        const pendek = Math.min(w, h);
+        const panjang = Math.max(w, h);
+        // Dalam portrait: lebar = pendek, tinggi = panjang
+        const saizNombor = Math.min(
+          Math.floor(pendek * 0.38),
+          Math.floor((panjang - 200) * 0.7)
+        );
+        const saizLabel = Math.max(12, Math.floor(saizNombor * 0.16));
+        kodEl.innerHTML = `
+          <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
+          <div style="font-size:${saizNombor}px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
+        `;
+        kodEl.style.fontSize = '';
+        kodEl.style.color = '';
+      };
+      kiraSaizFakta();
       if (tapArea) {
         tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
         tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
