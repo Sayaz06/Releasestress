@@ -6745,33 +6745,7 @@ btnAddJoggingAfter.addEventListener("click", () => {
     });
 
 joggingInputBefore.addEventListener('input', saveJoggingDraft);
-    joggingAfterContainer.addEventListener('input', (e) => {
-      // Auto-detect tampal berbilang baris dalam input pertama
-      const firstInput = joggingAfterContainer.querySelector('.jogging-input-after');
-      if (e.target === firstInput) {
-        const val = firstInput.value;
-        // Detect format -K1: atau K1: berbilang baris
-        const lines = val.split('\n').map(l => l.trim()).filter(l => l);
-        const isMultiK = lines.length > 1 && lines.some(l => /^-?K\d+:/i.test(l));
-        if (isMultiK) {
-          // Kosongkan semua input sedia ada
-          joggingAfterContainer.innerHTML = '';
-          lines.forEach((line, idx) => {
-            // Buang tanda tolak di depan
-            const bersih = line.replace(/^-+/, '').trim();
-            const input = document.createElement('input');
-            input.className = 'drawer-input-box jogging-input-after';
-            input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
-            input.value = bersih;
-            input.addEventListener('input', saveJoggingDraft);
-            joggingAfterContainer.appendChild(input);
-          });
-          saveJoggingDraft();
-          return;
-        }
-      }
-      saveJoggingDraft();
-    });
+    joggingAfterContainer.addEventListener('input', saveJoggingDraft);
 
     joggingInputBefore.addEventListener('paste', (e) => {
       setTimeout(() => {
@@ -6952,9 +6926,25 @@ function openJoggingMode(data) {
 
 async function simpanKeLaciJogging() {
         const beforeVal = joggingInputBefore.value.trim();
-        const afterInputs = Array.from(joggingAfterContainer.querySelectorAll('.jogging-input-after'))
-                                 .map(inp => inp.value.trim())
-                                 .filter(val => val !== "");
+
+        // ── AUTO-PARSE K1:/K2: dari textarea pertama ──
+        const firstInput = joggingAfterContainer.querySelector('.jogging-input-after');
+        const firstVal = firstInput ? firstInput.value.trim() : '';
+        const adaKFormat = /[-–]\s*K\d+:/i.test(firstVal);
+
+        let afterInputs;
+        if (adaKFormat) {
+          // Parse "-K1: teks -K2: teks" jadi array ["K1: teks", "K2: teks"]
+          const parsed = firstVal
+            .split(/(?=[-–]\s*K\d+:)/i)
+            .map(s => s.replace(/^[-–]\s*/, '').trim())
+            .filter(s => s);
+          afterInputs = parsed;
+        } else {
+          afterInputs = Array.from(joggingAfterContainer.querySelectorAll('.jogging-input-after'))
+                             .map(inp => inp.value.trim())
+                             .filter(val => val !== "");
+        }
 
         if (!currentJoggingDrawerId || !currentUser) return;
 
@@ -10334,29 +10324,7 @@ btnAddMemanahAfter.addEventListener("click", () => {
     });
 
 memanahInputBefore.addEventListener('input', saveMemanahDraft);
-    memanahAfterContainer.addEventListener('input', (e) => {
-      const firstInput = memanahAfterContainer.querySelector('.jogging-input-after');
-      if (e.target === firstInput) {
-        const val = firstInput.value;
-        const lines = val.split('\n').map(l => l.trim()).filter(l => l);
-        const isMultiK = lines.length > 1 && lines.some(l => /^-?K\d+:/i.test(l));
-        if (isMultiK) {
-          memanahAfterContainer.innerHTML = '';
-          lines.forEach((line, idx) => {
-            const bersih = line.replace(/^-+/, '').trim();
-            const input = document.createElement('input');
-            input.className = 'drawer-input-box jogging-input-after';
-            input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
-            input.value = bersih;
-            input.addEventListener('input', saveMemanahDraft);
-            memanahAfterContainer.appendChild(input);
-          });
-          saveMemanahDraft();
-          return;
-        }
-      }
-      saveMemanahDraft();
-    });
+    memanahAfterContainer.addEventListener('input', saveMemanahDraft);
 
     memanahInputBefore.addEventListener('paste', (e) => {
       setTimeout(() => {
@@ -10671,9 +10639,24 @@ if (result.score > 0) {
 
     function decrementMemanahAction() {
       if (isJoggingBlocked) return;
-      const beforeVal = memanahInputBefore.value.trim();
-      const afterInputs = Array.from(memanahAfterContainer.querySelectorAll('.jogging-input-after'))
-                               .map(inp => inp.value.trim()).filter(val => val !== "");
+const beforeVal = memanahInputBefore.value.trim();
+
+      // ── AUTO-PARSE K1:/K2: dari textarea pertama ──
+      const firstInputM = memanahAfterContainer.querySelector('.jogging-input-after');
+      const firstValM = firstInputM ? firstInputM.value.trim() : '';
+      const adaKFormatM = /[-–]\s*K\d+:/i.test(firstValM);
+
+      let afterInputs;
+      if (adaKFormatM) {
+        const parsed = firstValM
+          .split(/(?=[-–]\s*K\d+:)/i)
+          .map(s => s.replace(/^[-–]\s*/, '').trim())
+          .filter(s => s);
+        afterInputs = parsed;
+      } else {
+        afterInputs = Array.from(memanahAfterContainer.querySelectorAll('.jogging-input-after'))
+                           .map(inp => inp.value.trim()).filter(val => val !== "");
+      }
 
       if (!beforeVal || afterInputs.length === 0) {
         showToast("Sila isi Perkataan & Maksud sebelum panah!");
