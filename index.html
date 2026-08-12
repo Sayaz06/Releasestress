@@ -20420,31 +20420,22 @@ document.getElementById('jb-tap-area')?.addEventListener('touchend', async (e) =
   // Swipe horizontal lebih dominan
   if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
 
+  // Swipe kiri ATAU kanan → next sahaja (tiada prev)
   jbSyncDariCountdown = false;
-if (dx < 0) {
-    // Swipe kiri → next
-    // ── CHECK SR FAKTA dulu sebelum next (kalau fakta mode & SR ON) ──
-    if (factMode && !bahasaMode && faktaSRON && !faktaSRSemuaSelesai) {
-      const adaSR = await checkFaktaSRQueue();
-      if (adaSR && muatFaktaSRLaciSeterusnya()) {
-        tunjukPopupSR(faktaSRLaciSemasa);
-        await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
-        jbUpdateUI();
-        return;
-      }
-      faktaSRSemuaSelesai = false;
+  // ── CHECK SR FAKTA dulu sebelum next (kalau fakta mode & SR ON) ──
+  if (factMode && !bahasaMode && faktaSRON && !faktaSRSemuaSelesai) {
+    const adaSR = await checkFaktaSRQueue();
+    if (adaSR && muatFaktaSRLaciSeterusnya()) {
+      tunjukPopupSR(faktaSRLaciSemasa);
+      await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+      jbUpdateUI();
+      return;
     }
-    audioModeAktif = false;
-    decrementTasbih();
-    audioModeAktif = false;
-  } else {
-    // Swipe kanan → prev (kalau ada)
-    if (currentFactIndex > 0) {
-      currentFactIndex--;
-      renderCurrentFact();
-      updateTasbihUI();
-    }
+    faktaSRSemuaSelesai = false;
   }
+  audioModeAktif = false;
+  decrementTasbih();
+  audioModeAktif = false;
   jbUpdateUI();
 }, { passive: true });
 
