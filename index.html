@@ -19962,6 +19962,57 @@ function jbAutoFitFont() {
   }
 }
 
+function jbDapatStatusFasa() {
+  if (!allFacts.length || currentFactIndex >= allFacts.length) return null;
+  const data = allFacts[currentFactIndex];
+  if (!data || data.isTamat) return { label: '✅ Tamat', warna: '#34d399', countdown: null };
+
+  if (bahasaMode) {
+    if (data.isFasaEjaan) {
+      return {
+        label: `F0 — Ejaan`,
+        warna: '#a78bfa',
+        countdown: bahasaEjaanCount,
+        countdownMax: 5
+      };
+    }
+    if (bahasaRestPhase === 1) {
+      return {
+        label: `F1`,
+        warna: '#22d3ee',
+        countdown: bahasaRestCount,
+        countdownMax: REST_CYCLES[bahasaRestCycleIdx].fasa1
+      };
+    }
+    return {
+      label: `F2`,
+      warna: '#f59e0b',
+      countdown: bahasaRestCount,
+      countdownMax: REST_CYCLES[bahasaRestCycleIdx].fasa2
+    };
+  }
+
+  if (factMode) {
+    if (learningMode === 2) {
+      if (mainRestPhase === 1) {
+        return {
+          label: `F1`,
+          warna: '#22d3ee',
+          countdown: mainRestCount,
+          countdownMax: REST_CYCLES[mainRestCycleIdx].fasa1
+        };
+      }
+      return {
+        label: `F2`,
+        warna: '#f59e0b',
+        countdown: mainRestCount,
+        countdownMax: REST_CYCLES[mainRestCycleIdx].fasa2
+      };
+    }
+  }
+  return null;
+}
+
 function jbUpdateUI() {
   if (!jbAktif) return;
   const info = jbDapatKodSemasa();
@@ -19972,8 +20023,43 @@ function jbUpdateUI() {
   const labelEl = document.getElementById('jb-topbar-label');
   if (!kodEl) return;
 
-  // Tunjuk SR badge untuk fakta SR juga
   const isFaktaSRActive = faktaSRModeAktif && factMode && !bahasaMode;
+
+  // ── STATUS FASA ──
+  const fasa = jbDapatStatusFasa();
+  let fasaEl = document.getElementById('jb-fasa-status');
+  if (!fasaEl) {
+    fasaEl = document.createElement('div');
+    fasaEl.id = 'jb-fasa-status';
+    fasaEl.style.cssText = 'position:absolute;bottom:52px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:10px;pointer-events:none;z-index:5;';
+    document.getElementById('jb-tap-area')?.appendChild(fasaEl);
+  }
+
+  if (fasa) {
+    const barHtml = fasa.countdown !== null ? (() => {
+      const pct = Math.round(((fasa.countdownMax - fasa.countdown) / fasa.countdownMax) * 100);
+      const dots = [];
+      for (let i = 0; i < fasa.countdownMax; i++) {
+        const done = i < (fasa.countdownMax - fasa.countdown);
+        dots.push(`<div style="width:10px;height:10px;border-radius:50%;background:${done ? fasa.warna : 'rgba(255,255,255,0.15)'};transition:background 0.2s;"></div>`);
+      }
+      return dots.join('');
+    })() : '';
+
+    fasaEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+        <div style="font-size:0.75rem;font-weight:700;color:${fasa.warna};background:rgba(0,0,0,0.5);padding:3px 14px;border-radius:999px;letter-spacing:0.05em;">
+          ${fasa.label} ${fasa.countdown !== null ? `— baki <strong style="font-size:1rem;">${fasa.countdown}</strong>` : ''}
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:200px;">
+          ${barHtml}
+        </div>
+      </div>
+    `;
+    fasaEl.style.display = 'flex';
+  } else {
+    fasaEl.style.display = 'none';
+  }
 
   // Update label topbar ikut mode
   if (labelEl) {
@@ -19989,7 +20075,7 @@ function jbUpdateUI() {
     }
   }
 
-if (!info) {
+  if (!info) {
     kodEl.textContent = '?';
     kodEl.style.color = 'rgba(255,255,255,0.3)';
     kodEl.style.fontSize = '18vw';
