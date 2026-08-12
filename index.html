@@ -20033,13 +20033,19 @@ function jbDapatKodSemasa() {
     isSementara = true;
   }
 
-  return {
+return {
     kod,
     isSR,
     isSementara,
     isFakta: false,
     drawerId: drawer.id,
-    progress: `${currentFactIndex + 1} / ${allFacts.length}`
+    progress: `${currentFactIndex + 1} / ${allFacts.length}`,
+    bahasaJenis: pdfJenis || ((() => {
+      const jenisIdDrawer = drawer.jenisId || currentJenisKataId;
+      const jenisAktif = allJenisKata.find(j => j.id === jenisIdDrawer);
+      return (jenisAktif?.name || 'Laci').replace(/\s+/g, '');
+    })()),
+    bahasaNombor: pdfNombor || null
   };
 }
 
@@ -20278,56 +20284,79 @@ function jbUpdateUI() {
     return;
   }
 
-  // ── BAHASA MODE ──
-if (info.isSR) {
-    kodEl.textContent = info.kod;
-    kodEl.style.color = '#fbbf24';
-    kodEl.style.fontSize = '16vw';
-    kodEl.style.wordBreak = 'break-all';
-    kodEl.style.whiteSpace = 'normal';
-    kodEl.style.textAlign = 'center';
-    kodEl.style.padding = '0 10px';
-    if (tapArea) {
-      tapArea.style.background = 'linear-gradient(135deg,#1c1400,#2d1f00)';
-      tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,191,36,0.2)';
+// ── BAHASA MODE — helper render 2 baris ──
+  function jbRenderBahasa2Baris(warnaNombor, warnaJenis, bgStyle, shadowStyle) {
+    const jenisLabel = info.bahasaJenis || '';
+    const nomborLabel = info.bahasaNombor ? String(info.bahasaNombor) : null;
+
+    if (jenisLabel && nomborLabel) {
+      // Ada 2 bahagian — render 2 baris: jenis kecil atas, nombor besar bawah
+      kodEl.textContent = nomborLabel;
+      kodEl.style.fontSize = '38vw';
+      kodEl.style.color = warnaNombor;
+      kodEl.style.wordBreak = 'break-all';
+      kodEl.style.whiteSpace = 'normal';
+      kodEl.style.textAlign = 'center';
+      kodEl.style.lineHeight = '1';
+      kodEl.style.padding = '';
+
+      const tapH = tapArea ? (tapArea.clientHeight || Math.floor(window.innerHeight * 0.75)) : Math.floor(window.innerHeight * 0.75);
+      const tapW = tapArea ? (tapArea.clientWidth || Math.floor(window.innerWidth * 0.9)) : Math.floor(window.innerWidth * 0.9);
+      const maxW = tapW - 40;
+      const maxHNombor = Math.floor(tapH * 0.60);
+      let size = Math.floor(tapW * 0.38);
+      kodEl.style.fontSize = size + 'px';
+      let cuba = 0;
+      while (kodEl.scrollWidth > maxW && size > 20 && cuba < 60) {
+        size -= 2; kodEl.style.fontSize = size + 'px'; cuba++;
+      }
+      cuba = 0;
+      while (kodEl.scrollHeight > maxHNombor && size > 20 && cuba < 60) {
+        size -= 2; kodEl.style.fontSize = size + 'px'; cuba++;
+      }
+
+      const saizAkhir = parseFloat(kodEl.style.fontSize) || 60;
+      const saizJenis = Math.max(12, Math.floor(saizAkhir * 0.18));
+
+      kodEl.innerHTML = `
+        <div style="font-size:${saizJenis}px;color:${warnaJenis};opacity:0.6;line-height:1.5;word-break:break-all;text-align:center;letter-spacing:0.02em;">${jenisLabel}</div>
+        <div style="font-size:${saizAkhir}px;color:${warnaNombor};line-height:1;font-weight:900;text-align:center;margin-top:2px;">${nomborLabel}</div>
+      `;
+      kodEl.style.fontSize = '';
+      kodEl.style.color = '';
+    } else {
+      // Tiada nombor — render teks penuh, guna jbAutoFitFont biasa
+      kodEl.textContent = info.kod;
+      kodEl.style.color = warnaNombor;
+      kodEl.style.fontSize = '16vw';
+      kodEl.style.wordBreak = 'break-all';
+      kodEl.style.whiteSpace = 'normal';
+      kodEl.style.textAlign = 'center';
+      kodEl.style.padding = '0 10px';
+      setTimeout(() => jbAutoFitFont(), 10);
     }
+
+    if (tapArea) {
+      tapArea.style.background = bgStyle;
+      tapArea.style.boxShadow = shadowStyle;
+    }
+  }
+
+  if (info.isSR) {
+    jbRenderBahasa2Baris('#fbbf24', '#fbbf24', 'linear-gradient(135deg,#1c1400,#2d1f00)', 'inset 0 0 80px rgba(251,191,36,0.2)');
     if (srBadge) srBadge.style.display = 'block';
     jbBuangAmaran();
-    setTimeout(() => jbAutoFitFont(), 10);
   } else if (info.isSementara) {
-    kodEl.textContent = info.kod;
-    kodEl.style.color = '#93c5fd';
-    kodEl.style.fontSize = '14vw';
-    kodEl.style.wordBreak = 'break-all';
-    kodEl.style.whiteSpace = 'normal';
-    kodEl.style.textAlign = 'center';
-    kodEl.style.padding = '0 10px';
-    if (tapArea) {
-      tapArea.style.background = 'rgba(2,6,23,0.97)';
-      tapArea.style.boxShadow = 'none';
-    }
+    jbRenderBahasa2Baris('#93c5fd', '#93c5fd', 'rgba(2,6,23,0.97)', 'none');
     if (srBadge) srBadge.style.display = 'none';
     jbTunjukAmaran();
-    setTimeout(() => jbAutoFitFont(), 10);
   } else {
-    kodEl.textContent = info.kod;
-    kodEl.style.color = '#34d399';
-    kodEl.style.fontSize = '18vw';
-    kodEl.style.wordBreak = '';
-    kodEl.style.whiteSpace = '';
-    kodEl.style.textAlign = '';
-    kodEl.style.padding = '';
-    if (tapArea) {
-      tapArea.style.background = 'rgba(2,6,23,0.97)';
-      tapArea.style.boxShadow = 'none';
-    }
+    jbRenderBahasa2Baris('#34d399', '#34d399', 'rgba(2,6,23,0.97)', 'none');
     if (srBadge) srBadge.style.display = 'none';
     jbBuangAmaran();
-    setTimeout(() => jbAutoFitFont(), 10);
-  }    
+  }
 
-if (progressEl) progressEl.textContent = info.progress;
-  setTimeout(() => jbAutoFitFont(), 10);
+  if (progressEl) progressEl.textContent = info.progress;
 }
 
 function jbTunjukAmaran() {
