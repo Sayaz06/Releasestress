@@ -6745,7 +6745,33 @@ btnAddJoggingAfter.addEventListener("click", () => {
     });
 
 joggingInputBefore.addEventListener('input', saveJoggingDraft);
-    joggingAfterContainer.addEventListener('input', saveJoggingDraft);
+    joggingAfterContainer.addEventListener('input', (e) => {
+      // Auto-detect tampal berbilang baris dalam input pertama
+      const firstInput = joggingAfterContainer.querySelector('.jogging-input-after');
+      if (e.target === firstInput) {
+        const val = firstInput.value;
+        // Detect format -K1: atau K1: berbilang baris
+        const lines = val.split('\n').map(l => l.trim()).filter(l => l);
+        const isMultiK = lines.length > 1 && lines.some(l => /^-?K\d+:/i.test(l));
+        if (isMultiK) {
+          // Kosongkan semua input sedia ada
+          joggingAfterContainer.innerHTML = '';
+          lines.forEach((line, idx) => {
+            // Buang tanda tolak di depan
+            const bersih = line.replace(/^-+/, '').trim();
+            const input = document.createElement('input');
+            input.className = 'drawer-input-box jogging-input-after';
+            input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
+            input.value = bersih;
+            input.addEventListener('input', saveJoggingDraft);
+            joggingAfterContainer.appendChild(input);
+          });
+          saveJoggingDraft();
+          return;
+        }
+      }
+      saveJoggingDraft();
+    });
 
     joggingInputBefore.addEventListener('paste', (e) => {
       setTimeout(() => {
@@ -10308,7 +10334,29 @@ btnAddMemanahAfter.addEventListener("click", () => {
     });
 
 memanahInputBefore.addEventListener('input', saveMemanahDraft);
-    memanahAfterContainer.addEventListener('input', saveMemanahDraft);
+    memanahAfterContainer.addEventListener('input', (e) => {
+      const firstInput = memanahAfterContainer.querySelector('.jogging-input-after');
+      if (e.target === firstInput) {
+        const val = firstInput.value;
+        const lines = val.split('\n').map(l => l.trim()).filter(l => l);
+        const isMultiK = lines.length > 1 && lines.some(l => /^-?K\d+:/i.test(l));
+        if (isMultiK) {
+          memanahAfterContainer.innerHTML = '';
+          lines.forEach((line, idx) => {
+            const bersih = line.replace(/^-+/, '').trim();
+            const input = document.createElement('input');
+            input.className = 'drawer-input-box jogging-input-after';
+            input.placeholder = `Maksud ${idx + 1} (Selepas '=')`;
+            input.value = bersih;
+            input.addEventListener('input', saveMemanahDraft);
+            memanahAfterContainer.appendChild(input);
+          });
+          saveMemanahDraft();
+          return;
+        }
+      }
+      saveMemanahDraft();
+    });
 
     memanahInputBefore.addEventListener('paste', (e) => {
       setTimeout(() => {
