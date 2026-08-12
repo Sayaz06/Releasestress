@@ -20235,7 +20235,27 @@ const kiraSaizFakta = () => {
         kodEl.style.fontSize = '';
         kodEl.style.color = '';
       };
-      kiraSaizFakta();
+kiraSaizFakta();
+      // Tiru "bocor" dari bahasa — jalankan autofit selepas render
+      setTimeout(() => {
+        const nomborEl = kodEl.querySelector('div:last-child');
+        if (!nomborEl) return;
+        const tapW = tapArea.clientWidth || screen.width;
+        const tapH = tapArea.clientHeight || screen.height;
+        let saiz = parseInt(nomborEl.style.fontSize);
+        // Kecilkan sehingga nombor muat dalam tapArea
+        let cuba = 0;
+        while (nomborEl.scrollWidth > tapW - 40 && saiz > 20 && cuba < 50) {
+          saiz -= 4;
+          nomborEl.style.fontSize = saiz + 'px';
+          cuba++;
+        }
+        while (kodEl.scrollHeight > tapH - 100 && saiz > 20 && cuba < 100) {
+          saiz -= 4;
+          nomborEl.style.fontSize = saiz + 'px';
+          cuba++;
+        }
+      }, 350);
       if (tapArea) {
         tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
         tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
