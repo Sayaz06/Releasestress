@@ -20047,20 +20047,31 @@ function jbAutoFitFont() {
   const kodEl = document.getElementById('jb-kod');
   const tapArea = document.getElementById('jb-tap-area');
   if (!kodEl || !tapArea) return;
+
+  // Kalau ada innerHTML kompleks (fakta dengan label + nombor), skip auto-fit
+  // — saiz dah ditetapkan secara manual dalam jbUpdateUI
+  if (kodEl.children.length > 0) return;
+
   const maxW = tapArea.clientWidth - 40;
-  const maxH = tapArea.clientHeight - 40;
-  // Mula besar, kecilkan sehingga muat
-  let size = Math.min(maxW, maxH * 1.2);
+  const maxH = tapArea.clientHeight - 100; // tolak ruang status fasa di bawah
+
+  // Mula dari saiz berdasarkan lebar screen
+  let size = Math.floor(maxW * 0.18);
   kodEl.style.fontSize = size + 'px';
-  // Kecilkan sehingga lebar muat
-  while (kodEl.scrollWidth > maxW && size > 20) {
-    size -= 4;
+
+  // Kecilkan sehingga muat lebar
+  let cuba = 0;
+  while (kodEl.scrollWidth > maxW && size > 16 && cuba < 50) {
+    size -= 2;
     kodEl.style.fontSize = size + 'px';
+    cuba++;
   }
-  // Kecilkan lagi sehingga tinggi muat
-  while (kodEl.scrollHeight > maxH && size > 20) {
-    size -= 4;
+  // Kecilkan sehingga muat tinggi
+  cuba = 0;
+  while (kodEl.scrollHeight > maxH && size > 16 && cuba < 50) {
+    size -= 2;
     kodEl.style.fontSize = size + 'px';
+    cuba++;
   }
 }
 
@@ -20204,9 +20215,11 @@ function jbUpdateUI() {
     } else {
       // Kod tetap — warna oren
       // Papar: kod label kecil di atas, nombor PDF besar di tengah
+const saizNombor = Math.min(Math.floor(tapArea.clientWidth * 0.38), Math.floor((tapArea.clientHeight - 120) * 0.7));
+      const saizLabel = Math.max(12, Math.floor(saizNombor * 0.16));
       kodEl.innerHTML = `
-        <div style="font-size:3vw;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;">${info.kod}</div>
-        <div style="font-size:18vw;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
+        <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
+        <div style="font-size:${saizNombor}px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
       `;
       kodEl.style.fontSize = '';
       kodEl.style.color = '';
@@ -20224,37 +20237,52 @@ function jbUpdateUI() {
   }
 
   // ── BAHASA MODE ──
-  if (info.isSR) {
+if (info.isSR) {
     kodEl.textContent = info.kod;
     kodEl.style.color = '#fbbf24';
     kodEl.style.fontSize = '16vw';
+    kodEl.style.wordBreak = 'break-all';
+    kodEl.style.whiteSpace = 'normal';
+    kodEl.style.textAlign = 'center';
+    kodEl.style.padding = '0 10px';
     if (tapArea) {
       tapArea.style.background = 'linear-gradient(135deg,#1c1400,#2d1f00)';
       tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,191,36,0.2)';
     }
     if (srBadge) srBadge.style.display = 'block';
     jbBuangAmaran();
+    setTimeout(() => jbAutoFitFont(), 10);
   } else if (info.isSementara) {
     kodEl.textContent = info.kod;
     kodEl.style.color = '#93c5fd';
     kodEl.style.fontSize = '14vw';
+    kodEl.style.wordBreak = 'break-all';
+    kodEl.style.whiteSpace = 'normal';
+    kodEl.style.textAlign = 'center';
+    kodEl.style.padding = '0 10px';
     if (tapArea) {
       tapArea.style.background = 'rgba(2,6,23,0.97)';
       tapArea.style.boxShadow = 'none';
     }
     if (srBadge) srBadge.style.display = 'none';
     jbTunjukAmaran();
+    setTimeout(() => jbAutoFitFont(), 10);
   } else {
     kodEl.textContent = info.kod;
     kodEl.style.color = '#34d399';
     kodEl.style.fontSize = '18vw';
+    kodEl.style.wordBreak = '';
+    kodEl.style.whiteSpace = '';
+    kodEl.style.textAlign = '';
+    kodEl.style.padding = '';
     if (tapArea) {
       tapArea.style.background = 'rgba(2,6,23,0.97)';
       tapArea.style.boxShadow = 'none';
     }
     if (srBadge) srBadge.style.display = 'none';
     jbBuangAmaran();
-  }
+    setTimeout(() => jbAutoFitFont(), 10);
+  }    
 
 if (progressEl) progressEl.textContent = info.progress;
   setTimeout(() => jbAutoFitFont(), 10);
