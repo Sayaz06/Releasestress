@@ -20052,11 +20052,13 @@ function jbAutoFitFont() {
   // — saiz dah ditetapkan secara manual dalam jbUpdateUI
   if (kodEl.children.length > 0) return;
 
-  const maxW = tapArea.clientWidth - 40;
-  const maxH = tapArea.clientHeight - 100; // tolak ruang status fasa di bawah
+  const rawW = tapArea.clientWidth || Math.floor(window.innerWidth * 0.9);
+  const rawH = tapArea.clientHeight || Math.floor(window.innerHeight * 0.75);
+  const maxW = rawW - 40;
+  const maxH = rawH - 100; // tolak ruang status fasa di bawah
 
   // Mula dari saiz berdasarkan lebar screen
-  let size = Math.floor(maxW * 0.18);
+  let size = Math.floor(rawW * 0.18);
   kodEl.style.fontSize = size + 'px';
 
   // Kecilkan sehingga muat lebar
@@ -20212,43 +20214,57 @@ function jbUpdateUI() {
       }
       if (srBadge) srBadge.style.display = 'none';
       jbTunjukAmaranFakta();
-    } else {
+} else {
       // Kod tetap — warna oren
-      // Papar: kod label kecil di atas, nombor PDF besar di tengah
-// Set placeholder dulu
-      kodEl.innerHTML = `
-        <div id="jb-fakta-label" style="font-size:14px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
-        <div id="jb-fakta-nombor" style="font-size:14px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
-      `;
-      kodEl.style.fontSize = '';
-      kodEl.style.color = '';
-
-// Pisah kod kepada dua baris: "subjek/topik/" dan "slide-baris"
+      // Pisah kod kepada tiga baris: "subjek/topik/", "slide-baris X", "#nombor"
       const kodParts = info.kod.split('/');
       const barisAtas = kodParts.slice(0, -1).join('/') + '/';
       const slaideLabel = kodParts[kodParts.length - 1] || info.kod;
 
-      // Step 1: Set teks biasa dulu — biar jbAutoFitFont() kira saiz betul
+      // Step 1: Set teks nombor sahaja — untuk ukur saiz fit
       kodEl.textContent = `#${info.nomborPdf}`;
       kodEl.style.fontSize = '38vw';
       kodEl.style.color = 'white';
       kodEl.style.wordBreak = 'break-all';
       kodEl.style.whiteSpace = 'normal';
       kodEl.style.textAlign = 'center';
+      kodEl.style.lineHeight = '1';
 
-      // Step 2: Guna jbAutoFitFont() — sama seperti bahasa
-      jbAutoFitFont();
+      // Step 2: Fit font — guna window.innerHeight sebagai fallback kalau clientHeight = 0
+      const tapH = tapArea ? (tapArea.clientHeight || Math.floor(window.innerHeight * 0.75)) : Math.floor(window.innerHeight * 0.75);
+      const tapW = tapArea ? (tapArea.clientWidth || Math.floor(window.innerWidth * 0.9)) : Math.floor(window.innerWidth * 0.9);
+      const maxW = tapW - 40;
+      // Bagi ruang: nombor besar ambil ~50% tinggi, label ambil ~50%
+      const maxHNombor = Math.floor(tapH * 0.50);
+      let size = Math.floor(tapW * 0.38);
+      kodEl.style.fontSize = size + 'px';
+      let cuba = 0;
+      while (kodEl.scrollWidth > maxW && size > 20 && cuba < 60) {
+        size -= 2;
+        kodEl.style.fontSize = size + 'px';
+        cuba++;
+      }
+      cuba = 0;
+      while (kodEl.scrollHeight > maxHNombor && size > 20 && cuba < 60) {
+        size -= 2;
+        kodEl.style.fontSize = size + 'px';
+        cuba++;
+      }
 
-      // Step 3: Selepas saiz betul, render dengan format dua baris label
-      const saizAkhir = parseFloat(kodEl.style.fontSize) || 80;
-      const saizLabel = Math.max(11, Math.floor(saizAkhir * 0.16));
+      // Step 3: Kira saiz label berdasarkan saiz nombor
+      const saizAkhir = parseFloat(kodEl.style.fontSize) || 60;
+      const saizSlaid = Math.max(13, Math.floor(saizAkhir * 0.20));
+      const saizAtas = Math.max(11, Math.floor(saizAkhir * 0.15));
+
+      // Step 4: Render tiga baris dengan saiz yang betul
       kodEl.innerHTML = `
-        <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.6;line-height:1.4;word-break:break-all;text-align:center;">${barisAtas}</div>
-        <div style="font-size:${Math.floor(saizLabel * 1.2)}px;color:#fb923c;opacity:0.9;line-height:1.4;word-break:break-all;text-align:center;font-weight:700;">${slaideLabel}</div>
-        <div style="font-size:${saizAkhir}px;color:white;line-height:1;font-weight:900;text-align:center;">#${info.nomborPdf}</div>
+        <div style="font-size:${saizAtas}px;color:#fb923c;opacity:0.5;line-height:1.5;word-break:break-all;text-align:center;letter-spacing:0.01em;">${barisAtas}</div>
+        <div style="font-size:${saizSlaid}px;color:#fb923c;opacity:0.85;line-height:1.4;word-break:break-all;text-align:center;font-weight:700;">${slaideLabel}</div>
+        <div style="font-size:${saizAkhir}px;color:white;line-height:1;font-weight:900;text-align:center;margin-top:4px;">#${info.nomborPdf}</div>
       `;
       kodEl.style.fontSize = '';
       kodEl.style.color = '';
+
       if (tapArea) {
         tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
         tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
@@ -20258,7 +20274,7 @@ function jbUpdateUI() {
       jbBuangAmaranFakta();
     }
     if (progressEl) progressEl.textContent = info.progress;
-    setTimeout(() => jbAutoFitFont(), 10);
+    // jbAutoFitFont() skip untuk fakta (ada children) — tak perlu panggil
     return;
   }
 
