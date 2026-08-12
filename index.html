@@ -20215,30 +20215,34 @@ function jbUpdateUI() {
     } else {
       // Kod tetap — warna oren
       // Papar: kod label kecil di atas, nombor PDF besar di tengah
-// Set saiz besar dulu — lepas tu autofit kecilkan seperti bahasa mode
+// Set placeholder dulu
       kodEl.innerHTML = `
-        <div id="jb-fakta-label" style="font-size:3vw;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
-        <div id="jb-fakta-nombor" style="font-size:38vw;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
+        <div id="jb-fakta-label" style="font-size:14px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
+        <div id="jb-fakta-nombor" style="font-size:14px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
       `;
       kodEl.style.fontSize = '';
       kodEl.style.color = '';
 
-      // Guna fungsi yang sama dengan bahasa — kecilkan dari besar ke kecil
-      const nomborEl = document.getElementById('jb-fakta-nombor');
-      const labelEl2 = document.getElementById('jb-fakta-label');
-      if (nomborEl && tapArea) {
-        const maxW = tapArea.clientWidth - 40;
-        const maxH = (tapArea.clientHeight || window.innerHeight) - 120;
-        let saiz = 380;
-        nomborEl.style.fontSize = saiz + 'px';
-        let cuba = 0;
-        while ((nomborEl.scrollWidth > maxW || nomborEl.scrollHeight > maxH * 0.7) && saiz > 40 && cuba < 100) {
-          saiz -= 4;
-          nomborEl.style.fontSize = saiz + 'px';
-          cuba++;
-        }
-        labelEl2.style.fontSize = Math.max(11, Math.floor(saiz * 0.16)) + 'px';
-      }
+// Step 1: Set teks biasa dulu — biar jbAutoFitFont() kira saiz betul
+      kodEl.textContent = `#${info.nomborPdf}`;
+      kodEl.style.fontSize = '38vw';
+      kodEl.style.color = 'white';
+      kodEl.style.wordBreak = 'break-all';
+      kodEl.style.whiteSpace = 'normal';
+      kodEl.style.textAlign = 'center';
+
+      // Step 2: Guna jbAutoFitFont() — sama seperti bahasa
+      jbAutoFitFont();
+
+      // Step 3: Selepas saiz betul, tambah label kecil di atas
+      const saizAkhir = parseFloat(kodEl.style.fontSize) || 80;
+      const saizLabel = Math.max(11, Math.floor(saizAkhir * 0.16));
+      kodEl.innerHTML = `
+        <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
+        <div style="font-size:${saizAkhir}px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
+      `;
+      kodEl.style.fontSize = '';
+      kodEl.style.color = '';
       if (tapArea) {
         tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
         tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
