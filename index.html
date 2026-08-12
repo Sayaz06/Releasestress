@@ -10133,15 +10133,39 @@ document.addEventListener("keydown", (e) => {
         }
       }
       
-      if (sectionJogging.classList.contains('active')) {
+if (sectionJogging.classList.contains('active')) {
         if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
         if (e.code === "NumpadEnter" || e.key === "Enter") {
           e.preventDefault();
           decrementJogging();
         }
       }
-    });
 
+      const sectionJB = document.getElementById('section-jogging-bahasa');
+      if (sectionJB?.classList.contains('active') && jbAktif && (bahasaMode || factMode)) {
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          e.preventDefault();
+          (async () => {
+            if (factMode && !bahasaMode && faktaSRON && !faktaSRSemuaSelesai) {
+              const adaSR = await checkFaktaSRQueue();
+              if (adaSR && muatFaktaSRLaciSeterusnya()) {
+                tunjukPopupSR(faktaSRLaciSemasa);
+                await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+                jbUpdateUI();
+                return;
+              }
+              faktaSRSemuaSelesai = false;
+            }
+            audioModeAktif = false;
+            decrementTasbih();
+            audioModeAktif = false;
+            jbUpdateUI();
+          })();
+        }
+      }
+    });
+  
     // ==========================================
     // LOGIK FULL SCREEN CLICK & SWIPE UNTUK JOGGING MODE OVERLAY
     // ==========================================
