@@ -20215,27 +20215,30 @@ function jbUpdateUI() {
     } else {
       // Kod tetap — warna oren
       // Papar: kod label kecil di atas, nombor PDF besar di tengah
-const kiraSaizFakta = () => {
-        // Guna screen.height sebagai rujukan tetap — tidak bergantung pada layout render
-        const h = screen.height;
-        const w = screen.width;
-        // Ambil yang kecil antara lebar dan tinggi — handle portrait dan landscape
-        const pendek = Math.min(w, h);
-        const panjang = Math.max(w, h);
-        // Dalam portrait: lebar = pendek, tinggi = panjang
-        const saizNombor = Math.min(
-          Math.floor(pendek * 0.38),
-          Math.floor((panjang - 200) * 0.7)
-        );
-        const saizLabel = Math.max(12, Math.floor(saizNombor * 0.16));
-        kodEl.innerHTML = `
-          <div style="font-size:${saizLabel}px;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
-          <div style="font-size:${saizNombor}px;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
-        `;
-        kodEl.style.fontSize = '';
-        kodEl.style.color = '';
-      };
-      kiraSaizFakta();
+// Set saiz besar dulu — lepas tu autofit kecilkan seperti bahasa mode
+      kodEl.innerHTML = `
+        <div id="jb-fakta-label" style="font-size:3vw;color:#fb923c;opacity:0.8;line-height:1.2;margin-bottom:4px;word-break:break-all;">${info.kod}</div>
+        <div id="jb-fakta-nombor" style="font-size:38vw;color:white;line-height:1;font-weight:900;">#${info.nomborPdf}</div>
+      `;
+      kodEl.style.fontSize = '';
+      kodEl.style.color = '';
+
+      // Guna fungsi yang sama dengan bahasa — kecilkan dari besar ke kecil
+      const nomborEl = document.getElementById('jb-fakta-nombor');
+      const labelEl2 = document.getElementById('jb-fakta-label');
+      if (nomborEl && tapArea) {
+        const maxW = tapArea.clientWidth - 40;
+        const maxH = (tapArea.clientHeight || window.innerHeight) - 120;
+        let saiz = 380;
+        nomborEl.style.fontSize = saiz + 'px';
+        let cuba = 0;
+        while ((nomborEl.scrollWidth > maxW || nomborEl.scrollHeight > maxH * 0.7) && saiz > 40 && cuba < 100) {
+          saiz -= 4;
+          nomborEl.style.fontSize = saiz + 'px';
+          cuba++;
+        }
+        labelEl2.style.fontSize = Math.max(11, Math.floor(saiz * 0.16)) + 'px';
+      }
       if (tapArea) {
         tapArea.style.background = 'linear-gradient(135deg,#1a0a00,#2d1500)';
         tapArea.style.boxShadow = 'inset 0 0 80px rgba(251,146,60,0.15)';
