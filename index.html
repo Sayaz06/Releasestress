@@ -1972,7 +1972,10 @@ body.dark-mode {
             <div class="topbar-sub" id="parent-perkataan-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Laci</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-bahasa-laci" class="btn btn-sm" style="flex:1;">+ Tambah Laci</button>
+          <button id="btn-export-bahasa-drawer-txt" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📥 Export .txt</button>
+        </div>
         <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
 
@@ -14570,6 +14573,50 @@ function rebuildBahasa() {
         factHintEl.style.display = 'none';
       }
     }
+
+// ── EXPORT BAHASA DRAWER TXT ──
+    document.getElementById('btn-export-bahasa-drawer-txt').addEventListener('click', () => {
+      if (!currentPerkataanId) {
+        showToast('Tiada perkataan aktif untuk diexport.');
+        return;
+      }
+
+      const laciDalamPerkataan = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
+
+      if (!laciDalamPerkataan.length) {
+        showToast('Tiada laci dalam perkataan ini.');
+        return;
+      }
+
+      const perkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
+      const namaPerk = perkataan ? (perkataan.name || 'perkataan') : 'perkataan';
+
+      let output = `EXPORT LACI BAHASA — ${namaPerk}\n`;
+      output += `Tarikh: ${new Date().toLocaleString('ms-MY')}\n`;
+      output += `Jumlah laci: ${laciDalamPerkataan.length}\n`;
+      output += '='.repeat(50) + '\n\n';
+
+      laciDalamPerkataan.forEach((laci, i) => {
+        output += `[${i + 1}] ID: ${laci.id}\n`;
+        output += `Tajuk: ${laci.title || '(kosong)'}\n`;
+        output += `Notes: ${laci.notes || '(kosong)'}\n`;
+        output += `perkataanId: ${laci.perkataanId || '(tiada)'}\n`;
+        output += `jenisId: ${laci.jenisId || '(tiada)'}\n`;
+        output += `pdfNombor: ${laci.pdfNombor || '(tiada)'}\n`;
+        output += `pdfJenis: ${laci.pdfJenis || '(tiada)'}\n`;
+        output += `createdAt: ${laci.createdAt ? new Date(laci.createdAt).toLocaleString('ms-MY') : '(tiada)'}\n`;
+        output += '-'.repeat(40) + '\n';
+      });
+
+      const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `laci-bahasa-${namaPerk.replace(/\s+/g, '-')}-${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`✅ ${laciDalamPerkataan.length} laci diexport sebagai .txt`);
+    });
 
     // Subscribe collections bahasa
 // ── TIPS SEBUTAN SYSTEM ──
