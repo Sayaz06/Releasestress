@@ -2204,8 +2204,21 @@ body.dark-mode {
             <div class="topbar-sub" id="parent-topic-name" style="color:var(--grad2); font-weight:bold;"></div>
           </div>
         </div>
-        <button id="btn-add-laci" class="btn btn-sm mt-8">Tambah Laci</button>
+<div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-laci" class="btn btn-sm" style="flex:1;">Tambah Laci</button>
+          <button id="btn-duplikasi-info-fakta" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">📋 Duplikasi</button>
+        </div>
         <button id="btn-export-pdf-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Export PDF Flashcard Fakta (A4 Portrait 2×3)</button>
+
+        <!-- GUIDE DUPLIKASI -->
+        <div style="margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
+          <div style="font-size:0.75rem;font-weight:700;color:#a78bfa;margin-bottom:6px;">📋 Apa itu Button Duplikasi?</div>
+          <div style="font-size:0.72rem;color:var(--text);line-height:1.8;">
+            Laci yang rosak atau jadi <strong style="color:#fcd34d;">"phantom"</strong> dalam Firestore (data lama dari kod lama) tidak boleh dipadam dari UI biasa. Button <strong style="color:#a78bfa;">Duplikasi</strong> dalam setiap kad laci membolehkan anda <strong style="color:#22d3ee;">salin laci yang baik ke dokumen baru</strong> dengan ID baru — kemudian padam yang lama.<br><br>
+            <span style="color:#9ca3af;">💡 Cara guna: Tekan 📋 pada laci yang nak disalin → laci baru dicipta dengan data sama (tajuk, fakta, baris) tetapi ID baru → padam laci asal yang rosak.</span>
+          </div>
+        </div>
+
         <div class="list mt-8" id="drawer-list" style="padding: 10px;"></div>
       </section>
 
@@ -8595,7 +8608,11 @@ ${!adaItems ? `
           <div style="margin-top:6px;text-align:center;">
             <button class="btn btn-secondary btn-open-memanah" style="width:100%;border-color:var(--grad2);">🏹 Buka Mode Memanah (Hafal & Main)</button>
           </div>
-          <div style="text-align:right;margin-top:10px;">
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;">
+            <button class="btn btn-secondary btn-sm btn-daftar-sr-fakta" style="border-color:#f59e0b;color:${adaSRFakta ? '#fcd34d' : 'var(--subtext)'};${adaSRFakta ? 'background:rgba(245,158,11,0.12);' : ''}">
+              ⏰${adaSRFakta ? ' ✓' : ' SR'}
+            </button>
+            <button class="btn btn-secondary btn-sm btn-duplikasi-laci" style="border-color:#a78bfa;color:#a78bfa;">📋 Duplikasi</button>
             <button class="btn btn-secondary btn-sm btn-del-laci" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
         `;
@@ -8762,12 +8779,53 @@ div.querySelectorAll(".btn-del-item-img").forEach(btn => {
           });
         });
 
-        // ── JOGGING & MEMANAH ──
+// ── JOGGING & MEMANAH ──
         div.querySelector(".btn-open-jogging").addEventListener("click", () => {
           openJoggingMode(data);
         });
         div.querySelector(".btn-open-memanah").addEventListener("click", () => {
           openMemanahMode(data);
+        });
+
+        // ── DAFTAR SR FAKTA ──
+        div.querySelector(".btn-daftar-sr-fakta").addEventListener("click", async () => {
+          if (adaSRFakta) {
+            showToast('⏰ Laci ini sudah dalam SR queue.', 3000);
+            return;
+          }
+          await daftarSRBaru(data.id, 'fakta');
+          await refreshSRQueueIds();
+          renderDrawers();
+        });
+
+        // ── DUPLIKASI LACI ──
+        div.querySelector(".btn-duplikasi-laci").addEventListener("click", async () => {
+          if (!confirm(`Duplikasi laci ini?\n\n"${data.title || 'Tiada Tajuk'}"\n\nLaci baru akan dicipta dengan data sama tetapi ID baru.`)) return;
+          try {
+            const laciBaruData = {
+              title: data.title || '',
+              notes: data.notes || '',
+              repeatCount: 0,
+              topicId: data.topicId || currentTopicId,
+              createdAt: Date.now()
+            };
+            if (data.items && data.items.length > 0) {
+              // Salin items tanpa imageUrl (gambar tak boleh dikongsi URL Storage)
+              laciBaruData.items = data.items.map(item => ({
+                ayat: item.ayat || '',
+                imageUrl: ''
+              }));
+            }
+            if (data.pdfNombor) laciBaruData.pdfNombor = data.pdfNombor;
+            if (data.pdfTopik) laciBaruData.pdfTopik = data.pdfTopik;
+            if (data.pdfSubjek) laciBaruData.pdfSubjek = data.pdfSubjek;
+            if (data.pdfTopikId) laciBaruData.pdfTopikId = data.pdfTopikId;
+
+            await addDoc(collection(db, "users", currentUser.uid, "drawer"), laciBaruData);
+            showToast(`✅ Laci berjaya diduplikasi! (Gambar tidak disalin)`);
+          } catch(e) {
+            showToast('❌ Gagal duplikasi: ' + e.message);
+          }
         });
 
 // ── PADAM LACI ──
