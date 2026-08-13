@@ -2210,13 +2210,15 @@ body.dark-mode {
         </div>
         <button id="btn-export-pdf-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Export PDF Flashcard Fakta (A4 Portrait 2×3)</button>
 
-        <!-- PANEL DUPLIKASI -->
+<!-- PANEL DUPLIKASI -->
         <div id="panel-duplikasi-fakta" style="display:none;margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
           <div style="font-size:0.75rem;font-weight:700;color:#a78bfa;margin-bottom:8px;">📋 Pilih Laci untuk Diduplikasi</div>
-          <div id="duplikasi-checkbox-list" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;margin-bottom:10px;"></div>
+          <div id="duplikasi-checkbox-list" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>
+          <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;margin-bottom:6px;">📁 Salin ke Topik:</div>
+          <select id="duplikasi-topik-select" style="width:100%;background:rgba(30,41,59,0.8);color:var(--text);border:1px solid rgba(124,58,237,0.4);border-radius:8px;padding:7px 10px;font-size:0.75rem;margin-bottom:10px;"></select>
           <div style="display:flex;gap:6px;">
             <button id="btn-duplikasi-pilih-semua" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#a78bfa;">Pilih Semua</button>
-            <button id="btn-duplikasi-confirm" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">✅ Duplikasi Terpilih</button>
+            <button id="btn-duplikasi-confirm" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">✅ Salin ke Topik</button>
             <button id="btn-duplikasi-cancel" class="btn btn-secondary btn-sm" style="flex:1;">Batal</button>
           </div>
         </div>
@@ -14762,6 +14764,26 @@ const laciList = allBahasaDrawers
         });
       }
 
+      // Bina dropdown topik destinasi — semua topik kecuali topik semasa
+      const selectEl = document.getElementById('duplikasi-topik-select');
+      selectEl.innerHTML = '';
+      const topikLain = allTopics
+        .filter(t => t.id !== currentTopicId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      if (!topikLain.length) {
+        selectEl.innerHTML = '<option value="">— Tiada topik lain —</option>';
+      } else {
+        topikLain.forEach(t => {
+          const subjek = allSubjects.find(s => s.id === t.subjectId);
+          const label = subjek ? `[${subjek.name}] ${t.name || '(Tanpa Nama)'}` : (t.name || '(Tanpa Nama)');
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = label;
+          selectEl.appendChild(opt);
+        });
+      }
+
       panel.style.display = 'block';
       document.getElementById('btn-duplikasi-info-fakta').textContent = '✕ Tutup';
     });
@@ -14778,16 +14800,27 @@ const laciList = allBahasaDrawers
       document.getElementById('btn-duplikasi-info-fakta').textContent = '📋 Duplikasi';
     });
 
-    document.getElementById('btn-duplikasi-confirm').addEventListener('click', async () => {
+document.getElementById('btn-duplikasi-confirm').addEventListener('click', async () => {
       const terpilih = [...document.querySelectorAll('.duplikasi-cb:checked')];
       if (!terpilih.length) {
         showToast('⚠️ Tiada laci dipilih.');
         return;
       }
 
+      const topikDestId = document.getElementById('duplikasi-topik-select').value;
+      if (!topikDestId) {
+        showToast('⚠️ Sila pilih topik destinasi.');
+        return;
+      }
+
+      const topikDest = allTopics.find(t => t.id === topikDestId);
+      const namaTopikDest = topikDest?.name || 'Topik';
+
+      if (!confirm(`Salin ${terpilih.length} laci ke topik:\n\n"${namaTopikDest}"?\n\nGambar tidak disalin.`)) return;
+
       const btn = document.getElementById('btn-duplikasi-confirm');
       btn.disabled = true;
-      btn.textContent = '⏳ Menduplikasi...';
+      btn.textContent = '⏳ Menyalin...';
 
       let berjaya = 0;
       let gagal = 0;
@@ -14802,7 +14835,7 @@ const laciList = allBahasaDrawers
             title: data.title || '',
             notes: data.notes || '',
             repeatCount: 0,
-            topicId: data.topicId || currentTopicId,
+            topicId: topikDestId,
             createdAt: Date.now()
           };
           if (data.items && data.items.length > 0) {
@@ -14811,10 +14844,6 @@ const laciList = allBahasaDrawers
               imageUrl: ''
             }));
           }
-          if (data.pdfNombor) laciBaruData.pdfNombor = data.pdfNombor;
-          if (data.pdfTopik) laciBaruData.pdfTopik = data.pdfTopik;
-          if (data.pdfSubjek) laciBaruData.pdfSubjek = data.pdfSubjek;
-          if (data.pdfTopikId) laciBaruData.pdfTopikId = data.pdfTopikId;
 
           await addDoc(collection(db, "users", currentUser.uid, "drawer"), laciBaruData);
           berjaya++;
@@ -14824,10 +14853,10 @@ const laciList = allBahasaDrawers
       }
 
       btn.disabled = false;
-      btn.textContent = '✅ Duplikasi Terpilih';
+      btn.textContent = '✅ Salin ke Topik';
       document.getElementById('panel-duplikasi-fakta').style.display = 'none';
       document.getElementById('btn-duplikasi-info-fakta').textContent = '📋 Duplikasi';
-      showToast(`✅ ${berjaya} laci berjaya diduplikasi${gagal ? ` | ❌ ${gagal} gagal` : ''}`, 4000);
+      showToast(`✅ ${berjaya} laci berjaya disalin ke "${namaTopikDest}"${gagal ? ` | ❌ ${gagal} gagal` : ''}`, 4000);
     });
 
     // Subscribe collections bahasa
