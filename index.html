@@ -14574,48 +14574,78 @@ function rebuildBahasa() {
       }
     }
 
-// ── EXPORT BAHASA DRAWER TXT ──
+// ── EXPORT BAHASA DRAWER TXT (Format Jana Pukal) ──
     document.getElementById('btn-export-bahasa-drawer-txt').addEventListener('click', () => {
       if (!currentPerkataanId) {
-        showToast('Tiada perkataan aktif untuk diexport.');
-        return;
-      }
-
-      const laciDalamPerkataan = allBahasaDrawers.filter(d => d.perkataanId === currentPerkataanId);
-
-      if (!laciDalamPerkataan.length) {
-        showToast('Tiada laci dalam perkataan ini.');
+        showToast('Tiada perkataan dipilih.');
         return;
       }
 
       const perkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
+      const jenis = allJenisKata.find(j => j.id === currentJenisKataId);
       const namaPerk = perkataan ? (perkataan.name || 'perkataan') : 'perkataan';
+      const namaJenis = jenis ? (jenis.name || 'jenis') : 'jenis';
 
-      let output = `EXPORT LACI BAHASA — ${namaPerk}\n`;
-      output += `Tarikh: ${new Date().toLocaleString('ms-MY')}\n`;
-      output += `Jumlah laci: ${laciDalamPerkataan.length}\n`;
-      output += '='.repeat(50) + '\n\n';
+      const laciList = allBahasaDrawers
+        .filter(d => d.perkataanId === currentPerkataanId)
+        .sort((a, b) => {
+          if ((a.title || '') === '~') return 1;
+          if ((b.title || '') === '~') return -1;
+          return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true });
+        });
 
-      laciDalamPerkataan.forEach((laci, i) => {
-        output += `[${i + 1}] ID: ${laci.id}\n`;
-        output += `Tajuk: ${laci.title || '(kosong)'}\n`;
-        output += `Notes: ${laci.notes || '(kosong)'}\n`;
-        output += `perkataanId: ${laci.perkataanId || '(tiada)'}\n`;
-        output += `jenisId: ${laci.jenisId || '(tiada)'}\n`;
-        output += `pdfNombor: ${laci.pdfNombor || '(tiada)'}\n`;
-        output += `pdfJenis: ${laci.pdfJenis || '(tiada)'}\n`;
-        output += `createdAt: ${laci.createdAt ? new Date(laci.createdAt).toLocaleString('ms-MY') : '(tiada)'}\n`;
-        output += '-'.repeat(40) + '\n';
+      if (!laciList.length) {
+        showToast('Tiada laci untuk diexport.');
+        return;
+      }
+
+      let output = '';
+
+      laciList.forEach(laci => {
+        const tajuk = (laci.title || '').trim();
+        const notes = (laci.notes || '').trim();
+
+        if (!tajuk || tajuk === '~') return;
+
+        // Baris pertama: format Jana Pukal
+        // perkataan = [jenis] definisi
+        const baris = notes.split('\n').filter(l => l.trim());
+        const definisi = baris.length > 0
+          ? baris[0].split('=').slice(1).join('=').trim()
+          : '';
+
+        output += `${tajuk} = [${namaJenis}] ${definisi}\n`;
+
+        // Baris seterusnya → sinonim
+        baris.forEach((baris2, i) => {
+          if (i === 0) return; // skip baris pertama (dah jadi definisi)
+          const parts = baris2.split('=');
+          const ayat = parts[0].trim();
+          const terjemahan = parts.slice(1).join('=').trim();
+
+          output += `→ ${ayat}\n`;
+          if (terjemahan) {
+            output += `  Ayat: ${ayat}\n`;
+            output += `  Terjemahan: ${terjemahan}\n`;
+          }
+        });
+
+        output += '\n';
       });
+
+      if (!output.trim()) {
+        showToast('Tiada kandungan untuk diexport.');
+        return;
+      }
 
       const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `laci-bahasa-${namaPerk.replace(/\s+/g, '-')}-${Date.now()}.txt`;
+      a.download = `${namaPerk.replace(/\s+/g, '-')}-${namaJenis.replace(/\s+/g, '-')}.txt`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast(`✅ ${laciDalamPerkataan.length} laci diexport sebagai .txt`);
+      showToast(`✅ ${laciList.length} laci diexport!`);
     });
 
     // Subscribe collections bahasa
