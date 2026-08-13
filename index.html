@@ -1972,10 +1972,21 @@ body.dark-mode {
             <div class="topbar-sub" id="parent-perkataan-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
+<div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-bahasa-laci" class="btn btn-sm" style="flex:1;">+ Tambah Laci</button>
           <button id="btn-export-bahasa-drawer-txt" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">👻 Ghost Button</button>
         </div>
+
+        <!-- GUIDE GHOST BUTTON -->
+        <div style="margin-top:8px;background:rgba(8,145,178,0.08);border:1px solid rgba(8,145,178,0.25);border-radius:12px;padding:12px;flex-shrink:0;">
+          <div style="font-size:0.75rem;font-weight:700;color:#22d3ee;margin-bottom:6px;">👻 Apa itu Ghost Button?</div>
+          <div style="font-size:0.72rem;color:var(--text);line-height:1.8;">
+            Semasa development berulang kali, kadang-kadang <strong style="color:#fcd34d;">laci lama yang rosak atau kosong</strong> tersimpan dalam Firestore dan <strong style="color:#f87171;">tidak boleh dipadam dari UI</strong> kerana kod baru tidak faham format data lama.<br><br>
+            Button ini membolehkan anda <strong style="color:#22d3ee;">export semua laci dalam perkataan ini</strong> sebagai fail <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;">.txt</code> dalam format Jana Pukal — untuk semak mana laci yang rosak, kemudian <strong>padam manual terus dari Firestore Console</strong> menggunakan ID yang tertera.<br><br>
+            <span style="color:#9ca3af;">💡 Cara guna: Tekan 👻 Ghost Button → buka fail .txt → semak laci yang pelik/kosong/pendua → pergi Firestore Console → cari ID → padam.</span>
+          </div>
+        </div>
+
         <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
 
