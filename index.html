@@ -8753,20 +8753,24 @@ ${!adaItems ? `
 input.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            bukaCropTool(file, async (blob) => {
+bukaCropTool(file, async (blob) => {
               const rW = blob._ratioW || cropRatioW || 70;
               const rH = blob._ratioH || cropRatioH || 22;
               showToast('⏳ Mengupload gambar...', 0);
               try {
-                const storageRefPath = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}.jpg`);
+                const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`);
                 const uploadTask = uploadBytesResumable(storageRefPath, blob);
                 uploadTask.on('state_changed', null, (err) => {
                   showToast('❌ Gagal upload: ' + err.message);
                 }, async () => {
-const url = await getDownloadURL(uploadTask.snapshot.ref);
-                  await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
-                    imageUrl: url, imgRatioW: rW, imgRatioH: rH, updatedAt: Date.now()
-                  }, { merge: true });
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  const currentItems = data.items ? [...data.items] : [];
+                  if (currentItems[idx]) {
+                    currentItems[idx].imageUrl = url;
+                    currentItems[idx].imgRatioW = rW;
+                    currentItems[idx].imgRatioH = rH;
+                    await simpanItems(currentItems);
+                  }
                   showToast('✅ Gambar berjaya diupload!');
                 });
               } catch(e) {
@@ -13004,7 +13008,7 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async
           let firstNombor = null;
 
           // ── FORMAT BARU: guna items[] ──
-          if (laci.items && laci.items.length > 0) {
+if (laci.items && laci.items.length > 0) {
             laci.items.forEach((item, itemIdx) => {
               if (!item.ayat || !item.ayat.trim()) return;
               nomborGlobal++;
@@ -13014,6 +13018,8 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async
                 label: `${subjectNama}/${topicNama}/${tajukSlide}-baris ${itemIdx + 1}`,
                 ayat: item.ayat.trim(),
                 imageUrl: item.imageUrl || '',
+                imgRatioW: item.imgRatioW || 70,
+                imgRatioH: item.imgRatioH || 22,
                 laciId: laci.id,
                 itemIdx
               });
@@ -13107,10 +13113,10 @@ let pagesHtml = '';
               bawahHtml = `<div class="baris-bawah">${bawahRaw}</div>`;
             }
 
-            // Frame gambar — tinggi tetap sama ada atau tiada gambar
+// Gambar scale ikut ratio, kad-img ada max-height supaya teks tak hilang
             const imgBlock = kad.imageUrl && base64Map[kad.imageUrl]
-              ? `<div class="kad-img" style="background-image:url('${base64Map[kad.imageUrl]}');"></div>`
-              : `<div class="kad-img-frame"></div>`;
+              ? `<img class="kad-img" src="${base64Map[kad.imageUrl]}" alt="">`
+              : '';
 
             pagesHtml += `
               <div class="kad">
@@ -13188,19 +13194,13 @@ let pagesHtml = '';
   }
 
 .kad-img {
-    width:55%; height:35mm;
-    background-size:contain;
-    background-position:left center;
-    background-repeat:no-repeat;
-    flex-shrink:0; border-radius:1mm;
-    align-self:flex-start;
-  }
-  .kad-img-frame {
-    width:55%; height:35mm;
-    flex-shrink:0; border-radius:1mm;
-    border:0.5pt dashed #d1d5db;
-    background:#f9fafb;
-    align-self:flex-start;
+    width:100%;
+    max-height:40mm;
+    object-fit:contain;
+    object-position:left center;
+    flex-shrink:1;
+    border-radius:1mm;
+    display:block;
   }
 
   .kad-atas {
