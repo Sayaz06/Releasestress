@@ -12834,38 +12834,48 @@ document.getElementById('btn-debug-bahasa-laci').addEventListener('click', async
     const filtered = semua.filter(d => d.perkataanId === currentPerkataanId);
     const yatim = semua.filter(d => !d.perkataanId || !d.jenisId);
 
-    // Cari SEMUA laci dalam collection yg ada perkataan "mengabahkan" dalam tajuk
-    const carian = filtered.map(f => f.title || '').filter(Boolean);
-    const duplikat = [];
-    if (carian.length > 0) {
-      semua.forEach(d => {
-        if (!filtered.find(f => f.id === d.id)) { // bukan dalam filtered
-          carian.forEach(tajuk => {
-            if ((d.title || '').includes('mengabahkan')) {
-              duplikat.push(d);
-            }
-          });
-        }
-      });
-    }
+    // Cari tajuk-tajuk dalam perkataan ini
+    const tajukDalamPerkataan = new Set(filtered.map(f => f.title || '').filter(Boolean));
+
+    // Cari dokumen LAIN (perkataanId berbeza) yang ada tajuk sama
+    const duplikat = semua.filter(d =>
+      d.perkataanId !== currentPerkataanId &&
+      tajukDalamPerkataan.has(d.title || '')
+    );
+
+    // Cari dokumen LAIN yang perkataanId sama dengan laci filtered tapi ID berbeza (benar-benar pendua)
+    const idFiltered = new Set(filtered.map(f => f.id));
+    const pendua = semua.filter(d =>
+      d.perkataanId === currentPerkataanId && !idFiltered.has(d.id)
+    );
 
     let html = `📦 Jumlah semua laci: ${semua.length}\n`;
-    html += `🔍 Untuk perkataan ini (perkataanId=${currentPerkataanId}): ${filtered.length} laci\n`;
+    html += `🔍 Untuk perkataan ini: ${filtered.length} laci\n`;
     html += `⚠️ Laci yatim: ${yatim.length}\n`;
-    html += `🔎 Laci "mengabahkan" di luar perkataan ini: ${duplikat.length}\n\n`;
+    html += `👥 Tajuk sama tapi perkataanId lain: ${duplikat.length}\n`;
+    html += `🔁 Pendua perkataanId sama: ${pendua.length}\n\n`;
 
     filtered.forEach((d, i) => {
       html += `[${i+1}] "${d.title || '(kosong)'}"\n`;
       html += `    ID: ${d.id}\n`;
-      html += `    notes(30): "${(d.notes||'').slice(0,30)}"\n`;
+      html += `    notes(40): "${(d.notes||'').slice(0,40)}"\n`;
       html += `    jenisId: ${d.jenisId || 'KOSONG'}\n`;
       html += `    perkataanId: ${d.perkataanId}\n\n`;
     });
 
     if (duplikat.length > 0) {
-      html += `── DUPLIKAT DI LUAR PERKATAAN INI ──\n`;
+      html += `── TAJUK SAMA, PERKATAAN BERBEZA ──\n`;
       duplikat.forEach(d => {
         html += `• "${d.title}" | ID: ${d.id}\n`;
+        html += `  perkataanId: ${d.perkataanId || 'KOSONG'}\n`;
+        html += `  jenisId: ${d.jenisId || 'KOSONG'}\n\n`;
+      });
+    }
+
+    if (pendua.length > 0) {
+      html += `── PENDUA (perkataanId SAMA, ID lain) ──\n`;
+      pendua.forEach(d => {
+        html += `• "${d.title || '?'}" | ID: ${d.id}\n`;
         html += `  perkataanId: ${d.perkataanId || 'KOSONG'}\n`;
         html += `  jenisId: ${d.jenisId || 'KOSONG'}\n\n`;
       });
