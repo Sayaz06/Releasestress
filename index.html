@@ -14457,14 +14457,22 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
             showToast('Trash fail: ' + trashErr.message, 6000);
           }
           try {
-            await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id));
+            // Padam dari Firestore — guna { source: 'server' } untuk bypass offline cache
+            const laciRef = doc(db, "users", currentUser.uid, "bahasa_drawers", data.id);
+            await deleteDoc(laciRef);
             await deleteSRRekod(data.id);
-            showToast('✅ Laci berjaya dipadam.');
+            // Verify padam berjaya — baca terus dari server, bukan cache
+            const { getDoc: _getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js");
+            const verify = await getDoc(laciRef);
+            if (verify.exists()) {
+              showToast('⚠️ Laci masih wujud dalam Firestore! Cuba lagi.', 5000);
+            } else {
+              showToast('✅ Laci berjaya dipadam dan disahkan.');
+            }
           } catch(delErr) {
-            // Kalau gagal — reload dari Firestore untuk tunjuk semula
-            showToast('❌ Delete gagal: ' + delErr.message + ' — Reload untuk pulihkan.', 6000);
-            const snap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
-            allBahasaDrawers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            showToast('❌ Delete gagal: ' + delErr.message, 6000);
+            const freshSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
+            allBahasaDrawers = freshSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderBahasaDrawers();
           }
         });
