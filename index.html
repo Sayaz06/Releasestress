@@ -15121,7 +15121,24 @@ async function syncSRQueuePdfKod() {
 
         const laciSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
         const laciMap = new Map();
-        laciSnap.docs.forEach(d => laciMap.set(d.id, { id: d.id, ...d.data() }));
+        // Hanya masuk laci yang betul-betul ada data (bukan phantom)
+        laciSnap.docs.forEach(d => {
+          const data = d.data();
+          if (data && (data.title !== undefined || data.notes !== undefined || data.perkataanId)) {
+            laciMap.set(d.id, { id: d.id, ...data });
+          }
+        });
+
+        // Auto-clean SR queue yang lacinya dah tak wujud
+        const srBatchClean = writeBatch(db);
+        let cleanCount = 0;
+        srSnap.docs.forEach(srDoc => {
+          if (!laciMap.has(srDoc.data().drawerId)) {
+            srBatchClean.delete(doc(db, "users", currentUser.uid, "bahasa_sr_queue", srDoc.id));
+            cleanCount++;
+          }
+        });
+        if (cleanCount > 0) await srBatchClean.commit();
 
         const batch = writeBatch(db);
         let updateCount = 0;
