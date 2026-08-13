@@ -12829,8 +12829,11 @@ document.getElementById('btn-debug-bahasa-laci').addEventListener('click', async
   resultEl.style.display = 'block';
   resultEl.textContent = '⏳ Membaca dari Firestore...';
   try {
-    const snap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
-    const semua = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+const snap = await getDocs(query(collection(db, "users", currentUser.uid, "bahasa_drawers"), ...[]), { source: 'server' });
+    const idSudahAda = new Set();
+    const semua = snap.docs
+      .filter(d => { if (idSudahAda.has(d.id)) return false; idSudahAda.add(d.id); return true; })
+      .map(d => ({ id: d.id, ...d.data() }));
     const filtered = semua.filter(d => d.perkataanId === currentPerkataanId);
     const yatim = semua.filter(d => !d.perkataanId || !d.jenisId);
 
@@ -15262,7 +15265,12 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
 
 onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
         const prevDrawers = [...allBahasaDrawers];
-        allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
+        // Buang duplikat ID — ambil yang pertama sahaja (server data menang)
+        const idSudah = new Set();
+        allBahasaDrawers = snap.docs
+          .filter(d => { if (idSudah.has(d.id)) return false; idSudah.add(d.id); return true; })
+          .map(d => ({id:d.id,...d.data()}))
+          .filter(d => d.perkataanId && d.jenisId); // buang yang kosong terus
         if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
 if (bahasaMode) {
           // Simpan index dan fasa semasa sebelum semak
