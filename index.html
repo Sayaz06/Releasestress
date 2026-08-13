@@ -12858,24 +12858,40 @@ document.getElementById('btn-debug-bahasa-laci').addEventListener('click', async
         btnBuang.style.cssText = 'width:100%;margin-top:8px;padding:10px;border-radius:999px;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;';
         resultEl.after(btnBuang);
 
-        btnBuang.addEventListener('click', async () => {
+btnBuang.addEventListener('click', async () => {
           if (!confirm(`Padam kekal ${yatim.length} laci yatim?\n\nLaci ini tiada perkataanId — tidak boleh diakses melalui UI.\n\nTeruskan?`)) return;
           btnBuang.disabled = true;
           btnBuang.textContent = '⏳ Membuang...';
-          let berjaya = 0;
+          let berjaya = 0, gagal = 0;
           for (const d of yatim) {
             try {
-              await hantarKeTrashUniversal('bahasa_drawers', d.id, d, d.title || 'Laci Yatim');
+              // deleteDoc dulu — jangan bagi trash block delete
               await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", d.id));
-              allBahasaDrawers = allBahasaDrawers.filter(x => x.id !== d.id);
-              berjaya++;
+              // Verify — baca semula untuk pastikan betul-betul padam
+              const semak = await getDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", d.id));
+              if (semak.exists()) {
+                showToast(`⚠️ "${d.title || d.id.slice(0,8)}" masih wujud selepas delete!`, 6000);
+                gagal++;
+              } else {
+                // Baru simpan ke trash selepas confirm padam
+                try { await hantarKeTrashUniversal('bahasa_drawers', d.id, d, d.title || 'Laci Yatim'); } catch(e) {}
+                allBahasaDrawers = allBahasaDrawers.filter(x => x.id !== d.id);
+                berjaya++;
+              }
             } catch(e) {
-              showToast(`❌ Gagal buang ${d.id}: ` + e.message, 5000);
+              showToast(`❌ "${d.title || d.id.slice(0,8)}": ${e.message}`, 6000);
+              gagal++;
             }
           }
-          showToast(`✅ ${berjaya} laci yatim berjaya dibuang!`);
-          btnBuang.remove();
-          resultEl.style.display = 'none';
+          if (gagal === 0) {
+            showToast(`✅ ${berjaya} laci yatim berjaya dipadam!`);
+            btnBuang.remove();
+            resultEl.style.display = 'none';
+          } else {
+            btnBuang.textContent = `🔁 Cuba Lagi (${gagal} gagal)`;
+            btnBuang.disabled = false;
+            showToast(`⚠️ ${berjaya} berjaya, ${gagal} gagal. Tengok toast untuk details.`, 5000);
+          }
           if (bahasaMode) rebuildBahasa();
         });
       }
