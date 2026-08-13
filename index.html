@@ -1973,6 +1973,8 @@ body.dark-mode {
           </div>
         </div>
         <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Laci</button>
+        <button id="btn-debug-bahasa-laci" class="btn btn-sm mt-8" style="width:100%;background:rgba(239,68,68,0.15);border:1px solid #f87171;color:#fca5a5;font-size:0.75rem;">🔍 DEBUG — Semak Laci dalam Firestore</button>
+        <div id="debug-bahasa-result" style="display:none;margin-top:8px;background:rgba(0,0,0,0.4);border:1px solid #374151;border-radius:10px;padding:10px;font-size:0.72rem;color:#e5e7eb;line-height:1.8;max-height:300px;overflow-y:auto;"></div>
         <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
 
@@ -12812,6 +12814,44 @@ addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~",
     showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
 });
 
+document.getElementById('btn-debug-bahasa-laci').addEventListener('click', async () => {
+  if (!currentUser || !currentPerkataanId) { showToast('⚠️ Buka perkataan dahulu.'); return; }
+  const resultEl = document.getElementById('debug-bahasa-result');
+  resultEl.style.display = 'block';
+  resultEl.textContent = '⏳ Membaca dari Firestore (server)...';
+  try {
+    const { getDocs: _getDocs, collection: _col, query: _q, where: _w } = await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js");
+    const snap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
+    const semua = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const filtered = semua.filter(d => d.perkataanId === currentPerkataanId);
+    const semua_total = semua.length;
+    let html = `📦 JUMLAH dalam Firestore: ${semua_total} laci (semua perkataan)\n`;
+    html += `🔍 Untuk perkataan ini (${currentPerkataanId.slice(0,8)}...): ${filtered.length} laci\n\n`;
+    if (filtered.length === 0) {
+      html += '✅ Tiada laci untuk perkataan ini dalam Firestore.\n(Laci yang nampak = dari cache sahaja)';
+    } else {
+      filtered.forEach((d, i) => {
+        html += `[${i+1}] ID: ${d.id}\n`;
+        html += `    Tajuk: "${d.title || '(kosong)'}"\n`;
+        html += `    Notes: "${(d.notes || '').slice(0, 40)}${d.notes && d.notes.length > 40 ? '...' : ''}"\n`;
+        html += `    jenisId: ${d.jenisId || 'KOSONG'}\n`;
+        html += `    perkataanId: ${d.perkataanId || 'KOSONG'}\n\n`;
+      });
+    }
+    // Semak laci tanpa perkataanId atau jenisId
+    const yatim = semua.filter(d => !d.perkataanId || !d.jenisId);
+    if (yatim.length > 0) {
+      html += `⚠️ LACI YATIM (tiada perkataanId/jenisId): ${yatim.length}\n`;
+      yatim.forEach(d => {
+        html += `  • ID: ${d.id} | Tajuk: "${d.title || '?'}" | perkataanId: ${d.perkataanId || 'KOSONG'} | jenisId: ${d.jenisId || 'KOSONG'}\n`;
+      });
+    }
+    resultEl.textContent = html;
+  } catch(e) {
+    resultEl.textContent = '❌ Gagal: ' + e.message;
+  }
+});
+
 document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', () => {
       if (!currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
       document.getElementById('jana-tips-pukal-input').value = '';
@@ -14447,7 +14487,6 @@ input.addEventListener('change', (e) => {
 
 div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
-          // Buang dari UI dan cache dulu — optimistic delete
           div.remove();
           allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
           if (bahasaMode) rebuildBahasa();
@@ -14457,18 +14496,9 @@ div.querySelector('.btn-del-bd').addEventListener('click', async () => {
             showToast('Trash fail: ' + trashErr.message, 6000);
           }
           try {
-            // Padam dari Firestore — guna { source: 'server' } untuk bypass offline cache
-            const laciRef = doc(db, "users", currentUser.uid, "bahasa_drawers", data.id);
-            await deleteDoc(laciRef);
+            await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id));
             await deleteSRRekod(data.id);
-            // Verify padam berjaya — baca terus dari server, bukan cache
-            const { getDoc: _getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js");
-            const verify = await getDoc(laciRef);
-            if (verify.exists()) {
-              showToast('⚠️ Laci masih wujud dalam Firestore! Cuba lagi.', 5000);
-            } else {
-              showToast('✅ Laci berjaya dipadam dan disahkan.');
-            }
+            showToast('✅ Laci berjaya dipadam.');
           } catch(delErr) {
             showToast('❌ Delete gagal: ' + delErr.message, 6000);
             const freshSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
