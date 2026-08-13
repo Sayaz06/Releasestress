@@ -13622,13 +13622,15 @@ pagesHtml += `<div class="page" style="position:relative;"><div class="cut-h1"><
             // Potong teks panjang supaya muat dalam card
             const ayatPendek = card.ayatBI.length > 120 ? card.ayatBI.substring(0, 120) + '...' : card.ayatBI;
             const terjPendek = card.terjemahan.length > 100 ? card.terjemahan.substring(0, 100) + '...' : card.terjemahan;
-// Kira tinggi gambar dari ratio — lebar berkesan kad = 59mm (70mm tolak padding 8mm+3mm)
+// Kira tinggi gambar dari ratio — gambar scale ikut lebar kad, ratio kekal
+// Lebar berkesan kad = 59mm (70mm - padding kiri 8mm - kanan 3mm)
 const imgRatioW = card.imgRatioW || 70;
 const imgRatioH = card.imgRatioH || 22;
-const imgHeightMm = Math.min(Math.round((59 / imgRatioW) * imgRatioH * 10) / 10, 30); // max 30mm
-const imgHStyle = card.imageUrl ? `${imgHeightMm}mm` : '0';
+const LEBAR_BERKESAN_MM = 59;
+const imgHeightMm = Math.round((LEBAR_BERKESAN_MM / imgRatioW) * imgRatioH * 10) / 10;
+const imgHStyle = `${imgHeightMm}mm`;
 const imgBlock = card.imageUrl
-              ? `<div class="card-img" style="background-image:url('${card.imageUrl}');height:${imgHStyle};"></div>`
+              ? `<div class="card-img" style="background-image:url('${card.imageUrl}');height:${imgHStyle};width:100%;background-size:contain;background-repeat:no-repeat;background-position:center left;"></div>`
               : '';
 pagesHtml += `
               <div class="card">
