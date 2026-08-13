@@ -1973,8 +1973,6 @@ body.dark-mode {
           </div>
         </div>
         <button id="btn-add-bahasa-laci" class="btn btn-sm mt-8">+ Tambah Laci</button>
-        <button id="btn-debug-bahasa-laci" class="btn btn-sm mt-8" style="width:100%;background:rgba(239,68,68,0.15);border:1px solid #f87171;color:#fca5a5;font-size:0.75rem;">🔍 DEBUG — Semak Laci dalam Firestore</button>
-        <div id="debug-bahasa-result" style="display:none;margin-top:8px;background:rgba(0,0,0,0.4);border:1px solid #374151;border-radius:10px;padding:10px;font-size:0.72rem;color:#e5e7eb;line-height:1.8;max-height:300px;overflow-y:auto;"></div>
         <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
 
@@ -3066,9 +3064,6 @@ import {
 
 import {
       getFirestore,
-      initializeFirestore,
-      persistentLocalCache,
-      persistentMultipleTabManager,
       doc,
       setDoc,
       getDoc,
@@ -3079,11 +3074,11 @@ import {
       deleteDoc,
       onSnapshot,
       query,
-      where,
       orderBy,
       limit,
       writeBatch
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
     
     // IMPORT BARU: FIREBASE STORAGE (Masih dibiarkan mengikut arahan)
 import { 
@@ -3108,9 +3103,7 @@ import {
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider(); 
-    const db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
+    const db = getFirestore(app);
     const storage = getStorage(app); // INITIALIZE STORAGE (Masih disimpan)
     window.speechSynthesis.getVoices();
     
@@ -12814,140 +12807,9 @@ document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
     });
 
 document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
-  if (!currentUser || !currentPerkataanId) { showToast('⚠️ Tiada perkataan dipilih.'); return; }
-  // Pastikan jenisId ada — ambil dari perkataan aktif kalau currentJenisKataId kosong
-  const perkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
-  const jenisIdFinal = currentJenisKataId || perkataan?.jenisId || null;
-  if (!jenisIdFinal) { showToast('⚠️ Tiada jenisId — sila navigasi melalui halaman Perkataan.'); return; }
-  addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), {
-    title: "~", notes: "", repeatCount: 0,
-    jenisId: jenisIdFinal,
-    perkataanId: currentPerkataanId,
-    createdAt: Date.now()
-  });
-  showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
-});
-
-document.getElementById('btn-debug-bahasa-laci').addEventListener('click', async () => {
-  if (!currentUser || !currentPerkataanId) { showToast('⚠️ Buka perkataan dahulu.'); return; }
-  const resultEl = document.getElementById('debug-bahasa-result');
-  resultEl.style.display = 'block';
-  resultEl.textContent = '⏳ Membaca dari Firestore...';
-  try {
-const snap = await getDocs(query(collection(db, "users", currentUser.uid, "bahasa_drawers"), ...[]), { source: 'server' });
-    const idSudahAda = new Set();
-    const semua = snap.docs
-      .filter(d => { if (idSudahAda.has(d.id)) return false; idSudahAda.add(d.id); return true; })
-      .map(d => ({ id: d.id, ...d.data() }));
-    const filtered = semua.filter(d => d.perkataanId === currentPerkataanId);
-    const yatim = semua.filter(d => !d.perkataanId || !d.jenisId);
-
-    // Cari tajuk-tajuk dalam perkataan ini
-    const tajukDalamPerkataan = new Set(filtered.map(f => f.title || '').filter(Boolean));
-
-    // Cari dokumen LAIN (perkataanId berbeza) yang ada tajuk sama
-    const duplikat = semua.filter(d =>
-      d.perkataanId !== currentPerkataanId &&
-      tajukDalamPerkataan.has(d.title || '')
-    );
-
-    // Cari dokumen LAIN yang perkataanId sama dengan laci filtered tapi ID berbeza (benar-benar pendua)
-    const idFiltered = new Set(filtered.map(f => f.id));
-    const pendua = semua.filter(d =>
-      d.perkataanId === currentPerkataanId && !idFiltered.has(d.id)
-    );
-
-    let html = `📦 Jumlah semua laci: ${semua.length}\n`;
-    html += `🔍 Untuk perkataan ini: ${filtered.length} laci\n`;
-    html += `⚠️ Laci yatim: ${yatim.length}\n`;
-    html += `👥 Tajuk sama tapi perkataanId lain: ${duplikat.length}\n`;
-    html += `🔁 Pendua perkataanId sama: ${pendua.length}\n\n`;
-
-    filtered.forEach((d, i) => {
-      html += `[${i+1}] "${d.title || '(kosong)'}"\n`;
-      html += `    ID: ${d.id}\n`;
-      html += `    notes(40): "${(d.notes||'').slice(0,40)}"\n`;
-      html += `    jenisId: ${d.jenisId || 'KOSONG'}\n`;
-      html += `    perkataanId: ${d.perkataanId}\n\n`;
-    });
-
-    if (duplikat.length > 0) {
-      html += `── TAJUK SAMA, PERKATAAN BERBEZA ──\n`;
-      duplikat.forEach(d => {
-        html += `• "${d.title}" | ID: ${d.id}\n`;
-        html += `  perkataanId: ${d.perkataanId || 'KOSONG'}\n`;
-        html += `  jenisId: ${d.jenisId || 'KOSONG'}\n\n`;
-      });
-    }
-
-    if (pendua.length > 0) {
-      html += `── PENDUA (perkataanId SAMA, ID lain) ──\n`;
-      pendua.forEach(d => {
-        html += `• "${d.title || '?'}" | ID: ${d.id}\n`;
-        html += `  perkataanId: ${d.perkataanId || 'KOSONG'}\n`;
-        html += `  jenisId: ${d.jenisId || 'KOSONG'}\n\n`;
-      });
-    }
-
-    if (yatim.length > 0) {
-      html += `── LACI YATIM ──\n`;
-      yatim.forEach(d => {
-        html += `• "${d.title || '?'}" | ID: ${d.id}\n  perkataanId: ${d.perkataanId || 'KOSONG'} | jenisId: ${d.jenisId || 'KOSONG'}\n`;
-      });
-      html += `\nTekan butang BUANG YATIM untuk padam semua laci yatim ini.`;
-
-      // Tunjuk butang buang yatim
-      let btnBuang = document.getElementById('btn-buang-yatim-bahasa');
-      if (!btnBuang) {
-        btnBuang = document.createElement('button');
-        btnBuang.id = 'btn-buang-yatim-bahasa';
-        btnBuang.textContent = `🗑️ Buang ${yatim.length} Laci Yatim Sekarang`;
-        btnBuang.style.cssText = 'width:100%;margin-top:8px;padding:10px;border-radius:999px;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;';
-        resultEl.after(btnBuang);
-
-btnBuang.addEventListener('click', async () => {
-          if (!confirm(`Padam kekal ${yatim.length} laci yatim?\n\nLaci ini tiada perkataanId — tidak boleh diakses melalui UI.\n\nTeruskan?`)) return;
-          btnBuang.disabled = true;
-          btnBuang.textContent = '⏳ Membuang...';
-          let berjaya = 0, gagal = 0;
-          for (const d of yatim) {
-            try {
-              // deleteDoc dulu — jangan bagi trash block delete
-              await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", d.id));
-              // Verify — baca semula untuk pastikan betul-betul padam
-              const semak = await getDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", d.id));
-              if (semak.exists()) {
-                showToast(`⚠️ "${d.title || d.id.slice(0,8)}" masih wujud selepas delete!`, 6000);
-                gagal++;
-              } else {
-                // Baru simpan ke trash selepas confirm padam
-                try { await hantarKeTrashUniversal('bahasa_drawers', d.id, d, d.title || 'Laci Yatim'); } catch(e) {}
-                allBahasaDrawers = allBahasaDrawers.filter(x => x.id !== d.id);
-                berjaya++;
-              }
-            } catch(e) {
-              showToast(`❌ "${d.title || d.id.slice(0,8)}": ${e.message}`, 6000);
-              gagal++;
-            }
-          }
-          if (gagal === 0) {
-            showToast(`✅ ${berjaya} laci yatim berjaya dipadam!`);
-            btnBuang.remove();
-            resultEl.style.display = 'none';
-          } else {
-            btnBuang.textContent = `🔁 Cuba Lagi (${gagal} gagal)`;
-            btnBuang.disabled = false;
-            showToast(`⚠️ ${berjaya} berjaya, ${gagal} gagal. Tengok toast untuk details.`, 5000);
-          }
-          if (bahasaMode) rebuildBahasa();
-        });
-      }
-    }
-
-    resultEl.textContent = html;
-  } catch(e) {
-    resultEl.textContent = '❌ Gagal: ' + e.message;
-  }
+  if (!currentUser || !currentPerkataanId) return;
+addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
+    showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
 });
 
 document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', () => {
@@ -14583,25 +14445,24 @@ input.addEventListener('change', (e) => {
           }
         });
 
-div.querySelector('.btn-del-bd').addEventListener('click', async () => {
+        div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
-          div.remove();
-          allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
-          if (bahasaMode) rebuildBahasa();
+          showToast(`Debug: ID=${data.id} | jenisId=${data.jenisId || 'KOSONG'}`, 6000);
           try {
             await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
           } catch(trashErr) {
             showToast('Trash fail: ' + trashErr.message, 6000);
           }
           try {
-            await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id));
+            await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
+            // ── AUTO-CLEAN SR QUEUE bila laci dipadam ──
             await deleteSRRekod(data.id);
-            showToast('✅ Laci berjaya dipadam.');
+            showToast('✅ Padam berjaya dari Firestore');
           } catch(delErr) {
-            showToast('❌ Delete gagal: ' + delErr.message, 6000);
-            const freshSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
-            allBahasaDrawers = freshSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderBahasaDrawers();
+            showToast('❌ Delete fail: ' + delErr.message, 6000);
+            div.remove();
+            allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
+            if (bahasaMode) rebuildBahasa();
           }
         });
         
@@ -15121,24 +14982,7 @@ async function syncSRQueuePdfKod() {
 
         const laciSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
         const laciMap = new Map();
-        // Hanya masuk laci yang betul-betul ada data (bukan phantom)
-        laciSnap.docs.forEach(d => {
-          const data = d.data();
-          if (data && (data.title !== undefined || data.notes !== undefined || data.perkataanId)) {
-            laciMap.set(d.id, { id: d.id, ...data });
-          }
-        });
-
-        // Auto-clean SR queue yang lacinya dah tak wujud
-        const srBatchClean = writeBatch(db);
-        let cleanCount = 0;
-        srSnap.docs.forEach(srDoc => {
-          if (!laciMap.has(srDoc.data().drawerId)) {
-            srBatchClean.delete(doc(db, "users", currentUser.uid, "bahasa_sr_queue", srDoc.id));
-            cleanCount++;
-          }
-        });
-        if (cleanCount > 0) await srBatchClean.commit();
+        laciSnap.docs.forEach(d => laciMap.set(d.id, { id: d.id, ...d.data() }));
 
         const batch = writeBatch(db);
         let updateCount = 0;
@@ -15287,12 +15131,7 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
 
 onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
         const prevDrawers = [...allBahasaDrawers];
-        // Buang duplikat ID — ambil yang pertama sahaja (server data menang)
-        const idSudah = new Set();
-        allBahasaDrawers = snap.docs
-          .filter(d => { if (idSudah.has(d.id)) return false; idSudah.add(d.id); return true; })
-          .map(d => ({id:d.id,...d.data()}))
-          .filter(d => d.perkataanId && d.jenisId); // buang yang kosong terus
+        allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
 if (bahasaMode) {
           // Simpan index dan fasa semasa sebelum semak
