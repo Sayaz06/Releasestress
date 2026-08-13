@@ -14447,21 +14447,25 @@ input.addEventListener('change', (e) => {
 
 div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
+          // Buang dari UI dan cache dulu — optimistic delete
+          div.remove();
+          allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
+          if (bahasaMode) rebuildBahasa();
           try {
             await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
           } catch(trashErr) {
             showToast('Trash fail: ' + trashErr.message, 6000);
           }
           try {
-            await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
+            await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id));
             await deleteSRRekod(data.id);
-            // ── Buang terus dari UI dan cache tanpa tunggu onSnapshot ──
-            div.remove();
-            allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
-            if (bahasaMode) rebuildBahasa();
             showToast('✅ Laci berjaya dipadam.');
           } catch(delErr) {
-            showToast('❌ Delete fail: ' + delErr.message, 6000);
+            // Kalau gagal — reload dari Firestore untuk tunjuk semula
+            showToast('❌ Delete gagal: ' + delErr.message + ' — Reload untuk pulihkan.', 6000);
+            const snap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
+            allBahasaDrawers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderBahasaDrawers();
           }
         });
         
