@@ -1974,7 +1974,7 @@ body.dark-mode {
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-bahasa-laci" class="btn btn-sm" style="flex:1;">+ Tambah Laci</button>
-          <button id="btn-export-bahasa-drawer-txt" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📥 Export .txt</button>
+          <button id="btn-export-bahasa-drawer-txt" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">👻 Ghost Button</button>
         </div>
         <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
@@ -14600,8 +14600,8 @@ const laciList = allBahasaDrawers
         return;
       }
 
-      // Bina header: "4. mengabahkan = [kk] mengarahkan; menujukan"
-      let output = `${namaPenuh}\n\n`;
+// Bina header: "4. mengabahkan = [kk] mengarahkan; menujukan"
+      let output = `${namaPenuh}\n`;
 
       laciList.forEach(laci => {
         const tajuk = (laci.title || '').trim();
@@ -14621,7 +14621,6 @@ const laciList = allBahasaDrawers
         output += `→ ${sinonim}\n`;
         if (ayat) output += `   Ayat: ${ayat}\n`;
         if (terjemahan) output += `   Terjemahan: ${terjemahan}\n`;
-        output += '\n';
       });
 
       if (!output.trim()) {
