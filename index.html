@@ -12834,13 +12834,42 @@ document.getElementById('btn-debug-bahasa-laci').addEventListener('click', async
     const filtered = semua.filter(d => d.perkataanId === currentPerkataanId);
     const yatim = semua.filter(d => !d.perkataanId || !d.jenisId);
 
+    // Cari SEMUA laci dalam collection yg ada perkataan "mengabahkan" dalam tajuk
+    const carian = filtered.map(f => f.title || '').filter(Boolean);
+    const duplikat = [];
+    if (carian.length > 0) {
+      semua.forEach(d => {
+        if (!filtered.find(f => f.id === d.id)) { // bukan dalam filtered
+          carian.forEach(tajuk => {
+            if ((d.title || '').includes('mengabahkan')) {
+              duplikat.push(d);
+            }
+          });
+        }
+      });
+    }
+
     let html = `📦 Jumlah semua laci: ${semua.length}\n`;
-    html += `🔍 Untuk perkataan ini: ${filtered.length} laci\n`;
-    html += `⚠️ Laci yatim: ${yatim.length}\n\n`;
+    html += `🔍 Untuk perkataan ini (perkataanId=${currentPerkataanId}): ${filtered.length} laci\n`;
+    html += `⚠️ Laci yatim: ${yatim.length}\n`;
+    html += `🔎 Laci "mengabahkan" di luar perkataan ini: ${duplikat.length}\n\n`;
 
     filtered.forEach((d, i) => {
-      html += `[${i+1}] "${d.title || '(kosong)'}"\n    ID: ${d.id}\n    jenisId: ${d.jenisId || 'KOSONG'}\n\n`;
+      html += `[${i+1}] "${d.title || '(kosong)'}"\n`;
+      html += `    ID: ${d.id}\n`;
+      html += `    notes(30): "${(d.notes||'').slice(0,30)}"\n`;
+      html += `    jenisId: ${d.jenisId || 'KOSONG'}\n`;
+      html += `    perkataanId: ${d.perkataanId}\n\n`;
     });
+
+    if (duplikat.length > 0) {
+      html += `── DUPLIKAT DI LUAR PERKATAAN INI ──\n`;
+      duplikat.forEach(d => {
+        html += `• "${d.title}" | ID: ${d.id}\n`;
+        html += `  perkataanId: ${d.perkataanId || 'KOSONG'}\n`;
+        html += `  jenisId: ${d.jenisId || 'KOSONG'}\n\n`;
+      });
+    }
 
     if (yatim.length > 0) {
       html += `── LACI YATIM ──\n`;
