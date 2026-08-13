@@ -14445,9 +14445,8 @@ input.addEventListener('change', (e) => {
           }
         });
 
-        div.querySelector('.btn-del-bd').addEventListener('click', async () => {
+div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
-          showToast(`Debug: ID=${data.id} | jenisId=${data.jenisId || 'KOSONG'}`, 6000);
           try {
             await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
           } catch(trashErr) {
@@ -14455,14 +14454,14 @@ input.addEventListener('change', (e) => {
           }
           try {
             await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
-            // ── AUTO-CLEAN SR QUEUE bila laci dipadam ──
             await deleteSRRekod(data.id);
-            showToast('✅ Padam berjaya dari Firestore');
-          } catch(delErr) {
-            showToast('❌ Delete fail: ' + delErr.message, 6000);
+            // ── Buang terus dari UI dan cache tanpa tunggu onSnapshot ──
             div.remove();
             allBahasaDrawers = allBahasaDrawers.filter(d => d.id !== data.id);
             if (bahasaMode) rebuildBahasa();
+            showToast('✅ Laci berjaya dipadam.');
+          } catch(delErr) {
+            showToast('❌ Delete fail: ' + delErr.message, 6000);
           }
         });
         
