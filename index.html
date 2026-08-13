@@ -2210,12 +2210,14 @@ body.dark-mode {
         </div>
         <button id="btn-export-pdf-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Export PDF Flashcard Fakta (A4 Portrait 2×3)</button>
 
-<!-- GUIDE DUPLIKASI -->
-        <div class="guide-duplikasi-fakta" style="display:none;margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
-          <div style="font-size:0.75rem;font-weight:700;color:#a78bfa;margin-bottom:6px;">📋 Apa itu Button Duplikasi?</div>
-          <div style="font-size:0.72rem;color:var(--text);line-height:1.8;">
-            Laci yang rosak atau jadi <strong style="color:#fcd34d;">"phantom"</strong> dalam Firestore (data lama dari kod lama) tidak boleh dipadam dari UI biasa. Button <strong style="color:#a78bfa;">Duplikasi</strong> dalam setiap kad laci membolehkan anda <strong style="color:#22d3ee;">salin laci yang baik ke dokumen baru</strong> dengan ID baru — kemudian padam yang lama.<br><br>
-            <span style="color:#9ca3af;">💡 Cara guna: Tekan 📋 pada laci yang nak disalin → laci baru dicipta dengan data sama (tajuk, fakta, baris) tetapi ID baru → padam laci asal yang rosak.</span>
+        <!-- PANEL DUPLIKASI -->
+        <div id="panel-duplikasi-fakta" style="display:none;margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
+          <div style="font-size:0.75rem;font-weight:700;color:#a78bfa;margin-bottom:8px;">📋 Pilih Laci untuk Diduplikasi</div>
+          <div id="duplikasi-checkbox-list" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;margin-bottom:10px;"></div>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-duplikasi-pilih-semua" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#a78bfa;">Pilih Semua</button>
+            <button id="btn-duplikasi-confirm" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">✅ Duplikasi Terpilih</button>
+            <button id="btn-duplikasi-cancel" class="btn btn-secondary btn-sm" style="flex:1;">Batal</button>
           </div>
         </div>
 
@@ -14728,13 +14730,104 @@ const laciList = allBahasaDrawers
       showToast(`✅ ${laciList.length} laci diexport!`);
     });
 
-// ── TOGGLE GUIDE DUPLIKASI FAKTA ──
+// ── PANEL DUPLIKASI FAKTA ──
     document.getElementById('btn-duplikasi-info-fakta').addEventListener('click', () => {
-      const guide = document.querySelector('#section-drawer .guide-duplikasi-fakta');
-      if (!guide) return;
-      const isOpen = guide.style.display !== 'none';
-      guide.style.display = isOpen ? 'none' : 'block';
-      document.getElementById('btn-duplikasi-info-fakta').textContent = isOpen ? '📋 Duplikasi' : '📋 Sorok Panduan';
+      const panel = document.getElementById('panel-duplikasi-fakta');
+      const isOpen = panel.style.display !== 'none';
+      if (isOpen) {
+        panel.style.display = 'none';
+        document.getElementById('btn-duplikasi-info-fakta').textContent = '📋 Duplikasi';
+        return;
+      }
+
+      // Bina senarai checkbox dari laci dalam topik semasa
+      const senarai = allDrawers
+        .filter(d => d.topicId === currentTopicId)
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+      const listEl = document.getElementById('duplikasi-checkbox-list');
+      listEl.innerHTML = '';
+
+      if (!senarai.length) {
+        listEl.innerHTML = '<div style="font-size:0.72rem;color:var(--subtext);">Tiada laci dalam topik ini.</div>';
+      } else {
+        senarai.forEach(d => {
+          const row = document.createElement('label');
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:8px;cursor:pointer;font-size:0.75rem;color:var(--text);';
+          row.innerHTML = `
+            <input type="checkbox" class="duplikasi-cb" data-id="${d.id}" style="margin-top:2px;accent-color:#a78bfa;flex-shrink:0;">
+            <span>${d.title || '(Tiada Tajuk)'}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      panel.style.display = 'block';
+      document.getElementById('btn-duplikasi-info-fakta').textContent = '✕ Tutup';
+    });
+
+    document.getElementById('btn-duplikasi-pilih-semua').addEventListener('click', () => {
+      const semua = document.querySelectorAll('.duplikasi-cb');
+      const adaYangTakPilih = [...semua].some(cb => !cb.checked);
+      semua.forEach(cb => cb.checked = adaYangTakPilih);
+      document.getElementById('btn-duplikasi-pilih-semua').textContent = adaYangTakPilih ? 'Nyahpilih Semua' : 'Pilih Semua';
+    });
+
+    document.getElementById('btn-duplikasi-cancel').addEventListener('click', () => {
+      document.getElementById('panel-duplikasi-fakta').style.display = 'none';
+      document.getElementById('btn-duplikasi-info-fakta').textContent = '📋 Duplikasi';
+    });
+
+    document.getElementById('btn-duplikasi-confirm').addEventListener('click', async () => {
+      const terpilih = [...document.querySelectorAll('.duplikasi-cb:checked')];
+      if (!terpilih.length) {
+        showToast('⚠️ Tiada laci dipilih.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-duplikasi-confirm');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menduplikasi...';
+
+      let berjaya = 0;
+      let gagal = 0;
+
+      for (const cb of terpilih) {
+        const id = cb.getAttribute('data-id');
+        const data = allDrawers.find(d => d.id === id);
+        if (!data) { gagal++; continue; }
+
+        try {
+          const laciBaruData = {
+            title: data.title || '',
+            notes: data.notes || '',
+            repeatCount: 0,
+            topicId: data.topicId || currentTopicId,
+            createdAt: Date.now()
+          };
+          if (data.items && data.items.length > 0) {
+            laciBaruData.items = data.items.map(item => ({
+              ayat: item.ayat || '',
+              imageUrl: ''
+            }));
+          }
+          if (data.pdfNombor) laciBaruData.pdfNombor = data.pdfNombor;
+          if (data.pdfTopik) laciBaruData.pdfTopik = data.pdfTopik;
+          if (data.pdfSubjek) laciBaruData.pdfSubjek = data.pdfSubjek;
+          if (data.pdfTopikId) laciBaruData.pdfTopikId = data.pdfTopikId;
+
+          await addDoc(collection(db, "users", currentUser.uid, "drawer"), laciBaruData);
+          berjaya++;
+        } catch(e) {
+          gagal++;
+        }
+      }
+
+      btn.disabled = false;
+      btn.textContent = '✅ Duplikasi Terpilih';
+      document.getElementById('panel-duplikasi-fakta').style.display = 'none';
+      document.getElementById('btn-duplikasi-info-fakta').textContent = '📋 Duplikasi';
+      showToast(`✅ ${berjaya} laci berjaya diduplikasi${gagal ? ` | ❌ ${gagal} gagal` : ''}`, 4000);
     });
 
     // Subscribe collections bahasa
