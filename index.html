@@ -14359,7 +14359,7 @@ sorted.forEach(data => {
           div.style.borderColor = 'rgba(245,158,11,0.35)';
         }
 
-        div.innerHTML = `
+div.innerHTML = `
           <div class="drawer-title-wrapper" style="align-items:flex-start;">
             <textarea class="drawer-title" placeholder="Perkataan / Tajuk" rows="1" style="resize:none;overflow:hidden;min-height:28px;line-height:1.4;">${data.title||''}</textarea>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
@@ -14369,6 +14369,9 @@ sorted.forEach(data => {
           </div>
           <textarea class="drawer-notes" placeholder="Format: Perkataan = Terjemahan / Contoh ayat">${data.notes||''}</textarea>
 <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm btn-daftar-sr-bd" style="border-color:#f59e0b;color:${adaSRQueue ? '#fcd34d' : 'var(--subtext)'};${adaSRQueue ? 'background:rgba(245,158,11,0.12);' : ''}">
+              ⏰${adaSRQueue ? ' ✓' : ' SR'}
+            </button>
             <button class="btn btn-secondary btn-sm btn-tips-bd-f0" style="border-color:#a78bfa;color:${adaTipsFasa0 ? '#c4b5fd' : 'var(--subtext)'};${adaTipsFasa0 ? 'background:rgba(167,139,250,0.12);' : ''}">
               📝 F0${adaTipsFasa0 ? ' ✓' : ''}
             </button>
@@ -14405,7 +14408,17 @@ const tajukEl = div.querySelector('.drawer-title');
           } catch(err) { showToast('Gagal simpan nota: ' + err.message); }
         });
         
-div.querySelector('.btn-tips-bd').addEventListener('click', () => {
+div.querySelector('.btn-daftar-sr-bd').addEventListener('click', async () => {
+          if (adaSRQueue) {
+            showToast('⏰ Laci ini sudah dalam SR queue.', 3000);
+            return;
+          }
+          await daftarSRBaru(data.id, 'bahasa');
+          await refreshSRQueueIds();
+          renderBahasaDrawers();
+        });
+
+        div.querySelector('.btn-tips-bd').addEventListener('click', () => {
           bukaTipsSebutan(data, '1');
         });
 
