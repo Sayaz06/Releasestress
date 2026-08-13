@@ -3047,9 +3047,26 @@ body.dark-mode {
 <!-- CROP IMAGE OVERLAY -->
 <div id="crop-overlay" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(2,6,23,0.98);flex-direction:column;align-items:center;justify-content:center;padding:16px;">
   <div style="width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;height:100%;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
       <div style="font-size:1rem;font-weight:700;color:#f59e0b;">✂️ Crop Gambar</div>
-      <div style="font-size:0.72rem;color:var(--subtext);">Nisbah 6:5 — Cubit zum, seret untuk gerak</div>
+      <div style="font-size:0.72rem;color:var(--subtext);">Cubit zum · seret untuk gerak</div>
+    </div>
+    <!-- Input ratio custom -->
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+      <div style="font-size:0.72rem;color:var(--subtext);font-weight:600;white-space:nowrap;">Nisbah (W:H):</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">
+        <button class="crop-ratio-btn" data-ratio="3.1818" style="padding:4px 10px;border-radius:999px;font-size:0.7rem;font-weight:700;border:1px solid #f59e0b;color:#f59e0b;background:transparent;cursor:pointer;">70:22</button>
+        <button class="crop-ratio-btn" data-ratio="1.7778" style="padding:4px 10px;border-radius:999px;font-size:0.7rem;font-weight:700;border:1px solid var(--border-mid);color:var(--subtext);background:transparent;cursor:pointer;">16:9</button>
+        <button class="crop-ratio-btn" data-ratio="1.3333" style="padding:4px 10px;border-radius:999px;font-size:0.7rem;font-weight:700;border:1px solid var(--border-mid);color:var(--subtext);background:transparent;cursor:pointer;">4:3</button>
+        <button class="crop-ratio-btn" data-ratio="1.5" style="padding:4px 10px;border-radius:999px;font-size:0.7rem;font-weight:700;border:1px solid var(--border-mid);color:var(--subtext);background:transparent;cursor:pointer;">3:2</button>
+        <button class="crop-ratio-btn" data-ratio="1" style="padding:4px 10px;border-radius:999px;font-size:0.7rem;font-weight:700;border:1px solid var(--border-mid);color:var(--subtext);background:transparent;cursor:pointer;">1:1</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+        <input id="crop-ratio-w" type="number" min="1" max="99" value="70" style="width:38px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-mid);background:var(--card);color:var(--text);font-size:0.75rem;text-align:center;">
+        <span style="color:var(--subtext);font-size:0.8rem;">:</span>
+        <input id="crop-ratio-h" type="number" min="1" max="99" value="22" style="width:38px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-mid);background:var(--card);color:var(--text);font-size:0.75rem;text-align:center;">
+        <button id="btn-crop-ratio-apply" style="padding:4px 10px;border-radius:999px;font-size:0.7rem;font-weight:700;background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;cursor:pointer;">✓</button>
+      </div>
     </div>
 
     <!-- Canvas crop area -->
@@ -8733,33 +8750,30 @@ ${!adaItems ? `
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
-            input.addEventListener('change', (e) => {
-              const file = e.target.files[0];
-              if (!file) return;
-              // ── Guna crop tool dengan nisbah fakta 4:3 ──
-              CROP_RATIO = CROP_RATIO_FAKTA;
-              bukaCropTool(file, async (blob) => {
-                CROP_RATIO = CROP_RATIO_BAHASA; // reset balik selepas crop
-                showToast('⏳ Mengupload gambar...', 0);
-                try {
-                  const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`);
-                  const uploadTask = uploadBytesResumable(storageRefPath, blob);
-                  uploadTask.on('state_changed', null, (err) => {
-                    showToast('❌ Gagal upload: ' + err.message);
-                  }, async () => {
-                    const url = await getDownloadURL(uploadTask.snapshot.ref);
-                    const currentItems = data.items ? [...data.items] : [];
-                    if (currentItems[idx]) {
-                      currentItems[idx].imageUrl = url;
-                      await simpanItems(currentItems);
-                    }
-                    showToast('✅ Gambar berjaya diupload!');
-                  });
-                } catch(e) {
-                  showToast('❌ Gagal: ' + e.message);
-                }
-              });
+input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            bukaCropTool(file, async (blob) => {
+              const rW = blob._ratioW || cropRatioW || 70;
+              const rH = blob._ratioH || cropRatioH || 22;
+              showToast('⏳ Mengupload gambar...', 0);
+              try {
+                const storageRefPath = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}.jpg`);
+                const uploadTask = uploadBytesResumable(storageRefPath, blob);
+                uploadTask.on('state_changed', null, (err) => {
+                  showToast('❌ Gagal upload: ' + err.message);
+                }, async () => {
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
+                    imageUrl: url, imgRatioW: rW, imgRatioH: rH, updatedAt: Date.now()
+                  }, { merge: true });
+                  showToast('✅ Gambar berjaya diupload!');
+                });
+              } catch(e) {
+                showToast('❌ Gagal: ' + e.message);
+              }
             });
+          });
             input.click();
           });
         });
@@ -13494,10 +13508,13 @@ printWindow.onload = () => {
             const parts = line.split('=');
             const ayatBI = parts[0] ? parts[0].trim() : '';
             const terjemahan = parts[1] ? parts.slice(1).join('=').trim() : '';
-            if (ayatBI) {
+if (ayatBI) {
               nomborPDF++;
               if (firstNombor === null) firstNombor = nomborPDF;
-              flashcards.push({ tajuk, ayatBI, terjemahan, imageUrl, nombor: nomborPDF });
+              // Ambil ratio gambar dari data laci (disimpan masa crop)
+              const imgRatioW = laci.imgRatioW || 70;
+              const imgRatioH = laci.imgRatioH || 22;
+              flashcards.push({ tajuk, ayatBI, terjemahan, imageUrl, nombor: nomborPDF, imgRatioW, imgRatioH });
             }
           });
           if (firstNombor !== null) {
@@ -13589,9 +13606,14 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
             // Potong teks panjang supaya muat dalam card
             const ayatPendek = card.ayatBI.length > 120 ? card.ayatBI.substring(0, 120) + '...' : card.ayatBI;
             const terjPendek = card.terjemahan.length > 100 ? card.terjemahan.substring(0, 100) + '...' : card.terjemahan;
+// Kira tinggi gambar dari ratio — lebar berkesan kad = 59mm (70mm tolak padding 8mm+3mm)
+const imgRatioW = card.imgRatioW || 70;
+const imgRatioH = card.imgRatioH || 22;
+const imgHeightMm = Math.min(Math.round((59 / imgRatioW) * imgRatioH * 10) / 10, 30); // max 30mm
+const imgHStyle = `${imgHeightMm}mm`;
 const imgBlock = card.imageUrl
-              ? `<div class="card-img" style="background-image:url('${card.imageUrl}');"></div>`
-              : `<div class="card-img-placeholder"></div>`;
+              ? `<div class="card-img" style="background-image:url('${card.imageUrl}');height:${imgHStyle};"></div>`
+              : `<div class="card-img-placeholder" style="height:${imgHStyle};"></div>`;
 pagesHtml += `
               <div class="card">
                 <div class="card-header">
@@ -13700,7 +13722,7 @@ pagesHtml += `
 
 .card-img {
     width: 100%;
-    height: 22mm;
+    height: var(--img-h, 22mm);
     background-size: cover;
     background-position: center center;
     flex-shrink: 0;
@@ -13710,7 +13732,7 @@ pagesHtml += `
 
 .card-img-placeholder {
     width: 100%;
-    height: 22mm;
+    height: var(--img-h, 22mm);
     background: #f1f5f9;
     border-radius: 2mm;
     border: 0.5pt dashed #cbd5e1;
@@ -14496,8 +14518,11 @@ div.querySelector('.btn-daftar-sr-bd').addEventListener('click', async () => {
 input.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            CROP_RATIO = CROP_RATIO_BAHASA;
+// Ratio akan diset oleh user dalam crop tool
             bukaCropTool(file, async (blob) => {
+              // Ambil ratio dari blob
+              const rW = blob._ratioW || cropRatioW || 70;
+              const rH = blob._ratioH || cropRatioH || 22;
               showToast('⏳ Mengupload gambar...', 0);
               try {
                 const storageRefPath = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}.jpg`);
@@ -20829,12 +20854,16 @@ document.getElementById('jb-tap-area')?.addEventListener('click', (e) => {
 });
 
 // ══════════════════════════════════════════
-// CROP TOOL SYSTEM (Nisbah 6:5)
+// CROP TOOL SYSTEM
 // ══════════════════════════════════════════
 const CROP_RATIO_BAHASA = 70 / 22; // nisbah bahasa flashcard
 const CROP_RATIO_FAKTA = 16 / 9;   // nisbah fakta landscape
 let CROP_RATIO = CROP_RATIO_BAHASA; // default
-    
+
+// Track ratio semasa untuk export PDF
+let cropRatioW = 70;
+let cropRatioH = 22;
+
 let cropImg = null;
 let cropCallback = null;
 let cropState = {
@@ -20849,6 +20878,30 @@ let cropState = {
 
 function bukaCropTool(file, callback) {
   cropCallback = callback;
+  // Sync input W:H dengan CROP_RATIO semasa
+  const inputW = document.getElementById('crop-ratio-w');
+  const inputH = document.getElementById('crop-ratio-h');
+  if (inputW && inputH) {
+    // Kira W:H integer dari CROP_RATIO — semak preset dulu
+    if (Math.abs(CROP_RATIO - CROP_RATIO_BAHASA) < 0.01) {
+      inputW.value = 70; inputH.value = 22;
+      cropRatioW = 70; cropRatioH = 22;
+    } else if (Math.abs(CROP_RATIO - 16/9) < 0.01) {
+      inputW.value = 16; inputH.value = 9;
+      cropRatioW = 16; cropRatioH = 9;
+    } else if (Math.abs(CROP_RATIO - 4/3) < 0.01) {
+      inputW.value = 4; inputH.value = 3;
+      cropRatioW = 4; cropRatioH = 3;
+    } else if (Math.abs(CROP_RATIO - 3/2) < 0.01) {
+      inputW.value = 3; inputH.value = 2;
+      cropRatioW = 3; cropRatioH = 2;
+    } else if (Math.abs(CROP_RATIO - 1) < 0.01) {
+      inputW.value = 1; inputH.value = 1;
+      cropRatioW = 1; cropRatioH = 1;
+    }
+  }
+  _patchCropRatioBtns();
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const img = new Image();
@@ -20861,6 +20914,16 @@ function bukaCropTool(file, callback) {
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+function _patchCropRatioBtns() {
+  document.querySelectorAll('.crop-ratio-btn').forEach(btn => {
+    const r = parseFloat(btn.dataset.ratio);
+    const aktif = Math.abs(r - CROP_RATIO) < 0.01;
+    btn.style.background = aktif ? 'rgba(245,158,11,0.15)' : 'transparent';
+    btn.style.color = aktif ? '#f59e0b' : 'var(--subtext)';
+    btn.style.borderColor = aktif ? '#f59e0b' : 'var(--border-mid)';
+  });
 }
 
 function initCrop() {
@@ -21098,12 +21161,48 @@ document.getElementById('btn-crop-batal').addEventListener('click', () => {
   cropCallback = null;
 });
 
+// ── RATIO PRESET BUTTONS ──
+document.querySelectorAll('.crop-ratio-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const r = parseFloat(btn.dataset.ratio);
+    CROP_RATIO = r;
+    // Kemas kini input W:H
+    const label = btn.textContent.trim().split(':');
+    if (label.length === 2) {
+      const w = parseInt(label[0]), h = parseInt(label[1]);
+      cropRatioW = w; cropRatioH = h;
+      const inputW = document.getElementById('crop-ratio-w');
+      const inputH = document.getElementById('crop-ratio-h');
+      if (inputW) inputW.value = w;
+      if (inputH) inputH.value = h;
+    }
+    _patchCropRatioBtns();
+    if (cropImg) initCrop();
+  });
+});
+
+// ── BUTTON APPLY CUSTOM RATIO ──
+document.getElementById('btn-crop-ratio-apply')?.addEventListener('click', () => {
+  const w = parseFloat(document.getElementById('crop-ratio-w')?.value) || 1;
+  const h = parseFloat(document.getElementById('crop-ratio-h')?.value) || 1;
+  if (w <= 0 || h <= 0) { showToast('⚠️ Nisbah tidak sah.'); return; }
+  cropRatioW = w;
+  cropRatioH = h;
+  CROP_RATIO = w / h;
+  _patchCropRatioBtns();
+  if (cropImg) initCrop();
+  showToast(`✅ Nisbah ${w}:${h} digunakan`);
+});
+
 // ── BUTTON CONFIRM — export crop area jadi blob ──
 document.getElementById('btn-crop-confirm').addEventListener('click', () => {
   const canvas = document.getElementById('crop-canvas');
   if (!canvas || !cropImg) return;
 
-// Saiz output ikut nisbah crop semasa
+  // Saiz output ikut nisbah crop semasa
+  // Simpan ratio dalam gambar sebagai metadata (guna canvas dataset)
+  canvas.dataset.exportRatioW = cropRatioW;
+  canvas.dataset.exportRatioH = cropRatioH;
   const outW = 1180;
   const outH = Math.round(outW / CROP_RATIO);
   const outCanvas = document.createElement('canvas');
@@ -21123,7 +21222,12 @@ document.getElementById('btn-crop-confirm').addEventListener('click', () => {
 
   outCtx.drawImage(cropImg, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
 
+// Simpan ratio ke dalam blob sebagai custom property untuk dihantar ke callback
+  const finalRatioW = cropRatioW;
+  const finalRatioH = cropRatioH;
   outCanvas.toBlob((blob) => {
+    blob._ratioW = finalRatioW;
+    blob._ratioH = finalRatioH;
     document.getElementById('crop-overlay').style.display = 'none';
     cropImg = null;
     if (cropCallback) {
