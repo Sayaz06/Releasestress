@@ -12809,43 +12809,78 @@ document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
     });
 
 document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
-  if (!currentUser || !currentPerkataanId) return;
-addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
-    showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
+  if (!currentUser || !currentPerkataanId) { showToast('⚠️ Tiada perkataan dipilih.'); return; }
+  // Pastikan jenisId ada — ambil dari perkataan aktif kalau currentJenisKataId kosong
+  const perkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
+  const jenisIdFinal = currentJenisKataId || perkataan?.jenisId || null;
+  if (!jenisIdFinal) { showToast('⚠️ Tiada jenisId — sila navigasi melalui halaman Perkataan.'); return; }
+  addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), {
+    title: "~", notes: "", repeatCount: 0,
+    jenisId: jenisIdFinal,
+    perkataanId: currentPerkataanId,
+    createdAt: Date.now()
+  });
+  showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
 });
 
 document.getElementById('btn-debug-bahasa-laci').addEventListener('click', async () => {
   if (!currentUser || !currentPerkataanId) { showToast('⚠️ Buka perkataan dahulu.'); return; }
   const resultEl = document.getElementById('debug-bahasa-result');
   resultEl.style.display = 'block';
-  resultEl.textContent = '⏳ Membaca dari Firestore (server)...';
+  resultEl.textContent = '⏳ Membaca dari Firestore...';
   try {
-    const { getDocs: _getDocs, collection: _col, query: _q, where: _w } = await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js");
     const snap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_drawers"));
     const semua = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const filtered = semua.filter(d => d.perkataanId === currentPerkataanId);
-    const semua_total = semua.length;
-    let html = `📦 JUMLAH dalam Firestore: ${semua_total} laci (semua perkataan)\n`;
-    html += `🔍 Untuk perkataan ini (${currentPerkataanId.slice(0,8)}...): ${filtered.length} laci\n\n`;
-    if (filtered.length === 0) {
-      html += '✅ Tiada laci untuk perkataan ini dalam Firestore.\n(Laci yang nampak = dari cache sahaja)';
-    } else {
-      filtered.forEach((d, i) => {
-        html += `[${i+1}] ID: ${d.id}\n`;
-        html += `    Tajuk: "${d.title || '(kosong)'}"\n`;
-        html += `    Notes: "${(d.notes || '').slice(0, 40)}${d.notes && d.notes.length > 40 ? '...' : ''}"\n`;
-        html += `    jenisId: ${d.jenisId || 'KOSONG'}\n`;
-        html += `    perkataanId: ${d.perkataanId || 'KOSONG'}\n\n`;
-      });
-    }
-    // Semak laci tanpa perkataanId atau jenisId
     const yatim = semua.filter(d => !d.perkataanId || !d.jenisId);
+
+    let html = `📦 Jumlah semua laci: ${semua.length}\n`;
+    html += `🔍 Untuk perkataan ini: ${filtered.length} laci\n`;
+    html += `⚠️ Laci yatim: ${yatim.length}\n\n`;
+
+    filtered.forEach((d, i) => {
+      html += `[${i+1}] "${d.title || '(kosong)'}"\n    ID: ${d.id}\n    jenisId: ${d.jenisId || 'KOSONG'}\n\n`;
+    });
+
     if (yatim.length > 0) {
-      html += `⚠️ LACI YATIM (tiada perkataanId/jenisId): ${yatim.length}\n`;
+      html += `── LACI YATIM ──\n`;
       yatim.forEach(d => {
-        html += `  • ID: ${d.id} | Tajuk: "${d.title || '?'}" | perkataanId: ${d.perkataanId || 'KOSONG'} | jenisId: ${d.jenisId || 'KOSONG'}\n`;
+        html += `• "${d.title || '?'}" | ID: ${d.id}\n  perkataanId: ${d.perkataanId || 'KOSONG'} | jenisId: ${d.jenisId || 'KOSONG'}\n`;
       });
+      html += `\nTekan butang BUANG YATIM untuk padam semua laci yatim ini.`;
+
+      // Tunjuk butang buang yatim
+      let btnBuang = document.getElementById('btn-buang-yatim-bahasa');
+      if (!btnBuang) {
+        btnBuang = document.createElement('button');
+        btnBuang.id = 'btn-buang-yatim-bahasa';
+        btnBuang.textContent = `🗑️ Buang ${yatim.length} Laci Yatim Sekarang`;
+        btnBuang.style.cssText = 'width:100%;margin-top:8px;padding:10px;border-radius:999px;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;';
+        resultEl.after(btnBuang);
+
+        btnBuang.addEventListener('click', async () => {
+          if (!confirm(`Padam kekal ${yatim.length} laci yatim?\n\nLaci ini tiada perkataanId — tidak boleh diakses melalui UI.\n\nTeruskan?`)) return;
+          btnBuang.disabled = true;
+          btnBuang.textContent = '⏳ Membuang...';
+          let berjaya = 0;
+          for (const d of yatim) {
+            try {
+              await hantarKeTrashUniversal('bahasa_drawers', d.id, d, d.title || 'Laci Yatim');
+              await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", d.id));
+              allBahasaDrawers = allBahasaDrawers.filter(x => x.id !== d.id);
+              berjaya++;
+            } catch(e) {
+              showToast(`❌ Gagal buang ${d.id}: ` + e.message, 5000);
+            }
+          }
+          showToast(`✅ ${berjaya} laci yatim berjaya dibuang!`);
+          btnBuang.remove();
+          resultEl.style.display = 'none';
+          if (bahasaMode) rebuildBahasa();
+        });
+      }
     }
+
     resultEl.textContent = html;
   } catch(e) {
     resultEl.textContent = '❌ Gagal: ' + e.message;
