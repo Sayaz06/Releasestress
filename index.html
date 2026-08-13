@@ -8763,7 +8763,7 @@ input.addEventListener('change', (e) => {
                 uploadTask.on('state_changed', null, (err) => {
                   showToast('❌ Gagal upload: ' + err.message);
                 }, async () => {
-                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+const url = await getDownloadURL(uploadTask.snapshot.ref);
                   await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
                     imageUrl: url, imgRatioW: rW, imgRatioH: rH, updatedAt: Date.now()
                   }, { merge: true });
@@ -13625,12 +13625,11 @@ pagesHtml += `<div class="page" style="position:relative;"><div class="cut-h1"><
 // Kira tinggi gambar dari ratio — lebar berkesan kad = 59mm (70mm tolak padding 8mm+3mm)
 const imgRatioW = card.imgRatioW || 70;
 const imgRatioH = card.imgRatioH || 22;
-const cardInnerWidthMm = 87; // 99mm - padding 8mm kiri - 4mm kanan = 87mm
-const imgHeightMm = Math.min(Math.round((cardInnerWidthMm / imgRatioW) * imgRatioH * 10) / 10, 35); // max 35mm
-const imgHStyle = `${imgHeightMm}mm`;
+const imgHeightMm = Math.min(Math.round((59 / imgRatioW) * imgRatioH * 10) / 10, 30); // max 30mm
+const imgHStyle = card.imageUrl ? `${imgHeightMm}mm` : '0';
 const imgBlock = card.imageUrl
               ? `<div class="card-img" style="background-image:url('${card.imageUrl}');height:${imgHStyle};"></div>`
-              : `<div class="card-img-placeholder" style="height:${imgHStyle};"></div>`;
+              : '';
 pagesHtml += `
               <div class="card">
                 <div class="card-header">
