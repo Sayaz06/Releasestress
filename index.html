@@ -13511,9 +13511,25 @@ printWindow.onload = () => {
 if (ayatBI) {
               nomborPDF++;
               if (firstNombor === null) firstNombor = nomborPDF;
-              // Ambil ratio gambar dari data laci (disimpan masa crop)
-              const imgRatioW = laci.imgRatioW || 70;
-              const imgRatioH = laci.imgRatioH || 22;
+              // Guna ratio dari Firestore kalau ada, kalau tak detect dari saiz gambar sebenar
+              let imgRatioW = laci.imgRatioW || 0;
+              let imgRatioH = laci.imgRatioH || 0;
+              if ((!imgRatioW || !imgRatioH) && laci.imageUrl) {
+                // Detect ratio dari gambar yang dah diload dalam base64Map
+                const b64 = base64Map[laci.imageUrl];
+                if (b64) {
+                  // b64 ada dalam cache — buat Image untuk dapat naturalWidth/Height
+                  const tmpImg = new Image();
+                  tmpImg.src = b64;
+                  // naturalWidth/Height tersedia serta-merta kalau src dah diload
+                  if (tmpImg.naturalWidth && tmpImg.naturalHeight) {
+                    imgRatioW = tmpImg.naturalWidth;
+                    imgRatioH = tmpImg.naturalHeight;
+                  }
+                }
+              }
+              // Fallback kalau masih 0
+              if (!imgRatioW || !imgRatioH) { imgRatioW = 70; imgRatioH = 22; }
               flashcards.push({ tajuk, ayatBI, terjemahan, imageUrl, nombor: nomborPDF, imgRatioW, imgRatioH });
             }
           });
