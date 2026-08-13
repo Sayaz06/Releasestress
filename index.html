@@ -1974,11 +1974,11 @@ body.dark-mode {
         </div>
 <div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-bahasa-laci" class="btn btn-sm" style="flex:1;">+ Tambah Laci</button>
-          <button id="btn-export-bahasa-drawer-txt" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">👻 Ghost Button</button>
+<button id="btn-export-bahasa-drawer-txt" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">👻 Ghost Button</button>
         </div>
 
         <!-- GUIDE GHOST BUTTON -->
-        <div style="margin-top:8px;background:rgba(8,145,178,0.08);border:1px solid rgba(8,145,178,0.25);border-radius:12px;padding:12px;flex-shrink:0;">
+        <div id="guide-ghost-button" style="display:none;margin-top:8px;background:rgba(8,145,178,0.08);border:1px solid rgba(8,145,178,0.25);border-radius:12px;padding:12px;flex-shrink:0;">
           <div style="font-size:0.75rem;font-weight:700;color:#22d3ee;margin-bottom:6px;">👻 Apa itu Ghost Button?</div>
           <div style="font-size:0.72rem;color:var(--text);line-height:1.8;">
             Semasa development berulang kali, kadang-kadang <strong style="color:#fcd34d;">laci lama yang rosak atau kosong</strong> tersimpan dalam Firestore dan <strong style="color:#f87171;">tidak boleh dipadam dari UI dan firestore</strong> kerana kod baru tidak faham format data lama.<br><br>
@@ -14656,7 +14656,15 @@ function rebuildBahasa() {
       }
     }
 
-// ── EXPORT BAHASA DRAWER TXT (Format Jana Pukal) ──
+// ── TOGGLE GUIDE GHOST BUTTON ──
+    document.getElementById('btn-export-bahasa-drawer-txt').addEventListener('dblclick', () => {
+      const guide = document.getElementById('guide-ghost-button');
+      if (!guide) return;
+      const isOpen = guide.style.display !== 'none';
+      guide.style.display = isOpen ? 'none' : 'block';
+    });
+
+    // ── EXPORT BAHASA DRAWER TXT (Format Jana Pukal) ──
     document.getElementById('btn-export-bahasa-drawer-txt').addEventListener('click', () => {
       if (!currentPerkataanId) {
         showToast('Tiada perkataan dipilih.');
