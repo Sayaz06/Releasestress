@@ -3066,6 +3066,9 @@ import {
 
 import {
       getFirestore,
+      initializeFirestore,
+      persistentLocalCache,
+      persistentMultipleTabManager,
       doc,
       setDoc,
       getDoc,
@@ -3076,11 +3079,11 @@ import {
       deleteDoc,
       onSnapshot,
       query,
+      where,
       orderBy,
       limit,
       writeBatch
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-
     
     // IMPORT BARU: FIREBASE STORAGE (Masih dibiarkan mengikut arahan)
 import { 
@@ -3105,7 +3108,9 @@ import {
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider(); 
-    const db = getFirestore(app);
+    const db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
     const storage = getStorage(app); // INITIALIZE STORAGE (Masih disimpan)
     window.speechSynthesis.getVoices();
     
