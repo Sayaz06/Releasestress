@@ -2210,8 +2210,8 @@ body.dark-mode {
         </div>
         <button id="btn-export-pdf-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Export PDF Flashcard Fakta (A4 Portrait 2×3)</button>
 
-        <!-- GUIDE DUPLIKASI -->
-        <div style="margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
+<!-- GUIDE DUPLIKASI -->
+        <div class="guide-duplikasi-fakta" style="display:none;margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
           <div style="font-size:0.75rem;font-weight:700;color:#a78bfa;margin-bottom:6px;">📋 Apa itu Button Duplikasi?</div>
           <div style="font-size:0.72rem;color:var(--text);line-height:1.8;">
             Laci yang rosak atau jadi <strong style="color:#fcd34d;">"phantom"</strong> dalam Firestore (data lama dari kod lama) tidak boleh dipadam dari UI biasa. Button <strong style="color:#a78bfa;">Duplikasi</strong> dalam setiap kad laci membolehkan anda <strong style="color:#22d3ee;">salin laci yang baik ke dokumen baru</strong> dengan ID baru — kemudian padam yang lama.<br><br>
@@ -14718,6 +14718,15 @@ const laciList = allBahasaDrawers
       a.click();
       URL.revokeObjectURL(url);
       showToast(`✅ ${laciList.length} laci diexport!`);
+    });
+
+// ── TOGGLE GUIDE DUPLIKASI FAKTA ──
+    document.getElementById('btn-duplikasi-info-fakta').addEventListener('click', () => {
+      const guide = document.querySelector('#section-drawer .guide-duplikasi-fakta');
+      if (!guide) return;
+      const isOpen = guide.style.display !== 'none';
+      guide.style.display = isOpen ? 'none' : 'block';
+      document.getElementById('btn-duplikasi-info-fakta').textContent = isOpen ? '📋 Duplikasi' : '📋 Sorok Panduan';
     });
 
     // Subscribe collections bahasa
