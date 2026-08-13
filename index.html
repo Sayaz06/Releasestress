@@ -13605,14 +13605,14 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
 
         // Bina HTML page — 3 kolum × 3 baris = 9 cards per page
         // Tinggi setiap card = 210mm ÷ 3 = 70mm (tepat penuh)
-        const CARDS_PER_PAGE = 15;
+const CARDS_PER_PAGE = 9;
         let pagesHtml = '';
 
         for (let i = 0; i < flashcards.length; i += CARDS_PER_PAGE) {
           const batch = flashcards.slice(i, i + CARDS_PER_PAGE);
           while (batch.length < CARDS_PER_PAGE) batch.push(null);
 
-          pagesHtml += `<div class="page">`;
+pagesHtml += `<div class="page" style="position:relative;"><div class="cut-h1"></div><div class="cut-h2"></div>`;
           batch.forEach((card, idx) => {
             const nombor = i + idx + 1;
             if (!card) {
@@ -13625,7 +13625,8 @@ setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
 // Kira tinggi gambar dari ratio — lebar berkesan kad = 59mm (70mm tolak padding 8mm+3mm)
 const imgRatioW = card.imgRatioW || 70;
 const imgRatioH = card.imgRatioH || 22;
-const imgHeightMm = Math.min(Math.round((59 / imgRatioW) * imgRatioH * 10) / 10, 30); // max 30mm
+const cardInnerWidthMm = 87; // 99mm - padding 8mm kiri - 4mm kanan = 87mm
+const imgHeightMm = Math.min(Math.round((cardInnerWidthMm / imgRatioW) * imgRatioH * 10) / 10, 35); // max 35mm
 const imgHStyle = `${imgHeightMm}mm`;
 const imgBlock = card.imageUrl
               ? `<div class="card-img" style="background-image:url('${card.imageUrl}');height:${imgHStyle};"></div>`
@@ -13654,8 +13655,8 @@ pagesHtml += `
   body { font-family: 'Segoe UI', Arial, sans-serif; background: white; }
 
 .cover {
-    width: 210mm;
-    height: 297mm;
+    width: 297mm;
+    height: 210mm;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -13667,16 +13668,16 @@ pagesHtml += `
   .cover .stats { margin-top: 20px; font-size: 11pt; color: #374151; }
 
 @page {
-    size: A4 portrait;
+    size: A4 landscape;
     margin: 0;
   }
 
   .page {
-    width: 210mm;
-    height: 297mm;
+    width: 297mm;
+    height: 210mm;
     display: grid;
-    grid-template-columns: repeat(3, 70mm);
-    grid-template-rows: repeat(5, 59.4mm);
+    grid-template-columns: repeat(3, 99mm);
+    grid-template-rows: repeat(3, 70mm);
     gap: 0;
     page-break-after: always;
     break-after: page;
@@ -13684,8 +13685,8 @@ pagesHtml += `
   }
 
 .card {
-    width: 70mm;
-    height: 59.4mm;
+    width: 99mm;
+    height: 70mm;
     border: 0.5pt solid #d1d5db;
     border-left: 4pt solid #0891b2;
     padding: 2mm 3mm 2mm 8mm;
@@ -13778,7 +13779,7 @@ pagesHtml += `
     flex-shrink: 0;
   }
 
-  /* Garis potong */
+/* Garis potong menegak */
   .page::before {
     content: '';
     position: absolute;
@@ -13795,6 +13796,23 @@ pagesHtml += `
     top: 0;
     bottom: 0;
     border-left: 0.5pt dashed #9ca3af;
+    pointer-events: none;
+  }
+  /* Garis potong melintang */
+  .page .cut-h1 {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 33.33%;
+    border-top: 0.5pt dashed #9ca3af;
+    pointer-events: none;
+  }
+  .page .cut-h2 {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 66.66%;
+    border-top: 0.5pt dashed #9ca3af;
     pointer-events: none;
   }
 
@@ -14546,7 +14564,7 @@ input.addEventListener('change', (e) => {
                 }, async () => {
                   const url = await getDownloadURL(uploadTask.snapshot.ref);
                   await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
-                    imageUrl: url, updatedAt: Date.now()
+                    imageUrl: url, imgRatioW: rW, imgRatioH: rH, updatedAt: Date.now()
                   }, { merge: true });
                   showToast('✅ Gambar berjaya diupload!');
                 });
