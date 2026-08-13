@@ -14582,11 +14582,12 @@ function rebuildBahasa() {
       }
 
       const perkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
-      const jenis = allJenisKata.find(j => j.id === currentJenisKataId);
-      const namaPerk = perkataan ? (perkataan.name || 'perkataan') : 'perkataan';
-      const namaJenis = jenis ? (jenis.name || 'jenis') : 'jenis';
+      const namaPenuh = perkataan ? (perkataan.name || '') : '';
+      // namaPenuh contoh: "4. mengabahkan = [kk] mengarahkan; menujukan"
+      // Ambil bahagian selepas nombor untuk nama fail
+      const namaFail = namaPenuh.replace(/^\d+\.\s*/, '').split('=')[0].trim() || 'export';
 
-      const laciList = allBahasaDrawers
+const laciList = allBahasaDrawers
         .filter(d => d.perkataanId === currentPerkataanId)
         .sort((a, b) => {
           if ((a.title || '') === '~') return 1;
@@ -14599,7 +14600,8 @@ function rebuildBahasa() {
         return;
       }
 
-      let output = '';
+      // Bina header: "4. mengabahkan = [kk] mengarahkan; menujukan"
+      let output = `${namaPenuh}\n\n`;
 
       laciList.forEach(laci => {
         const tajuk = (laci.title || '').trim();
@@ -14607,29 +14609,18 @@ function rebuildBahasa() {
 
         if (!tajuk || tajuk === '~') return;
 
-        // Baris pertama: format Jana Pukal
-        // perkataan = [jenis] definisi
-        const baris = notes.split('\n').filter(l => l.trim());
-        const definisi = baris.length > 0
-          ? baris[0].split('=').slice(1).join('=').trim()
-          : '';
+        // Extract sinonim dari title: "1.mengabahkan → direct" → "direct"
+        const sinonimMatch = tajuk.match(/→\s*(.+)$/);
+        const sinonim = sinonimMatch ? sinonimMatch[1].trim() : tajuk;
 
-        output += `${tajuk} = [${namaJenis}] ${definisi}\n`;
+        // Extract ayat & terjemahan dari notes: "Ayat BI. = Terjemahan BM."
+        const eqIdx = notes.indexOf('=');
+        const ayat = eqIdx !== -1 ? notes.slice(0, eqIdx).trim() : notes;
+        const terjemahan = eqIdx !== -1 ? notes.slice(eqIdx + 1).trim() : '';
 
-        // Baris seterusnya → sinonim
-        baris.forEach((baris2, i) => {
-          if (i === 0) return; // skip baris pertama (dah jadi definisi)
-          const parts = baris2.split('=');
-          const ayat = parts[0].trim();
-          const terjemahan = parts.slice(1).join('=').trim();
-
-          output += `→ ${ayat}\n`;
-          if (terjemahan) {
-            output += `  Ayat: ${ayat}\n`;
-            output += `  Terjemahan: ${terjemahan}\n`;
-          }
-        });
-
+        output += `→ ${sinonim}\n`;
+        if (ayat) output += `   Ayat: ${ayat}\n`;
+        if (terjemahan) output += `   Terjemahan: ${terjemahan}\n`;
         output += '\n';
       });
 
@@ -14642,7 +14633,7 @@ function rebuildBahasa() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${namaPerk.replace(/\s+/g, '-')}-${namaJenis.replace(/\s+/g, '-')}.txt`;
+      a.download = `${namaFail.replace(/\s+/g, '-')}.txt`;
       a.click();
       URL.revokeObjectURL(url);
       showToast(`✅ ${laciList.length} laci diexport!`);
