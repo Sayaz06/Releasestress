@@ -13406,11 +13406,10 @@ showToast(`✅ ${semuaKad.length} kad dari ${semuaLaci.length} laci berjaya dija
       }
     }
 
-    document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', () => jalanExportFakta('portrait'));
+document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', () => jalanExportFakta('portrait'));
     document.getElementById('btn-export-pdf-fakta-landscape')?.addEventListener('click', () => jalanExportFakta('landscape'));
 
     async function jalanExportBahasa(orient) {
-async function jalanExportBahasa(orient) {
       if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
       // Loading bar — sama macam export AI
