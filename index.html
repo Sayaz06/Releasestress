@@ -2003,7 +2003,10 @@ body.dark-mode {
           <button id="btn-open-jana-tips-pukal" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Jana Tips Pukal</button>
         </div>
         <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export Format AI (Sayaz)</button>
-        <button id="btn-export-pdf-flashcard" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">🖨️ Export PDF Flashcard (A4 Lipat 3)</button>
+  <div style="display:flex;gap:6px;margin-top:8px;">
+          <button id="btn-export-pdf-flashcard" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">🖨️ Landscape 3×3</button>
+          <button id="btn-export-pdf-flashcard-portrait" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0e7490,#0c6b80);border:none;color:white;">🖨️ Portrait 2×4</button>
+        </div>
           <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
 
@@ -2208,8 +2211,11 @@ body.dark-mode {
           <button id="btn-add-laci" class="btn btn-sm" style="flex:1;">Tambah Laci</button>
           <button id="btn-duplikasi-info-fakta" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">📋 Duplikasi</button>
         </div>
-        <button id="btn-export-pdf-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Export PDF Flashcard Fakta (A4 Portrait 2×3)</button>
-
+<div style="display:flex;gap:6px;margin-top:8px;">
+          <button id="btn-export-pdf-fakta" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Portrait 2×3</button>
+          <button id="btn-export-pdf-fakta-landscape" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">🖨️ Landscape 3×2</button>
+        </div>
+        
 <!-- PANEL DUPLIKASI -->
         <div id="panel-duplikasi-fakta" style="display:none;margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
           <div style="font-size:0.75rem;font-weight:700;color:#a78bfa;margin-bottom:8px;">📋 Pilih Laci untuk Diduplikasi</div>
@@ -12915,7 +12921,7 @@ document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', (
     });
 
 // ── EXPORT PDF FLASHCARD ──
-document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async () => {
+async function jalanExportFakta(orient) {
       if (!currentUser || !currentTopicId) { showToast('⚠️ Sila buka topik dahulu.'); return; }
 
       const loadBar = document.createElement('div');
@@ -12929,7 +12935,6 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', async
           ⏳ Mengambil laci dari Firestore...
         </div>`;
       document.body.appendChild(loadBar);
-
       const setProgress = (pct, msg) => {
         const fill = document.getElementById('export-fakta-fill');
         const msgEl = document.getElementById('export-fakta-msg');
@@ -13067,8 +13072,15 @@ if (laci.items && laci.items.length > 0) {
 
         setProgress(80, `📄 Membina PDF — ${semuaKad.length} kad...`);
 
-        // ── BINA HTML PDF — A4 Portrait, 2 kolum × 3 baris ──
-        const CARDS_PER_PAGE = 6;
+// ── BINA HTML PDF — ikut orientasi ──
+        const isLandscape = orient === 'landscape';
+        const CARDS_PER_PAGE = isLandscape ? 6 : 6; // landscape: 3×2, portrait: 2×3
+        const PAGE_W = isLandscape ? '297mm' : '210mm';
+        const PAGE_H = isLandscape ? '210mm' : '297mm';
+        const COLS = isLandscape ? 3 : 2;
+        const ROWS = isLandscape ? 2 : 3;
+        const CARD_W = isLandscape ? '99mm' : '105mm';
+        const CARD_H = isLandscape ? '105mm' : '99mm';
         const tarikhExport = new Date().toLocaleDateString('ms-MY', {
           day: 'numeric', month: 'long', year: 'numeric'
         });
@@ -13132,7 +13144,7 @@ let pagesHtml = '';
           pagesHtml += `</div>`;
         }
 
-        const htmlContent = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -13142,7 +13154,7 @@ let pagesHtml = '';
   body { font-family:'Segoe UI',Arial,sans-serif; background:white; }
 
   .cover {
-    width:210mm; height:297mm;
+    width:${PAGE_W}; height:${PAGE_H};
     display:flex; flex-direction:column;
     align-items:center; justify-content:center;
     page-break-after:always;
@@ -13152,20 +13164,20 @@ let pagesHtml = '';
   .cover p  { font-size:11pt; color:#6b7280; }
   .cover .stats { margin-top:20px; font-size:11pt; color:#374151; line-height:2; }
 
-  @page { size:A4 portrait; margin:0; }
+  @page { size:A4 ${isLandscape ? 'landscape' : 'portrait'}; margin:0; }
 
   .page {
-    width:210mm; height:297mm;
+    width:${PAGE_W}; height:${PAGE_H};
     display:grid;
-    grid-template-columns:repeat(2, 105mm);
-    grid-template-rows:repeat(3, 99mm);
+    grid-template-columns:repeat(${COLS}, ${CARD_W});
+    grid-template-rows:repeat(${ROWS}, ${CARD_H});
     page-break-after:always;
     break-after:page;
     overflow:hidden;
   }
 
   .kad {
-    width:105mm; height:99mm;
+    width:${CARD_W}; height:${CARD_H};
     border:0.5pt solid #d1d5db;
     border-left:4pt solid #f59e0b;
     padding:3mm 3mm 3mm 6mm;
@@ -13241,7 +13253,7 @@ let pagesHtml = '';
   </div>
   <div style="margin-top:30px;font-size:10pt;color:#374151;text-align:center;line-height:2;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:16px 20px;">
     <strong style="color:#f59e0b;">⚙️ Tetapan Print:</strong><br>
-    Kertas: <strong>A4</strong> · Orientasi: <strong>Portrait</strong><br>
+Kertas: <strong>A4</strong> · Orientasi: <strong>${isLandscape ? 'Landscape' : 'Portrait'}</strong><br>
     Margin: <strong>Tiada / None</strong> · Skala: <strong>100%</strong><br>
     Nyahtick <strong>"Headers and footers"</strong>
   </div>
@@ -13386,15 +13398,19 @@ printWindow.onload = () => {
           setTimeout(() => printWindow.print(), 800);
         };
         removeLoadBar();
-        showToast(`✅ ${semuaKad.length} kad dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
+showToast(`✅ ${semuaKad.length} kad dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
 
       } catch(e) {
         removeLoadBar();
         showToast('❌ Gagal: ' + e.message);
       }
-    });    
+    }
 
-    document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', async () => {
+    document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', () => jalanExportFakta('portrait'));
+    document.getElementById('btn-export-pdf-fakta-landscape')?.addEventListener('click', () => jalanExportFakta('landscape'));
+
+    async function jalanExportBahasa(orient) {
+async function jalanExportBahasa(orient) {
       if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
       // Loading bar — sama macam export AI
@@ -13592,10 +13608,14 @@ if (ayatBI) {
           console.log("Gagal sync SR queue selepas export:", e);
         }
           
-        // Bina HTML untuk print
-        // A4 landscape = 297mm x 210mm
-        // 3 kolum = setiap kolum ~99mm lebar
-        // Guna window.print() dengan CSS @media print
+// Bina HTML untuk print ikut orientasi
+        const isLandscape = orient !== 'portrait';
+        const PAGE_W_B = isLandscape ? '297mm' : '210mm';
+        const PAGE_H_B = isLandscape ? '210mm' : '297mm';
+        const COLS_B = isLandscape ? 3 : 2;
+        const ROWS_B = isLandscape ? 3 : 4;
+        const CARD_W_B = isLandscape ? '99mm' : '105mm';
+        const CARD_H_B = isLandscape ? '70mm' : '74.25mm';
 
         const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
         const tajukPDF = jenisData?.name || 'Flashcard';
@@ -13603,9 +13623,7 @@ if (ayatBI) {
 
 setProgress(85, `📄 Membina ${flashcards.length} flashcard...`);
 
-        // Bina HTML page — 3 kolum × 3 baris = 9 cards per page
-        // Tinggi setiap card = 210mm ÷ 3 = 70mm (tepat penuh)
-const CARDS_PER_PAGE = 9;
+const CARDS_PER_PAGE = COLS_B * ROWS_B;
         let pagesHtml = '';
 
         for (let i = 0; i < flashcards.length; i += CARDS_PER_PAGE) {
@@ -13656,8 +13674,8 @@ pagesHtml += `
   body { font-family: 'Segoe UI', Arial, sans-serif; background: white; }
 
 .cover {
-    width: 297mm;
-    height: 210mm;
+    width: ${PAGE_W_B};
+    height: ${PAGE_H_B};
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -13669,16 +13687,16 @@ pagesHtml += `
   .cover .stats { margin-top: 20px; font-size: 11pt; color: #374151; }
 
 @page {
-    size: A4 landscape;
+    size: A4 ${isLandscape ? 'landscape' : 'portrait'};
     margin: 0;
   }
 
   .page {
-    width: 297mm;
-    height: 210mm;
+    width: ${PAGE_W_B};
+    height: ${PAGE_H_B};
     display: grid;
-    grid-template-columns: repeat(3, 99mm);
-    grid-template-rows: repeat(3, 70mm);
+    grid-template-columns: repeat(${COLS_B}, ${CARD_W_B});
+    grid-template-rows: repeat(${ROWS_B}, ${CARD_H_B});
     gap: 0;
     page-break-after: always;
     break-after: page;
@@ -13686,8 +13704,8 @@ pagesHtml += `
   }
 
 .card {
-    width: 99mm;
-    height: 70mm;
+    width: ${CARD_W_B};
+    height: ${CARD_H_B};
     border: 0.5pt solid #d1d5db;
     border-left: 4pt solid #0891b2;
     padding: 2mm 3mm 2mm 8mm;
@@ -13836,11 +13854,11 @@ pagesHtml += `
   </div>
 <div style="margin-top:30px;font-size:10pt;color:#374151;text-align:center;line-height:2;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px 20px;">
     <strong style="color:#0891b2;">⚙️ Tetapan Print yang Betul:</strong><br>
-    1. Kertas: <strong>A4</strong> · Orientasi: <strong>Landskap</strong><br>
+1. Kertas: <strong>A4</strong> · Orientasi: <strong>${isLandscape ? 'Landskap' : 'Portrait'}</strong><br>
     2. Margin: <strong>Tiada / None</strong> (PENTING!)<br>
     3. Skala: <strong>100%</strong> (jangan Fit to Page)<br>
     4. Nyahtick <strong>"Headers and footers"</strong><br><br>
-    <span style="color:#6b7280;font-size:9pt;">Lipat kertas secara menegak pada garisan putus-putus · Potong ikut baris melintang · Stapler tepi kiri</span>
+    <span style="color:#6b7280;font-size:9pt;">${isLandscape ? 'Lipat kertas secara menegak pada garisan putus-putus · Potong ikut baris melintang · Stapler tepi kiri' : 'Potong ikut garisan putus-putus · 2 kolum × 4 baris setiap halaman'}</span>
   </div>
 </div>
 
@@ -13867,13 +13885,16 @@ setProgress(100, '✅ Buka tetingkap print...');
           }, 600);
         };
 
-        showToast(`✅ ${flashcards.length} flashcard dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
+showToast(`✅ ${flashcards.length} flashcard dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
 
       } catch(e) {
         removeLoadBar();
         showToast('❌ Gagal: ' + e.message);
       }
-    });
+    }
+
+    document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', () => jalanExportBahasa('landscape'));
+    document.getElementById('btn-export-pdf-flashcard-portrait')?.addEventListener('click', () => jalanExportBahasa('portrait'));
 
 document.getElementById('btn-export-format-ai')?.addEventListener('click', async () => {
     if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
