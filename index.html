@@ -2004,8 +2004,8 @@ body.dark-mode {
         </div>
         <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export Format AI (Sayaz)</button>
   <div style="display:flex;gap:6px;margin-top:8px;">
-          <button id="btn-export-pdf-flashcard" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">🖨️ Landscape 3×3</button>
-          <button id="btn-export-pdf-flashcard-portrait" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0e7490,#0c6b80);border:none;color:white;">🖨️ Portrait 2×4</button>
+<button id="btn-export-pdf-flashcard" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">⭐ Landscape 3×2</button>
+          <button id="btn-export-pdf-flashcard-portrait" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0e7490,#0c6b80);border:none;color:white;">🖨️ Portrait 2×3</button>
         </div>
           <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
@@ -2212,8 +2212,8 @@ body.dark-mode {
           <button id="btn-duplikasi-info-fakta" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">📋 Duplikasi</button>
         </div>
 <div style="display:flex;gap:6px;margin-top:8px;">
-          <button id="btn-export-pdf-fakta" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Portrait 2×3</button>
-          <button id="btn-export-pdf-fakta-landscape" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">🖨️ Landscape 3×2</button>
+<button id="btn-export-pdf-fakta" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Portrait 2×3</button>
+          <button id="btn-export-pdf-fakta-landscape" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">⭐ Landscape 3×2</button>
         </div>
         
 <!-- PANEL DUPLIKASI -->
@@ -13612,9 +13612,9 @@ if (ayatBI) {
         const PAGE_W_B = isLandscape ? '297mm' : '210mm';
         const PAGE_H_B = isLandscape ? '210mm' : '297mm';
         const COLS_B = isLandscape ? 3 : 2;
-        const ROWS_B = isLandscape ? 3 : 4;
+        const ROWS_B = isLandscape ? 2 : 3;
         const CARD_W_B = isLandscape ? '99mm' : '105mm';
-        const CARD_H_B = isLandscape ? '70mm' : '74.25mm';
+        const CARD_H_B = isLandscape ? '105mm' : '99mm';
 
         const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
         const tajukPDF = jenisData?.name || 'Flashcard';
@@ -13857,7 +13857,7 @@ pagesHtml += `
     2. Margin: <strong>Tiada / None</strong> (PENTING!)<br>
     3. Skala: <strong>100%</strong> (jangan Fit to Page)<br>
     4. Nyahtick <strong>"Headers and footers"</strong><br><br>
-    <span style="color:#6b7280;font-size:9pt;">${isLandscape ? 'Lipat kertas secara menegak pada garisan putus-putus · Potong ikut baris melintang · Stapler tepi kiri' : 'Potong ikut garisan putus-putus · 2 kolum × 4 baris setiap halaman'}</span>
+    <span style="color:#6b7280;font-size:9pt;">${isLandscape ? 'Potong ikut garisan putus-putus · 3 kolum × 2 baris setiap halaman' : 'Potong ikut garisan putus-putus · 2 kolum × 3 baris setiap halaman'}</span>
   </div>
 </div>
 
