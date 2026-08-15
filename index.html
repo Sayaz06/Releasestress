@@ -13759,7 +13759,7 @@ pagesHtml += `
     overflow: hidden;
   }
 
-  .page::before {
+.page::before {
     content: '';
     position: absolute;
     left: 33.33%;
@@ -13767,6 +13767,7 @@ pagesHtml += `
     bottom: 0;
     border-left: 0.5pt dashed #9ca3af;
     pointer-events: none;
+    z-index: 10;
   }
   .page::after {
     content: '';
@@ -13776,6 +13777,7 @@ pagesHtml += `
     bottom: 0;
     border-left: 0.5pt dashed #9ca3af;
     pointer-events: none;
+    z-index: 10;
   }
   .page .cut-h1 {
     position: absolute;
@@ -13784,6 +13786,9 @@ pagesHtml += `
     top: 33.33%;
     border-top: 0.5pt dashed #9ca3af;
     pointer-events: none;
+    z-index: 10;
+    grid-column: 1 / -1;
+    height: 0;
   }
   .page .cut-h2 {
     position: absolute;
@@ -13792,6 +13797,9 @@ pagesHtml += `
     top: 66.66%;
     border-top: 0.5pt dashed #9ca3af;
     pointer-events: none;
+    z-index: 10;
+    grid-column: 1 / -1;
+    height: 0;
   }
 
   @media print {
