@@ -13726,12 +13726,12 @@ pagesHtml += `<div class="page">`;
     font-weight: 700;
   }
 
-  .card-img {
+.card-img {
     width: 100%;
-    max-height: 40mm;
+    height: 40mm;
     object-fit: contain;
     object-position: left center;
-    flex-shrink: 1;
+    flex-shrink: 0;
     border-radius: 1mm;
     display: block;
   }
@@ -13844,6 +13844,17 @@ printWindow.onload = () => {
               if (elBawah && lhBawah > 1.0) lhBawah = Math.max(1.0, lhBawah - 0.05);
               else if (elAtas && lhAtas > 1.0) lhAtas = Math.max(1.0, lhAtas - 0.05);
               setFont();
+            }
+            if (isOverflow()) {
+              const barisBawah = elBawah ? elBawah.querySelectorAll('div, p') : [];
+              let pad = 0.5;
+              while (isOverflow() && pad > 0) {
+                pad = Math.max(0, pad - 0.1);
+                barisBawah.forEach(b => {
+                  b.style.paddingTop = `${pad}mm`;
+                  b.style.paddingBottom = `${pad}mm`;
+                });
+              }
             }
           });
           setTimeout(() => printWindow.print(), 800);
