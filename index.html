@@ -13305,9 +13305,9 @@ ${pagesHtml}
           console.log("Gagal sync SR queue fakta selepas export:", e);
         }
 
-        setProgress(95, '✅ Membuka tetingkap print...');
+setProgress(95, '✅ Membuka tetingkap print...');
 
-const printWindow = window.open('', '_blank');
+        const printWindow = window.open('', '_blank');
         printWindow.document.write(htmlContent);
         printWindow.document.close();
         printWindow.focus();
@@ -13636,134 +13636,190 @@ pagesHtml += `<div class="page" style="position:relative;"><div class="cut-h1"><
               pagesHtml += `<div class="card empty"></div>`;
               return;
             }
-            // Potong teks panjang supaya muat dalam card
-            const ayatPendek = card.ayatBI.length > 120 ? card.ayatBI.substring(0, 120) + '...' : card.ayatBI;
-            const terjPendek = card.terjemahan.length > 100 ? card.terjemahan.substring(0, 100) + '...' : card.terjemahan;
+// Kira tinggi gambar dari ratio — gambar scale ikut lebar kad, ratio kekal
+// Lebar berkesan kad = 59mm (70mm - padding kiri 8mm - kanan 3mm)
 const imgBlock = card.imageUrl
               ? `<img class="card-img" src="${card.imageUrl}" alt="">`
               : '';
 pagesHtml += `
               <div class="card">
                 <div class="card-header">
-                  <span class="card-kod">${jenisNama}-${card.nombor}</span>
-                  <span class="card-tajuk">${card.tajuk}</span>
+                  <div class="card-kod">${jenisNama}-${card.nombor}</div>
+                  <div class="card-tajuk">${card.tajuk}</div>
                 </div>
                 ${imgBlock}
-                <div class="card-ayat">${ayatPendek}</div>
-                <div class="card-terjemahan">${terjPendek || '—'}</div>
+                <div class="card-ayat">${card.ayatBI}</div>
+                ${card.terjemahan ? `<div class="card-terjemahan">${card.terjemahan}</div>` : ''}
               </div>`;
           });
           pagesHtml += `</div>`;
         }
 
-const htmlContent = `<!DOCTYPE html>
+        const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>Flashcard — ${tajukPDF}</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Segoe UI',Arial,sans-serif; background:white; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: white; }
 
   .cover {
-    width:${PAGE_W_B}; height:${PAGE_H_B};
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    page-break-after:always;
+    width: ${PAGE_W_B};
+    height: ${PAGE_H_B};
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    page-break-after: always;
   }
-  .cover h1 { font-size:22pt; color:#0891b2; margin-bottom:8px; }
-  .cover h2 { font-size:15pt; color:#374151; margin-bottom:4px; }
-  .cover p  { font-size:11pt; color:#6b7280; }
-  .cover .stats { margin-top:20px; font-size:11pt; color:#374151; line-height:2; }
+  .cover h1 { font-size: 22pt; color: #0891b2; margin-bottom: 8px; }
+  .cover h2 { font-size: 15pt; color: #374151; margin-bottom: 4px; }
+  .cover p  { font-size: 11pt; color: #6b7280; }
+  .cover .stats { margin-top: 20px; font-size: 11pt; color: #374151; line-height: 2; }
 
-  @page { size:A4 ${isLandscape ? 'landscape' : 'portrait'}; margin:0; }
+  @page { size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: 0; }
 
   .page {
-    width:${PAGE_W_B}; height:${PAGE_H_B};
-    display:grid;
-    grid-template-columns:repeat(${COLS_B}, ${CARD_W_B});
-    grid-template-rows:repeat(${ROWS_B}, ${CARD_H_B});
-    page-break-after:always;
-    break-after:page;
-    overflow:hidden;
+    width: ${PAGE_W_B};
+    height: ${PAGE_H_B};
+    display: grid;
+    grid-template-columns: repeat(${COLS_B}, ${CARD_W_B});
+    grid-template-rows: repeat(${ROWS_B}, ${CARD_H_B});
+    page-break-after: always;
+    break-after: page;
+    overflow: hidden;
   }
 
   .card {
-    width:${CARD_W_B}; height:${CARD_H_B};
-    border:0.5pt solid #d1d5db;
-    border-left:4pt solid #0891b2;
-    padding:3mm 3mm 3mm 6mm;
-    display:flex; flex-direction:column;
-    gap:2mm; overflow:hidden;
-    background:white; box-sizing:border-box;
+    width: ${CARD_W_B};
+    height: ${CARD_H_B};
+    border: 0.5pt solid #d1d5db;
+    border-left: 4pt solid #0891b2;
+    padding: 3mm 3mm 3mm 6mm;
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+    overflow: hidden;
+    background: white;
+    box-sizing: border-box;
   }
   .card.empty {
-    background:#f9fafb;
-    border-color:#f3f4f6;
-    border-left-color:#e5e7eb;
+    background: #f9fafb;
+    border-color: #f3f4f6;
+    border-left-color: #e5e7eb;
   }
 
   .card-header {
-    display:flex; flex-direction:column;
-    gap:1mm; flex-shrink:0;
+    display: flex;
+    flex-direction: column;
+    gap: 1mm;
+    flex-shrink: 0;
   }
   .card-kod {
-    font-size:6pt; font-weight:700;
-    color:#9ca3af; white-space:nowrap;
-    letter-spacing:0.02em;
+    font-size: 6pt;
+    font-weight: 700;
+    color: #9ca3af;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
   }
   .card-tajuk {
-    font-size:7pt; color:#0891b2;
-    line-height:1.3; font-weight:700;
+    font-size: 7pt;
+    color: #0891b2;
+    line-height: 1.3;
+    font-weight: 700;
   }
 
   .card-img {
-    width:100%;
-    max-height:40mm;
-    object-fit:contain;
-    object-position:left center;
-    flex-shrink:1;
-    border-radius:1mm;
-    display:block;
+    width: 100%;
+    max-height: 40mm;
+    object-fit: contain;
+    object-position: left center;
+    flex-shrink: 1;
+    border-radius: 1mm;
+    display: block;
   }
 
   .card-ayat {
-    font-size:8.5pt; color:#1f2937;
-    line-height:1.4; font-weight:600;
-    flex-shrink:0;
-    border-bottom:0.5pt dashed #d1d5db;
-    padding-bottom:1.5mm;
+    font-size: 8.5pt;
+    color: #1f2937;
+    line-height: 1.4;
+    font-weight: 600;
+    flex-shrink: 0;
+    border-bottom: 0.5pt dashed #d1d5db;
+    padding-bottom: 1.5mm;
   }
 
   .card-terjemahan {
-    font-size:7.5pt; color:#374151;
-    line-height:1.4; flex:1;
-    overflow:hidden;
+    font-size: 7.5pt;
+    color: #374151;
+    line-height: 1.4;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .page::before {
+    content: '';
+    position: absolute;
+    left: 33.33%;
+    top: 0;
+    bottom: 0;
+    border-left: 0.5pt dashed #9ca3af;
+    pointer-events: none;
+  }
+  .page::after {
+    content: '';
+    position: absolute;
+    left: 66.66%;
+    top: 0;
+    bottom: 0;
+    border-left: 0.5pt dashed #9ca3af;
+    pointer-events: none;
+  }
+  .page .cut-h1 {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 33.33%;
+    border-top: 0.5pt dashed #9ca3af;
+    pointer-events: none;
+  }
+  .page .cut-h2 {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 66.66%;
+    border-top: 0.5pt dashed #9ca3af;
+    pointer-events: none;
   }
 
   @media print {
-    body { margin:0; }
-    .page { page-break-after:always; }
-    .cover { page-break-after:always; }
+    body { margin: 0; }
+    .page { page-break-after: always; }
+    .cover { page-break-after: always; }
   }
 </style>
 </head>
 <body>
 
+<!-- COVER PAGE -->
 <div class="cover">
   <h1>📚 ${tajukPDF}</h1>
-  <h2>${tarikhExport}</h2>
+  <p>${tarikhExport}</p>
   <div class="stats">
-    ${flashcards.length} kad · ${semuaLaci.length} laci · ${Math.ceil(flashcards.length / CARDS_PER_PAGE)} muka surat
+    ${flashcards.length} flashcard · ${semuaLaci.length} laci · ${Math.ceil(flashcards.length / CARDS_PER_PAGE)} muka surat
   </div>
-  <div style="margin-top:30px;font-size:10pt;color:#374151;text-align:center;line-height:2;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px 20px;">
-    <strong style="color:#0891b2;">⚙️ Tetapan Print:</strong><br>
-    Kertas: <strong>A4</strong> · Orientasi: <strong>${isLandscape ? 'Landscape' : 'Portrait'}</strong><br>
-    Margin: <strong>Tiada / None</strong> · Skala: <strong>100%</strong><br>
-    Nyahtick <strong>"Headers and footers"</strong>
+<div style="margin-top:30px;font-size:10pt;color:#374151;text-align:center;line-height:2;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px 20px;">
+    <strong style="color:#0891b2;">⚙️ Tetapan Print yang Betul:</strong><br>
+1. Kertas: <strong>A4</strong> · Orientasi: <strong>${isLandscape ? 'Landskap' : 'Portrait'}</strong><br>
+    2. Margin: <strong>Tiada / None</strong> (PENTING!)<br>
+    3. Skala: <strong>100%</strong> (jangan Fit to Page)<br>
+    4. Nyahtick <strong>"Headers and footers"</strong><br><br>
+    <span style="color:#6b7280;font-size:9pt;">${isLandscape ? 'Potong ikut garisan putus-putus · 3 kolum × 2 baris setiap halaman' : 'Potong ikut garisan putus-putus · 2 kolum × 3 baris setiap halaman'}</span>
   </div>
 </div>
 
+<!-- FLASHCARD PAGES -->
 ${pagesHtml}
 
 </body>
@@ -13786,7 +13842,54 @@ setProgress(100, '✅ Buka tetingkap print...');
           }, 600);
         };
 
-showToast(`✅ ${flashcards.length} flashcard dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
+printWindow.onload = () => {
+          const semuaKad = printWindow.document.querySelectorAll('.card');
+          semuaKad.forEach(kad => {
+            if (kad.classList.contains('empty')) return;
+            const elAtas  = kad.querySelector('.card-ayat');
+            const elBawah = kad.querySelector('.card-terjemahan');
+            if (!elAtas && !elBawah) return;
+            let ptAtas  = 8.5;
+            let ptBawah = 7.5;
+            let lhAtas  = 1.35;
+            let lhBawah = 1.3;
+            const PT_MIN = 4;
+            const STEP   = 0.3;
+            function setFont() {
+              if (elAtas)  { elAtas.style.fontSize  = `${ptAtas}pt`;  elAtas.style.lineHeight  = String(lhAtas); }
+              if (elBawah) { elBawah.style.fontSize = `${ptBawah}pt`; elBawah.style.lineHeight = String(lhBawah); }
+            }
+            function totalChildrenHeight() {
+              let total = 0;
+              Array.from(kad.children).forEach(child => {
+                const s = printWindow.getComputedStyle(child);
+                const mt = parseFloat(s.marginTop) || 0;
+                const mb = parseFloat(s.marginBottom) || 0;
+                total += child.offsetHeight + mt + mb;
+              });
+              const gap = (kad.children.length - 1) * 7.56;
+              return total + gap;
+            }
+            function isOverflow() { return totalChildrenHeight() > kad.clientHeight; }
+            setFont();
+            while (isOverflow()) {
+              if (ptAtas <= PT_MIN && ptBawah <= PT_MIN) break;
+              if (elBawah && ptBawah > PT_MIN) ptBawah = Math.max(PT_MIN, ptBawah - STEP);
+              else if (elAtas && ptAtas > PT_MIN) ptAtas = Math.max(PT_MIN, ptAtas - STEP);
+              setFont();
+            }
+            while (isOverflow()) {
+              if (lhBawah <= 1.0 && lhAtas <= 1.0) break;
+              if (elBawah && lhBawah > 1.0) lhBawah = Math.max(1.0, lhBawah - 0.05);
+              else if (elAtas && lhAtas > 1.0) lhAtas = Math.max(1.0, lhAtas - 0.05);
+              setFont();
+            }
+          });
+          setTimeout(() => printWindow.print(), 800);
+        };
+
+        removeLoadBar();
+        showToast(`✅ ${flashcards.length} flashcard dari ${semuaLaci.length} laci berjaya dijana!`, 4000);
 
       } catch(e) {
         removeLoadBar();
@@ -13796,7 +13899,6 @@ showToast(`✅ ${flashcards.length} flashcard dari ${semuaLaci.length} laci berj
 
     document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', () => jalanExportBahasa('landscape'));
     document.getElementById('btn-export-pdf-flashcard-portrait')?.addEventListener('click', () => jalanExportBahasa('portrait'));
-
 document.getElementById('btn-export-format-ai')?.addEventListener('click', async () => {
     if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
