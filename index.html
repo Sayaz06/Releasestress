@@ -13629,19 +13629,16 @@ const CARDS_PER_PAGE = COLS_B * ROWS_B;
           const batch = flashcards.slice(i, i + CARDS_PER_PAGE);
           while (batch.length < CARDS_PER_PAGE) batch.push(null);
 
-pagesHtml += `<div class="page" style="position:relative;"><div class="cut-h1"></div><div class="cut-h2"></div>`;
+pagesHtml += `<div class="page">`;
           batch.forEach((card, idx) => {
-            const nombor = i + idx + 1;
             if (!card) {
               pagesHtml += `<div class="card empty"></div>`;
               return;
             }
-// Kira tinggi gambar dari ratio — gambar scale ikut lebar kad, ratio kekal
-// Lebar berkesan kad = 59mm (70mm - padding kiri 8mm - kanan 3mm)
-const imgBlock = card.imageUrl
+            const imgBlock = card.imageUrl
               ? `<img class="card-img" src="${card.imageUrl}" alt="">`
               : '';
-pagesHtml += `
+            pagesHtml += `
               <div class="card">
                 <div class="card-header">
                   <div class="card-kod">${jenisNama}-${card.nombor}</div>
@@ -13674,13 +13671,12 @@ pagesHtml += `
     page-break-after: always;
   }
   .cover h1 { font-size: 22pt; color: #0891b2; margin-bottom: 8px; }
-  .cover h2 { font-size: 15pt; color: #374151; margin-bottom: 4px; }
   .cover p  { font-size: 11pt; color: #6b7280; }
   .cover .stats { margin-top: 20px; font-size: 11pt; color: #374151; line-height: 2; }
 
   @page { size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: 0; }
 
-.page {
+  .page {
     width: ${PAGE_W_B};
     height: ${PAGE_H_B};
     display: grid;
@@ -13689,7 +13685,6 @@ pagesHtml += `
     page-break-after: always;
     break-after: page;
     overflow: hidden;
-    position: relative;
   }
 
   .card {
@@ -13757,49 +13752,6 @@ pagesHtml += `
     line-height: 1.4;
     flex: 1;
     overflow: hidden;
-  }
-
-.page::before {
-    content: '';
-    position: absolute;
-    left: 33.33%;
-    top: 0;
-    bottom: 0;
-    border-left: 0.5pt dashed #9ca3af;
-    pointer-events: none;
-    z-index: 10;
-  }
-  .page::after {
-    content: '';
-    position: absolute;
-    left: 66.66%;
-    top: 0;
-    bottom: 0;
-    border-left: 0.5pt dashed #9ca3af;
-    pointer-events: none;
-    z-index: 10;
-  }
-  .page .cut-h1 {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 33.33%;
-    border-top: 0.5pt dashed #9ca3af;
-    pointer-events: none;
-    z-index: 10;
-    grid-column: 1 / -1;
-    height: 0;
-  }
-  .page .cut-h2 {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 66.66%;
-    border-top: 0.5pt dashed #9ca3af;
-    pointer-events: none;
-    z-index: 10;
-    grid-column: 1 / -1;
-    height: 0;
   }
 
   @media print {
