@@ -13680,7 +13680,7 @@ pagesHtml += `
 
   @page { size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: 0; }
 
-  .page {
+.page {
     width: ${PAGE_W_B};
     height: ${PAGE_H_B};
     display: grid;
@@ -13689,6 +13689,7 @@ pagesHtml += `
     page-break-after: always;
     break-after: page;
     overflow: hidden;
+    position: relative;
   }
 
   .card {
