@@ -14958,11 +14958,29 @@ const btn = document.getElementById('btn-duplikasi-perkataan-confirm');
       btn.disabled = true;
       btn.textContent = '⏳ Menduplikasi...';
 
-      let berjayaP = 0, gagalP = 0, berjayaL = 0, gagalL = 0;
+let berjayaP = 0, gagalP = 0, berjayaL = 0, gagalL = 0;
       const jumlahTotal = terpilih.length;
       let selesai = 0;
-      showLoadBar();
-      setProgress(0, '⏳ Memulakan duplikasi...');
+
+      // Progress bar lokal
+      const ghostLoadBar = document.createElement('div');
+      ghostLoadBar.id = 'ghost-load-bar';
+      ghostLoadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
+      ghostLoadBar.innerHTML = `
+        <div id="ghost-bar-fill" style="height:4px;background:linear-gradient(90deg,#0891b2,#22d3ee);width:0%;transition:width 0.3s;"></div>
+        <div id="ghost-bar-msg" style="background:rgba(8,145,178,0.92);color:white;font-size:0.75rem;padding:4px 12px;"></div>`;
+      document.body.appendChild(ghostLoadBar);
+      const setGhostProgress = (pct, msg) => {
+        const fill = document.getElementById('ghost-bar-fill');
+        const msgEl = document.getElementById('ghost-bar-msg');
+        if (fill) fill.style.width = pct + '%';
+        if (msgEl) msgEl.textContent = msg;
+      };
+      const removeGhostBar = () => {
+        const el = document.getElementById('ghost-load-bar');
+        if (el) el.remove();
+      };
+      setGhostProgress(0, '⏳ Memulakan duplikasi...');
 
       // Helper: fetch URL dan return blob
       async function fetchBlob(url) {
@@ -15023,13 +15041,13 @@ const btn = document.getElementById('btn-duplikasi-perkataan-confirm');
           }
 
 selesai++;
-          setProgress(Math.round((selesai / jumlahTotal) * 95), `⏳ Menduplikasi perkataan ${selesai}/${jumlahTotal}...`);
+          setGhostProgress(Math.round((selesai / jumlahTotal) * 95), `⏳ Menduplikasi perkataan ${selesai}/${jumlahTotal}...`);
           berjayaP++;
         } catch(e) { gagalP++; selesai++; }
       }
 
-      setProgress(100, '✅ Selesai!');
-      setTimeout(() => removeLoadBar(), 800);
+      setGhostProgress(100, '✅ Selesai!');
+      setTimeout(() => removeGhostBar(), 800);
       btn.disabled = false;
       btn.textContent = '✅ Duplikasi';
       document.getElementById('panel-duplikasi-perkataan').style.display = 'none';
