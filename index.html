@@ -2001,13 +2001,26 @@ body.dark-mode {
             <div class="topbar-sub" id="parent-perkataan-jenis-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
-<div style="display:flex;gap:8px;margin-top:8px;">
+        <div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-perkataan" class="btn btn-sm" style="flex:1;border-color:#06b6d4;">+ Tambah Perkataan</button>
           <button id="btn-open-jana-tips-pukal" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Jana Tips Pukal</button>
         </div>
+        <button id="btn-duplikasi-info-perkataan" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📋 Pindah Perkataan ke Jenis Kata Lain</button>
+        <!-- PANEL DUPLIKASI PERKATAAN -->
+        <div id="panel-duplikasi-perkataan" style="display:none;margin-top:8px;background:rgba(8,145,178,0.08);border:1px solid rgba(8,145,178,0.25);border-radius:12px;padding:12px;">
+          <div style="font-size:0.75rem;font-weight:700;color:#22d3ee;margin-bottom:8px;">📋 Pilih Perkataan untuk Dipindah</div>
+          <div id="duplikasi-perkataan-checkbox-list" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>
+          <div style="font-size:0.72rem;color:#22d3ee;font-weight:700;margin-bottom:6px;">📁 Pindah ke Jenis Kata:</div>
+          <select id="duplikasi-perkataan-jenis-select" style="width:100%;background:rgba(30,41,59,0.8);color:var(--text);border:1px solid rgba(8,145,178,0.4);border-radius:8px;padding:7px 10px;font-size:0.75rem;margin-bottom:10px;"></select>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-duplikasi-perkataan-pilih-semua" class="btn btn-secondary btn-sm" style="flex:1;border-color:#22d3ee;color:#22d3ee;">Pilih Semua</button>
+            <button id="btn-duplikasi-perkataan-confirm" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">✅ Pindah</button>
+            <button id="btn-duplikasi-perkataan-cancel" class="btn btn-secondary btn-sm" style="flex:1;">Batal</button>
+          </div>
+        </div>
         <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export Format AI (Sayaz)</button>
-  <div style="display:flex;gap:6px;margin-top:8px;">
-<button id="btn-export-pdf-flashcard" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">⭐ Landscape 3×2</button>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button id="btn-export-pdf-flashcard" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">⭐ Landscape 3×2</button>
           <button id="btn-export-pdf-flashcard-portrait" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0e7490,#0c6b80);border:none;color:white;">🖨️ Portrait 2×3</button>
         </div>
           <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
@@ -14858,6 +14871,173 @@ function rebuildBahasa() {
       showToast(`✅ ${berjaya} laci berjaya disalin ke "${namaPerkataanDest}"${gagal ? ` | ❌ ${gagal} gagal` : ''}`, 4000);
     });
 
+// ── PANEL PINDAH PERKATAAN KE JENIS KATA LAIN ──
+    document.getElementById('btn-duplikasi-info-perkataan').addEventListener('click', () => {
+      const panel = document.getElementById('panel-duplikasi-perkataan');
+      const isOpen = panel.style.display !== 'none';
+      if (isOpen) {
+        panel.style.display = 'none';
+        document.getElementById('btn-duplikasi-info-perkataan').textContent = '📋 Pindah Perkataan ke Jenis Kata Lain';
+        return;
+      }
+
+      // Bina senarai checkbox semua perkataan dalam jenis kata semasa
+      const senarai = allBahasaPerkataan
+        .filter(p => p.jenisId === currentJenisKataId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+      const listEl = document.getElementById('duplikasi-perkataan-checkbox-list');
+      listEl.innerHTML = '';
+
+      if (!senarai.length) {
+        listEl.innerHTML = '<div style="font-size:0.72rem;color:var(--subtext);">Tiada perkataan dalam jenis kata ini.</div>';
+      } else {
+        senarai.forEach(p => {
+          const row = document.createElement('label');
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:8px;cursor:pointer;font-size:0.75rem;color:var(--text);';
+          row.innerHTML = `
+            <input type="checkbox" class="duplikasi-perkataan-cb" data-id="${p.id}" style="margin-top:2px;accent-color:#22d3ee;flex-shrink:0;">
+            <span>${p.name || '(Tiada Nama)'}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      // Bina dropdown jenis kata destinasi — semua jenis kata kecuali semasa
+      const selectEl = document.getElementById('duplikasi-perkataan-jenis-select');
+      selectEl.innerHTML = '';
+      const jenisLain = allJenisKata
+        .filter(j => j.id !== currentJenisKataId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      if (!jenisLain.length) {
+        selectEl.innerHTML = '<option value="">— Tiada jenis kata lain —</option>';
+      } else {
+        jenisLain.forEach(j => {
+          const opt = document.createElement('option');
+          opt.value = j.id;
+          opt.textContent = j.name || '(Tanpa Nama)';
+          selectEl.appendChild(opt);
+        });
+      }
+
+      panel.style.display = 'block';
+      document.getElementById('btn-duplikasi-info-perkataan').textContent = '✕ Tutup';
+    });
+
+    document.getElementById('btn-duplikasi-perkataan-pilih-semua').addEventListener('click', () => {
+      const semua = document.querySelectorAll('.duplikasi-perkataan-cb');
+      const adaYangTakPilih = [...semua].some(cb => !cb.checked);
+      semua.forEach(cb => cb.checked = adaYangTakPilih);
+      document.getElementById('btn-duplikasi-perkataan-pilih-semua').textContent = adaYangTakPilih ? 'Nyahpilih Semua' : 'Pilih Semua';
+    });
+
+    document.getElementById('btn-duplikasi-perkataan-cancel').addEventListener('click', () => {
+      document.getElementById('panel-duplikasi-perkataan').style.display = 'none';
+      document.getElementById('btn-duplikasi-info-perkataan').textContent = '📋 Pindah Perkataan ke Jenis Kata Lain';
+    });
+
+    document.getElementById('btn-duplikasi-perkataan-confirm').addEventListener('click', async () => {
+      const terpilih = [...document.querySelectorAll('.duplikasi-perkataan-cb:checked')];
+      if (!terpilih.length) { showToast('⚠️ Tiada perkataan dipilih.'); return; }
+
+      const jenisDestId = document.getElementById('duplikasi-perkataan-jenis-select').value;
+      if (!jenisDestId) { showToast('⚠️ Sila pilih jenis kata destinasi.'); return; }
+
+      const jenisDest = allJenisKata.find(j => j.id === jenisDestId);
+      const namaJenisDest = jenisDest?.name || 'Jenis Kata';
+
+      const jumlahLaci = terpilih.reduce((sum, cb) => {
+        const pid = cb.getAttribute('data-id');
+        return sum + allBahasaDrawers.filter(d => d.perkataanId === pid).length;
+      }, 0);
+
+      if (!confirm(`Pindah ${terpilih.length} perkataan (${jumlahLaci} laci + gambar) ke:\n\n"${namaJenisDest}"?\n\nPerkataan asal akan DIPADAM selepas dipindah.`)) return;
+
+      const btn = document.getElementById('btn-duplikasi-perkataan-confirm');
+      btn.disabled = true;
+      btn.textContent = '⏳ Memindah...';
+
+      let berjayaP = 0, gagalP = 0, berjayaL = 0, gagalL = 0;
+
+      // Helper: fetch URL dan return blob
+      async function fetchBlob(url) {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Fetch gagal');
+        return await resp.blob();
+      }
+
+      for (const cb of terpilih) {
+        const pid = cb.getAttribute('data-id');
+        const perkataan = allBahasaPerkataan.find(p => p.id === pid);
+        if (!perkataan) { gagalP++; continue; }
+
+        try {
+          // 1. Cipta perkataan baru dalam jenis kata destinasi
+          const perkataanBaruRef = await addDoc(collection(db, "users", currentUser.uid, "bahasa_perkataan"), {
+            name: perkataan.name || '',
+            jenisId: jenisDestId,
+            isActive: false,
+            createdAt: Date.now()
+          });
+          const perkataanBaruId = perkataanBaruRef.id;
+
+          // 2. Salin semua laci anak beserta gambar
+          const laciAnak = allBahasaDrawers.filter(d => d.perkataanId === pid);
+          for (const laci of laciAnak) {
+            try {
+              // Cipta laci baru dahulu untuk dapatkan ID baru
+              const laciBaruRef = await addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), {
+                title: laci.title || '',
+                notes: laci.notes || '',
+                repeatCount: 0,
+                jenisId: jenisDestId,
+                perkataanId: perkataanBaruId,
+                createdAt: Date.now()
+              });
+              const laciBaruId = laciBaruRef.id;
+
+              // 3. Salin gambar jika ada
+              if (laci.imageUrl) {
+                try {
+                  const blob = await fetchBlob(laci.imageUrl);
+                  const newStorageRef = ref(storage, `users/${currentUser.uid}/bahasa_images/${laciBaruId}.jpg`);
+                  const uploadTask = await uploadBytesResumable(newStorageRef, blob);
+                  const newUrl = await getDownloadURL(uploadTask.ref);
+                  await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", laciBaruId), {
+                    imageUrl: newUrl,
+                    imgRatioW: laci.imgRatioW || 70,
+                    imgRatioH: laci.imgRatioH || 22,
+                    updatedAt: Date.now()
+                  }, { merge: true });
+                } catch(imgErr) {
+                  // Gambar gagal — laci tetap disalin tanpa gambar
+                }
+              }
+              berjayaL++;
+            } catch(e) { gagalL++; }
+          }
+
+          // 4. Padam perkataan asal dan semua laci anaknya
+          for (const laci of laciAnak) {
+            await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", laci.id)).catch(() => {});
+            // Padam gambar asal dari storage
+            if (laci.imageUrl) {
+              await deleteObject(ref(storage, `users/${currentUser.uid}/bahasa_images/${laci.id}.jpg`)).catch(() => {});
+            }
+          }
+          await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_perkataan", pid)).catch(() => {});
+          berjayaP++;
+        } catch(e) { gagalP++; }
+      }
+
+      btn.disabled = false;
+      btn.textContent = '✅ Pindah';
+      document.getElementById('panel-duplikasi-perkataan').style.display = 'none';
+      document.getElementById('btn-duplikasi-info-perkataan').textContent = '📋 Pindah Perkataan ke Jenis Kata Lain';
+      showToast(`✅ ${berjayaP} perkataan, ${berjayaL} laci berjaya dipindah ke "${namaJenisDest}"${gagalP || gagalL ? ` | ❌ ${gagalP} perkataan gagal, ${gagalL} laci gagal` : ''}`, 5000);
+    });
+
 // ── PANEL DUPLIKASI FAKTA ──
     document.getElementById('btn-duplikasi-info-fakta').addEventListener('click', () => {
       const panel = document.getElementById('panel-duplikasi-fakta');
@@ -14942,7 +15122,7 @@ document.getElementById('btn-duplikasi-confirm').addEventListener('click', async
       const topikDest = allTopics.find(t => t.id === topikDestId);
       const namaTopikDest = topikDest?.name || 'Topik';
 
-      if (!confirm(`Salin ${terpilih.length} laci ke topik:\n\n"${namaTopikDest}"?\n\nGambar tidak disalin.`)) return;
+if (!confirm(`Salin ${terpilih.length} laci ke topik:\n\n"${namaTopikDest}"?\n\nGambar akan disalin juga.`)) return;
 
       const btn = document.getElementById('btn-duplikasi-confirm');
       btn.disabled = true;
@@ -14957,6 +15137,7 @@ document.getElementById('btn-duplikasi-confirm').addEventListener('click', async
         if (!data) { gagal++; continue; }
 
         try {
+          // Cipta laci baru dahulu tanpa gambar untuk dapatkan ID baru
           const laciBaruData = {
             title: data.title || '',
             notes: data.notes || '',
@@ -14970,8 +15151,33 @@ document.getElementById('btn-duplikasi-confirm').addEventListener('click', async
               imageUrl: ''
             }));
           }
+          const laciBaruRef = await addDoc(collection(db, "users", currentUser.uid, "drawer"), laciBaruData);
+          const laciBaruId = laciBaruRef.id;
 
-          await addDoc(collection(db, "users", currentUser.uid, "drawer"), laciBaruData);
+          // Salin gambar setiap item jika ada
+          if (data.items && data.items.length > 0) {
+            const itemsBaru = [...laciBaruData.items];
+            let adaGambar = false;
+            for (let idx = 0; idx < data.items.length; idx++) {
+              const item = data.items[idx];
+              if (!item.imageUrl) continue;
+              try {
+                const resp = await fetch(item.imageUrl);
+                if (!resp.ok) continue;
+                const blob = await resp.blob();
+                const newStorageRef = ref(storage, `users/${currentUser.uid}/fakta_images/${laciBaruId}_${idx}.jpg`);
+                const uploadTask = await uploadBytesResumable(newStorageRef, blob);
+                const newUrl = await getDownloadURL(uploadTask.ref);
+                itemsBaru[idx] = { ...itemsBaru[idx], imageUrl: newUrl };
+                adaGambar = true;
+              } catch(imgErr) { /* gambar gagal — skip */ }
+            }
+            if (adaGambar) {
+              await setDoc(doc(db, "users", currentUser.uid, "drawer", laciBaruId), {
+                items: itemsBaru
+              }, { merge: true });
+            }
+          }
           berjaya++;
         } catch(e) {
           gagal++;
