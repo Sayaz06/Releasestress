@@ -2005,7 +2005,7 @@ body.dark-mode {
           <button id="btn-add-perkataan" class="btn btn-sm" style="flex:1;border-color:#06b6d4;">+ Tambah Perkataan</button>
           <button id="btn-open-jana-tips-pukal" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Jana Tips Pukal</button>
         </div>
-        <button id="btn-duplikasi-info-perkataan" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📋 Pindah Perkataan ke Jenis Kata Lain</button>
+  <button id="btn-duplikasi-info-perkataan" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📋 Duplikasi Perkataan ke Jenis Kata Lain</button>
         <!-- PANEL DUPLIKASI PERKATAAN -->
         <div id="panel-duplikasi-perkataan" style="display:none;margin-top:8px;background:rgba(8,145,178,0.08);border:1px solid rgba(8,145,178,0.25);border-radius:12px;padding:12px;">
           <div style="font-size:0.75rem;font-weight:700;color:#22d3ee;margin-bottom:8px;">📋 Pilih Perkataan untuk Dipindah</div>
@@ -14952,12 +14952,12 @@ function rebuildBahasa() {
         return sum + allBahasaDrawers.filter(d => d.perkataanId === pid).length;
       }, 0);
 
-      if (!confirm(`Pindah ${terpilih.length} perkataan (${jumlahLaci} laci + gambar) ke:\n\n"${namaJenisDest}"?\n\nPerkataan asal akan DIPADAM selepas dipindah.`)) return;
-
+if (!confirm(`Duplikasi ${terpilih.length} perkataan (${jumlahLaci} laci + gambar) ke:\n\n"${namaJenisDest}"?\n\nPerkataan asal KEKAL tidak berubah.`)) return;
+    
       const btn = document.getElementById('btn-duplikasi-perkataan-confirm');
       btn.disabled = true;
-      btn.textContent = '⏳ Memindah...';
-
+      btn.textContent = '⏳ Menduplikasi...';
+    
       let berjayaP = 0, gagalP = 0, berjayaL = 0, gagalL = 0;
 
       // Helper: fetch URL dan return blob
@@ -15018,24 +15018,15 @@ function rebuildBahasa() {
             } catch(e) { gagalL++; }
           }
 
-          // 4. Padam perkataan asal dan semua laci anaknya
-          for (const laci of laciAnak) {
-            await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", laci.id)).catch(() => {});
-            // Padam gambar asal dari storage
-            if (laci.imageUrl) {
-              await deleteObject(ref(storage, `users/${currentUser.uid}/bahasa_images/${laci.id}.jpg`)).catch(() => {});
-            }
-          }
-          await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_perkataan", pid)).catch(() => {});
-          berjayaP++;
+berjayaP++;
         } catch(e) { gagalP++; }
       }
 
       btn.disabled = false;
-      btn.textContent = '✅ Pindah';
+      btn.textContent = '✅ Duplikasi';
       document.getElementById('panel-duplikasi-perkataan').style.display = 'none';
-      document.getElementById('btn-duplikasi-info-perkataan').textContent = '📋 Pindah Perkataan ke Jenis Kata Lain';
-      showToast(`✅ ${berjayaP} perkataan, ${berjayaL} laci berjaya dipindah ke "${namaJenisDest}"${gagalP || gagalL ? ` | ❌ ${gagalP} perkataan gagal, ${gagalL} laci gagal` : ''}`, 5000);
+      document.getElementById('btn-duplikasi-info-perkataan').textContent = '📋 Duplikasi Perkataan ke Jenis Kata Lain';
+      showToast(`✅ ${berjayaP} perkataan, ${berjayaL} laci berjaya diduplikasi ke "${namaJenisDest}"${gagalP || gagalL ? ` | ❌ ${gagalP} perkataan gagal, ${gagalL} laci gagal` : ''}`, 5000);
     });
 
 // ── PANEL DUPLIKASI FAKTA ──
