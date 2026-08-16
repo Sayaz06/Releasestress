@@ -14954,11 +14954,15 @@ function rebuildBahasa() {
 
 if (!confirm(`Duplikasi ${terpilih.length} perkataan (${jumlahLaci} laci + gambar) ke:\n\n"${namaJenisDest}"?\n\nPerkataan asal KEKAL tidak berubah.`)) return;
     
-      const btn = document.getElementById('btn-duplikasi-perkataan-confirm');
+const btn = document.getElementById('btn-duplikasi-perkataan-confirm');
       btn.disabled = true;
       btn.textContent = '⏳ Menduplikasi...';
-    
+
       let berjayaP = 0, gagalP = 0, berjayaL = 0, gagalL = 0;
+      const jumlahTotal = terpilih.length;
+      let selesai = 0;
+      showLoadBar();
+      setProgress(0, '⏳ Memulakan duplikasi...');
 
       // Helper: fetch URL dan return blob
       async function fetchBlob(url) {
@@ -15018,15 +15022,19 @@ if (!confirm(`Duplikasi ${terpilih.length} perkataan (${jumlahLaci} laci + gamba
             } catch(e) { gagalL++; }
           }
 
-berjayaP++;
-        } catch(e) { gagalP++; }
+selesai++;
+          setProgress(Math.round((selesai / jumlahTotal) * 95), `⏳ Menduplikasi perkataan ${selesai}/${jumlahTotal}...`);
+          berjayaP++;
+        } catch(e) { gagalP++; selesai++; }
       }
 
+      setProgress(100, '✅ Selesai!');
+      setTimeout(() => removeLoadBar(), 800);
       btn.disabled = false;
       btn.textContent = '✅ Duplikasi';
       document.getElementById('panel-duplikasi-perkataan').style.display = 'none';
-      document.getElementById('btn-duplikasi-info-perkataan').textContent = '📋 Duplikasi Perkataan ke Jenis Kata Lain';
-      showToast(`✅ ${berjayaP} perkataan, ${berjayaL} laci berjaya diduplikasi ke "${namaJenisDest}"${gagalP || gagalL ? ` | ❌ ${gagalP} perkataan gagal, ${gagalL} laci gagal` : ''}`, 5000);
+      document.getElementById('btn-duplikasi-info-perkataan').textContent = '👻 Ghost Button';
+      showToast(`✅ ${berjayaP} perkataan, ${berjayaL} laci berjaya diduplikasi ke "${namaJenisDest}"${gagalP || gagalL ? ` | ❌ ${gagalP} perkataan gagal, ${gagalL} laci gagal` : ''}`, 5000);    
     });
 
 // ── PANEL DUPLIKASI FAKTA ──
