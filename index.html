@@ -1974,16 +1974,19 @@ body.dark-mode {
         </div>
 <div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btn-add-bahasa-laci" class="btn btn-sm" style="flex:1;">+ Tambah Laci</button>
-<button id="btn-export-bahasa-drawer-txt" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">👻 Ghost Button</button>
+          <button id="btn-duplikasi-info-bahasa" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📋 Duplikasi</button>
         </div>
 
-        <!-- GUIDE GHOST BUTTON -->
-        <div id="guide-ghost-button" style="display:none;margin-top:8px;background:rgba(8,145,178,0.08);border:1px solid rgba(8,145,178,0.25);border-radius:12px;padding:12px;flex-shrink:0;">
-          <div style="font-size:0.75rem;font-weight:700;color:#22d3ee;margin-bottom:6px;">👻 Apa itu Ghost Button?</div>
-          <div style="font-size:0.72rem;color:var(--text);line-height:1.8;">
-            Semasa development berulang kali, kadang-kadang <strong style="color:#fcd34d;">laci lama yang rosak atau kosong</strong> tersimpan dalam Firestore dan <strong style="color:#f87171;">tidak boleh dipadam dari UI dan firestore</strong> kerana kod baru tidak faham format data lama.<br><br>
-            Button ini membolehkan anda <strong style="color:#22d3ee;">export semua laci dalam perkataan ini</strong> sebagai fail <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;">.txt</code> dalam format Jana Pukal — kemudian <strong>padam terus perkataan yg mempunyai laci ghost kerana laci ghost tidak dapat dipadamkan selama-lamanya kecuali dengan cara padam parentid (perkataan yg duduk di atasnya)</strong> menggunakan ID yang tertera.<br><br>
-            <span style="color:#9ca3af;">💡 Cara guna: Tekan 👻 Ghost Button → buka fail .txt → copy → pergi ke button "🗂️ Jana Pukal Bahasa" → tampal → jana → padam terus perkataan yg ada laci ghost.</span>
+        <!-- PANEL DUPLIKASI BAHASA -->
+        <div id="panel-duplikasi-bahasa" style="display:none;margin-top:8px;background:rgba(8,145,178,0.08);border:1px solid rgba(8,145,178,0.25);border-radius:12px;padding:12px;">
+          <div style="font-size:0.75rem;font-weight:700;color:#22d3ee;margin-bottom:8px;">📋 Pilih Laci untuk Diduplikasi</div>
+          <div id="duplikasi-bahasa-checkbox-list" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>
+          <div style="font-size:0.72rem;color:#22d3ee;font-weight:700;margin-bottom:6px;">📁 Salin ke Perkataan:</div>
+          <select id="duplikasi-bahasa-perkataan-select" style="width:100%;background:rgba(30,41,59,0.8);color:var(--text);border:1px solid rgba(8,145,178,0.4);border-radius:8px;padding:7px 10px;font-size:0.75rem;margin-bottom:10px;"></select>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-duplikasi-bahasa-pilih-semua" class="btn btn-secondary btn-sm" style="flex:1;border-color:#22d3ee;color:#22d3ee;">Pilih Semua</button>
+            <button id="btn-duplikasi-bahasa-confirm" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">✅ Salin ke Perkataan</button>
+            <button id="btn-duplikasi-bahasa-cancel" class="btn btn-secondary btn-sm" style="flex:1;">Batal</button>
           </div>
         </div>
 
@@ -14728,28 +14731,18 @@ function rebuildBahasa() {
       }
     }
 
-// ── TOGGLE GUIDE GHOST BUTTON ──
-    document.getElementById('btn-export-bahasa-drawer-txt').addEventListener('dblclick', () => {
-      const guide = document.getElementById('guide-ghost-button');
-      if (!guide) return;
-      const isOpen = guide.style.display !== 'none';
-      guide.style.display = isOpen ? 'none' : 'block';
-    });
-
-    // ── EXPORT BAHASA DRAWER TXT (Format Jana Pukal) ──
-    document.getElementById('btn-export-bahasa-drawer-txt').addEventListener('click', () => {
-      if (!currentPerkataanId) {
-        showToast('Tiada perkataan dipilih.');
+// ── PANEL DUPLIKASI BAHASA ──
+    document.getElementById('btn-duplikasi-info-bahasa').addEventListener('click', () => {
+      const panel = document.getElementById('panel-duplikasi-bahasa');
+      const isOpen = panel.style.display !== 'none';
+      if (isOpen) {
+        panel.style.display = 'none';
+        document.getElementById('btn-duplikasi-info-bahasa').textContent = '📋 Duplikasi';
         return;
       }
 
-      const perkataan = allBahasaPerkataan.find(p => p.id === currentPerkataanId);
-      const namaPenuh = perkataan ? (perkataan.name || '') : '';
-      // namaPenuh contoh: "4. mengabahkan = [kk] mengarahkan; menujukan"
-      // Ambil bahagian selepas nombor untuk nama fail
-      const namaFail = namaPenuh.replace(/^\d+\.\s*/, '').split('=')[0].trim() || 'export';
-
-const laciList = allBahasaDrawers
+      // Bina senarai checkbox dari laci dalam perkataan semasa
+      const senarai = allBahasaDrawers
         .filter(d => d.perkataanId === currentPerkataanId)
         .sort((a, b) => {
           if ((a.title || '') === '~') return 1;
@@ -14757,47 +14750,112 @@ const laciList = allBahasaDrawers
           return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true });
         });
 
-      if (!laciList.length) {
-        showToast('Tiada laci untuk diexport.');
+      const listEl = document.getElementById('duplikasi-bahasa-checkbox-list');
+      listEl.innerHTML = '';
+
+      if (!senarai.length) {
+        listEl.innerHTML = '<div style="font-size:0.72rem;color:var(--subtext);">Tiada laci dalam perkataan ini.</div>';
+      } else {
+        senarai.forEach(d => {
+          const row = document.createElement('label');
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:8px;cursor:pointer;font-size:0.75rem;color:var(--text);';
+          row.innerHTML = `
+            <input type="checkbox" class="duplikasi-bahasa-cb" data-id="${d.id}" style="margin-top:2px;accent-color:#22d3ee;flex-shrink:0;">
+            <span>${d.title || '(Tiada Tajuk)'}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      // Bina dropdown perkataan destinasi — semua perkataan kecuali perkataan semasa
+      const selectEl = document.getElementById('duplikasi-bahasa-perkataan-select');
+      selectEl.innerHTML = '';
+      const perkataanLain = allBahasaPerkataan
+        .filter(p => p.id !== currentPerkataanId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      if (!perkataanLain.length) {
+        selectEl.innerHTML = '<option value="">— Tiada perkataan lain —</option>';
+      } else {
+        perkataanLain.forEach(p => {
+          const jenisKata = allJenisKata ? allJenisKata.find(j => j.id === p.jenisKataId) : null;
+          const label = jenisKata ? `[${jenisKata.name}] ${p.name || '(Tanpa Nama)'}` : (p.name || '(Tanpa Nama)');
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = label;
+          selectEl.appendChild(opt);
+        });
+      }
+
+      panel.style.display = 'block';
+      document.getElementById('btn-duplikasi-info-bahasa').textContent = '✕ Tutup';
+    });
+
+    document.getElementById('btn-duplikasi-bahasa-pilih-semua').addEventListener('click', () => {
+      const semua = document.querySelectorAll('.duplikasi-bahasa-cb');
+      const adaYangTakPilih = [...semua].some(cb => !cb.checked);
+      semua.forEach(cb => cb.checked = adaYangTakPilih);
+      document.getElementById('btn-duplikasi-bahasa-pilih-semua').textContent = adaYangTakPilih ? 'Nyahpilih Semua' : 'Pilih Semua';
+    });
+
+    document.getElementById('btn-duplikasi-bahasa-cancel').addEventListener('click', () => {
+      document.getElementById('panel-duplikasi-bahasa').style.display = 'none';
+      document.getElementById('btn-duplikasi-info-bahasa').textContent = '📋 Duplikasi';
+    });
+
+    document.getElementById('btn-duplikasi-bahasa-confirm').addEventListener('click', async () => {
+      const terpilih = [...document.querySelectorAll('.duplikasi-bahasa-cb:checked')];
+      if (!terpilih.length) {
+        showToast('⚠️ Tiada laci dipilih.');
         return;
       }
 
-// Bina header: "4. mengabahkan = [kk] mengarahkan; menujukan"
-      let output = `${namaPenuh}\n`;
-
-      laciList.forEach(laci => {
-        const tajuk = (laci.title || '').trim();
-        const notes = (laci.notes || '').trim();
-
-        if (!tajuk || tajuk === '~') return;
-
-        // Extract sinonim dari title: "1.mengabahkan → direct" → "direct"
-        const sinonimMatch = tajuk.match(/→\s*(.+)$/);
-        const sinonim = sinonimMatch ? sinonimMatch[1].trim() : tajuk;
-
-        // Extract ayat & terjemahan dari notes: "Ayat BI. = Terjemahan BM."
-        const eqIdx = notes.indexOf('=');
-        const ayat = eqIdx !== -1 ? notes.slice(0, eqIdx).trim() : notes;
-        const terjemahan = eqIdx !== -1 ? notes.slice(eqIdx + 1).trim() : '';
-
-        output += `→ ${sinonim}\n`;
-        if (ayat) output += `   Ayat: ${ayat}\n`;
-        if (terjemahan) output += `   Terjemahan: ${terjemahan}\n`;
-      });
-
-      if (!output.trim()) {
-        showToast('Tiada kandungan untuk diexport.');
+      const perkataanDestId = document.getElementById('duplikasi-bahasa-perkataan-select').value;
+      if (!perkataanDestId) {
+        showToast('⚠️ Sila pilih perkataan destinasi.');
         return;
       }
 
-      const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${namaFail.replace(/\s+/g, '-')}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast(`✅ ${laciList.length} laci diexport!`);
+      const perkataanDest = allBahasaPerkataan.find(p => p.id === perkataanDestId);
+      const namaPerkataanDest = perkataanDest?.name || 'Perkataan';
+
+      if (!confirm(`Salin ${terpilih.length} laci ke perkataan:\n\n"${namaPerkataanDest}"?\n\nGambar tidak disalin.`)) return;
+
+      const btn = document.getElementById('btn-duplikasi-bahasa-confirm');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyalin...';
+
+      let berjaya = 0;
+      let gagal = 0;
+
+      for (const cb of terpilih) {
+        const id = cb.getAttribute('data-id');
+        const data = allBahasaDrawers.find(d => d.id === id);
+        if (!data) { gagal++; continue; }
+
+        try {
+          const laciBaruData = {
+            title: data.title || '',
+            notes: data.notes || '',
+            repeatCount: 0,
+            perkataanId: perkataanDestId,
+            jenisKataId: perkataanDest.jenisKataId || '',
+            createdAt: Date.now()
+          };
+          if (data.imageUrl) laciBaruData.imageUrl = '';
+
+          await addDoc(collection(db, "users", currentUser.uid, "bahasaDrawer"), laciBaruData);
+          berjaya++;
+        } catch(e) {
+          gagal++;
+        }
+      }
+
+      btn.disabled = false;
+      btn.textContent = '✅ Salin ke Perkataan';
+      document.getElementById('panel-duplikasi-bahasa').style.display = 'none';
+      document.getElementById('btn-duplikasi-info-bahasa').textContent = '📋 Duplikasi';
+      showToast(`✅ ${berjaya} laci berjaya disalin ke "${namaPerkataanDest}"${gagal ? ` | ❌ ${gagal} gagal` : ''}`, 4000);
     });
 
 // ── PANEL DUPLIKASI FAKTA ──
