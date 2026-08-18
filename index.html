@@ -14232,18 +14232,42 @@ body{font-family:Georgia,serif;margin:0;padding:0;background:#fff;}
         setP(92, '🗜️ Mengemas fail EPUB...');
         const blob = await buatEpubBlob(tajukEpub, 'Istigfar + Ilmu', spineItems);
 
-        setP(100, '✅ Muat turun EPUB...');
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${tajukEpub.replace(/\s+/g, '_')}_flashcard.epub`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 3000);
-
+        setP(100, '✅ EPUB siap — membuka pilihan share...');
         removeBar();
-        showToast(`✅ ${nomborKad} kad diexport sebagai EPUB!`, 4000);
+
+        const namaFail = `${tajukEpub.replace(/\s+/g, '_')}_flashcard.epub`;
+        const epubFile = new File([blob], namaFail, { type: 'application/epub+zip' });
+
+        if (navigator.canShare && navigator.canShare({ files: [epubFile] })) {
+          try {
+            await navigator.share({
+              title: tajukEpub,
+              text: `📚 ${nomborKad} kad flashcard — hantar ke Kindle atau simpan`,
+              files: [epubFile]
+            });
+            showToast(`✅ ${nomborKad} kad berjaya dikongsi!`, 4000);
+          } catch(shareErr) {
+            if (shareErr.name !== 'AbortError') {
+              // User tak cancel — fallback ke download
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = namaFail;
+              document.body.appendChild(a); a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(url), 3000);
+              showToast(`✅ ${nomborKad} kad didownload sebagai EPUB!`, 4000);
+            }
+          }
+        } else {
+          // Browser tak support share files — terus download
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = namaFail;
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+          showToast(`✅ ${nomborKad} kad didownload sebagai EPUB!`, 4000);
+        }
 
       } catch(e) {
         removeBar();
@@ -14415,18 +14439,40 @@ body{font-family:Georgia,serif;margin:0;padding:0;background:#fff;}
         setP(92, '🗜️ Mengemas fail EPUB...');
         const blob = await buatEpubBlob(tajukEpub, 'Istigfar + Ilmu', spineItems);
 
-        setP(100, '✅ Muat turun EPUB...');
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${tajukEpub.replace(/[^a-zA-Z0-9]/g, '_')}_flashcard.epub`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 3000);
-
+        setP(100, '✅ EPUB siap — membuka pilihan share...');
         removeBar();
-        showToast(`✅ ${nomborKad} kad diexport sebagai EPUB!`, 4000);
+
+        const namaFail = `${tajukEpub.replace(/[^a-zA-Z0-9]/g, '_')}_flashcard.epub`;
+        const epubFile = new File([blob], namaFail, { type: 'application/epub+zip' });
+
+        if (navigator.canShare && navigator.canShare({ files: [epubFile] })) {
+          try {
+            await navigator.share({
+              title: tajukEpub,
+              text: `📚 ${nomborKad} kad flashcard — hantar ke Kindle atau simpan`,
+              files: [epubFile]
+            });
+            showToast(`✅ ${nomborKad} kad berjaya dikongsi!`, 4000);
+          } catch(shareErr) {
+            if (shareErr.name !== 'AbortError') {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = namaFail;
+              document.body.appendChild(a); a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(url), 3000);
+              showToast(`✅ ${nomborKad} kad didownload sebagai EPUB!`, 4000);
+            }
+          }
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = namaFail;
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+          showToast(`✅ ${nomborKad} kad didownload sebagai EPUB!`, 4000);
+        }
 
       } catch(e) {
         removeBar();
