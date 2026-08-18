@@ -13526,8 +13526,9 @@ document.getElementById('btn-export-pdf-fakta')?.addEventListener('click', () =>
         }
 
 // Kira nombor PDF setiap laci dan simpan ke Firestore
-        const jenisNama = (allJenisKata.find(j => j.id === currentJenisKataId)?.name || 'Laci')
-          .replace(/\s+/g, '');
+        const jenisData2 = allJenisKata.find(j => j.id === currentJenisKataId);
+        const jenisNama = (jenisData2?.name || 'Laci').replace(/\s+/g, '');
+        const jenisNamaAsal = jenisData2?.name || jenisNama;        
         let nomborPDF = 0;
         const laciNomborMap = {}; // drawerId → nombor PDF pertama laci ini
 
@@ -13583,9 +13584,9 @@ if (ayatBI) {
               batch.update(doc(db, "users", currentUser.uid, "bahasa_drawers", lid), {
                 pdfNombor: laciNomborMap[lid],
                 pdfJenis: jenisNama,
-                pdfJenisAsal: jenisData?.name || jenisNama,
+                pdfJenisAsal: jenisNamaAsal,
                 pdfJenisId: currentJenisKataId
-              });             
+              });          
             }
             await batch.commit();
             bi = bend;
@@ -13659,7 +13660,7 @@ pagesHtml += `<div class="page">`;
             pagesHtml += `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-kod">${jenisNama}-${card.nombor}</div>
+                 <div class="card-kod">${jenisNamaAsal}-${card.nombor}</div>
                   <div class="card-tajuk">${card.tajuk}</div>
                 </div>
                 ${imgBlock}
