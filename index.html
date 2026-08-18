@@ -21229,24 +21229,28 @@ function jbDapatKodSemasa() {
   }
 
 // Pisah kod kepada jenis + nombor untuk render 2 baris
+  // ── Dapatkan nama jenis yang betul (dengan spasi) ──
+  const jenisIdBetul = drawer.pdfJenisId || drawer.jenisId || currentJenisKataId;
+  const jenisObjBetul = allJenisKata.find(j => j.id === jenisIdBetul);
+  const jenisNamaBetul = jenisObjBetul?.name || drawer.pdfJenisAsal || drawer.pdfJenis || '';
+
   let bahasaJenis = '', bahasaNombor = '';
   if (pdfNombor && pdfJenis) {
-    // Kod tetap: "KataNama-3"
-    bahasaJenis = drawer.pdfJenisAsal || pdfJenis;
+    // Kod tetap: guna nama jenis dari allJenisKata (sumber paling terkini & betul)
+    bahasaJenis = jenisNamaBetul;
     bahasaNombor = String(pdfNombor);
   } else {
-    // Kod sementara: "KatakerjamS1-(1xdone)-T32"
-    // Nombor = bahagian "-T<digit>" di hujung
+    // Kod sementara
     const matchT = kod.match(/^(.*)-T(\d+.*)$/);
     if (matchT) {
-      bahasaJenis = matchT[1];
+      // Guna jenisNamaBetul kalau ada, kalau tak fallback ke apa dalam kod
+      bahasaJenis = jenisNamaBetul || matchT[1];
       bahasaNombor = 'T' + matchT[2];
     } else {
-      bahasaJenis = kod;
+      bahasaJenis = jenisNamaBetul || kod;
       bahasaNombor = '';
     }
   }
-
   return {
     kod,
     isSR,
