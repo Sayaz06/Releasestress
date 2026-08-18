@@ -13999,6 +13999,52 @@ printWindow.onload = () => {
 
         if (!flashcards.length) { removeLoadBar(); showToast('⚠️ Tiada flashcard untuk dijana.'); return; }
 
+        // ── SIMPAN pdfNombor + pdfJenisAsal KE FIRESTORE (sama mcm export biasa) ──
+        setProgress(82, '💾 Menyimpan nombor PDF...');
+        try {
+          let bi = 0;
+          const laciIds = Object.keys(laciNomborMap);
+          while (bi < laciIds.length) {
+            const batch = writeBatch(db);
+            const bend = Math.min(bi + 499, laciIds.length);
+            for (let bj = bi; bj < bend; bj++) {
+              const lid = laciIds[bj];
+              batch.update(doc(db, "users", currentUser.uid, "bahasa_drawers", lid), {
+                pdfNombor: laciNomborMap[lid],
+                pdfJenis: jenisNama,
+                pdfJenisAsal: tajukPDF,
+                pdfJenisId: currentJenisKataId
+              });
+            }
+            await batch.commit();
+            bi = bend;
+          }
+
+          // ── AUTO UPDATE KOD SR ──
+          setProgress(88, '⏰ Mengemas kini kod SR...');
+          const srSnap = await getDocs(collection(db, "users", currentUser.uid, "bahasa_sr_queue"));
+          const srBatch = writeBatch(db);
+          let srUpdateCount = 0;
+          srSnap.docs.forEach(srDoc => {
+            const srData = srDoc.data();
+            if (laciNomborMap[srData.drawerId]) {
+              const kodBaru = `${jenisNama}-${laciNomborMap[srData.drawerId]}`;
+              srBatch.update(
+                doc(db, "users", currentUser.uid, "bahasa_sr_queue", srDoc.id),
+                { pdfKod: kodBaru, pdfNombor: laciNomborMap[srData.drawerId], pdfJenis: jenisNama }
+              );
+              srUpdateCount++;
+            }
+          });
+          if (srUpdateCount > 0) await srBatch.commit();
+          if (srUpdateCount > 0) showToast(`✅ ${srUpdateCount} kod SR dikemas kini!`, 3000);
+        } catch(e) {
+          console.log("Gagal simpan nombor PDF Kindle:", e);
+        }
+
+        // ── SYNC SR QUEUE ──
+        try { await syncSRQueuePdfKod(); } catch(e) { console.log("Gagal sync SR:", e); }
+
         // Bina 1 kad = 1 halaman
         let pagesHtml = '';
         flashcards.forEach(card => {
@@ -14217,8 +14263,54 @@ ${pagesHtml}
 
         if (!flashcards.length) { removeLoadBar(); showToast('⚠️ Tiada kad untuk dijana.'); return; }
 
+        // ── SIMPAN pdfNombor KE FIRESTORE (sama mcm export biasa) ──
+        setProgress(82, '💾 Menyimpan nombor kad...');
+        const laciNomborMapK = {};
+        let nomborSemak = 0;
+        semuaLaci.forEach(laci => {
+          const lines = (laci.notes || '').split('\n').filter(l => l.trim());
+          let firstNombor = null;
+          lines.forEach(line => {
+            const atas = line.indexOf('=') !== -1 ? line.slice(0, line.indexOf('=')).trim() : line.trim();
+            if (atas) {
+              nomborSemak++;
+              if (firstNombor === null) firstNombor = nomborSemak;
+            }
+          });
+          if (firstNombor !== null) laciNomborMapK[laci.id] = firstNombor;
+        });
+
+        try {
+          const batchFS = writeBatch(db);
+          let batchCount = 0;
+          semuaLaci.forEach(laci => {
+            if (laciNomborMapK[laci.id] === undefined) return;
+            batchFS.update(doc(db, "users", currentUser.uid, "drawer", laci.id), {
+              pdfNombor: laciNomborMapK[laci.id],
+              pdfTopik: topicNama,
+              pdfSubjek: subjectNama,
+              pdfTopikId: currentTopicId,
+              updatedAt: Date.now()
+            });
+            batchCount++;
+            const idx = allDrawers.findIndex(d => d.id === laci.id);
+            if (idx !== -1) {
+              allDrawers[idx].pdfNombor = laciNomborMapK[laci.id];
+              allDrawers[idx].pdfTopik = topicNama;
+              allDrawers[idx].pdfSubjek = subjectNama;
+              allDrawers[idx].pdfTopikId = currentTopicId;
+            }
+          });
+          if (batchCount > 0) await batchFS.commit();
+        } catch(e) {
+          console.log("Gagal simpan pdfNombor Kindle Fakta:", e);
+        }
+
+        // ── SYNC SR QUEUE FAKTA ──
+        try { await syncFaktaSRQueuePdfKod(); } catch(e) { console.log("Gagal sync SR fakta:", e); }
+
         let pagesHtml = '';
-        flashcards.forEach(card => {
+        flashcards.forEach(card => { 
           const imgBlock = card.imageUrl
             ? `<img class="k-img" src="${card.imageUrl}" alt="">`
             : '';
