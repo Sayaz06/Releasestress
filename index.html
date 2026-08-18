@@ -16156,7 +16156,7 @@ async function syncSRQueuePdfKod() {
 
         const batch = writeBatch(db);
         let updateCount = 0;
-
+        
         srSnap.docs.forEach(srDoc => {
           const srData = srDoc.data();
           const laci = laciMap.get(srData.drawerId);
@@ -16164,22 +16164,23 @@ async function syncSRQueuePdfKod() {
 
           const pdfNombor = laci.pdfNombor || null;
           const pdfJenis = laci.pdfJenis || null;
+          const pdfJenisAsal = laci.pdfJenisAsal || pdfJenis;
 
           if (!pdfNombor || !pdfJenis) return;
 
-          const kodBaru = `${pdfJenis}-${pdfNombor}`;
+          const kodBaru = `${pdfJenisAsal}-${pdfNombor}`;
           const kodLama = srData.pdfKod || null;
 
-          if (kodBaru !== kodLama || srData.pdfNombor !== pdfNombor || srData.pdfJenis !== pdfJenis) {
+          if (kodBaru !== kodLama || srData.pdfNombor !== pdfNombor || srData.pdfJenis !== pdfJenisAsal) {
             batch.update(doc(db, "users", currentUser.uid, "bahasa_sr_queue", srDoc.id), {
               pdfKod: kodBaru,
               pdfNombor: pdfNombor,
-              pdfJenis: pdfJenis,
+              pdfJenis: pdfJenisAsal,
               updatedAt: Date.now()
             });
             updateCount++;
           }
-        });
+        });    
 
         if (updateCount > 0) {
           await batch.commit();
