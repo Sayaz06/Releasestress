@@ -2019,10 +2019,11 @@ body.dark-mode {
           </div>
         </div>
         <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export Format AI (Sayaz)</button>
-<div style="display:flex;gap:6px;margin-top:8px;">
+        <div style="display:flex;gap:6px;margin-top:8px;">
           <button id="btn-export-pdf-flashcard-portrait" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0e7490,#0c6b80);border:none;color:white;">🖨️ Portrait 2×3</button>
           <button id="btn-export-pdf-flashcard" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">⭐ Landscape 3×2</button>
         </div>
+        <button id="btn-export-pdf-bahasa-kindle" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 Export Kindle PDF (1 Kad = 1 Halaman)</button>
           <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
 
@@ -2231,6 +2232,7 @@ body.dark-mode {
 <button id="btn-export-pdf-fakta" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Portrait 2×3</button>
           <button id="btn-export-pdf-fakta-landscape" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">⭐ Landscape 3×2</button>
         </div>
+        <button id="btn-export-pdf-fakta-kindle" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 Export Kindle PDF (1 Kad = 1 Halaman)</button>
         
 <!-- PANEL DUPLIKASI -->
         <div id="panel-duplikasi-fakta" style="display:none;margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
@@ -13885,8 +13887,446 @@ printWindow.onload = () => {
       }
     }
 
-    document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', () => jalanExportBahasa('landscape'));
+        document.getElementById('btn-export-pdf-flashcard')?.addEventListener('click', () => jalanExportBahasa('landscape'));
     document.getElementById('btn-export-pdf-flashcard-portrait')?.addEventListener('click', () => jalanExportBahasa('portrait'));
+
+    // ── EXPORT KINDLE PDF BAHASA (1 KAD = 1 HALAMAN) ──
+    document.getElementById('btn-export-pdf-bahasa-kindle')?.addEventListener('click', async () => {
+      if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
+
+      const loadBar = document.createElement('div');
+      loadBar.id = 'export-pdf-load-bar';
+      loadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
+      loadBar.innerHTML = `
+        <div style="height:4px;background:rgba(255,255,255,0.1);">
+          <div id="export-pdf-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width 0.3s ease;box-shadow:0 0 10px #7c3aed;"></div>
+        </div>
+        <div style="background:rgba(124,58,237,0.95);color:white;font-size:0.78rem;font-weight:600;padding:6px 16px;text-align:center;" id="export-pdf-msg">
+          ⏳ Mengambil laci dari Firestore...
+        </div>`;
+      document.body.appendChild(loadBar);
+
+      const setProgress = (pct, msg) => {
+        const fill = document.getElementById('export-pdf-fill');
+        const msgEl = document.getElementById('export-pdf-msg');
+        if (fill) fill.style.width = pct + '%';
+        if (msgEl && msg) msgEl.textContent = msg;
+      };
+      const removeLoadBar = () => { const el = document.getElementById('export-pdf-load-bar'); if (el) el.remove(); };
+
+      try {
+        setProgress(20, '⏳ Menghubungi Firestore...');
+
+        const snap = await getDocs(query(
+          collection(db, "users", currentUser.uid, "bahasa_drawers"),
+          orderBy("title", "asc")
+        ));
+
+        setProgress(50, `✅ ${snap.size} laci ditemui — memproses...`);
+
+        const perkataanDalamJenis = allBahasaPerkataan
+          .filter(p => p.jenisId === currentJenisKataId)
+          .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+        const semuaLaciRaw = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(d => d.jenisId === currentJenisKataId && d.notes && d.notes.trim());
+
+        const semuaLaci = [];
+        perkataanDalamJenis.forEach(perkataan => {
+          const laciDalamPerkataan = semuaLaciRaw
+            .filter(d => d.perkataanId === perkataan.id)
+            .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+          semuaLaci.push(...laciDalamPerkataan);
+        });
+        const laciOrfan = semuaLaciRaw.filter(d => !d.perkataanId || !perkataanDalamJenis.find(p => p.id === d.perkataanId));
+        semuaLaci.push(...laciOrfan.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })));
+
+        if (!semuaLaci.length) { removeLoadBar(); showToast('⚠️ Tiada laci dengan kandungan.'); return; }
+
+        // Convert gambar ke base64
+        async function urlKeBase64Kindle(url) {
+          if (!url) return '';
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+              } catch(e) { resolve(url); }
+            };
+            img.onerror = () => resolve('');
+            img.src = url + (url.includes('?') ? '&' : '?') + 'alt=media&t=' + Date.now();
+          });
+        }
+
+        const urlUnik = [...new Set(semuaLaci.map(l => l.imageUrl).filter(u => u))];
+        const base64Map = {};
+        for (let i = 0; i < urlUnik.length; i++) {
+          setProgress(50 + Math.round((i / urlUnik.length) * 25), `🖼️ Memuat gambar ${i+1}/${urlUnik.length}...`);
+          base64Map[urlUnik[i]] = await urlKeBase64Kindle(urlUnik[i]);
+        }
+
+        const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
+        const tajukPDF = jenisData?.name || 'Flashcard';
+        const jenisNama = tajukPDF.replace(/\s+/g, '');
+        const tarikhExport = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        setProgress(80, '📄 Membina halaman...');
+
+        // Kumpul semua flashcard
+        const flashcards = [];
+        let nomborPDF = 0;
+        semuaLaci.forEach(laci => {
+          const tajuk = laci.title || '';
+          const imageUrl = laci.imageUrl ? (base64Map[laci.imageUrl] || '') : '';
+          const lines = laci.notes.split('\n').filter(l => l.trim());
+          lines.forEach(line => {
+            const parts = line.split('=');
+            const ayatBI = parts[0] ? parts[0].trim() : '';
+            const terjemahan = parts[1] ? parts.slice(1).join('=').trim() : '';
+            if (ayatBI) {
+              nomborPDF++;
+              flashcards.push({ tajuk, ayatBI, terjemahan, imageUrl, nombor: nomborPDF });
+            }
+          });
+        });
+
+        if (!flashcards.length) { removeLoadBar(); showToast('⚠️ Tiada flashcard untuk dijana.'); return; }
+
+        // Bina 1 kad = 1 halaman
+        let pagesHtml = '';
+        flashcards.forEach(card => {
+          const imgBlock = card.imageUrl
+            ? `<img class="k-img" src="${card.imageUrl}" alt="">`
+            : '';
+          pagesHtml += `
+          <div class="k-page">
+            <div class="k-header">
+              <span class="k-kod">${jenisNama}-${card.nombor}</span>
+              <span class="k-tajuk">${card.tajuk}</span>
+            </div>
+            ${imgBlock}
+            <div class="k-ayat">${card.ayatBI}</div>
+            ${card.terjemahan ? `<div class="k-terjemahan">${card.terjemahan}</div>` : ''}
+          </div>`;
+        });
+
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kindle Flashcard — ${tajukPDF}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI', Arial, sans-serif; background:white; }
+
+  @page { size: A5 portrait; margin: 0; }
+
+  .k-cover {
+    width: 148mm; height: 210mm;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    page-break-after: always; break-after: page;
+    padding: 20mm;
+    text-align: center;
+  }
+  .k-cover h1 { font-size: 20pt; color: #7c3aed; margin-bottom: 10px; }
+  .k-cover p { font-size: 11pt; color: #6b7280; margin-bottom: 6px; }
+  .k-cover .k-stats { margin-top: 16px; font-size: 11pt; color: #374151; line-height: 2; }
+
+  .k-page {
+    width: 148mm; height: 210mm;
+    padding: 12mm 14mm;
+    display: flex; flex-direction: column;
+    gap: 6mm;
+    page-break-after: always; break-after: page;
+    overflow: hidden;
+    border-left: 6pt solid #7c3aed;
+    background: white;
+  }
+
+  .k-header {
+    display: flex; flex-direction: column;
+    gap: 2mm; flex-shrink: 0;
+    border-bottom: 1pt solid #e5e7eb;
+    padding-bottom: 4mm;
+  }
+  .k-kod {
+    font-size: 8pt; font-weight: 700;
+    color: #9ca3af; letter-spacing: 0.05em;
+  }
+  .k-tajuk {
+    font-size: 11pt; color: #7c3aed;
+    font-weight: 700; line-height: 1.3;
+  }
+
+  .k-img {
+    width: 100%; max-height: 70mm;
+    object-fit: contain; object-position: center;
+    flex-shrink: 0; border-radius: 3mm;
+    display: block;
+  }
+
+  .k-ayat {
+    font-size: 16pt; color: #111827;
+    font-weight: 700; line-height: 1.5;
+    flex-shrink: 0;
+  }
+
+  .k-terjemahan {
+    font-size: 13pt; color: #374151;
+    line-height: 1.6; flex: 1;
+  }
+
+  @media print {
+    body { margin: 0; }
+    .k-page { page-break-after: always; }
+    .k-cover { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="k-cover">
+  <h1>📖 ${tajukPDF}</h1>
+  <p>${tarikhExport}</p>
+  <div class="k-stats">
+    ${flashcards.length} flashcard · ${semuaLaci.length} laci
+  </div>
+</div>
+
+${pagesHtml}
+
+</body>
+</html>`;
+
+        setProgress(100, '✅ Buka tetingkap print...');
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.onload = () => { setTimeout(() => printWindow.print(), 600); };
+
+        removeLoadBar();
+        showToast(`✅ ${flashcards.length} kad Kindle berjaya dijana!`, 4000);
+
+      } catch(e) {
+        removeLoadBar();
+        showToast('❌ Gagal: ' + e.message);
+      }
+    });
+
+    // ── EXPORT KINDLE PDF FAKTA (1 KAD = 1 HALAMAN) ──
+    document.getElementById('btn-export-pdf-fakta-kindle')?.addEventListener('click', async () => {
+      if (!currentUser || !currentTopicId) { showToast('⚠️ Sila buka halaman Isi Laci dahulu.'); return; }
+
+      const loadBar = document.createElement('div');
+      loadBar.id = 'export-pdf-load-bar';
+      loadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
+      loadBar.innerHTML = `
+        <div style="height:4px;background:rgba(255,255,255,0.1);">
+          <div id="export-pdf-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#f59e0b,#fcd34d);transition:width 0.3s ease;box-shadow:0 0 10px #f59e0b;"></div>
+        </div>
+        <div style="background:rgba(245,158,11,0.95);color:white;font-size:0.78rem;font-weight:600;padding:6px 16px;text-align:center;" id="export-pdf-msg">
+          ⏳ Mengambil laci dari Firestore...
+        </div>`;
+      document.body.appendChild(loadBar);
+
+      const setProgress = (pct, msg) => {
+        const fill = document.getElementById('export-pdf-fill');
+        const msgEl = document.getElementById('export-pdf-msg');
+        if (fill) fill.style.width = pct + '%';
+        if (msgEl && msg) msgEl.textContent = msg;
+      };
+      const removeLoadBar = () => { const el = document.getElementById('export-pdf-load-bar'); if (el) el.remove(); };
+
+      try {
+        setProgress(20, '⏳ Menghubungi Firestore...');
+
+        const snap = await getDocs(query(
+          collection(db, "users", currentUser.uid, "drawer"),
+          orderBy("title", "asc")
+        ));
+
+        setProgress(50, `✅ ${snap.size} laci ditemui — memproses...`);
+
+        const semuaLaci = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(d => d.topicId === currentTopicId && d.notes && d.notes.trim())
+          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+
+        if (!semuaLaci.length) { removeLoadBar(); showToast('⚠️ Tiada laci dengan kandungan.'); return; }
+
+        // Convert gambar ke base64
+        async function urlKeBase64FaktaK(url) {
+          if (!url) return '';
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+              } catch(e) { resolve(url); }
+            };
+            img.onerror = () => resolve('');
+            img.src = url + (url.includes('?') ? '&' : '?') + 'alt=media&t=' + Date.now();
+          });
+        }
+
+        const urlUnik = [...new Set(semuaLaci.map(l => l.imageUrl).filter(u => u))];
+        const base64Map = {};
+        for (let i = 0; i < urlUnik.length; i++) {
+          setProgress(50 + Math.round((i / urlUnik.length) * 25), `🖼️ Memuat gambar ${i+1}/${urlUnik.length}...`);
+          base64Map[urlUnik[i]] = await urlKeBase64FaktaK(urlUnik[i]);
+        }
+
+        const topicData = allTopics?.find(t => t.id === currentTopicId);
+        const subjectData = allSubjects?.find(s => s.id === topicData?.subjectId);
+        const topicNama = topicData?.name || 'Laci';
+        const subjectNama = subjectData?.name || '';
+        const tarikhExport = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        setProgress(80, '📄 Membina halaman...');
+
+        const flashcards = [];
+        let nomborKad = 0;
+        semuaLaci.forEach(laci => {
+          const label = laci.title || '';
+          const imageUrl = laci.imageUrl ? (base64Map[laci.imageUrl] || '') : '';
+          const lines = (laci.notes || '').split('\n').filter(l => l.trim());
+          lines.forEach(line => {
+            const eqIdx = line.indexOf('=');
+            const atas = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
+            const bawahRaw = eqIdx !== -1 ? line.slice(eqIdx + 1).trim() : '';
+            if (atas) {
+              nomborKad++;
+              flashcards.push({ label, atas, bawahRaw, imageUrl, nombor: nomborKad });
+            }
+          });
+        });
+
+        if (!flashcards.length) { removeLoadBar(); showToast('⚠️ Tiada kad untuk dijana.'); return; }
+
+        let pagesHtml = '';
+        flashcards.forEach(card => {
+          const imgBlock = card.imageUrl
+            ? `<img class="k-img" src="${card.imageUrl}" alt="">`
+            : '';
+          const bawahHtml = card.bawahRaw
+            ? `<div class="k-terjemahan">${card.bawahRaw}</div>`
+            : '';
+          pagesHtml += `
+          <div class="k-page">
+            <div class="k-header">
+              <span class="k-kod">#${card.nombor}</span>
+              <span class="k-tajuk">${card.label}</span>
+            </div>
+            ${imgBlock}
+            <div class="k-ayat">${card.atas}</div>
+            ${bawahHtml}
+          </div>`;
+        });
+
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kindle Flashcard Fakta — ${topicNama}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI', Arial, sans-serif; background:white; }
+
+  @page { size: A5 portrait; margin: 0; }
+
+  .k-cover {
+    width: 148mm; height: 210mm;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    page-break-after: always; break-after: page;
+    padding: 20mm; text-align: center;
+  }
+  .k-cover h1 { font-size: 20pt; color: #f59e0b; margin-bottom: 10px; }
+  .k-cover h2 { font-size: 14pt; color: #374151; margin-bottom: 6px; }
+  .k-cover p { font-size: 11pt; color: #6b7280; }
+  .k-cover .k-stats { margin-top: 16px; font-size: 11pt; color: #374151; line-height: 2; }
+
+  .k-page {
+    width: 148mm; height: 210mm;
+    padding: 12mm 14mm;
+    display: flex; flex-direction: column;
+    gap: 6mm;
+    page-break-after: always; break-after: page;
+    overflow: hidden;
+    border-left: 6pt solid #f59e0b;
+    background: white;
+  }
+
+  .k-header {
+    display: flex; flex-direction: column;
+    gap: 2mm; flex-shrink: 0;
+    border-bottom: 1pt solid #e5e7eb;
+    padding-bottom: 4mm;
+  }
+  .k-kod { font-size: 8pt; font-weight: 700; color: #9ca3af; letter-spacing: 0.05em; }
+  .k-tajuk { font-size: 11pt; color: #f59e0b; font-weight: 700; line-height: 1.3; }
+
+  .k-img {
+    width: 100%; max-height: 70mm;
+    object-fit: contain; object-position: center;
+    flex-shrink: 0; border-radius: 3mm; display: block;
+  }
+
+  .k-ayat { font-size: 16pt; color: #111827; font-weight: 700; line-height: 1.5; flex-shrink: 0; }
+  .k-terjemahan { font-size: 13pt; color: #374151; line-height: 1.6; flex: 1; }
+
+  @media print {
+    body { margin: 0; }
+    .k-page { page-break-after: always; }
+    .k-cover { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="k-cover">
+  <h1>📚 Flashcard Fakta</h1>
+  <h2>${subjectNama}</h2>
+  <p>${topicNama}</p>
+  <p style="margin-top:6px;color:#9ca3af;">${tarikhExport}</p>
+  <div class="k-stats">${flashcards.length} kad · ${semuaLaci.length} laci</div>
+</div>
+
+${pagesHtml}
+
+</body>
+</html>`;
+
+        setProgress(100, '✅ Buka tetingkap print...');
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.onload = () => { setTimeout(() => printWindow.print(), 600); };
+
+        removeLoadBar();
+        showToast(`✅ ${flashcards.length} kad Kindle Fakta berjaya dijana!`, 4000);
+
+      } catch(e) {
+        removeLoadBar();
+        showToast('❌ Gagal: ' + e.message);
+      }
+    });
+
 document.getElementById('btn-export-format-ai')?.addEventListener('click', async () => {
     if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
