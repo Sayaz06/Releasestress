@@ -7744,7 +7744,7 @@ async function tunjukPopupSR(srData) {
       // Cari nombor PDF dari allBahasaDrawers
       const drawerData = allBahasaDrawers.find(d => d.id === srData.drawerId);
 const pdfNombor = drawerData?.pdfNombor || null;
-      const pdfJenis = drawerData?.pdfJenis || null;
+        const pdfJenis = drawerData?.pdfJenisAsal || drawerData?.pdfJenis || null;
       // Guna pdfKod dari SR queue (disimpan masa export PDF) atau bina dari drawer
       const srQueueData = await (async () => {
         try {
@@ -7756,7 +7756,6 @@ const pdfNombor = drawerData?.pdfNombor || null;
       const labelPDF = pdfKodSR
         ? `📄 Flashcard: ${pdfKodSR}`
         : (pdfNombor && pdfJenis ? `📄 Flashcard: ${pdfJenis}-${pdfNombor}` : '');
-
       const popup = document.createElement('div');
       popup.id = 'sr-notif-popup';
       popup.style.cssText = `
@@ -20010,10 +20009,10 @@ const drawerDataSR = data.isFakta
               labelPDFSR = `${subjek?.name || 'Subjek'}/${topic?.name || 'Topik'}/${drawerDataSR?.title || 'Slide'}-T${idxS + 1}`;
               isSementaraSR = true;
             }
-          } else {
-            // Bahasa — sistem lama
+           } else {
+            // Bahasa — guna pdfJenisAsal (dengan space) kalau ada
             const pdfNomborSR = drawerDataSR?.pdfNombor || null;
-            const pdfJenisSR = drawerDataSR?.pdfJenis || null;
+            const pdfJenisSR = drawerDataSR?.pdfJenisAsal || drawerDataSR?.pdfJenis || null;
             labelPDFSR = pdfNomborSR && pdfJenisSR ? `${pdfJenisSR}-${pdfNomborSR}` : null;
           }
 
