@@ -13584,8 +13584,9 @@ if (ayatBI) {
               batch.update(doc(db, "users", currentUser.uid, "bahasa_drawers", lid), {
                 pdfNombor: laciNomborMap[lid],
                 pdfJenis: jenisNama,
+                pdfJenisAsal: jenisData?.name || jenisNama,
                 pdfJenisId: currentJenisKataId
-              });
+              });             
             }
             await batch.commit();
             bi = bend;
@@ -21128,7 +21129,7 @@ function jbDapatKodSemasa() {
       (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
     ));
     const jenisAktif = allJenisKata.find(j => j.id === jenisIdDrawer);
-    const jenisNamaSementara = (jenisAktif?.name || 'Laci').replace(/\s+/g, '');
+    const jenisNamaSementara = (jenisAktif?.name || 'Laci');
     const idxSementara = semuaLaciIkutPDF.findIndex(d => d.id === drawerId);
     kod = idxSementara !== -1 ? `${jenisNamaSementara}-T${idxSementara + 1}` : `${jenisNamaSementara}-T?`;
     isSementara = true;
@@ -21138,7 +21139,7 @@ function jbDapatKodSemasa() {
   let bahasaJenis = '', bahasaNombor = '';
   if (pdfNombor && pdfJenis) {
     // Kod tetap: "KataNama-3"
-    bahasaJenis = pdfJenis;
+    bahasaJenis = drawer.pdfJenisAsal || pdfJenis;
     bahasaNombor = String(pdfNombor);
   } else {
     // Kod sementara: "KatakerjamS1-(1xdone)-T32"
