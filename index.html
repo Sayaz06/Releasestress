@@ -15874,12 +15874,14 @@ let berjayaP = 0, gagalP = 0, berjayaL = 0, gagalL = 0;
               const laciBaruRef = await addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), {
                 title: laci.title || '',
                 notes: laci.notes || '',
+                tipsFasa0: laci.tipsFasa0 || '',
+                tips: laci.tips || '',
                 repeatCount: 0,
                 jenisId: jenisDestId,
                 perkataanId: perkataanBaruId,
                 createdAt: Date.now()
               });
-              const laciBaruId = laciBaruRef.id;
+              const laciBaruId = laciBaruRef.id;       
 
               // 3. Salin gambar jika ada
               if (laci.imageUrl) {
