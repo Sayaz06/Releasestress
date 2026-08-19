@@ -23020,6 +23020,25 @@ function initMesinImejUI() {
   }
   updateMesinImejDelayStatus();
 
+  // ── POPUP SIMPAN BILA KELUAR TEXTAREA PROMPT ──
+  const taArahan = document.getElementById('arahan-imej-textarea');
+  if (taArahan && !taArahan._blurBound) {
+    taArahan._blurBound = true;
+    let _nilaiAsal = '';
+    taArahan.addEventListener('focus', () => {
+      _nilaiAsal = taArahan.value;
+    });
+    taArahan.addEventListener('blur', () => {
+      if (taArahan.value !== _nilaiAsal) {
+        if (confirm('Prompt telah diubah. Simpan perubahan?')) {
+          simpanArahanImej();
+        } else {
+          taArahan.value = _nilaiAsal;
+        }
+      }
+    });
+  }
+
   initXaiApiKeyUI();
 }
 
@@ -23531,6 +23550,25 @@ function initMesinImejFaktaUI() {
   }
   mifUpdateDelayStatus();
   mifRefreshKeyStatus();
+
+  // ── POPUP SIMPAN BILA KELUAR TEXTAREA PROMPT ──
+  const taArahanFakta = document.getElementById('arahan-imej-fakta-textarea');
+  if (taArahanFakta && !taArahanFakta._blurBound) {
+    taArahanFakta._blurBound = true;
+    let _nilaiAsal = '';
+    taArahanFakta.addEventListener('focus', () => {
+      _nilaiAsal = taArahanFakta.value;
+    });
+    taArahanFakta.addEventListener('blur', () => {
+      if (taArahanFakta.value !== _nilaiAsal) {
+        if (confirm('Prompt telah diubah. Simpan perubahan?')) {
+          mifSimpanArahan();
+        } else {
+          taArahanFakta.value = _nilaiAsal;
+        }
+      }
+    });
+  }
 }
 
 (function hookMesinImejFaktaOnRenderDrawers() {
