@@ -7616,15 +7616,73 @@ async function checkFaktaSRQueue() {
       } catch(e) {}
     }
 
-function renderCurrentFact() {
+function pushKindleSession() {
+      if (!currentUser) return;
+      if (!factMode && !bahasaMode) {
+        setDoc(doc(db, "users", currentUser.uid, "kindle_session", "current"), {
+          mode: "idle",
+          text: "Tiada countdown aktif",
+          phase: "",
+          progress: "",
+          isSR: false,
+          updatedAt: Date.now()
+        }, { merge: true }).catch(() => {});
+        return;
+      }
+      const data = allFacts[currentFactIndex];
+      if (!data) return;
+
+      let phase = "";
+      if (bahasaMode) {
+        if (data.isFasaEjaan) phase = `F0 — Ejaan · baki ${bahasaEjaanCount}`;
+        else if (bahasaRestPhase === 1) phase = `F1 · baki ${bahasaRestCount}`;
+        else phase = `F2 · baki ${bahasaRestCount}`;
+      } else if (factMode && learningMode === 2) {
+        if (mainRestPhase === 1) phase = `F1 · baki ${mainRestCount}`;
+        else phase = `F2 · baki ${mainRestCount}`;
+      }
+
+      const isSR = !!(data.isSRMode || data.isFaktaSR);
+      const textShow = isFlipped
+        ? (data.translation || data.text || data.title || "")
+        : (data.text || data.title || "");
+
+      // Tips sebutan (bahasa) / nota fakta
+      let tipsText = "";
+      if (bahasaMode && data.drawerId) {
+        const d = (typeof allBahasaDrawers !== "undefined" ? allBahasaDrawers : []).find(x => x.id === data.drawerId);
+        if (d && d.tipsSebutan) tipsText = d.tipsSebutan;
+      } else if (factMode && data.drawerId) {
+        const d = (typeof allDrawers !== "undefined" ? allDrawers : []).find(x => x.id === data.drawerId);
+        if (d && d.tipsFakta) tipsText = d.tipsFakta;
+      }
+
+      setDoc(doc(db, "users", currentUser.uid, "kindle_session", "current"), {
+        mode: bahasaMode ? "bahasa" : "fakta",
+        text: data.text || data.title || "",
+        translation: data.translation || (data.text && data.text.includes("=") ? data.text.split("=").slice(1).join("=").trim() : "") || "",
+        title: data.title || "",
+        tips: tipsText || "",
+        phase: phase,
+        progress: `${currentFactIndex + 1} / ${allFacts.length}`,
+        isSR: isSR,
+        drawerId: data.drawerId || null,
+        updatedAt: Date.now()
+      }, { merge: true }).catch(() => {});
+    }  
+
+    function renderCurrentFact() {
       // Sync Jogging Kad bila countdown bergerak
       if (jbAktif && (bahasaMode || factMode)) {
         setTimeout(() => jbUpdateUI(), 50);
       }
 
+      // Sync ke Kindle
+      try { pushKindleSession(); } catch (e) {}
+
       const dataSource = routineMode ? allRoutines : allFacts;
       const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
-
+    
       if (dataSource.length === 0) {
         factTitleEl.textContent = "";
         factContentEl.textContent = routineMode ? "Tiada rutin aktif. Sila tick SATU waktu." : "Tiada topik aktif. Sila tick SATU topik.";
@@ -9543,6 +9601,55 @@ if (routineMode && allRoutines.length > 0) {
     // INITIALIZATION & AUTH 
     // ==========================================
     setPersistence(auth, browserLocalPersistence);
+ 
+    // ── KINDLE COMMAND LISTENER ──
+    function subscribeKindleCommand() {
+      if (!currentUser) return;
+      if (window._kindleCmdUnsub) window._kindleCmdUnsub();
+      window._kindleCmdUnsub = onSnapshot(
+        doc(db, "users", currentUser.uid, "kindle_session", "command"),
+        async (snap) => {
+          if (!snap.exists()) return;
+          const cmd = snap.data();
+          if (!cmd || !cmd.command || !cmd.ts) return;
+          // Elak process command lama / sudah diproses
+          if (window._lastKindleCmdTs && cmd.ts <= window._lastKindleCmdTs) return;
+          window._lastKindleCmdTs = cmd.ts;
+
+          try {
+            if (cmd.command === "next") {
+              // Sama seperti tap circle / swipe next
+              if (typeof decrementTasbih === "function") decrementTasbih();
+            } else if (cmd.command === "enterSR") {
+              if (bahasaMode && typeof checkSRQueue === "function") {
+                const ada = await checkSRQueue();
+                if (ada && typeof muatSRLaciSeterusnya === "function" && muatSRLaciSeterusnya()) {
+                  if (typeof tunjukPopupSR === "function") tunjukPopupSR(srLaciSemasa);
+                  if (typeof muatLaciSRKeDalamFacts === "function") await muatLaciSRKeDalamFacts(srLaciSemasa);
+                }
+              } else if (factMode && typeof checkFaktaSRQueue === "function") {
+                const ada = await checkFaktaSRQueue();
+                if (ada && typeof muatFaktaSRLaciSeterusnya === "function" && muatFaktaSRLaciSeterusnya()) {
+                  if (typeof tunjukPopupSR === "function") tunjukPopupSR(faktaSRLaciSemasa);
+                  if (typeof muatFaktaSRKeDalamFacts === "function") await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+                }
+              }
+            } else if (cmd.command === "switchMode") {
+              // Hanya flag — user masih perlu tick topik/laci di phone
+              if (cmd.mode === "bahasa") {
+                showToast("Kindle minta mode Bahasa — tick laci bahasa di phone", 3000);
+              } else if (cmd.mode === "fakta") {
+                showToast("Kindle minta mode Fakta — tick topik fakta di phone", 3000);
+              }
+            }
+          } catch (e) {
+            console.warn("Kindle command error", e);
+          }
+        },
+        (err) => console.warn("Kindle command listener", err)
+      );
+    }
+
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
@@ -9566,7 +9673,7 @@ if (routineMode && allRoutines.length > 0) {
         
 showSection(secToShow); 
         await ensureTodayTasbih();
-        checkShowAdminPinBtn();
+        checkShowAdminPinBtn();        
         subscribeHistory();
         subscribeNotes();
         subscribeAllHierarchyData();
@@ -9577,16 +9684,18 @@ showSection(secToShow);
         subscribeBacaanTambahan();
         subscribeReminders();
         mulakanReminderCheck();
-        subscribeJoggingMotivasi();
+                subscribeJoggingMotivasi();
         subscribePerjanjian();
         subscribeWallpaper();
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
+        subscribeKindleCommand(); // Kindle remote control
         
       } else {
         homeUserEmail.textContent = "";
         if (notesUnsub) notesUnsub();
         if (historyUnsub) historyUnsub();
+        if (window._kindleCmdUnsub) { window._kindleCmdUnsub(); window._kindleCmdUnsub = null; }
         showSection(sectionLogin);
       }
     });
