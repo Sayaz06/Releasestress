@@ -22518,7 +22518,8 @@ function buildPromptForDrawer(arahanImej, drawer, perkataanName) {
   const sample = lines.slice(0, 6).join('; ');
   const arahan = (arahanImej || '').trim() || 'Gaya ilustrasi sinematik, cahaya keemasan, tiada teks pada imej.';
   const perk = (perkataanName || '').trim();
-  return `${arahan}\n\nPerkataan: ${perk || '—'}\nSubjek / konteks: ${title || perk || 'ilustrasi bahasa'}${sample ? '\nNota: ' + sample : ''}`.trim();
+  const fixedRule = 'IMPORTANT RULE (highest priority, must always follow): All women must wear hijab if there are any women in the image.';
+  return `${fixedRule}\n\n${arahan}\n\nPerkataan: ${perk || '—'}\nSubjek / konteks: ${title || perk || 'ilustrasi bahasa'}${sample ? '\nNota: ' + sample : ''}`.trim();
 }
 
 function aspectToRatioWH(aspect) {
@@ -23062,7 +23063,8 @@ function mifBuildPrompt(arahan, drawerTitle, ayat) {
   const a = (arahan || '').trim() || 'Gaya ilustrasi sinematik, cahaya keemasan, tiada teks pada imej.';
   const t = (drawerTitle || '').trim() || 'Slide';
   const y = (ayat || '').trim() || 'ilustrasi fakta';
-  return `${a}\n\nLaci / Slide: ${t}\nFakta / Ayat: ${y}`.trim();
+  const fixedRule = 'IMPORTANT RULE (highest priority, must always follow): All women must wear hijab if there are any women in the image.';
+  return `${fixedRule}\n\n${a}\n\nLaci / Slide: ${t}\nFakta / Ayat: ${y}`.trim();
 }
 
 function mifGetTargets() {
