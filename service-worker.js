@@ -1,32 +1,28 @@
-// ════════════════════════════════════════
-// SERVICE WORKER — Istigfar App
+// Service Worker — Network First strategy
+// App sentiasa cuba ambil versi terbaru dari server.
 // Tukar VERSI setiap kali update kod supaya
-// Android ambil fail terbaru dari network
-// ════════════════════════════════════════
-const VERSI = 'v20'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
+// cache lama dibuang dan app di-refresh automatik.
+
+const VERSI = 'v21'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
 const CACHE_NAME = `istigfar-${VERSI}`;
 
-// Fail yang nak dicache untuk offline
-const FAIL_STATIK = [
+const ASSETS = [
   './',
   './index.html',
-  './manifest.webmanifest',
-  './backgroundmusic.mp3',
-  './SuperSayaz.mp3',
+  './manifest.json'
 ];
 
-// ── INSTALL: Cache fail statik ──
+// Install — cache assets asas
 self.addEventListener('install', event => {
   console.log(`[SW] Install ${CACHE_NAME}`);
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(FAIL_STATIK.map(url => new Request(url, { cache: 'reload' })));
-    }).catch(err => console.log('[SW] Cache gagal:', err))
+      return cache.addAll(ASSETS);
+    }).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// ── ACTIVATE: Buang cache lama ──
+// Activate — buang cache lama
 self.addEventListener('activate', event => {
   console.log(`[SW] Aktif ${CACHE_NAME}`);
   event.waitUntil(
@@ -35,7 +31,7 @@ self.addEventListener('activate', event => {
         keys
           .filter(key => key !== CACHE_NAME)
           .map(key => {
-            console.log('[SW] Buang cache lama:', key);
+            console.log(`[SW] Buang cache lama: ${key}`);
             return caches.delete(key);
           })
       );
@@ -43,34 +39,27 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── FETCH: Network-first strategy ──
+// Fetch — Network First, fallback ke cache
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-
-  const url = new URL(event.request.url);
-  const isExternal = !url.hostname.includes('github.io') &&
-                     !url.hostname.includes('localhost') &&
-                     !url.hostname.includes('127.0.0.1') &&
-                     url.protocol !== 'chrome-extension:';
-  if (isExternal) return;
+  // Abaikan request bukan HTTP (chrome-extension dll)
+  if (!event.request.url.startsWith('http')) return;
 
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
+        // Simpan response baru ke cache
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
+            cache.put(event.request, clone);
           });
         }
         return response;
       })
       .catch(() => {
+        // Offline — guna cache
         return caches.match(event.request).then(cached => {
-          if (cached) return cached;
-          if (event.request.destination === 'document') {
-            return caches.match('./index.html');
-          }
+          return cached || caches.match('./index.html');
         });
       })
   );
