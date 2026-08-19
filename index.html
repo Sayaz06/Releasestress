@@ -7990,20 +7990,19 @@ if (learningMode === 2) {
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
-// ── DAFTAR SR FAKTA bila laci selesai ──
+// ── SR FAKTA: selesai ulangan SR (per-baris). Daftar baru dibuat selepas F2 setiap baris. ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId && currentData.isFaktaSR;
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && currentData.isFaktaSR;
               if (isFaktaSRSession) {
                 const fasaSemasa = faktaSRLaciSemasa?.fasaSemasa || 0;
-                await selesaiFaktaSRUlangan(currentData.drawerId);
-                faktaSRQueueIds.delete(currentData.drawerId);
+                const srId = faktaSRLaciSemasa.srDocId || faktaSRLaciSemasa.id || currentData.srDocId || currentData.drawerId;
+                await selesaiFaktaSRUlangan(srId);
+                faktaSRQueueIds.delete(srId);
                 faktaSRModeAktif = false;
                 faktaSRLaciSemasa = null;
                 showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSemasa)}`, 3000);
-              } else if (!currentData.isFaktaSR) {
-                await daftarSRBaru(currentData.drawerId, 'fakta');
-                showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
               }
+              // tiada daftarSRBaru di sini — sudah per-baris selepas F2
             }
 
             // ── CHECK SR FAKTA seterusnya (kalau suis ON) ──
@@ -8041,21 +8040,20 @@ if (learningMode === 2) {
           setTimeout(async () => {
             isBlocked = false;
 
-// ── DAFTAR SR FAKTA bila laci selesai ──
+// ── SR FAKTA: selesai ulangan SR (per-baris). Daftar baru dibuat selepas F2 setiap baris. ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId && currentData.isFaktaSR;
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && currentData.isFaktaSR;
               if (isFaktaSRSession) {
                 const fasaSemasa = faktaSRLaciSemasa?.fasaSemasa || 0;
-                await selesaiFaktaSRUlangan(currentData.drawerId);
-                faktaSRQueueIds.delete(currentData.drawerId);
+                const srId = faktaSRLaciSemasa.srDocId || faktaSRLaciSemasa.id || currentData.srDocId || currentData.drawerId;
+                await selesaiFaktaSRUlangan(srId);
+                faktaSRQueueIds.delete(srId);
                 faktaSRModeAktif = false;
                 faktaSRLaciSemasa = null;
                 showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSemasa)}`, 3000);
-              } else if (!currentData.isFaktaSR) {
-                await daftarSRBaru(currentData.drawerId, 'fakta');
-                showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
               }
-            }
+              // tiada daftarSRBaru di sini — sudah per-baris selepas F2
+            }            
 
             // ── CHECK SR FAKTA seterusnya (kalau suis ON) ──
             if (faktaSRON && factMode && !bahasaMode && !faktaSRSemuaSelesai) {
@@ -9703,8 +9701,15 @@ btnAddSubject.addEventListener("click", () => {
 
 btnAddLaci.addEventListener("click", () => { 
   if(currentTopicId) {
-addDoc(collection(db, "users", currentUser.uid, "drawer"), { title: "~", notes: "", repeatCount: 0, topicId: currentTopicId, createdAt: Date.now() });
-        showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
+    addDoc(collection(db, "users", currentUser.uid, "drawer"), {
+      title: "~",
+      items: [],
+      notes: "",
+      repeatCount: 0,
+      topicId: currentTopicId,
+      createdAt: Date.now()
+    });
+    showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
 
@@ -16354,8 +16359,8 @@ let srQueue = [];           // Queue overdue yang sedang aktif
     let srLaciSemasa = null;    // Rekod SR laci yang sedang diulang
     let srSemuaSelesai = false; // Flag — semua SR dalam sesi ini dah selesai
 
-// Daftar laci baru dalam SR queue bila hit isTamat
-async function daftarSRBaru(drawerId, mode = 'bahasa') {
+// Daftar laci baru dalam SR queue — fakta: satu baris = satu SR
+async function daftarSRBaru(drawerId, mode = 'bahasa', itemIndex = null, barisText = '') {
       if (!currentUser) return;
 
       let drawer, drawerTitle, srColl;
@@ -16375,7 +16380,14 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
       const now = Date.now();
       const nextDueAt = now + SR_INTERVALS[0];
 
-      const refSR = doc(db, "users", currentUser.uid, srColl, drawerId);
+      // Fakta: satu baris = satu SR (docId = drawerId_b{itemIndex})
+      // Bahasa: kekal per-laci
+      let srDocId = drawerId;
+      if (mode === 'fakta' && itemIndex !== null && itemIndex !== undefined) {
+        srDocId = drawerId + '_b' + itemIndex;
+      }
+
+      const refSR = doc(db, "users", currentUser.uid, srColl, srDocId);
       const snap = await getDoc(refSR);
 
       if (snap.exists()) {
@@ -16396,18 +16408,17 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
         const topicNama = topic?.name || 'Topik';
         const subjekNama = subjek?.name || 'Subjek';
         const tajukSlide = drawer.title || 'Slide';
+        const barisNo = (itemIndex !== null && itemIndex !== undefined) ? (itemIndex + 1) : 1;
 
         if (drawer.pdfNombor && drawer.pdfTopik && drawer.pdfSubjek) {
-          // Kod tetap
-          pdfKod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-${drawer.pdfNombor}`;
+          pdfKod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-${drawer.pdfNombor}-B${barisNo}`;
           isSementara = false;
         } else {
-          // Kod sementara
           const laciDalamTopik = allDrawers
             .filter(d => d.topicId === drawer.topicId)
             .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
           const idxSementara = laciDalamTopik.findIndex(d => d.id === drawerId);
-          pdfKod = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}`;
+          pdfKod = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}-B${barisNo}`;
           isSementara = true;
         }
       }
@@ -16421,7 +16432,8 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
         nextDueAt,
         sejarahFasa: [],
         createdAt: now,
-        mode
+        mode,
+        srDocId
       };
 
       if (mode === 'bahasa') {
@@ -16431,12 +16443,16 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
         srData.topicId = drawer.topicId || '';
         srData.pdfKod = pdfKod;
         srData.isSementara = isSementara;
+        if (itemIndex !== null && itemIndex !== undefined) {
+          srData.itemIndex = itemIndex;
+          srData.barisText = (barisText || '').slice(0, 200);
+        }
       }
 
       await setDoc(refSR, srData);
 
       if (mode === 'fakta') {
-        faktaSRQueueIds.add(drawerId);
+        faktaSRQueueIds.add(srDocId);
       } else {
         srQueueIds.add(drawerId);
       }
