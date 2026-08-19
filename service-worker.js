@@ -3,7 +3,7 @@
 // Tukar VERSI setiap kali update kod supaya
 // Android ambil fail terbaru dari network
 // ════════════════════════════════════════
-const VERSI = 'v19'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
+const VERSI = 'v20'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
 const CACHE_NAME = `istigfar-${VERSI}`;
 
 // Fail yang nak dicache untuk offline

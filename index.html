@@ -14052,11 +14052,79 @@ printWindow.onload = () => {
         // ── SYNC SR QUEUE ──
         try { await syncSRQueuePdfKod(); } catch(e) { console.log("Gagal sync SR:", e); }
 
-        // Bina 1 kad = 1 halaman, seli dengan halaman tips laci
+        // Bina 1 kad = 1 halaman, seli dengan halaman tips (tips panjang sambung page seterusnya, fon TETAP)
         const escapeKindleText = (s) => String(s || '')
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
+
+        // Ukur teks dengan fon tetap 11pt, pecah ke beberapa halaman A5 — jangan kecikkan fon
+        const probeMm = document.createElement('div');
+        probeMm.style.cssText = 'position:absolute;left:-99999px;width:10mm;height:10mm;visibility:hidden;pointer-events:none;';
+        document.body.appendChild(probeMm);
+        const pxPerMm = (probeMm.offsetHeight / 10) || 3.78;
+        probeMm.remove();
+        const maxTipsBodyPx = 150 * pxPerMm;
+        const ukurBox = document.createElement('div');
+        ukurBox.style.cssText = 'position:absolute;left:-99999px;top:0;width:120mm;font-size:11pt;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;font-family:\'Segoe UI\',Arial,sans-serif;visibility:hidden;pointer-events:none;';
+        document.body.appendChild(ukurBox);
+        const tinggiTipsTeks = (s) => { ukurBox.textContent = s || ''; return ukurBox.offsetHeight; };
+        const pecahTeksKeMukasurat = (teks, maxH) => {
+          const src = String(teks || '');
+          if (!src.trim()) return [];
+          if (tinggiTipsTeks(src) <= maxH) return [src];
+          const pages = [];
+          let rest = src;
+          while (rest.length) {
+            if (tinggiTipsTeks(rest) <= maxH) { pages.push(rest); break; }
+            let lo = 0, hi = rest.length, best = 0;
+            while (lo <= hi) {
+              const mid = (lo + hi) >> 1;
+              if (tinggiTipsTeks(rest.slice(0, mid)) <= maxH) { best = mid; lo = mid + 1; }
+              else hi = mid - 1;
+            }
+            if (best < 8) best = Math.min(rest.length, 40);
+            const chunk = rest.slice(0, best);
+            const snapNl = chunk.lastIndexOf('\n');
+            const snapSp = chunk.lastIndexOf(' ');
+            let cutAt = best;
+            if (snapNl >= best * 0.45) cutAt = snapNl + 1;
+            else if (snapSp >= best * 0.45) cutAt = snapSp + 1;
+            if (cutAt < 1) cutAt = Math.min(rest.length, 40);
+            pages.push(rest.slice(0, cutAt).replace(/[ \t]+$/g, ''));
+            const nextRest = rest.slice(cutAt).replace(/^[ \t]+/g, '');
+            if (nextRest.length >= rest.length) { pages.push(rest); break; }
+            rest = nextRest;
+          }
+          return pages;
+        };
+        const binaHalamanTips = (card) => {
+          const seksyen = [];
+          if (card.tipsFasa0) seksyen.push({ label: '💡 Tips Fasa 0 — Ejaan Tajuk', text: card.tipsFasa0 });
+          if (card.tips) seksyen.push({ label: '💡 Tips Fasa 1 &amp; 2 — Isi Laci', text: card.tips });
+          if (!seksyen.length) return '';
+          let html = '';
+          let idxTips = 0;
+          seksyen.forEach((sec) => {
+            const chunks = pecahTeksKeMukasurat(sec.text, maxTipsBodyPx);
+            chunks.forEach((chunk, ci) => {
+              idxTips++;
+              const samb = idxTips > 1 ? ' · sambungan' : '';
+              const labelTeks = ci === 0 ? sec.label : (sec.label + ' · sambungan');
+              html += `
+          <div class="k-tips-page">
+            <div class="k-header">
+              <span class="k-kod">${jenisNama}-${card.nombor} · TIPS${samb}</span>
+              <span class="k-tajuk">${card.tajuk}</span>
+            </div>
+            <div class="k-tips-label">${labelTeks}</div>
+            <div class="k-tips-body">${escapeKindleText(chunk)}</div>
+          </div>`;
+            });
+          });
+          return html;
+        };
+
         let pagesHtml = '';
         flashcards.forEach(card => {
           const imgBlock = card.imageUrl
@@ -14072,27 +14140,9 @@ printWindow.onload = () => {
             <div class="k-ayat">${card.ayatBI}</div>
             ${card.terjemahan ? `<div class="k-terjemahan">${card.terjemahan}</div>` : ''}
           </div>`;
-
-          const adaTips = !!(card.tips || card.tipsFasa0);
-          if (!adaTips) return;
-          const blokF0 = card.tipsFasa0
-            ? `<div class="k-tips-label">💡 Tips Fasa 0 — Ejaan Tajuk</div>
-               <div class="k-tips-body">${escapeKindleText(card.tipsFasa0)}</div>`
-            : '';
-          const blokF12 = card.tips
-            ? `<div class="k-tips-label">💡 Tips Fasa 1 &amp; 2 — Isi Laci</div>
-               <div class="k-tips-body">${escapeKindleText(card.tips)}</div>`
-            : '';
-          pagesHtml += `
-          <div class="k-tips-page">
-            <div class="k-header">
-              <span class="k-kod">${jenisNama}-${card.nombor} · TIPS</span>
-              <span class="k-tajuk">${card.tajuk}</span>
-            </div>
-            ${blokF0}
-            ${blokF12}
-          </div>`;
+          pagesHtml += binaHalamanTips(card);
         });
+        ukurBox.remove();
 
         const htmlContent = `<!DOCTYPE html>
 <html>
@@ -14162,11 +14212,13 @@ printWindow.onload = () => {
   }
 
   .k-tips-page {
-    width: 148mm; min-height: 210mm;
+    width: 148mm; height: 210mm; max-height: 210mm;
     padding: 12mm 14mm;
     display: flex; flex-direction: column;
     gap: 5mm;
     page-break-after: always; break-after: page;
+    page-break-inside: avoid; break-inside: avoid;
+    overflow: hidden;
     border-left: 6pt solid #0891b2;
     background: #f8fafc;
   }
@@ -14180,7 +14232,10 @@ printWindow.onload = () => {
     font-size: 11pt; color: #1f2937;
     line-height: 1.55;
     white-space: pre-wrap; word-wrap: break-word;
+    overflow-wrap: anywhere;
     font-family: 'Segoe UI', Arial, sans-serif;
+    flex: 0 1 auto;
+    overflow: hidden;
   }
 
   @media print {
