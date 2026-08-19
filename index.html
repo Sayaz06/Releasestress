@@ -2023,7 +2023,7 @@ body.dark-mode {
           <button id="btn-export-pdf-flashcard-portrait" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0e7490,#0c6b80);border:none;color:white;">🖨️ Portrait 2×3</button>
           <button id="btn-export-pdf-flashcard" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">⭐ Landscape 3×2</button>
         </div>
-        <button id="btn-export-pdf-bahasa-kindle" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 Export Kindle PDF (1 Kad = 1 Halaman)</button>
+        <button id="btn-export-pdf-bahasa-kindle" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 Export Kindle PDF (Kad + Tips seli)</button>
           <div class="list mt-8" id="perkataan-list" style="padding: 10px;"></div>
       </section>
 
@@ -13980,22 +13980,28 @@ printWindow.onload = () => {
 
         setProgress(80, '📄 Membina halaman...');
 
-        // Kumpul semua flashcard
+        // Kumpul semua flashcard + tips setiap laci
         const flashcards = [];
         let nomborPDF = 0;
+        const laciNomborMap = {};
         semuaLaci.forEach(laci => {
           const tajuk = laci.title || '';
           const imageUrl = laci.imageUrl ? (base64Map[laci.imageUrl] || '') : '';
+          const tips = (laci.tips || '').trim();
+          const tipsFasa0 = (laci.tipsFasa0 || '').trim();
           const lines = laci.notes.split('\n').filter(l => l.trim());
+          let firstNombor = null;
           lines.forEach(line => {
             const parts = line.split('=');
             const ayatBI = parts[0] ? parts[0].trim() : '';
             const terjemahan = parts[1] ? parts.slice(1).join('=').trim() : '';
             if (ayatBI) {
               nomborPDF++;
-              flashcards.push({ tajuk, ayatBI, terjemahan, imageUrl, nombor: nomborPDF });
+              if (firstNombor === null) firstNombor = nomborPDF;
+              flashcards.push({ tajuk, ayatBI, terjemahan, imageUrl, nombor: nomborPDF, tips, tipsFasa0 });
             }
           });
+          if (firstNombor !== null) laciNomborMap[laci.id] = firstNombor;
         });
 
         if (!flashcards.length) { removeLoadBar(); showToast('⚠️ Tiada flashcard untuk dijana.'); return; }
@@ -14046,7 +14052,11 @@ printWindow.onload = () => {
         // ── SYNC SR QUEUE ──
         try { await syncSRQueuePdfKod(); } catch(e) { console.log("Gagal sync SR:", e); }
 
-        // Bina 1 kad = 1 halaman
+        // Bina 1 kad = 1 halaman, seli dengan halaman tips laci
+        const escapeKindleText = (s) => String(s || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
         let pagesHtml = '';
         flashcards.forEach(card => {
           const imgBlock = card.imageUrl
@@ -14061,6 +14071,26 @@ printWindow.onload = () => {
             ${imgBlock}
             <div class="k-ayat">${card.ayatBI}</div>
             ${card.terjemahan ? `<div class="k-terjemahan">${card.terjemahan}</div>` : ''}
+          </div>`;
+
+          const adaTips = !!(card.tips || card.tipsFasa0);
+          if (!adaTips) return;
+          const blokF0 = card.tipsFasa0
+            ? `<div class="k-tips-label">💡 Tips Fasa 0 — Ejaan Tajuk</div>
+               <div class="k-tips-body">${escapeKindleText(card.tipsFasa0)}</div>`
+            : '';
+          const blokF12 = card.tips
+            ? `<div class="k-tips-label">💡 Tips Fasa 1 &amp; 2 — Isi Laci</div>
+               <div class="k-tips-body">${escapeKindleText(card.tips)}</div>`
+            : '';
+          pagesHtml += `
+          <div class="k-tips-page">
+            <div class="k-header">
+              <span class="k-kod">${jenisNama}-${card.nombor} · TIPS</span>
+              <span class="k-tajuk">${card.tajuk}</span>
+            </div>
+            ${blokF0}
+            ${blokF12}
           </div>`;
         });
 
@@ -14131,9 +14161,32 @@ printWindow.onload = () => {
     line-height: 1.6; flex: 1;
   }
 
+  .k-tips-page {
+    width: 148mm; min-height: 210mm;
+    padding: 12mm 14mm;
+    display: flex; flex-direction: column;
+    gap: 5mm;
+    page-break-after: always; break-after: page;
+    border-left: 6pt solid #0891b2;
+    background: #f8fafc;
+  }
+  .k-tips-label {
+    font-size: 9pt; font-weight: 700;
+    color: #0891b2; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .k-tips-body {
+    font-size: 11pt; color: #1f2937;
+    line-height: 1.55;
+    white-space: pre-wrap; word-wrap: break-word;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
   @media print {
     body { margin: 0; }
     .k-page { page-break-after: always; }
+    .k-tips-page { page-break-after: always; }
     .k-cover { page-break-after: always; }
   }
 </style>
@@ -14144,7 +14197,7 @@ printWindow.onload = () => {
   <h1>📖 ${tajukPDF}</h1>
   <p>${tarikhExport}</p>
   <div class="k-stats">
-    ${flashcards.length} flashcard · ${semuaLaci.length} laci
+    ${flashcards.length} flashcard · ${semuaLaci.length} laci · kad + tips seli-seli
   </div>
 </div>
 
@@ -14162,7 +14215,7 @@ ${pagesHtml}
         printWindow.onload = () => { setTimeout(() => printWindow.print(), 600); };
 
         removeLoadBar();
-        showToast(`✅ ${flashcards.length} kad Kindle berjaya dijana!`, 4000);
+        showToast(`✅ ${flashcards.length} kad Kindle + halaman tips berjaya dijana!`, 4000);
 
       } catch(e) {
         removeLoadBar();
