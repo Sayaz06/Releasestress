@@ -19647,8 +19647,8 @@ bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa',
             if (!trashSnap.exists()) return;
             const item = trashSnap.data();
             try {
-              // Pulihkan ke collection asal (ID baru supaya tak conflict)
-              const newRef = doc(collection(db, "users", currentUser.uid, item.originalColl));
+              // Pulihkan ke collection asal dengan ID asal supaya SR queue kekal selari
+              const newRef = doc(db, "users", currentUser.uid, item.originalColl, item.originalId);
               await setDoc(newRef, item.originalData);
               await deleteDoc(doc(db, "users", currentUser.uid, TRASH_COLL, trashId));
               showToast(`✅ "${item.label}" berjaya dipulihkan!`);
