@@ -7543,7 +7543,7 @@ async function checkFaktaSRQueue() {
         isFaktaSR: true
       });
 
-// ── FORMAT BARU: guna items[] ──
+      // ── FORMAT BARU sahaja: items[] ──
       if (drawer.items && drawer.items.length > 0) {
         drawer.items.forEach((item, idx) => {
           if (!item.ayat || !item.ayat.trim()) return;
@@ -7558,29 +7558,6 @@ async function checkFaktaSRQueue() {
             isFaktaSR: true,
             isItemFormat: true,
             itemIndex: idx
-          });
-        });
-
-      // ── FORMAT LAMA: fallback ke notes ──
-      } else if (drawer.notes) {
-        const lines = drawer.notes.split('\n').filter(l => l.trim() !== '');
-        lines.forEach(line => {
-          const parts = line.split('=');
-          const perkataan = parts[0].trim();
-          const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
-          const maksudFormatted = maksudRaw
-            ? maksudRaw.replace(/\s+k(\d+)\s*/g, '\nk$1 ').replace(/\s+(\d+)\.\s*/g, '\n$1. ').trim()
-            : null;
-          factsBaru.push({
-            drawerId: drawer.id,
-            title: tajukLaci,
-            text: perkataan,
-            translation: maksudFormatted,
-            isTamat: false,
-            isFasaEjaan: false,
-            isSRMode: true,
-            isFaktaSR: true,
-            isItemFormat: false
           });
         });
       }
@@ -8053,12 +8030,14 @@ if (learningMode === 2) {
             if (bahasaMode) {
               await majuIndexSelepasTamatBahasa();
             } else {
-              currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+              let nextIdx = currentFactIndex + 1;
+              if (nextIdx >= allFacts.length) nextIdx = 0;
+              currentFactIndex = nextIdx;
               syncIndexToFirestore(currentFactIndex);
               triggerFadeAnimation(renderCurrentFact);
             }
           }, 2600);
-        } else {          
+        } else {                   
           setTimeout(async () => {
             isBlocked = false;
 
@@ -8109,7 +8088,9 @@ if (learningMode === 2) {
               if (bahasaMode) {
                 await majuIndexSelepasTamatBahasa();
               } else {
-                currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+                let nextIdx = currentFactIndex + 1;
+                if (nextIdx >= allFacts.length) nextIdx = 0;
+                currentFactIndex = nextIdx;
                 syncIndexToFirestore(currentFactIndex);
                 triggerFadeAnimation(renderCurrentFact);
               }
@@ -8117,7 +8098,7 @@ if (learningMode === 2) {
           }, 2600);
         }
         return;
-      }
+      }        
 
       if (learningMode === 0) { // Normal
         comboStep = 0;
@@ -8432,18 +8413,17 @@ const tapSeterusnyaFn = async () => {
                 mainRestPhase = 1; mainRestCount = cyc.fasa1; mainPlus5Used = false;
                 isFlipped = false;
                 updateMainPlus5Btn();
-                const nextIndex = (currentFactIndex + 1) % allFacts.length;
-                let targetIndex = nextIndex;
-                while (targetIndex < allFacts.length && !allFacts[targetIndex].isFasaEjaan && !allFacts[targetIndex].isTamat) {
-                  targetIndex = (targetIndex + 1) % allFacts.length;
-                }
-                currentFactIndex = targetIndex;
+                // Fakta: maju 1 baris sahaja (F1+F2 sudah siap untuk baris semasa)
+                // JANGAN skip ke isTamat / isFasaEjaan — itu punca laci terus habis
+                let nextIdx = currentFactIndex + 1;
+                if (nextIdx >= allFacts.length) nextIdx = allFacts.length - 1;
+                currentFactIndex = nextIdx;
                 syncIndexToFirestore(currentFactIndex);
                 triggerFadeAnimation(() => {
                   renderCurrentFact();
                 });
               }, 2600);
-            }
+            }  
           }
         } else {
           renderCurrentFact();
@@ -9119,10 +9099,12 @@ function rebuildFacts() {
         activeDrawers.forEach(data => {
           const tajukLaci = data.title || "Tiada Tajuk";
 
-          // ── FORMAT BARU: guna items[] ──
+          // ── FORMAT BARU sahaja: items[] ──
           if (data.items && data.items.length > 0) {
+            let adaBaris = false;
             data.items.forEach((item, idx) => {
               if (!item.ayat || !item.ayat.trim()) return;
+              adaBaris = true;
               allFacts.push({
                 drawerId: data.id,
                 title: tajukLaci,
@@ -9133,46 +9115,16 @@ function rebuildFacts() {
                 itemIndex: idx
               });
             });
-            allFacts.push({
-              drawerId: data.id,
-              title: tajukLaci,
-              text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.",
-              isTamat: true,
-              isItemFormat: true
-            });
-
-          // ── FORMAT LAMA: fallback ke notes ──
-          } else if (data.notes) {
-            const lines = data.notes.split('\n').filter(l => l.trim() !== "");
-            if (lines.length > 0) {
-              lines.forEach(line => {
-                const parts = line.split('=');
-                const perkataan = parts[0].trim();
-                const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
-                const maksudFormatted = maksudRaw
-                  ? maksudRaw
-                      .replace(/\s+k(\d+)\s*/g, '\nk$1 ')
-                      .replace(/\s+(\d+)\.\s*/g, '\n$1. ')
-                      .trim()
-                  : null;
-                allFacts.push({ 
-                  drawerId: data.id, 
-                  title: tajukLaci, 
-                  text: perkataan, 
-                  translation: maksudFormatted, 
-                  isTamat: false,
-                  isItemFormat: false
-                });
-              });
-              allFacts.push({ 
-                drawerId: data.id, 
-                title: tajukLaci, 
-                text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.", 
+            if (adaBaris) {
+              allFacts.push({
+                drawerId: data.id,
+                title: tajukLaci,
+                text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.",
                 isTamat: true,
-                isItemFormat: false
+                isItemFormat: true
               });
             }
-          }
+          }   
         });
       } else {
         activeGlobalTopicId = 'default';
