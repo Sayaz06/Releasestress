@@ -8404,15 +8404,21 @@ const tapSeterusnyaFn = async () => {
                 showToast("Fasa 2 bermula!");
               }
             } else {
+              // F2 habis → daftar SR untuk BARIS ini, kemudian maju ke baris seterusnya
               triggerVibration([200, 100, 200, 100, 2000]);
               isBlocked = true;
-              setTimeout(() => {
+              setTimeout(async () => {
                 isBlocked = false;
                 mainRestPhase = 1; mainRestCount = cyc.fasa1; mainPlus5Used = false;
                 isFlipped = false;
                 updateMainPlus5Btn();
-                // Fakta: maju 1 baris sahaja (F1+F2 sudah siap untuk baris semasa)
-                // JANGAN skip ke isTamat / isFasaEjaan — itu punca laci terus habis
+
+                const cur = allFacts[currentFactIndex];
+                if (cur && !cur.isTamat && !cur.isFaktaSR && cur.drawerId != null && cur.itemIndex != null) {
+                  await daftarSRBaru(cur.drawerId, 'fakta', cur.itemIndex, cur.text || '');
+                  showToast('⏰ Baris didaftarkan dalam SR (+20 min)', 2500);
+                }
+
                 let nextIdx = currentFactIndex + 1;
                 if (nextIdx >= allFacts.length) nextIdx = allFacts.length - 1;
                 currentFactIndex = nextIdx;
@@ -8421,7 +8427,7 @@ const tapSeterusnyaFn = async () => {
                   renderCurrentFact();
                 });
               }, 2600);
-            }  
+            }
           }
         } else {
           renderCurrentFact();
