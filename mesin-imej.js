@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════
-// MESIN IMEJ — xAI Imagine API (per-user key)
+// MESIN IMEJ — xAI Imagine API (page Perkataan / jenis kata)
+// Jana gambar semua laci dalam SEMUA perkataan jenis kata ini.
+// Fail ini di-inline ke dalam <script type="module"> index.html
+// supaya boleh akses currentUser / db / allBahasaDrawers.
 // ═══════════════════════════════════════════════════════════
 let mesinImejState = {
   running: false,
   paused: false,
   stopRequested: false,
-  queue: [], // { id, title, status: pending|generating|done|failed|skipped, error }
+  queue: [], // { id, title, perkataanName, status, error }
   currentIndex: 0,
   total: 0
 };
@@ -16,10 +19,8 @@ function getXaiKeyStorageKey() {
 
 async function loadXaiApiKey() {
   if (!currentUser) return '';
-  // 1) localStorage cache
   const lsKey = getXaiKeyStorageKey();
   let key = lsKey ? (localStorage.getItem(lsKey) || '') : '';
-  // 2) Firestore settings
   try {
     const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "xaiApiKey"));
     if (snap.exists() && snap.data().key) {
@@ -107,67 +108,85 @@ function initXaiApiKeyUI() {
   refreshXaiKeyStatus();
 }
 
-async function loadArahanImejForCurrentPerkataan() {
+function getPerkataanInCurrentJenis() {
+  return allBahasaPerkataan
+    .filter(p => p.jenisId === currentJenisKataId)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+}
+
+function getDrawersForCurrentJenis() {
+  const perkataan = getPerkataanInCurrentJenis();
+  const perkataanIds = new Set(perkataan.map(p => p.id));
+  const nameById = Object.fromEntries(perkataan.map(p => [p.id, p.name || '']));
+  const drawers = allBahasaDrawers
+    .filter(d => perkataanIds.has(d.perkataanId) || d.jenisId === currentJenisKataId)
+    .sort((a, b) => {
+      const na = nameById[a.perkataanId] || '';
+      const nb = nameById[b.perkataanId] || '';
+      const c = na.localeCompare(nb, undefined, { numeric: true });
+      if (c) return c;
+      return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true });
+    });
+  return { perkataan, drawers, nameById };
+}
+
+async function loadArahanImejForCurrentJenis() {
   const ta = document.getElementById('arahan-imej-textarea');
   const delayEl = document.getElementById('mesin-imej-delay');
   const modelEl = document.getElementById('mesin-imej-model');
   const aspectEl = document.getElementById('mesin-imej-aspect');
-  if (!ta || !currentPerkataanId || !currentUser) return;
-  const p = allBahasaPerkataan.find(x => x.id === currentPerkataanId);
-  if (p) {
-    ta.value = p.arahanImej || '';
-    if (delayEl && p.delaySec != null) delayEl.value = p.delaySec;
-    if (modelEl && p.imageModel) modelEl.value = p.imageModel;
-    if (aspectEl && p.imageAspect) aspectEl.value = p.imageAspect;
-  } else {
+  if (!ta || !currentJenisKataId || !currentUser) return;
+  const j = (typeof allJenisKata !== 'undefined' ? allJenisKata : []).find(x => x.id === currentJenisKataId);
+  const apply = (d) => {
+    if (!d) return;
+    if (d.arahanImej != null) ta.value = d.arahanImej || '';
+    if (delayEl && d.delaySec != null) delayEl.value = d.delaySec;
+    if (modelEl && d.imageModel) modelEl.value = d.imageModel;
+    if (aspectEl && d.imageAspect) aspectEl.value = d.imageAspect;
+  };
+  if (j) apply(j);
+  else {
     try {
-      const snap = await getDoc(doc(db, "users", currentUser.uid, "bahasa_perkataan", currentPerkataanId));
-      if (snap.exists()) {
-        const d = snap.data();
-        ta.value = d.arahanImej || '';
-        if (delayEl && d.delaySec != null) delayEl.value = d.delaySec;
-        if (modelEl && d.imageModel) modelEl.value = d.imageModel;
-        if (aspectEl && d.imageAspect) aspectEl.value = d.imageAspect;
-      }
+      const snap = await getDoc(doc(db, "users", currentUser.uid, "jenis_kata", currentJenisKataId));
+      if (snap.exists()) apply(snap.data());
     } catch (e) {}
   }
 }
 
 async function simpanArahanImej() {
-  if (!currentUser || !currentPerkataanId) {
-    showToast('Tiada perkataan aktif.');
+  if (!currentUser || !currentJenisKataId) {
+    showToast('Buka satu jenis kata dahulu.');
     return;
   }
   const arahan = (document.getElementById('arahan-imej-textarea')?.value || '').trim();
   const delaySec = parseInt(document.getElementById('mesin-imej-delay')?.value || '8', 10) || 8;
   const imageModel = document.getElementById('mesin-imej-model')?.value || 'grok-imagine-image';
   const imageAspect = document.getElementById('mesin-imej-aspect')?.value || '16:9';
-  await setDoc(doc(db, "users", currentUser.uid, "bahasa_perkataan", currentPerkataanId), {
+  await setDoc(doc(db, "users", currentUser.uid, "jenis_kata", currentJenisKataId), {
     arahanImej: arahan,
     delaySec,
     imageModel,
     imageAspect,
     updatedAt: Date.now()
   }, { merge: true });
-  const p = allBahasaPerkataan.find(x => x.id === currentPerkataanId);
-  if (p) {
-    p.arahanImej = arahan;
-    p.delaySec = delaySec;
-    p.imageModel = imageModel;
-    p.imageAspect = imageAspect;
+  const j = (typeof allJenisKata !== 'undefined' ? allJenisKata : []).find(x => x.id === currentJenisKataId);
+  if (j) {
+    j.arahanImej = arahan;
+    j.delaySec = delaySec;
+    j.imageModel = imageModel;
+    j.imageAspect = imageAspect;
   }
-  showToast('✅ Arahan imej disimpan.');
+  showToast('✅ Arahan imej disimpan untuk jenis kata ini.');
 }
 
-function buildPromptForDrawer(arahanImej, drawer) {
+function buildPromptForDrawer(arahanImej, drawer, perkataanName) {
   const title = (drawer.title || '').trim();
   const notes = (drawer.notes || '').trim();
-  let body = title;
-  if (notes) body += (body ? '\n\n' : '') + notes;
   const lines = notes.split('\n').map(l => l.trim()).filter(Boolean);
   const sample = lines.slice(0, 6).join('; ');
   const arahan = (arahanImej || '').trim() || 'Gaya ilustrasi sinematik, cahaya keemasan, tiada teks pada imej.';
-  return `${arahan}\n\nSubjek / konteks: ${title || 'ilustrasi bahasa'}${sample ? '\nNota: ' + sample : ''}`.trim();
+  const perk = (perkataanName || '').trim();
+  return `${arahan}\n\nPerkataan: ${perk || '—'}\nSubjek / konteks: ${title || perk || 'ilustrasi bahasa'}${sample ? '\nNota: ' + sample : ''}`.trim();
 }
 
 function aspectToRatioWH(aspect) {
@@ -298,8 +317,9 @@ function updateMesinImejUI() {
   list.style.display = total ? 'block' : 'none';
   list.innerHTML = mesinImejState.queue.map(q => {
     const icon = { pending: '⏳', generating: '🎨', done: '✅', failed: '❌', skipped: '⏭' }[q.status] || '•';
-    const err = q.error ? ` — ${q.error}` : '';
-    return `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);">${icon} <b>${(q.title || q.id).slice(0,40)}</b> <span style="color:var(--subtext)">${q.status}${err}</span></div>`;
+    const err = q.error ? ` — ${escapeHtmlMesin(q.error)}` : '';
+    const label = escapeHtmlMesin((q.title || q.id).slice(0, 56));
+    return `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);">${icon} <b>${label}</b> <span style="color:var(--subtext)">${q.status}${err}</span></div>`;
   }).join('');
 
   const running = mesinImejState.running;
@@ -308,6 +328,14 @@ function updateMesinImejUI() {
   if (btnSambung) btnSambung.style.display = running && mesinImejState.paused ? '' : 'none';
   if (btnHenti) btnHenti.style.display = running ? '' : 'none';
   if (btnRetry) btnRetry.style.display = (!running && failed > 0) ? '' : 'none';
+}
+
+function escapeHtmlMesin(s) {
+  return String(s || '')
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"');
 }
 
 function sleepMs(ms) {
@@ -321,13 +349,13 @@ async function waitWhilePaused() {
 }
 
 async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
-  if (!currentUser || !currentPerkataanId) {
-    showToast('Buka satu perkataan dulu.');
+  if (!currentUser || !currentJenisKataId) {
+    showToast('Buka satu jenis kata (page Perkataan) dulu.');
     return;
   }
   const apiKey = await loadXaiApiKey();
   if (!apiKey) {
-    showToast('❌ Tiada xAI API key. Simpan key di halaman Laci Bahasa.');
+    showToast('❌ Tiada xAI API key. Simpan key dalam panel Mesin Imej.');
     return;
   }
 
@@ -340,12 +368,14 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
   const skipExisting = document.getElementById('mesin-imej-skip-existing')?.checked !== false;
   const [rW, rH] = aspectToRatioWH(aspect);
 
-  const drawers = allBahasaDrawers
-    .filter(d => d.perkataanId === currentPerkataanId)
-    .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+  const { perkataan, drawers, nameById } = getDrawersForCurrentJenis();
 
+  if (!perkataan.length) {
+    showToast('Tiada perkataan dalam jenis kata ini.');
+    return;
+  }
   if (!drawers.length) {
-    showToast('Tiada laci dalam perkataan ini.');
+    showToast('Tiada laci dalam perkataan jenis kata ini.');
     return;
   }
 
@@ -359,15 +389,16 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
       targets = drawers.filter(d => !d.imageUrl);
     }
     if (!targets.length) {
-      showToast('Semua laci sudah ada gambar (atau tiada laci).');
+      showToast('Semua laci sudah ada gambar.');
       return;
     }
     if (targets.length > 12) {
-      if (!confirm(`Akan jana ${targets.length} imej.\nIni mungkin guna kuota API anda.\nTeruskan?`)) return;
+      if (!confirm(`Akan jana ${targets.length} imej untuk ${perkataan.length} perkataan.\nIni mungkin guna kuota API anda.\nTeruskan?`)) return;
     }
     mesinImejState.queue = targets.map(d => ({
       id: d.id,
-      title: d.title || d.id,
+      perkataanName: nameById[d.perkataanId] || '',
+      title: ((nameById[d.perkataanId] ? nameById[d.perkataanId] + ' · ' : '') + (d.title || d.id)),
       status: 'pending',
       error: null
     }));
@@ -412,7 +443,8 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
       updateMesinImejUI();
 
       try {
-        const prompt = buildPromptForDrawer(arahan, drawer);
+        const perkName = item.perkataanName || nameById[drawer.perkataanId] || '';
+        const prompt = buildPromptForDrawer(arahan, drawer, perkName);
         const imgBlob = await callXaiImagine(prompt, { model, aspect_ratio: aspect, apiKey });
         const blob = await downloadImageAsBlob(imgBlob);
         await uploadBlobToBahasaDrawer(drawer.id, blob, rW, rH);
@@ -440,7 +472,7 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
     mesinImejState.paused = false;
     window.removeEventListener('beforeunload', beforeUnload);
     updateMesinImejUI();
-    try { await renderBahasaDrawers(); } catch (_) {}
+    try { renderPerkataan(); } catch (_) {}
     const failed = mesinImejState.queue.filter(q => q.status === 'failed').length;
     const done = mesinImejState.queue.filter(q => q.status === 'done').length;
     showToast(failed ? `Selesai: ${done} ok, ${failed} gagal.` : `✅ Selesai jana ${done} imej.`);
@@ -488,20 +520,23 @@ function initMesinImejUI() {
     body.style.display = hide ? 'none' : '';
     btnToggle.textContent = hide ? 'Buka' : 'Tutup';
   });
+  initXaiApiKeyUI();
 }
 
-(function () {
-  const _rb = renderBahasaDrawers;
-  renderBahasaDrawers = async function () {
-    const ret = await _rb.apply(this, arguments);
+(function hookMesinImejOnPerkataanPage() {
+  if (typeof renderPerkataan !== 'function') return;
+  const _rp = renderPerkataan;
+  renderPerkataan = function () {
+    const ret = _rp.apply(this, arguments);
     try {
       initMesinImejUI();
-      await loadArahanImejForCurrentPerkataan();
+      loadArahanImejForCurrentJenis();
+      refreshXaiKeyStatus();
     } catch (e) { console.warn('mesin imej hook', e); }
     return ret;
   };
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  try { initXaiApiKeyUI(); } catch (e) {}
-});
+initMesinImejUI();
+loadArahanImejForCurrentJenis();
+refreshXaiKeyStatus();
