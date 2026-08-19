@@ -21540,19 +21540,20 @@ function jbDapatKodSemasa() {
     const subjekNama = subjek?.name || 'Subjek';
     const tajukSlide = drawer.title || 'Slide';
 
-    // Kira nombor baris semasa dalam laci
-    let barisStart = currentFactIndex;
-    while (
-      barisStart > 0 &&
-      allFacts[barisStart - 1]?.drawerId === drawerId &&
-      !allFacts[barisStart - 1]?.isTamat &&
-      !allFacts[barisStart - 1]?.isFasaEjaan
-    ) {
-      barisStart--;
-    }
-    // Kalau start pada fasa ejaan, baris 1 bermula selepas tu
-    if (allFacts[barisStart]?.isFasaEjaan) barisStart++;
-    const nomorBarisSebenar = Math.max(1, currentFactIndex - barisStart + 1);
+    // Kira nombor baris semasa — guna itemIndex terus kalau ada
+    const nomorBarisSebenar = (data.itemIndex !== undefined && data.itemIndex !== null)
+      ? data.itemIndex + 1
+      : Math.max(1, (() => {
+          let barisStart = currentFactIndex;
+          while (
+            barisStart > 0 &&
+            allFacts[barisStart - 1]?.drawerId === drawerId &&
+            !allFacts[barisStart - 1]?.isTamat &&
+            !allFacts[barisStart - 1]?.isFasaEjaan
+          ) { barisStart--; }
+          if (allFacts[barisStart]?.isFasaEjaan) barisStart++;
+          return currentFactIndex - barisStart + 1;
+        })());
 
     // ── Baca pdfNombor TERUS dari allDrawers (bukan dari SR queue) ──
     const adaPdfKod = !!(drawer.pdfNombor && drawer.pdfTopik && drawer.pdfSubjek);
