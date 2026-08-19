@@ -8210,7 +8210,9 @@ const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].dr
 
               // Render "laci tamat" message dulu
               factTitleEl.textContent = '[ Selesai ]';
-              factContentEl.textContent = '✅ Laci selesai! Sapu/tekan untuk ke laci seterusnya.';
+              factContentEl.textContent = isLastLaci
+                ? '✅ Semua laci perkataan ini selesai! Sapu/tekan untuk ke perkataan seterusnya.'
+                : '✅ Laci selesai! Sapu/tekan untuk ke laci seterusnya.';
               factHintEl.textContent = '';
 
               // Setelah block habis, tunggu user tap sendiri
@@ -8322,6 +8324,21 @@ const tapSeterusnyaFn = async () => {
                   }
                   // Reset flag selepas guna
                   srSemuaSelesai = false;
+
+                  // Kalau laci terakhir perkataan ini → auto tick perkataan seterusnya
+                  if (isLastLaci) {
+                    const ok = await lompatKePerkataanSeterusnyaBahasa();
+                    if (!ok) {
+                      showToast('✅ Habis semua perkataan dalam jenis kata ini.', 4000);
+                      currentFactIndex = 0;
+                      syncIndexToFirestore(0);
+                      triggerFadeAnimation(renderCurrentFact);
+                    }
+                    // rebuildBahasa() dalam lompat sudah handle render + index
+                    setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
+                    return;
+                  }
+
                   currentFactIndex = targetIdx;
                   syncIndexToFirestore(currentFactIndex);
                   triggerFadeAnimation(renderCurrentFact);
@@ -8329,7 +8346,7 @@ const tapSeterusnyaFn = async () => {
                   setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
                 };
 // Simpan handler sementara — akan dipanggil pada tap/swipe seterusnya
-                window._bahasaNextLaciHandler = tapSeterusnyaFn;
+                window._bahasaNextLaciHandler = tapSeterusnyaFn;  
               }, 300);
             }
 } else {
