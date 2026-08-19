@@ -2044,8 +2044,7 @@ body.dark-mode {
 
             <div style="font-size:0.72rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">📝 Arahan gaya imej (jenis kata ini)</div>
             <textarea id="arahan-imej-textarea" rows="3" placeholder="Cth: Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(99,102,241,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:70px;margin-bottom:8px;"></textarea>
-
-            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
               <label style="flex:1;min-width:90px;font-size:0.7rem;color:var(--subtext);">Delay (saat)
                 <input id="mesin-imej-delay" type="number" min="0" max="120" value="8" style="width:100%;margin-top:2px;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:6px;color:#e5e7eb;padding:6px;font-size:0.8rem;">
               </label>
@@ -2065,6 +2064,7 @@ body.dark-mode {
                 </select>
               </label>
             </div>
+            <div id="mesin-imej-delay-status" style="font-size:0.7rem;font-weight:600;margin-bottom:8px;min-height:18px;"></div>
 
             <label style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--subtext);margin-bottom:10px;cursor:pointer;">
               <input id="mesin-imej-skip-existing" type="checkbox" checked style="width:16px;height:16px;accent-color:#6366f1;">
@@ -22771,6 +22771,34 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
   }
 }
 
+function updateMesinImejDelayStatus() {
+  const el = document.getElementById('mesin-imej-delay-status');
+  const input = document.getElementById('mesin-imej-delay');
+  if (!el || !input) return;
+  const v = parseInt(input.value, 10);
+  if (isNaN(v) || v < 0) {
+    el.textContent = '⚠️ Nilai delay tidak sah';
+    el.style.color = '#f87171';
+    return;
+  }
+  if (v < 5) {
+    el.textContent = '⚠️ Di bawah 5s — berpotensi rate limit / error';
+    el.style.color = '#f87171';
+  } else if (v === 5) {
+    el.textContent = '⚡ 5s — pantas, risiko sederhana';
+    el.style.color = '#fbbf24';
+  } else if (v >= 6 && v <= 7) {
+    el.textContent = '✅ Baik — seimbang antara kelajuan & kestabilan';
+    el.style.color = '#34d399';
+  } else if (v === 8) {
+    el.textContent = '🛡️ 8s — disyorkan, paling stabil';
+    el.style.color = '#22c55e';
+  } else {
+    el.textContent = '🐢 Lebih 8s — sangat selamat, tapi lebih perlahan';
+    el.style.color = '#93c5fd';
+  }
+}
+
 function initMesinImejUI() {
   const btnSimpan = document.getElementById('btn-simpan-arahan-imej');
   const btnMula = document.getElementById('btn-mesin-imej-mula');
@@ -22805,6 +22833,15 @@ function initMesinImejUI() {
     body.style.display = hide ? 'none' : '';
     btnToggle.textContent = hide ? 'Buka' : 'Tutup';
   });
+
+  const delayInput = document.getElementById('mesin-imej-delay');
+  if (delayInput && !delayInput._delayStatusBound) {
+    delayInput._delayStatusBound = true;
+    delayInput.addEventListener('input', updateMesinImejDelayStatus);
+    delayInput.addEventListener('change', updateMesinImejDelayStatus);
+  }
+  updateMesinImejDelayStatus();
+
   initXaiApiKeyUI();
 }
 
