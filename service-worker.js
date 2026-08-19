@@ -3,7 +3,7 @@
 // Tukar VERSI setiap kali update kod supaya
 // cache lama dibuang dan app di-refresh automatik.
 
-const VERSI = 'v23'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
+const VERSI = 'v24'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
 const CACHE_NAME = `istigfar-${VERSI}`;
 
 const ASSETS = [
@@ -41,15 +41,14 @@ self.addEventListener('activate', event => {
 
 // Fetch — Network First, fallback ke cache
 self.addEventListener('fetch', event => {
-  // Abaikan non-GET dan chrome-extension
-  if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  // Abaikan request bukan HTTP (chrome-extension dll)
+  if (!event.request.url.startsWith('http')) return;
 
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cache response yang berjaya
-        if (response && response.status === 200) {
+        // Simpan response baru ke cache
+        if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, clone);
@@ -58,7 +57,7 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => {
-        // Offline — cuba dari cache
+        // Offline — guna cache
         return caches.match(event.request).then(cached => {
           return cached || caches.match('./index.html');
         });
