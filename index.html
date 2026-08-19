@@ -7992,11 +7992,15 @@ if (learningMode === 2) {
               }
             }
 
-            currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-            syncIndexToFirestore(currentFactIndex); 
-            triggerFadeAnimation(renderCurrentFact);
+            if (bahasaMode) {
+              await majuIndexSelepasTamatBahasa();
+            } else {
+              currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+              syncIndexToFirestore(currentFactIndex);
+              triggerFadeAnimation(renderCurrentFact);
+            }
           }, 2600);
-        } else {
+        } else {          
           setTimeout(async () => {
             isBlocked = false;
 
@@ -8027,6 +8031,7 @@ if (learningMode === 2) {
               faktaSRSemuaSelesai = false;
             }
 
+      
             // ── CHECK SR BAHASA ──
             if (bahasaMode) {
               const adaSR = await checkSRQueue();
@@ -8037,15 +8042,19 @@ if (learningMode === 2) {
               }
             }
 
-            showPeraturanOverlay("Sambung Laci Seterusnya", () => {
+            showPeraturanOverlay("Sambung Laci Seterusnya", async () => {
               comboStep = 0;
               isFlipped = false;
-              currentRepeatCount = 33; 
+              currentRepeatCount = 33;
               mainRestCount = mainRestMax;
               mainRestPhase = 1;
-              currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-              syncIndexToFirestore(currentFactIndex); 
-              triggerFadeAnimation(renderCurrentFact);
+              if (bahasaMode) {
+                await majuIndexSelepasTamatBahasa();
+              } else {
+                currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+                syncIndexToFirestore(currentFactIndex);
+                triggerFadeAnimation(renderCurrentFact);
+              }
             });
           }, 2600);
         }
@@ -15410,10 +15419,80 @@ input.addEventListener('change', (e) => {
     }
 
 
+async function lompatKePerkataanSeterusnyaBahasa() {
+      if (!bahasaMode || !currentUser) return false;
+      const active = allBahasaPerkataan.find(p => p.isActive);
+      if (!active) return false;
+
+      const sorted = allBahasaPerkataan
+        .filter(p => p.jenisId === active.jenisId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+      const idx = sorted.findIndex(p => p.id === active.id);
+      if (idx < 0) return false;
+
+      // Cari perkataan seterusnya yang ada laci/nota (skip kosong)
+      let next = null;
+      for (let i = idx + 1; i < sorted.length; i++) {
+        const candidate = sorted[i];
+        const adaIsi = allBahasaDrawers.some(d =>
+          d.perkataanId === candidate.id &&
+          ((d.notes && d.notes.trim()) || (d.items && d.items.length))
+        );
+        if (adaIsi || true) { // ikut urutan page walaupun kosong; rebuild akan handle
+          next = candidate;
+          break;
+        }
+      }
+      if (!next) return false;
+
+      try {
+        const batch = writeBatch(db);
+        for (const p of allBahasaPerkataan.filter(p => p.isActive)) {
+          batch.update(doc(db, "users", currentUser.uid, "bahasa_perkataan", p.id), { isActive: false });
+          p.isActive = false;
+        }
+        batch.update(doc(db, "users", currentUser.uid, "bahasa_perkataan", next.id), {
+          isActive: true,
+          lastIndex: 0
+        });
+        next.isActive = true;
+        next.lastIndex = 0;
+        await batch.commit();
+
+        currentPerkataanId = next.id;
+        activeGlobalBahasaId = next.id;
+        localStorage.removeItem('bahasaLastIndex');
+        showToast(`➡️ Lompat ke perkataan: ${next.name || '(tanpa nama)'}`, 3500);
+        rebuildBahasa();
+        try { if (typeof renderPerkataan === 'function') renderPerkataan(); } catch (_) {}
+        return true;
+      } catch (e) {
+        console.error('lompat perkataan gagal', e);
+        showToast('❌ Gagal lompat perkataan: ' + (e.message || e));
+        return false;
+      }
+    }
+
+    async function majuIndexSelepasTamatBahasa() {
+      if (bahasaMode && currentFactIndex + 1 >= allFacts.length) {
+        const ok = await lompatKePerkataanSeterusnyaBahasa();
+        if (ok) return;
+        showToast('✅ Habis semua perkataan dalam jenis kata ini.', 4000);
+        currentFactIndex = 0;
+        syncIndexToFirestore(0);
+        triggerFadeAnimation(renderCurrentFact);
+        return;
+      }
+      currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+      syncIndexToFirestore(currentFactIndex);
+      triggerFadeAnimation(renderCurrentFact);
+    }
+
 function rebuildBahasa() {
       if (!bahasaMode) return;
       // Jangan rebuild kalau SR sedang aktif — elak overwrite allFacts SR
-      if (srModeAktif && srLaciSemasa) return;
+      if (srModeAktif && srLaciSemasa) return;    
       // Reset ejaan count bila rebuild
       bahasaEjaanCount = 5;
       const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
