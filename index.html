@@ -2294,6 +2294,62 @@ body.dark-mode {
           <button id="btn-export-pdf-fakta-landscape" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">⭐ Landscape 3×2</button>
         </div>
         <button id="btn-export-pdf-fakta-kindle" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 Export Kindle PDF (1 Kad = 1 Halaman)</button>
+
+        <!-- ======== MESIN IMEJ FAKTA (xAI Imagine) — page Isi Laci ======== -->
+        <div id="mesin-imej-fakta-panel" style="margin-top:10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.35);border-radius:14px;padding:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <div style="font-size:0.9rem;font-weight:700;color:#fcd34d;">🎨 Mesin Imej Fakta (xAI Imagine)</div>
+            <button id="btn-toggle-mesin-imej-fakta" type="button" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;color:#fcd34d;">Tutup</button>
+          </div>
+          <div style="font-size:0.7rem;color:var(--subtext);margin-bottom:8px;">Jana gambar untuk SEMUA baris dalam SEMUA laci topik ini (yang belum ada gambar).</div>
+
+          <div id="mesin-imej-fakta-body">
+            <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">🔑 xAI API Key (sama dengan Mesin Imej Bahasa)</div>
+            <div id="xai-key-status-fakta" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
+
+            <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">📝 Arahan gaya imej (topik ini)</div>
+            <textarea id="arahan-imej-fakta-textarea" rows="3" placeholder="Cth: Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:70px;margin-bottom:8px;"></textarea>
+
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+              <label style="flex:1;min-width:90px;font-size:0.7rem;color:var(--subtext);">Delay (saat)
+                <input id="mesin-imej-fakta-delay" type="number" min="0" max="120" value="8" style="width:100%;margin-top:2px;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:6px;color:#e5e7eb;padding:6px;font-size:0.8rem;">
+              </label>
+              <label style="flex:1;min-width:110px;font-size:0.7rem;color:var(--subtext);">Model
+                <select id="mesin-imej-fakta-model" style="width:100%;margin-top:2px;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:6px;color:#e5e7eb;padding:6px;font-size:0.8rem;">
+                  <option value="grok-imagine-image">grok-imagine-image</option>
+                </select>
+              </label>
+              <label style="flex:1;min-width:90px;font-size:0.7rem;color:var(--subtext);">Aspect
+                <select id="mesin-imej-fakta-aspect" style="width:100%;margin-top:2px;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:6px;color:#e5e7eb;padding:6px;font-size:0.8rem;">
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                  <option value="4:3">4:3</option>
+                  <option value="3:2">3:2</option>
+                  <option value="1:1">1:1</option>
+                  <option value="auto">auto</option>
+                </select>
+              </label>
+            </div>
+            <div id="mesin-imej-fakta-delay-status" style="font-size:0.7rem;font-weight:600;margin-bottom:8px;min-height:18px;"></div>
+
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--subtext);margin-bottom:10px;cursor:pointer;">
+              <input id="mesin-imej-fakta-skip-existing" type="checkbox" checked style="width:16px;height:16px;accent-color:#f59e0b;">
+              Langkau baris yang sudah ada gambar
+            </label>
+
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+              <button id="btn-simpan-arahan-imej-fakta" type="button" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;color:#fcd34d;">💾 Simpan Arahan</button>
+              <button id="btn-mesin-imej-fakta-mula" type="button" class="btn btn-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">⚡ Mula Jana</button>
+              <button id="btn-mesin-imej-fakta-jeda" type="button" class="btn btn-secondary btn-sm" style="display:none;border-color:#fbbf24;color:#fbbf24;">⏸ Jeda</button>
+              <button id="btn-mesin-imej-fakta-sambung" type="button" class="btn btn-sm" style="display:none;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;color:white;">▶ Sambung</button>
+              <button id="btn-mesin-imej-fakta-henti" type="button" class="btn btn-secondary btn-sm" style="display:none;border-color:#f87171;color:#f87171;">⏹ Henti</button>
+              <button id="btn-mesin-imej-fakta-retry" type="button" class="btn btn-secondary btn-sm" style="display:none;border-color:#fb923c;color:#fb923c;">🔄 Retry Gagal</button>
+            </div>
+
+            <div id="mesin-imej-fakta-progress" style="display:none;font-size:0.75rem;color:#fcd34d;margin-bottom:6px;"></div>
+            <div id="mesin-imej-fakta-status-list" style="display:none;max-height:160px;overflow-y:auto;font-size:0.7rem;color:var(--subtext);background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;"></div>
+          </div>
+        </div>
         
 <!-- PANEL DUPLIKASI -->
         <div id="panel-duplikasi-fakta" style="display:none;margin-top:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;">
@@ -22862,6 +22918,509 @@ function initMesinImejUI() {
 initMesinImejUI();
 loadArahanImejForCurrentJenis();
 refreshXaiKeyStatus();
+
+// ═══════════════════════════════════════════════════════════
+// MESIN IMEJ FAKTA — xAI Imagine (page Isi Laci / topik)
+// Jana gambar SEMUA baris dalam SEMUA laci topik semasa.
+// Guna API key sama (loadXaiApiKey) jika ada; fallback sendiri.
+// ═══════════════════════════════════════════════════════════
+let mesinImejFaktaState = {
+  running: false,
+  paused: false,
+  stopRequested: false,
+  queue: []
+};
+
+async function mifLoadApiKey() {
+  if (typeof loadXaiApiKey === 'function') return loadXaiApiKey();
+  if (!currentUser) return '';
+  const lsKey = `xaiApiKey_${currentUser.uid}`;
+  let key = localStorage.getItem(lsKey) || '';
+  try {
+    const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "xaiApiKey"));
+    if (snap.exists() && snap.data().key) {
+      key = snap.data().key;
+      localStorage.setItem(lsKey, key);
+    }
+  } catch (e) {}
+  return key || '';
+}
+
+async function mifRefreshKeyStatus() {
+  const el = document.getElementById('xai-key-status-fakta');
+  if (!el) return;
+  if (!currentUser) {
+    el.textContent = 'Status: belum login';
+    el.style.color = 'var(--subtext)';
+    return;
+  }
+  const key = await mifLoadApiKey();
+  if (key) {
+    el.textContent = 'Status: ✅ Key ada (kongsi dengan Mesin Imej Bahasa)';
+    el.style.color = '#22c55e';
+  } else {
+    el.textContent = 'Status: ❌ Tiada key — simpan key di Mesin Imej Bahasa (page Perkataan) dulu';
+    el.style.color = '#f87171';
+  }
+}
+
+function mifAspectToWH(aspect) {
+  if (typeof aspectToRatioWH === 'function') return aspectToRatioWH(aspect);
+  const map = { '16:9': [16, 9], '9:16': [9, 16], '4:3': [4, 3], '3:2': [3, 2], '1:1': [1, 1], 'auto': [16, 9] };
+  return map[aspect] || [16, 9];
+}
+
+function mifSleep(ms) {
+  if (typeof sleepMs === 'function') return sleepMs(ms);
+  return new Promise(r => setTimeout(r, ms));
+}
+
+async function mifCallImagine(prompt, { model, aspect_ratio, apiKey }) {
+  if (typeof callXaiImagine === 'function') {
+    return callXaiImagine(prompt, { model, aspect_ratio, apiKey });
+  }
+  const bodyBase = {
+    model: model || 'grok-imagine-image',
+    prompt,
+    n: 1,
+    aspect_ratio: aspect_ratio || '16:9'
+  };
+  let res = await fetch('https://api.x.ai/v1/images/generations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ ...bodyBase, response_format: 'b64_json' })
+  });
+  if (!res.ok) {
+    res = await fetch('https://api.x.ai/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ ...bodyBase, response_format: 'url' })
+    });
+  }
+  if (!res.ok) {
+    let errText = '';
+    try { errText = await res.text(); } catch (_) {}
+    throw new Error(`API ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const json = await res.json();
+  const item = json?.data?.[0];
+  if (!item) throw new Error('Tiada data imej dalam respons API');
+  if (item.b64_json) {
+    const byteChars = atob(item.b64_json);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    return new Blob([new Uint8Array(byteNumbers)], { type: item.mime_type || 'image/jpeg' });
+  }
+  if (item.url) {
+    try {
+      const imgRes = await fetch(item.url);
+      if (imgRes.ok) return await imgRes.blob();
+    } catch (_) {}
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth || 1024;
+          c.height = img.naturalHeight || 576;
+          c.getContext('2d').drawImage(img, 0, 0);
+          c.toBlob(b => b ? resolve(b) : reject(new Error('toBlob gagal')), 'image/jpeg', 0.92);
+        } catch (e) { reject(e); }
+      };
+      img.onerror = () => reject(new Error('Gagal muat imej dari URL'));
+      img.src = item.url;
+    });
+  }
+  throw new Error('Tiada b64_json atau url');
+}
+
+async function mifDownloadBlob(urlOrBlob) {
+  if (typeof downloadImageAsBlob === 'function') return downloadImageAsBlob(urlOrBlob);
+  if (urlOrBlob instanceof Blob) return urlOrBlob;
+  const res = await fetch(urlOrBlob);
+  if (!res.ok) throw new Error('Gagal muat turun: ' + res.status);
+  return await res.blob();
+}
+
+function mifEscape(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function mifBuildPrompt(arahan, drawerTitle, ayat) {
+  const a = (arahan || '').trim() || 'Gaya ilustrasi sinematik, cahaya keemasan, tiada teks pada imej.';
+  const t = (drawerTitle || '').trim() || 'Slide';
+  const y = (ayat || '').trim() || 'ilustrasi fakta';
+  return `${a}\n\nLaci / Slide: ${t}\nFakta / Ayat: ${y}`.trim();
+}
+
+function mifGetTargets() {
+  const drawers = allDrawers
+    .filter(d => d.topicId === currentTopicId)
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+  const targets = [];
+  drawers.forEach(d => {
+    const items = (d.items && d.items.length) ? d.items : [];
+    items.forEach((item, idx) => {
+      const ayat = (item.ayat || '').trim();
+      if (!ayat) return;
+      targets.push({
+        drawerId: d.id,
+        idx,
+        title: d.title || 'Laci',
+        ayat,
+        imageUrl: item.imageUrl || '',
+        label: `${(d.title || 'Laci').slice(0, 24)} · #${idx + 1} ${(ayat).slice(0, 40)}`
+      });
+    });
+  });
+  return { drawers, targets };
+}
+
+async function mifLoadArahan() {
+  const ta = document.getElementById('arahan-imej-fakta-textarea');
+  const delayEl = document.getElementById('mesin-imej-fakta-delay');
+  const modelEl = document.getElementById('mesin-imej-fakta-model');
+  const aspectEl = document.getElementById('mesin-imej-fakta-aspect');
+  if (!ta || !currentTopicId || !currentUser) return;
+  const t = allTopics.find(x => x.id === currentTopicId);
+  const apply = (d) => {
+    if (!d) return;
+    if (d.arahanImejFakta != null) ta.value = d.arahanImejFakta || '';
+    if (delayEl && d.delaySecFakta != null) delayEl.value = d.delaySecFakta;
+    if (modelEl && d.imageModelFakta) modelEl.value = d.imageModelFakta;
+    if (aspectEl && d.imageAspectFakta) aspectEl.value = d.imageAspectFakta;
+  };
+  if (t) apply(t);
+  else {
+    try {
+      const snap = await getDoc(doc(db, "users", currentUser.uid, "topics", currentTopicId));
+      if (snap.exists()) apply(snap.data());
+    } catch (e) {}
+  }
+  mifUpdateDelayStatus();
+}
+
+async function mifSimpanArahan() {
+  if (!currentUser || !currentTopicId) {
+    showToast('Buka satu topik (Isi Laci) dahulu.');
+    return;
+  }
+  const arahan = (document.getElementById('arahan-imej-fakta-textarea')?.value || '').trim();
+  const delaySec = parseInt(document.getElementById('mesin-imej-fakta-delay')?.value || '8', 10) || 8;
+  const imageModel = document.getElementById('mesin-imej-fakta-model')?.value || 'grok-imagine-image';
+  const imageAspect = document.getElementById('mesin-imej-fakta-aspect')?.value || '16:9';
+  await setDoc(doc(db, "users", currentUser.uid, "topics", currentTopicId), {
+    arahanImejFakta: arahan,
+    delaySecFakta: delaySec,
+    imageModelFakta: imageModel,
+    imageAspectFakta: imageAspect,
+    updatedAt: Date.now()
+  }, { merge: true });
+  const t = allTopics.find(x => x.id === currentTopicId);
+  if (t) {
+    t.arahanImejFakta = arahan;
+    t.delaySecFakta = delaySec;
+    t.imageModelFakta = imageModel;
+    t.imageAspectFakta = imageAspect;
+  }
+  showToast('✅ Arahan imej disimpan untuk topik ini.');
+}
+
+function mifUpdateDelayStatus() {
+  const el = document.getElementById('mesin-imej-fakta-delay-status');
+  const input = document.getElementById('mesin-imej-fakta-delay');
+  if (!el || !input) return;
+  const v = parseInt(input.value, 10);
+  if (isNaN(v) || v < 0) {
+    el.textContent = '⚠️ Nilai delay tidak sah';
+    el.style.color = '#f87171';
+    return;
+  }
+  if (v < 5) {
+    el.textContent = '⚠️ Di bawah 5s — berpotensi rate limit / error';
+    el.style.color = '#f87171';
+  } else if (v === 5) {
+    el.textContent = '⚡ 5s — pantas, risiko sederhana';
+    el.style.color = '#fbbf24';
+  } else if (v >= 6 && v <= 7) {
+    el.textContent = '✅ Baik — seimbang antara kelajuan & kestabilan';
+    el.style.color = '#34d399';
+  } else if (v === 8) {
+    el.textContent = '🛡️ 8s — disyorkan, paling stabil';
+    el.style.color = '#22c55e';
+  } else {
+    el.textContent = '🐢 Lebih 8s — sangat selamat, tapi lebih perlahan';
+    el.style.color = '#93c5fd';
+  }
+}
+
+function mifUpdateUI() {
+  const prog = document.getElementById('mesin-imej-fakta-progress');
+  const list = document.getElementById('mesin-imej-fakta-status-list');
+  const btnMula = document.getElementById('btn-mesin-imej-fakta-mula');
+  const btnJeda = document.getElementById('btn-mesin-imej-fakta-jeda');
+  const btnSambung = document.getElementById('btn-mesin-imej-fakta-sambung');
+  const btnHenti = document.getElementById('btn-mesin-imej-fakta-henti');
+  const btnRetry = document.getElementById('btn-mesin-imej-fakta-retry');
+  if (!prog || !list) return;
+
+  const done = mesinImejFaktaState.queue.filter(q => q.status === 'done' || q.status === 'skipped').length;
+  const failed = mesinImejFaktaState.queue.filter(q => q.status === 'failed').length;
+  const total = mesinImejFaktaState.queue.length;
+  prog.style.display = total ? 'block' : 'none';
+  prog.textContent = total
+    ? `Progress: ${done}/${total}` + (failed ? ` · Gagal: ${failed}` : '') + (mesinImejFaktaState.paused ? ' · ⏸ Jeda' : '') + (mesinImejFaktaState.running ? ' · ⏳ Berjalan...' : '')
+    : '';
+
+  list.style.display = total ? 'block' : 'none';
+  list.innerHTML = mesinImejFaktaState.queue.map(q => {
+    const icon = { pending: '⏳', generating: '🎨', done: '✅', failed: '❌', skipped: '⏭' }[q.status] || '•';
+    const err = q.error ? ` — ${mifEscape(q.error)}` : '';
+    return `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);">${icon} <b>${mifEscape((q.label || '').slice(0, 56))}</b> <span style="color:var(--subtext)">${q.status}${err}</span></div>`;
+  }).join('');
+
+  const running = mesinImejFaktaState.running;
+  if (btnMula) btnMula.style.display = running ? 'none' : '';
+  if (btnJeda) btnJeda.style.display = running && !mesinImejFaktaState.paused ? '' : 'none';
+  if (btnSambung) btnSambung.style.display = running && mesinImejFaktaState.paused ? '' : 'none';
+  if (btnHenti) btnHenti.style.display = running ? '' : 'none';
+  if (btnRetry) btnRetry.style.display = (!running && failed > 0) ? '' : 'none';
+}
+
+async function mifWaitPaused() {
+  while (mesinImejFaktaState.paused && !mesinImejFaktaState.stopRequested) {
+    await mifSleep(300);
+  }
+}
+
+async function mifUploadToItem(drawerId, idx, blob, ratioW, ratioH) {
+  const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${drawerId}_${idx}.jpg`);
+  const uploadTask = uploadBytesResumable(storageRefPath, blob);
+  await new Promise((resolve, reject) => {
+    uploadTask.on('state_changed', null, reject, resolve);
+  });
+  const url = await getDownloadURL(uploadTask.snapshot.ref);
+  const drawer = allDrawers.find(d => d.id === drawerId);
+  if (!drawer) throw new Error('Laci tidak dijumpai');
+  const items = drawer.items ? [...drawer.items] : [];
+  if (!items[idx]) throw new Error('Baris tidak dijumpai');
+  items[idx] = {
+    ...items[idx],
+    imageUrl: url,
+    imgRatioW: ratioW,
+    imgRatioH: ratioH
+  };
+  await setDoc(doc(db, "users", currentUser.uid, "drawer", drawerId), {
+    items,
+    updatedAt: Date.now()
+  }, { merge: true });
+  drawer.items = items;
+  return url;
+}
+
+async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
+  if (!currentUser || !currentTopicId) {
+    showToast('Buka page Isi Laci (topik) dulu.');
+    return;
+  }
+  const apiKey = await mifLoadApiKey();
+  if (!apiKey) {
+    showToast('❌ Tiada xAI API key. Simpan key di Mesin Imej Bahasa (page Perkataan) dulu.');
+    return;
+  }
+
+  await mifSimpanArahan();
+
+  const arahan = (document.getElementById('arahan-imej-fakta-textarea')?.value || '').trim();
+  const delaySec = Math.max(0, parseInt(document.getElementById('mesin-imej-fakta-delay')?.value || '8', 10) || 8);
+  const model = document.getElementById('mesin-imej-fakta-model')?.value || 'grok-imagine-image';
+  const aspect = document.getElementById('mesin-imej-fakta-aspect')?.value || '16:9';
+  const skipExisting = document.getElementById('mesin-imej-fakta-skip-existing')?.checked !== false;
+  const [rW, rH] = mifAspectToWH(aspect);
+
+  const { targets } = mifGetTargets();
+  if (!targets.length) {
+    showToast('Tiada baris (ayat) dalam laci topik ini.');
+    return;
+  }
+
+  if (retryFailedOnly) {
+    mesinImejFaktaState.queue.forEach(q => {
+      if (q.status === 'failed') q.status = 'pending';
+    });
+  } else {
+    let list = targets;
+    if (skipExisting) list = targets.filter(t => !t.imageUrl);
+    if (!list.length) {
+      showToast('Semua baris sudah ada gambar.');
+      return;
+    }
+    if (list.length > 15) {
+      if (!confirm(`Akan jana ${list.length} imej untuk baris dalam topik ini.\nIni mungkin guna kuota API anda.\nTeruskan?`)) return;
+    }
+    mesinImejFaktaState.queue = list.map(t => ({
+      drawerId: t.drawerId,
+      idx: t.idx,
+      title: t.title,
+      ayat: t.ayat,
+      label: t.label,
+      status: 'pending',
+      error: null
+    }));
+  }
+
+  mesinImejFaktaState.running = true;
+  mesinImejFaktaState.paused = false;
+  mesinImejFaktaState.stopRequested = false;
+  mifUpdateUI();
+
+  const beforeUnload = (e) => {
+    if (mesinImejFaktaState.running) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  };
+  window.addEventListener('beforeunload', beforeUnload);
+
+  try {
+    for (let i = 0; i < mesinImejFaktaState.queue.length; i++) {
+      if (mesinImejFaktaState.stopRequested) break;
+      await mifWaitPaused();
+      if (mesinImejFaktaState.stopRequested) break;
+
+      const item = mesinImejFaktaState.queue[i];
+      if (item.status === 'done' || item.status === 'skipped') continue;
+
+      const drawer = allDrawers.find(d => d.id === item.drawerId);
+      const liveAyat = drawer?.items?.[item.idx]?.ayat || item.ayat;
+      const liveUrl = drawer?.items?.[item.idx]?.imageUrl || '';
+      if (skipExisting && liveUrl && !retryFailedOnly) {
+        item.status = 'skipped';
+        mifUpdateUI();
+        continue;
+      }
+      if (!liveAyat || !String(liveAyat).trim()) {
+        item.status = 'failed';
+        item.error = 'Ayat kosong';
+        mifUpdateUI();
+        continue;
+      }
+
+      item.status = 'generating';
+      mifUpdateUI();
+
+      try {
+        const prompt = mifBuildPrompt(arahan, item.title, liveAyat);
+        const imgBlob = await mifCallImagine(prompt, { model, aspect_ratio: aspect, apiKey });
+        const blob = await mifDownloadBlob(imgBlob);
+        await mifUploadToItem(item.drawerId, item.idx, blob, rW, rH);
+        item.status = 'done';
+        item.error = null;
+      } catch (err) {
+        const msg = (err && err.message) ? err.message : String(err);
+        item.status = 'failed';
+        item.error = msg.slice(0, 120);
+        console.error('Mesin Imej Fakta gagal', item.drawerId, item.idx, err);
+        const lower = msg.toLowerCase();
+        if (
+          lower.includes('credit') ||
+          lower.includes('quota') ||
+          lower.includes('billing') ||
+          lower.includes('license') ||
+          lower.includes('permission-denied') ||
+          lower.includes('insufficient') ||
+          lower.includes("doesn't have any credits")
+        ) {
+          mesinImejFaktaState.stopRequested = true;
+          showToast('❌ Credit / kuota tidak cukup. Jana dihentikan. Sila tambah credit di console.x.ai.', 5000);
+        }
+      }
+      mifUpdateUI();
+
+      if (i < mesinImejFaktaState.queue.length - 1 && delaySec > 0 && !mesinImejFaktaState.stopRequested) {
+        const end = Date.now() + delaySec * 1000;
+        while (Date.now() < end) {
+          if (mesinImejFaktaState.stopRequested) break;
+          await mifWaitPaused();
+          if (mesinImejFaktaState.stopRequested) break;
+          await mifSleep(200);
+        }
+      }
+    }
+  } finally {
+    mesinImejFaktaState.running = false;
+    mesinImejFaktaState.paused = false;
+    window.removeEventListener('beforeunload', beforeUnload);
+    mifUpdateUI();
+    try { renderDrawers(); } catch (_) {}
+    const failed = mesinImejFaktaState.queue.filter(q => q.status === 'failed').length;
+    const done = mesinImejFaktaState.queue.filter(q => q.status === 'done').length;
+    showToast(failed ? `Selesai: ${done} ok, ${failed} gagal.` : `✅ Selesai jana ${done} imej fakta.`);
+  }
+}
+
+function initMesinImejFaktaUI() {
+  const btnMula = document.getElementById('btn-mesin-imej-fakta-mula');
+  if (!btnMula || btnMula._mifBound) return;
+  btnMula._mifBound = true;
+
+  document.getElementById('btn-simpan-arahan-imej-fakta')?.addEventListener('click', () => mifSimpanArahan());
+  btnMula.addEventListener('click', () => runMesinImejFaktaQueue());
+  document.getElementById('btn-mesin-imej-fakta-jeda')?.addEventListener('click', () => {
+    mesinImejFaktaState.paused = true;
+    mifUpdateUI();
+  });
+  document.getElementById('btn-mesin-imej-fakta-sambung')?.addEventListener('click', () => {
+    mesinImejFaktaState.paused = false;
+    mifUpdateUI();
+  });
+  document.getElementById('btn-mesin-imej-fakta-henti')?.addEventListener('click', () => {
+    mesinImejFaktaState.stopRequested = true;
+    mesinImejFaktaState.paused = false;
+    showToast('Menghentikan selepas item semasa...');
+  });
+  document.getElementById('btn-mesin-imej-fakta-retry')?.addEventListener('click', () => runMesinImejFaktaQueue({ retryFailedOnly: true }));
+  document.getElementById('btn-toggle-mesin-imej-fakta')?.addEventListener('click', () => {
+    const body = document.getElementById('mesin-imej-fakta-body');
+    const btn = document.getElementById('btn-toggle-mesin-imej-fakta');
+    if (!body) return;
+    const hide = body.style.display !== 'none';
+    body.style.display = hide ? 'none' : '';
+    if (btn) btn.textContent = hide ? 'Buka' : 'Tutup';
+  });
+
+  const delayInput = document.getElementById('mesin-imej-fakta-delay');
+  if (delayInput && !delayInput._mifDelayBound) {
+    delayInput._mifDelayBound = true;
+    delayInput.addEventListener('input', mifUpdateDelayStatus);
+    delayInput.addEventListener('change', mifUpdateDelayStatus);
+  }
+  mifUpdateDelayStatus();
+  mifRefreshKeyStatus();
+}
+
+(function hookMesinImejFaktaOnRenderDrawers() {
+  if (typeof renderDrawers !== 'function') return;
+  const _rd = renderDrawers;
+  renderDrawers = function () {
+    const ret = _rd.apply(this, arguments);
+    try {
+      initMesinImejFaktaUI();
+      mifLoadArahan();
+      mifRefreshKeyStatus();
+    } catch (e) { console.warn('mesin imej fakta hook', e); }
+    return ret;
+  };
+})();
+
+initMesinImejFaktaUI();
+mifLoadArahan();
+mifRefreshKeyStatus();
 
     if ("serviceWorker" in navigator) {    
       window.addEventListener("load", () => { 
