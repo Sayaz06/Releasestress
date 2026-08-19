@@ -7543,7 +7543,7 @@ async function checkFaktaSRQueue() {
         isFaktaSR: true
       });
 
-// ── FORMAT BARU: guna items[] ──
+      // ── FORMAT BARU sahaja: items[] ──
       if (drawer.items && drawer.items.length > 0) {
         drawer.items.forEach((item, idx) => {
           if (!item.ayat || !item.ayat.trim()) return;
@@ -7558,29 +7558,6 @@ async function checkFaktaSRQueue() {
             isFaktaSR: true,
             isItemFormat: true,
             itemIndex: idx
-          });
-        });
-
-      // ── FORMAT LAMA: fallback ke notes ──
-      } else if (drawer.notes) {
-        const lines = drawer.notes.split('\n').filter(l => l.trim() !== '');
-        lines.forEach(line => {
-          const parts = line.split('=');
-          const perkataan = parts[0].trim();
-          const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
-          const maksudFormatted = maksudRaw
-            ? maksudRaw.replace(/\s+k(\d+)\s*/g, '\nk$1 ').replace(/\s+(\d+)\.\s*/g, '\n$1. ').trim()
-            : null;
-          factsBaru.push({
-            drawerId: drawer.id,
-            title: tajukLaci,
-            text: perkataan,
-            translation: maksudFormatted,
-            isTamat: false,
-            isFasaEjaan: false,
-            isSRMode: true,
-            isFaktaSR: true,
-            isItemFormat: false
           });
         });
       }
@@ -7608,23 +7585,81 @@ async function checkFaktaSRQueue() {
       updateTasbihUI();
     }
 
-    async function deleteFaktaSRRekod(drawerId) {
-      if (!currentUser) return;
+    async function deleteFaktaSRRekod(srDocId) {
+      if (!currentUser || !srDocId) return;
       try {
-        await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", drawerId));
-        faktaSRQueueIds.delete(drawerId);
+        await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", srDocId));
+        faktaSRQueueIds.delete(srDocId);
       } catch(e) {}
     }
 
-function renderCurrentFact() {
+function pushKindleSession() {
+      if (!currentUser) return;
+      if (!factMode && !bahasaMode) {
+        setDoc(doc(db, "users", currentUser.uid, "kindle_session", "current"), {
+          mode: "idle",
+          text: "Tiada countdown aktif",
+          phase: "",
+          progress: "",
+          isSR: false,
+          updatedAt: Date.now()
+        }, { merge: true }).catch(() => {});
+        return;
+      }
+      const data = allFacts[currentFactIndex];
+      if (!data) return;
+
+      let phase = "";
+      if (bahasaMode) {
+        if (data.isFasaEjaan) phase = `F0 — Ejaan · baki ${bahasaEjaanCount}`;
+        else if (bahasaRestPhase === 1) phase = `F1 · baki ${bahasaRestCount}`;
+        else phase = `F2 · baki ${bahasaRestCount}`;
+      } else if (factMode && learningMode === 2) {
+        if (mainRestPhase === 1) phase = `F1 · baki ${mainRestCount}`;
+        else phase = `F2 · baki ${mainRestCount}`;
+      }
+
+      const isSR = !!(data.isSRMode || data.isFaktaSR);
+      const textShow = isFlipped
+        ? (data.translation || data.text || data.title || "")
+        : (data.text || data.title || "");
+
+      // Tips sebutan (bahasa) / nota fakta
+      let tipsText = "";
+      if (bahasaMode && data.drawerId) {
+        const d = (typeof allBahasaDrawers !== "undefined" ? allBahasaDrawers : []).find(x => x.id === data.drawerId);
+        if (d && d.tipsSebutan) tipsText = d.tipsSebutan;
+      } else if (factMode && data.drawerId) {
+        const d = (typeof allDrawers !== "undefined" ? allDrawers : []).find(x => x.id === data.drawerId);
+        if (d && d.tipsFakta) tipsText = d.tipsFakta;
+      }
+
+      setDoc(doc(db, "users", currentUser.uid, "kindle_session", "current"), {
+        mode: bahasaMode ? "bahasa" : "fakta",
+        text: data.text || data.title || "",
+        translation: data.translation || (data.text && data.text.includes("=") ? data.text.split("=").slice(1).join("=").trim() : "") || "",
+        title: data.title || "",
+        tips: tipsText || "",
+        phase: phase,
+        progress: `${currentFactIndex + 1} / ${allFacts.length}`,
+        isSR: isSR,
+        drawerId: data.drawerId || null,
+        updatedAt: Date.now()
+      }, { merge: true }).catch(() => {});
+    }  
+
+    function renderCurrentFact() {
       // Sync Jogging Kad bila countdown bergerak
       if (jbAktif && (bahasaMode || factMode)) {
         setTimeout(() => jbUpdateUI(), 50);
       }
 
+      // Sync ke Kindle
+      try { pushKindleSession(); } catch (e) {}
+
       const dataSource = routineMode ? allRoutines : allFacts;
       const currentIndex = routineMode ? currentRoutineIndex : currentFactIndex;
-
+    
       if (dataSource.length === 0) {
         factTitleEl.textContent = "";
         factContentEl.textContent = routineMode ? "Tiada rutin aktif. Sila tick SATU waktu." : "Tiada topik aktif. Sila tick SATU topik.";
@@ -7955,20 +7990,19 @@ if (learningMode === 2) {
             mainRestCount = mainRestMax;
             mainRestPhase = 1;
 
-// ── DAFTAR SR FAKTA bila laci selesai ──
+// ── SR FAKTA: selesai ulangan SR (per-baris). Daftar baru dibuat selepas F2 setiap baris. ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId && currentData.isFaktaSR;
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && currentData.isFaktaSR;
               if (isFaktaSRSession) {
                 const fasaSemasa = faktaSRLaciSemasa?.fasaSemasa || 0;
-                await selesaiFaktaSRUlangan(currentData.drawerId);
-                faktaSRQueueIds.delete(currentData.drawerId);
+                const srId = faktaSRLaciSemasa.srDocId || faktaSRLaciSemasa.id || currentData.srDocId || currentData.drawerId;
+                await selesaiFaktaSRUlangan(srId);
+                faktaSRQueueIds.delete(srId);
                 faktaSRModeAktif = false;
                 faktaSRLaciSemasa = null;
                 showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSemasa)}`, 3000);
-              } else if (!currentData.isFaktaSR) {
-                await daftarSRBaru(currentData.drawerId, 'fakta');
-                showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
               }
+              // tiada daftarSRBaru di sini — sudah per-baris selepas F2
             }
 
             // ── CHECK SR FAKTA seterusnya (kalau suis ON) ──
@@ -7992,29 +8026,34 @@ if (learningMode === 2) {
               }
             }
 
-            currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-            syncIndexToFirestore(currentFactIndex); 
-            triggerFadeAnimation(renderCurrentFact);
+            if (bahasaMode) {
+              await majuIndexSelepasTamatBahasa();
+            } else {
+              let nextIdx = currentFactIndex + 1;
+              if (nextIdx >= allFacts.length) nextIdx = 0;
+              currentFactIndex = nextIdx;
+              syncIndexToFirestore(currentFactIndex);
+              triggerFadeAnimation(renderCurrentFact);
+            }
           }, 2600);
-        } else {
+        } else {                   
           setTimeout(async () => {
             isBlocked = false;
 
-// ── DAFTAR SR FAKTA bila laci selesai ──
+// ── SR FAKTA: selesai ulangan SR (per-baris). Daftar baru dibuat selepas F2 setiap baris. ──
             if (factMode && !bahasaMode && currentData.drawerId) {
-              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && faktaSRLaciSemasa.drawerId === currentData.drawerId && currentData.isFaktaSR;
+              const isFaktaSRSession = faktaSRModeAktif && faktaSRLaciSemasa && currentData.isFaktaSR;
               if (isFaktaSRSession) {
                 const fasaSemasa = faktaSRLaciSemasa?.fasaSemasa || 0;
-                await selesaiFaktaSRUlangan(currentData.drawerId);
-                faktaSRQueueIds.delete(currentData.drawerId);
+                const srId = faktaSRLaciSemasa.srDocId || faktaSRLaciSemasa.id || currentData.srDocId || currentData.drawerId;
+                await selesaiFaktaSRUlangan(srId);
+                faktaSRQueueIds.delete(srId);
                 faktaSRModeAktif = false;
                 faktaSRLaciSemasa = null;
                 showToast(`✅ SR Fakta selesai — ${getLabelFasaSR(fasaSemasa)}`, 3000);
-              } else if (!currentData.isFaktaSR) {
-                await daftarSRBaru(currentData.drawerId, 'fakta');
-                showToast('⏰ Laci fakta didaftarkan dalam SR! Ulangan dalam 20 minit.', 3500);
               }
-            }
+              // tiada daftarSRBaru di sini — sudah per-baris selepas F2
+            }            
 
             // ── CHECK SR FAKTA seterusnya (kalau suis ON) ──
             if (faktaSRON && factMode && !bahasaMode && !faktaSRSemuaSelesai) {
@@ -8027,6 +8066,7 @@ if (learningMode === 2) {
               faktaSRSemuaSelesai = false;
             }
 
+      
             // ── CHECK SR BAHASA ──
             if (bahasaMode) {
               const adaSR = await checkSRQueue();
@@ -8037,20 +8077,26 @@ if (learningMode === 2) {
               }
             }
 
-            showPeraturanOverlay("Sambung Laci Seterusnya", () => {
+            showPeraturanOverlay("Sambung Laci Seterusnya", async () => {
               comboStep = 0;
               isFlipped = false;
-              currentRepeatCount = 33; 
+              currentRepeatCount = 33;
               mainRestCount = mainRestMax;
               mainRestPhase = 1;
-              currentFactIndex = (currentFactIndex + 1) % allFacts.length;
-              syncIndexToFirestore(currentFactIndex); 
-              triggerFadeAnimation(renderCurrentFact);
+              if (bahasaMode) {
+                await majuIndexSelepasTamatBahasa();
+              } else {
+                let nextIdx = currentFactIndex + 1;
+                if (nextIdx >= allFacts.length) nextIdx = 0;
+                currentFactIndex = nextIdx;
+                syncIndexToFirestore(currentFactIndex);
+                triggerFadeAnimation(renderCurrentFact);
+              }
             });
           }, 2600);
         }
         return;
-      }
+      }        
 
       if (learningMode === 0) { // Normal
         comboStep = 0;
@@ -8201,7 +8247,9 @@ const laciSelesaiId = allFacts[currentFactIndex] ? allFacts[currentFactIndex].dr
 
               // Render "laci tamat" message dulu
               factTitleEl.textContent = '[ Selesai ]';
-              factContentEl.textContent = '✅ Laci selesai! Sapu/tekan untuk ke laci seterusnya.';
+              factContentEl.textContent = isLastLaci
+                ? '✅ Semua laci perkataan ini selesai! Sapu/tekan untuk ke perkataan seterusnya.'
+                : '✅ Laci selesai! Sapu/tekan untuk ke laci seterusnya.';
               factHintEl.textContent = '';
 
               // Setelah block habis, tunggu user tap sendiri
@@ -8313,6 +8361,21 @@ const tapSeterusnyaFn = async () => {
                   }
                   // Reset flag selepas guna
                   srSemuaSelesai = false;
+
+                  // Kalau laci terakhir perkataan ini → auto tick perkataan seterusnya
+                  if (isLastLaci) {
+                    const ok = await lompatKePerkataanSeterusnyaBahasa();
+                    if (!ok) {
+                      showToast('✅ Habis semua perkataan dalam jenis kata ini.', 4000);
+                      currentFactIndex = 0;
+                      syncIndexToFirestore(0);
+                      triggerFadeAnimation(renderCurrentFact);
+                    }
+                    // rebuildBahasa() dalam lompat sudah handle render + index
+                    setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
+                    return;
+                  }
+
                   currentFactIndex = targetIdx;
                   syncIndexToFirestore(currentFactIndex);
                   triggerFadeAnimation(renderCurrentFact);
@@ -8320,7 +8383,7 @@ const tapSeterusnyaFn = async () => {
                   setTimeout(() => bukaBahasaRehatPopup(() => {}), 400);
                 };
 // Simpan handler sementara — akan dipanggil pada tap/swipe seterusnya
-                window._bahasaNextLaciHandler = tapSeterusnyaFn;
+                window._bahasaNextLaciHandler = tapSeterusnyaFn;  
               }, 300);
             }
 } else {
@@ -8348,18 +8411,17 @@ const tapSeterusnyaFn = async () => {
                 mainRestPhase = 1; mainRestCount = cyc.fasa1; mainPlus5Used = false;
                 isFlipped = false;
                 updateMainPlus5Btn();
-                const nextIndex = (currentFactIndex + 1) % allFacts.length;
-                let targetIndex = nextIndex;
-                while (targetIndex < allFacts.length && !allFacts[targetIndex].isFasaEjaan && !allFacts[targetIndex].isTamat) {
-                  targetIndex = (targetIndex + 1) % allFacts.length;
-                }
-                currentFactIndex = targetIndex;
+                // Fakta: maju 1 baris sahaja (F1+F2 sudah siap untuk baris semasa)
+                // JANGAN skip ke isTamat / isFasaEjaan — itu punca laci terus habis
+                let nextIdx = currentFactIndex + 1;
+                if (nextIdx >= allFacts.length) nextIdx = allFacts.length - 1;
+                currentFactIndex = nextIdx;
                 syncIndexToFirestore(currentFactIndex);
                 triggerFadeAnimation(() => {
                   renderCurrentFact();
                 });
               }, 2600);
-            }
+            }  
           }
         } else {
           renderCurrentFact();
@@ -9035,10 +9097,12 @@ function rebuildFacts() {
         activeDrawers.forEach(data => {
           const tajukLaci = data.title || "Tiada Tajuk";
 
-          // ── FORMAT BARU: guna items[] ──
+          // ── FORMAT BARU sahaja: items[] ──
           if (data.items && data.items.length > 0) {
+            let adaBaris = false;
             data.items.forEach((item, idx) => {
               if (!item.ayat || !item.ayat.trim()) return;
+              adaBaris = true;
               allFacts.push({
                 drawerId: data.id,
                 title: tajukLaci,
@@ -9049,46 +9113,16 @@ function rebuildFacts() {
                 itemIndex: idx
               });
             });
-            allFacts.push({
-              drawerId: data.id,
-              title: tajukLaci,
-              text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.",
-              isTamat: true,
-              isItemFormat: true
-            });
-
-          // ── FORMAT LAMA: fallback ke notes ──
-          } else if (data.notes) {
-            const lines = data.notes.split('\n').filter(l => l.trim() !== "");
-            if (lines.length > 0) {
-              lines.forEach(line => {
-                const parts = line.split('=');
-                const perkataan = parts[0].trim();
-                const maksudRaw = parts.length > 1 ? parts.slice(1).join('=').trim() : null;
-                const maksudFormatted = maksudRaw
-                  ? maksudRaw
-                      .replace(/\s+k(\d+)\s*/g, '\nk$1 ')
-                      .replace(/\s+(\d+)\.\s*/g, '\n$1. ')
-                      .trim()
-                  : null;
-                allFacts.push({ 
-                  drawerId: data.id, 
-                  title: tajukLaci, 
-                  text: perkataan, 
-                  translation: maksudFormatted, 
-                  isTamat: false,
-                  isItemFormat: false
-                });
-              });
-              allFacts.push({ 
-                drawerId: data.id, 
-                title: tajukLaci, 
-                text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.", 
+            if (adaBaris) {
+              allFacts.push({
+                drawerId: data.id,
+                title: tajukLaci,
+                text: "✅ Laci Tamat. Sapu/tekan untuk seterusnya.",
                 isTamat: true,
-                isItemFormat: false
+                isItemFormat: true
               });
             }
-          }
+          }   
         });
       } else {
         activeGlobalTopicId = 'default';
@@ -9517,6 +9551,55 @@ if (routineMode && allRoutines.length > 0) {
     // INITIALIZATION & AUTH 
     // ==========================================
     setPersistence(auth, browserLocalPersistence);
+ 
+    // ── KINDLE COMMAND LISTENER ──
+    function subscribeKindleCommand() {
+      if (!currentUser) return;
+      if (window._kindleCmdUnsub) window._kindleCmdUnsub();
+      window._kindleCmdUnsub = onSnapshot(
+        doc(db, "users", currentUser.uid, "kindle_session", "command"),
+        async (snap) => {
+          if (!snap.exists()) return;
+          const cmd = snap.data();
+          if (!cmd || !cmd.command || !cmd.ts) return;
+          // Elak process command lama / sudah diproses
+          if (window._lastKindleCmdTs && cmd.ts <= window._lastKindleCmdTs) return;
+          window._lastKindleCmdTs = cmd.ts;
+
+          try {
+            if (cmd.command === "next") {
+              // Sama seperti tap circle / swipe next
+              if (typeof decrementTasbih === "function") decrementTasbih();
+            } else if (cmd.command === "enterSR") {
+              if (bahasaMode && typeof checkSRQueue === "function") {
+                const ada = await checkSRQueue();
+                if (ada && typeof muatSRLaciSeterusnya === "function" && muatSRLaciSeterusnya()) {
+                  if (typeof tunjukPopupSR === "function") tunjukPopupSR(srLaciSemasa);
+                  if (typeof muatLaciSRKeDalamFacts === "function") await muatLaciSRKeDalamFacts(srLaciSemasa);
+                }
+              } else if (factMode && typeof checkFaktaSRQueue === "function") {
+                const ada = await checkFaktaSRQueue();
+                if (ada && typeof muatFaktaSRLaciSeterusnya === "function" && muatFaktaSRLaciSeterusnya()) {
+                  if (typeof tunjukPopupSR === "function") tunjukPopupSR(faktaSRLaciSemasa);
+                  if (typeof muatFaktaSRKeDalamFacts === "function") await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+                }
+              }
+            } else if (cmd.command === "switchMode") {
+              // Hanya flag — user masih perlu tick topik/laci di phone
+              if (cmd.mode === "bahasa") {
+                showToast("Kindle minta mode Bahasa — tick laci bahasa di phone", 3000);
+              } else if (cmd.mode === "fakta") {
+                showToast("Kindle minta mode Fakta — tick topik fakta di phone", 3000);
+              }
+            }
+          } catch (e) {
+            console.warn("Kindle command error", e);
+          }
+        },
+        (err) => console.warn("Kindle command listener", err)
+      );
+    }
+
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
@@ -9540,7 +9623,7 @@ if (routineMode && allRoutines.length > 0) {
         
 showSection(secToShow); 
         await ensureTodayTasbih();
-        checkShowAdminPinBtn();
+        checkShowAdminPinBtn();        
         subscribeHistory();
         subscribeNotes();
         subscribeAllHierarchyData();
@@ -9551,16 +9634,18 @@ showSection(secToShow);
         subscribeBacaanTambahan();
         subscribeReminders();
         mulakanReminderCheck();
-        subscribeJoggingMotivasi();
+                subscribeJoggingMotivasi();
         subscribePerjanjian();
         subscribeWallpaper();
         subscribeBahasa();    // ← Tambah balik baris ini
         loadQuranKhatam().then(() => semakStatusKeluar());
+        subscribeKindleCommand(); // Kindle remote control
         
       } else {
         homeUserEmail.textContent = "";
         if (notesUnsub) notesUnsub();
         if (historyUnsub) historyUnsub();
+        if (window._kindleCmdUnsub) { window._kindleCmdUnsub(); window._kindleCmdUnsub = null; }
         showSection(sectionLogin);
       }
     });
@@ -9616,8 +9701,15 @@ btnAddSubject.addEventListener("click", () => {
 
 btnAddLaci.addEventListener("click", () => { 
   if(currentTopicId) {
-addDoc(collection(db, "users", currentUser.uid, "drawer"), { title: "~", notes: "", repeatCount: 0, topicId: currentTopicId, createdAt: Date.now() });
-        showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
+    addDoc(collection(db, "users", currentUser.uid, "drawer"), {
+      title: "~",
+      items: [],
+      notes: "",
+      repeatCount: 0,
+      topicId: currentTopicId,
+      createdAt: Date.now()
+    });
+    showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
 
@@ -15410,10 +15502,80 @@ input.addEventListener('change', (e) => {
     }
 
 
+async function lompatKePerkataanSeterusnyaBahasa() {
+      if (!bahasaMode || !currentUser) return false;
+      const active = allBahasaPerkataan.find(p => p.isActive);
+      if (!active) return false;
+
+      const sorted = allBahasaPerkataan
+        .filter(p => p.jenisId === active.jenisId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+      const idx = sorted.findIndex(p => p.id === active.id);
+      if (idx < 0) return false;
+
+      // Cari perkataan seterusnya yang ada laci/nota (skip kosong)
+      let next = null;
+      for (let i = idx + 1; i < sorted.length; i++) {
+        const candidate = sorted[i];
+        const adaIsi = allBahasaDrawers.some(d =>
+          d.perkataanId === candidate.id &&
+          ((d.notes && d.notes.trim()) || (d.items && d.items.length))
+        );
+        if (adaIsi || true) { // ikut urutan page walaupun kosong; rebuild akan handle
+          next = candidate;
+          break;
+        }
+      }
+      if (!next) return false;
+
+      try {
+        const batch = writeBatch(db);
+        for (const p of allBahasaPerkataan.filter(p => p.isActive)) {
+          batch.update(doc(db, "users", currentUser.uid, "bahasa_perkataan", p.id), { isActive: false });
+          p.isActive = false;
+        }
+        batch.update(doc(db, "users", currentUser.uid, "bahasa_perkataan", next.id), {
+          isActive: true,
+          lastIndex: 0
+        });
+        next.isActive = true;
+        next.lastIndex = 0;
+        await batch.commit();
+
+        currentPerkataanId = next.id;
+        activeGlobalBahasaId = next.id;
+        localStorage.removeItem('bahasaLastIndex');
+        showToast(`➡️ Lompat ke perkataan: ${next.name || '(tanpa nama)'}`, 3500);
+        rebuildBahasa();
+        try { if (typeof renderPerkataan === 'function') renderPerkataan(); } catch (_) {}
+        return true;
+      } catch (e) {
+        console.error('lompat perkataan gagal', e);
+        showToast('❌ Gagal lompat perkataan: ' + (e.message || e));
+        return false;
+      }
+    }
+
+    async function majuIndexSelepasTamatBahasa() {
+      if (bahasaMode && currentFactIndex + 1 >= allFacts.length) {
+        const ok = await lompatKePerkataanSeterusnyaBahasa();
+        if (ok) return;
+        showToast('✅ Habis semua perkataan dalam jenis kata ini.', 4000);
+        currentFactIndex = 0;
+        syncIndexToFirestore(0);
+        triggerFadeAnimation(renderCurrentFact);
+        return;
+      }
+      currentFactIndex = (currentFactIndex + 1) % allFacts.length;
+      syncIndexToFirestore(currentFactIndex);
+      triggerFadeAnimation(renderCurrentFact);
+    }
+
 function rebuildBahasa() {
       if (!bahasaMode) return;
       // Jangan rebuild kalau SR sedang aktif — elak overwrite allFacts SR
-      if (srModeAktif && srLaciSemasa) return;
+      if (srModeAktif && srLaciSemasa) return;    
       // Reset ejaan count bila rebuild
       bahasaEjaanCount = 5;
       const activePerkataan = allBahasaPerkataan.find(p => p.isActive);
@@ -15778,12 +15940,14 @@ let berjayaP = 0, gagalP = 0, berjayaL = 0, gagalL = 0;
               const laciBaruRef = await addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), {
                 title: laci.title || '',
                 notes: laci.notes || '',
+                tipsFasa0: laci.tipsFasa0 || '',
+                tips: laci.tips || '',
                 repeatCount: 0,
                 jenisId: jenisDestId,
                 perkataanId: perkataanBaruId,
                 createdAt: Date.now()
               });
-              const laciBaruId = laciBaruRef.id;
+              const laciBaruId = laciBaruRef.id;       
 
               // 3. Salin gambar jika ada
               if (laci.imageUrl) {
@@ -16195,8 +16359,8 @@ let srQueue = [];           // Queue overdue yang sedang aktif
     let srLaciSemasa = null;    // Rekod SR laci yang sedang diulang
     let srSemuaSelesai = false; // Flag — semua SR dalam sesi ini dah selesai
 
-// Daftar laci baru dalam SR queue bila hit isTamat
-async function daftarSRBaru(drawerId, mode = 'bahasa') {
+// Daftar laci baru dalam SR queue — fakta: satu baris = satu SR
+async function daftarSRBaru(drawerId, mode = 'bahasa', itemIndex = null, barisText = '') {
       if (!currentUser) return;
 
       let drawer, drawerTitle, srColl;
@@ -16216,7 +16380,14 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
       const now = Date.now();
       const nextDueAt = now + SR_INTERVALS[0];
 
-      const refSR = doc(db, "users", currentUser.uid, srColl, drawerId);
+      // Fakta: satu baris = satu SR (docId = drawerId_b{itemIndex})
+      // Bahasa: kekal per-laci
+      let srDocId = drawerId;
+      if (mode === 'fakta' && itemIndex !== null && itemIndex !== undefined) {
+        srDocId = drawerId + '_b' + itemIndex;
+      }
+
+      const refSR = doc(db, "users", currentUser.uid, srColl, srDocId);
       const snap = await getDoc(refSR);
 
       if (snap.exists()) {
@@ -16237,18 +16408,17 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
         const topicNama = topic?.name || 'Topik';
         const subjekNama = subjek?.name || 'Subjek';
         const tajukSlide = drawer.title || 'Slide';
+        const barisNo = (itemIndex !== null && itemIndex !== undefined) ? (itemIndex + 1) : 1;
 
         if (drawer.pdfNombor && drawer.pdfTopik && drawer.pdfSubjek) {
-          // Kod tetap
-          pdfKod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-${drawer.pdfNombor}`;
+          pdfKod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-${drawer.pdfNombor}-B${barisNo}`;
           isSementara = false;
         } else {
-          // Kod sementara
           const laciDalamTopik = allDrawers
             .filter(d => d.topicId === drawer.topicId)
             .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
           const idxSementara = laciDalamTopik.findIndex(d => d.id === drawerId);
-          pdfKod = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}`;
+          pdfKod = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}-B${barisNo}`;
           isSementara = true;
         }
       }
@@ -16262,7 +16432,8 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
         nextDueAt,
         sejarahFasa: [],
         createdAt: now,
-        mode
+        mode,
+        srDocId
       };
 
       if (mode === 'bahasa') {
@@ -16272,12 +16443,16 @@ async function daftarSRBaru(drawerId, mode = 'bahasa') {
         srData.topicId = drawer.topicId || '';
         srData.pdfKod = pdfKod;
         srData.isSementara = isSementara;
+        if (itemIndex !== null && itemIndex !== undefined) {
+          srData.itemIndex = itemIndex;
+          srData.barisText = (barisText || '').slice(0, 200);
+        }
       }
 
       await setDoc(refSR, srData);
 
       if (mode === 'fakta') {
-        faktaSRQueueIds.add(drawerId);
+        faktaSRQueueIds.add(srDocId);
       } else {
         srQueueIds.add(drawerId);
       }
@@ -20299,10 +20474,10 @@ const div = document.createElement('div');
             </div>` : ''}
 
             <div style="display:flex;gap:6px;margin-top:8px;">
-              <button class="btn-sr-reset btn btn-secondary btn-sm" data-id="${data.drawerId}" style="flex:1;font-size:0.72rem;border-color:#f59e0b;color:#fcd34d;">
+              <button class="btn-sr-reset btn btn-secondary btn-sm" data-id="${data.id}" style="flex:1;font-size:0.72rem;border-color:#f59e0b;color:#fcd34d;">
                 🔄 Reset ke Fasa 1
               </button>
-              <button class="btn-sr-delete btn btn-secondary btn-sm" data-id="${data.drawerId}" style="font-size:0.72rem;color:var(--danger);border-color:var(--danger);">
+              <button class="btn-sr-delete btn btn-secondary btn-sm" data-id="${data.id}" style="font-size:0.72rem;color:var(--danger);border-color:var(--danger);">
                 🗑️ Buang
               </button>
             </div>
@@ -20324,7 +20499,7 @@ const div = document.createElement('div');
             if (!confirm(`Reset SR "${data.drawerTitle}" ke Fasa 1?\n\nSejarah ulangan akan dipadam.`)) return;
             const now = Date.now();
             const srCollName = data.isFakta ? 'fakta_sr_queue' : 'bahasa_sr_queue';
-            const refSR = doc(db, "users", currentUser.uid, srCollName, data.drawerId);
+            const refSR = doc(db, "users", currentUser.uid, srCollName, data.id);
             await updateDoc(refSR, {
               fasaSemasa: 0,
               nextDueAt: now + SR_INTERVALS[0],
@@ -20339,14 +20514,13 @@ const div = document.createElement('div');
           div.querySelector('.btn-sr-delete').addEventListener('click', async () => {
             if (!confirm(`Buang "${data.drawerTitle}" dari SR queue?\n\nLaci tidak akan diulang lagi.`)) return;
             if (data.isFakta) {
-              await deleteFaktaSRRekod(data.drawerId);
+              await deleteFaktaSRRekod(data.id);
             } else {
-              await deleteSRRekod(data.drawerId);
+              await deleteSRRekod(data.id);
             }
             showToast(`🗑️ "${data.drawerTitle}" dibuang dari SR queue.`);
             renderSRQueuePage();
           });
-
           list.appendChild(div);
         });
 
@@ -22695,6 +22869,12 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
   await simpanArahanImej();
 
   const arahan = (document.getElementById('arahan-imej-textarea')?.value || '').trim();
+
+  if (!retryFailedOnly && !arahan) {
+    alert('⚠️ Sila isikan Arahan Gaya Imej dahulu sebelum mula jana.\n\nContoh: "Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art"');
+    document.getElementById('arahan-imej-textarea')?.focus();
+    return;
+  }
   const delaySec = Math.max(0, parseInt(document.getElementById('mesin-imej-delay')?.value || '8', 10) || 8);
   const model = document.getElementById('mesin-imej-model')?.value || 'grok-imagine-image';
   const aspect = document.getElementById('mesin-imej-aspect')?.value || '16:9';
@@ -23246,6 +23426,12 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
   await mifSimpanArahan();
 
   const arahan = (document.getElementById('arahan-imej-fakta-textarea')?.value || '').trim();
+
+  if (!retryFailedOnly && !arahan) {
+    alert('⚠️ Sila isikan Arahan Gaya Imej dahulu sebelum mula jana.\n\nContoh: "Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art"');
+    document.getElementById('arahan-imej-fakta-textarea')?.focus();
+    return;
+  }
   const delaySec = Math.max(0, parseInt(document.getElementById('mesin-imej-fakta-delay')?.value || '8', 10) || 8);
   const model = document.getElementById('mesin-imej-fakta-model')?.value || 'grok-imagine-image';
   const aspect = document.getElementById('mesin-imej-fakta-aspect')?.value || '16:9';
