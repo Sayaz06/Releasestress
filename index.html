@@ -22720,9 +22720,25 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
         item.status = 'done';
         item.error = null;
       } catch (err) {
+        const msg = (err && err.message) ? err.message : String(err);
         item.status = 'failed';
-        item.error = (err && err.message) ? err.message.slice(0, 120) : String(err);
+        item.error = msg.slice(0, 120);
         console.error('Mesin Imej gagal', item.id, err);
+
+        // Credit / quota / permission → henti terus, jangan teruskan laci seterusnya
+        const lower = msg.toLowerCase();
+        if (
+          lower.includes('credit') ||
+          lower.includes('quota') ||
+          lower.includes('billing') ||
+          lower.includes('license') ||
+          lower.includes('permission-denied') ||
+          lower.includes('insufficient') ||
+          lower.includes("doesn't have any credits")
+        ) {
+          mesinImejState.stopRequested = true;
+          showToast('❌ Credit / kuota tidak cukup. Jana dihentikan. Sila tambah credit di console.x.ai.', 5000);
+        }
       }
       updateMesinImejUI();
 
