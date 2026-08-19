@@ -9619,16 +9619,9 @@ btnAddSubject.addEventListener("click", () => {
     document.getElementById('btn-add-sem').addEventListener("click", () => {
       addDoc(collection(db, "users", currentUser.uid, "sems"), { name: "", createdAt: Date.now() });
     });
-
     btnAddTopic.addEventListener("click", () => { 
       if(currentSubjectId) {
         addDoc(collection(db, "users", currentUser.uid, "topics"), { name: "", subjectId: currentSubjectId, isActive: false, createdAt: Date.now() }); 
-      }
-    });
-
-    document.getElementById('btn-add-fakta-topic')?.addEventListener('click', () => {
-      if(currentSubjectId) {
-        addDoc(collection(db, "users", currentUser.uid, "topics"), { name: "", subjectId: currentSubjectId, isActive: false, createdAt: Date.now() });
       }
     });
 
