@@ -22870,6 +22870,12 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
   await simpanArahanImej();
 
   const arahan = (document.getElementById('arahan-imej-textarea')?.value || '').trim();
+
+  if (!retryFailedOnly && !arahan) {
+    alert('⚠️ Sila isikan Arahan Gaya Imej dahulu sebelum mula jana.\n\nContoh: "Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art"');
+    document.getElementById('arahan-imej-textarea')?.focus();
+    return;
+  }
   const delaySec = Math.max(0, parseInt(document.getElementById('mesin-imej-delay')?.value || '8', 10) || 8);
   const model = document.getElementById('mesin-imej-model')?.value || 'grok-imagine-image';
   const aspect = document.getElementById('mesin-imej-aspect')?.value || '16:9';
@@ -23421,6 +23427,12 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
   await mifSimpanArahan();
 
   const arahan = (document.getElementById('arahan-imej-fakta-textarea')?.value || '').trim();
+
+  if (!retryFailedOnly && !arahan) {
+    alert('⚠️ Sila isikan Arahan Gaya Imej dahulu sebelum mula jana.\n\nContoh: "Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art"');
+    document.getElementById('arahan-imej-fakta-textarea')?.focus();
+    return;
+  }
   const delaySec = Math.max(0, parseInt(document.getElementById('mesin-imej-fakta-delay')?.value || '8', 10) || 8);
   const model = document.getElementById('mesin-imej-fakta-model')?.value || 'grok-imagine-image';
   const aspect = document.getElementById('mesin-imej-fakta-aspect')?.value || '16:9';
