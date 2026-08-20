@@ -9972,13 +9972,53 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
       const statusEl = document.getElementById('quran-load-status');
       if (!overlay) { await callback(); return; }
 
-overlay.classList.add('show');
+      overlay.classList.add('show');
       overlay.style.pointerEvents = 'all';
       if (statusEl) statusEl.textContent = 'Sedang mendapatkan rekod kemajuan...';
       
       try {
-        // Ambil rekod terkini dari leaderboard
-        const progressTerkini = await loadQuranProgressTerkini();
+        // ── Baca quran_progress_log (phone) DAN kindle_quran/current (kindle) ──
+        // Ambil yang lebih baru antara kedua-dua
+        const [snapPhone, snapKindle] = await Promise.all([
+          loadQuranProgressTerkini(),
+          (async () => {
+            try {
+              const ref = doc(db, "users", currentUser.uid, "kindle_quran", "current");
+              const s = await getDoc(ref);
+              if (!s.exists()) return null;
+              const d = s.data();
+              return { surah: d.surahNum || 1, ayat: d.ayatNum || 0, savedAt: d.savedAt || 0 };
+            } catch(e) { return null; }
+          })()
+        ]);
+
+        // Normalize data phone
+        const dataPhone = snapPhone ? {
+          surah: snapPhone.surah || 1,
+          ayat: snapPhone.ayat || 0,
+          savedAt: snapPhone.savedAt || 0
+        } : null;
+
+        // Pilih yang lebih baru
+        let progressTerkini = null;
+        if (!dataPhone && !snapKindle) {
+          progressTerkini = null;
+        } else if (!dataPhone) {
+          progressTerkini = snapKindle;
+          if (statusEl) statusEl.textContent = 'Rekod Kindle lebih baru — guna kedudukan Kindle.';
+        } else if (!snapKindle) {
+          progressTerkini = dataPhone;
+        } else if (snapKindle.savedAt >= dataPhone.savedAt) {
+          progressTerkini = snapKindle;
+          if (statusEl) statusEl.textContent = 'Rekod Kindle lebih baru — sync dari Kindle.';
+        } else {
+          progressTerkini = dataPhone;
+        }
+
+        // Kalau Kindle lebih baru, update currentQuranSurahNum terus
+        if (progressTerkini && snapKindle && progressTerkini === snapKindle) {
+          currentQuranSurahNum = progressTerkini.surah || 1;
+        }
 
         if (!progressTerkini) {
           if (statusEl) statusEl.textContent = 'Tiada rekod dijumpai. Bermula dari semula.';
