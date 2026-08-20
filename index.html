@@ -9450,13 +9450,24 @@ if (routineMode && allRoutines.length > 0) {
       }
     }
 
-
 // ── FUNGSI SYNC LACI DARI LEADERBOARD ──
-    async function syncLaciDariLeaderboard() {
+    // overrideData: { surah, ayat } — kalau ada, guna terus tanpa baca Firestore
+    async function syncLaciDariLeaderboard(overrideData) {
       if (!currentUser) return;
 
       try {
-        const progressTerkini = await loadQuranProgressTerkini();
+        let progressTerkini;
+        if (overrideData && overrideData.surah) {
+          // Guna data yang dah diproses (termasuk Kindle) — jangan baca Firestore semula
+          progressTerkini = overrideData;
+          window._quranProgressOverride = null; // clear selepas guna
+        } else if (window._quranProgressOverride && window._quranProgressOverride.surah) {
+          // Fallback: guna override dari mulakanCountdownQuran
+          progressTerkini = window._quranProgressOverride;
+          window._quranProgressOverride = null;
+        } else {
+          progressTerkini = await loadQuranProgressTerkini();
+        }
         if (!progressTerkini) return;
 
         const targetSurah = progressTerkini.surah || 1;
@@ -10131,7 +10142,14 @@ if (sudahSelari || tiadaAyat || cuba >= maksimumCuba) {
               if (statusEl) statusEl.textContent = sudahSelari
                 ? `✅ Laci disahkan — Surah ${targetSurah} Ayat ${targetAyat}`
                 : '✅ Sedia.';
-              setTimeout(() => { overlay.style.pointerEvents = 'none'; overlay.classList.remove('show'); callback(); }, 800);
+              setTimeout(() => {
+                overlay.style.pointerEvents = 'none';
+                overlay.classList.remove('show');
+                // Hantar progressTerkini terus supaya syncLaciDariLeaderboard
+                // tidak baca Firestore semula dan overwrite dengan rekod lama
+                window._quranProgressOverride = { surah: targetSurah, ayat: targetAyat };
+                callback();
+              }, 800);              
             }
           } else {
             if (statusEl) statusEl.textContent = `Menunggu laci selari... (${cuba}/${maksimumCuba})`;
