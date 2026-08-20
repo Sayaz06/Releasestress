@@ -1330,6 +1330,16 @@ body.dark-mode {
     </div>
     <div id="quran-load-status" style="font-size:0.72rem;color:var(--subtext);margin-top:14px;font-style:italic;"></div>
   </div>
+
+<!-- POPUP SEMAK KINDLE QURAN -->
+<div id="kindle-quran-popup" style="display:none;position:fixed;inset:0;z-index:9999998;background:rgba(2,6,23,0.92);align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);">
+  <div style="width:100%;max-width:360px;background:rgba(15,23,42,0.98);border:2px solid #34d399;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <div style="font-size:1.6rem;">📖</div>
+    <div style="font-size:1rem;font-weight:700;color:#34d399;text-align:center;">Semakan Kindle Quran</div>
+    <div id="kindle-quran-popup-msg" style="font-size:0.85rem;color:#e5e7eb;text-align:center;line-height:1.7;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:12px 14px;width:100%;min-height:80px;"></div>
+    <button id="btn-kindle-quran-popup-ok" style="display:none;width:100%;padding:12px;border-radius:999px;background:linear-gradient(135deg,#34d399,#059669);border:none;color:white;font-weight:700;font-size:1rem;cursor:pointer;">OK, Teruskan</button>
+  </div>
+</div>
   
 <!-- TIPS SEBUTAN OVERLAY -->
     <div id="tips-sebutan-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
@@ -9971,6 +9981,53 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
       const overlay = document.getElementById('quran-load-overlay');
       const statusEl = document.getElementById('quran-load-status');
       if (!overlay) { await callback(); return; }
+
+      // ── POPUP SEMAK KINDLE DULU — sebelum overlay pengawas ──
+      await new Promise(resolve => {
+        const popup = document.getElementById('kindle-quran-popup');
+        const msgEl = document.getElementById('kindle-quran-popup-msg');
+        const btnOk = document.getElementById('btn-kindle-quran-popup-ok');
+        if (!popup || !msgEl || !btnOk) { resolve(); return; }
+
+        msgEl.textContent = '⏳ Sedang menyemak kemajuan Kindle...';
+        btnOk.style.display = 'none';
+        popup.style.display = 'flex';
+
+        const refKindle = doc(db, "users", currentUser.uid, "kindle_quran", "current");
+        getDoc(refKindle).then(snap => {
+          if (snap.exists()) {
+            const d = snap.data();
+            const sNum = d.surahNum || 1;
+            const aNum = d.ayatNum || 0;
+            const sNama = QURAN_SURAH_NAMES[sNum - 1] || '';
+            const masa = d.savedAt
+              ? new Date(d.savedAt).toLocaleString('ms-MY', { dateStyle: 'short', timeStyle: 'short' })
+              : '—';
+            msgEl.innerHTML =
+              `✅ <strong style="color:#34d399;">Terdapat kemajuan di Kindle</strong><br><br>` +
+              `📖 Surah ${sNum}. ${sNama} — Ayat ${aNum}<br>` +
+              `<span style="font-size:0.75rem;color:#9ca3af;">Disimpan: ${masa}</span><br><br>` +
+              `<span style="font-size:0.78rem;color:#fcd34d;">App akan guna kemajuan Kindle jika lebih terkini daripada phone.</span>`;
+          } else {
+            msgEl.innerHTML =
+              `ℹ️ <strong style="color:#9ca3af;">Tiada kemajuan di Kindle</strong><br><br>` +
+              `<span style="font-size:0.78rem;color:#e5e7eb;">App akan guna kemajuan phone seperti biasa.</span>`;
+          }
+        }).catch(() => {
+          msgEl.innerHTML =
+            `⚠️ <strong style="color:#f87171;">Gagal semak Kindle</strong><br><br>` +
+            `<span style="font-size:0.78rem;color:#e5e7eb;">App akan guna kemajuan phone seperti biasa.</span>`;
+        }).finally(() => {
+          btnOk.style.display = 'block';
+        });
+
+        btnOk.onclick = () => {
+          popup.style.display = 'none';
+          btnOk.onclick = null;
+          resolve();
+        };
+      });
+      // ── HABIS POPUP KINDLE — teruskan ke overlay pengawas ──
 
       overlay.classList.add('show');
       overlay.style.pointerEvents = 'all';
