@@ -4411,6 +4411,8 @@ let currentQuranSurahNum = 1;
       return { data: null, ref: null };
     }
 
+const _modeTasbihUnsub = { doa: null, hadis: null, quran: null };
+
 async function ensureTodayModeTasbih(mode) {
       if (!currentUser) return;
       const key = mode === 'quran' ? 'main' : todayKey();
@@ -4422,12 +4424,17 @@ async function ensureTodayModeTasbih(mode) {
           remaining: MODE_DAILY_DEFAULTS[mode], done: false
         });
       }
-      const updated = await getDoc(refDoc);
-      const data = updated.data();
-      if (mode === 'quran') { currentQuranTasbihRef = refDoc; currentQuranTasbihData = data; }
-      else if (mode === 'doa')   { currentDoaTasbihRef = refDoc; currentDoaTasbihData = data; }
-      else if (mode === 'hadis') { currentHadisTasbihRef = refDoc; currentHadisTasbihData = data; }
-      updateTasbihUI();
+      if (_modeTasbihUnsub[mode]) { _modeTasbihUnsub[mode](); _modeTasbihUnsub[mode] = null; }
+      _modeTasbihUnsub[mode] = onSnapshot(refDoc, (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+        if (mode === 'quran') { currentQuranTasbihRef = refDoc; currentQuranTasbihData = data; }
+        else if (mode === 'doa')   { currentDoaTasbihRef = refDoc; currentDoaTasbihData = data; }
+        else if (mode === 'hadis') { currentHadisTasbihRef = refDoc; currentHadisTasbihData = data; }
+        updateTasbihUI();
+      }, (err) => {
+        console.warn('ensureTodayModeTasbih onSnapshot error:', err);
+      });
     }
     function getModeLabel(src) {
       return {rutin:'Rutin', quran:'📖 Quran', doa:'🤲 Doa', hadis:'📚 Hadis'}[src] || src;
@@ -4507,12 +4514,17 @@ if (src === 'quran') {
 // Pastikan countdown harian wujud untuk mode baru
         if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
 
-        // Load lastIndex untuk doa kalau doaReadAllMode on
+        // Load lastIndex untuk doa kalau doaReadAllMode on + subscribe realtime
         if (src === 'doa' && doaReadAllMode && currentUser) {
           getDoc(doc(db, "users", currentUser.uid, "settings", "doaReadAll")).then(snap => {
             doaReadAllIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
             rebuildRoutines();
           });
+          subscribeDoaReadAllIndex();
+        }
+        // Subscribe hadis read all index realtime
+        if (src === 'hadis' && hadisReadAllMode && currentUser) {
+          subscribeHadisReadAllIndex();
         }
       }
       updateTasbihUI();
@@ -5948,7 +5960,9 @@ function formatTextToHtmlList(text) {
     // ==========================================
     // TASBIH LOGIC 
     // ==========================================
-    async function ensureTodayTasbih() {
+let _tasbihBiasaUnsub = null;
+
+async function ensureTodayTasbih() {
       if (!currentUser) return;
       const key = todayKey();
       const ref = doc(db, "users", currentUser.uid, "tasbih", key);
@@ -5961,10 +5975,15 @@ function formatTextToHtmlList(text) {
           done: false
         });
       }
-      const updatedSnap = await getDoc(ref);
       currentTasbihDocRef = ref;
-      currentTasbihData = updatedSnap.data();
-      updateTasbihUI();
+      if (_tasbihBiasaUnsub) { _tasbihBiasaUnsub(); _tasbihBiasaUnsub = null; }
+      _tasbihBiasaUnsub = onSnapshot(ref, (docSnap) => {
+        if (!docSnap.exists()) return;
+        currentTasbihData = docSnap.data();
+        updateTasbihUI();
+      }, (err) => {
+        console.warn('ensureTodayTasbih onSnapshot error:', err);
+      });
     }
 
 function updateTasbihUI() {
@@ -12472,8 +12491,10 @@ document.getElementById('hadis-read-all-toggle').addEventListener('change', asyn
     async function syncHadisReadAllProgress(index) {
       if (!currentUser) return;
       hadisReadAllIndex = index;
+      _phoneWriting = true;
       const refProg = doc(db, "users", currentUser.uid, "settings", "hadisReadAll");
       await setDoc(refProg, { lastIndex: index, updatedAt: Date.now() }, { merge: true });
+      setTimeout(() => { _phoneWriting = false; }, 1000);
       const total = allRoutines.filter(r => !r.isTamat).length;
       const el = document.getElementById('hadis-read-all-progress');
       if (el) el.textContent = `${index + 1} / ${total}`;
@@ -12493,12 +12514,62 @@ document.addEventListener('change', async (e) => {
     async function syncDoaReadAllProgress(index) {
       if (!currentUser) return;
       doaReadAllIndex = index;
+      _phoneWriting = true;
       const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
       await setDoc(refProg, { lastIndex: index, updatedAt: Date.now() }, { merge: true });
+      setTimeout(() => { _phoneWriting = false; }, 1000);
       const total = allRoutines.filter(r => !r.isTamat).length;
       const el = document.getElementById('doa-read-all-progress');
       if (el) el.textContent = `${index + 1} / ${total}`;
     }
+
+let _doaReadAllUnsub = null;
+let _hadisReadAllUnsub = null;
+let _phoneWriting = false; // flag elak loop bila phone sendiri yang tulis
+
+function subscribeDoaReadAllIndex() {
+  if (!currentUser) return;
+  if (_doaReadAllUnsub) { _doaReadAllUnsub(); _doaReadAllUnsub = null; }
+  const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
+  _doaReadAllUnsub = onSnapshot(refProg, (snap) => {
+    if (!snap.exists()) return;
+    if (_phoneWriting) return; // kita yang tulis — abaikan
+    const newIndex = snap.data().lastIndex || 0;
+    if (newIndex !== doaReadAllIndex) {
+      doaReadAllIndex = newIndex;
+      if (routineMode && routineModeSource === 'doa' && doaReadAllMode) {
+        if (newIndex < allRoutines.length) {
+          currentRoutineIndex = newIndex;
+          currentRoutineTarget = allRoutines[newIndex]?.target || 1;
+          renderCurrentFact();
+          updateTasbihUI();
+        }
+      }
+    }
+  }, (err) => { console.warn('subscribeDoaReadAllIndex error:', err); });
+}
+
+function subscribeHadisReadAllIndex() {
+  if (!currentUser) return;
+  if (_hadisReadAllUnsub) { _hadisReadAllUnsub(); _hadisReadAllUnsub = null; }
+  const refProg = doc(db, "users", currentUser.uid, "settings", "hadisReadAll");
+  _hadisReadAllUnsub = onSnapshot(refProg, (snap) => {
+    if (!snap.exists()) return;
+    if (_phoneWriting) return;
+    const newIndex = snap.data().lastIndex || 0;
+    if (newIndex !== hadisReadAllIndex) {
+      hadisReadAllIndex = newIndex;
+      if (routineMode && routineModeSource === 'hadis' && hadisReadAllMode) {
+        if (newIndex < allRoutines.length) {
+          currentRoutineIndex = newIndex;
+          currentRoutineTarget = allRoutines[newIndex]?.target || 1;
+          renderCurrentFact();
+          updateTasbihUI();
+        }
+      }
+    }
+  }, (err) => { console.warn('subscribeHadisReadAllIndex error:', err); });
+}
 // ══════════════════════════════════════════
     // QURAN KHATAM TRACKER
     // ══════════════════════════════════════════
