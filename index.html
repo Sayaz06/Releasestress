@@ -4514,17 +4514,12 @@ if (src === 'quran') {
 // Pastikan countdown harian wujud untuk mode baru
         if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
 
-        // Load lastIndex untuk doa kalau doaReadAllMode on + subscribe realtime
+        // Load lastIndex untuk doa kalau doaReadAllMode on
         if (src === 'doa' && doaReadAllMode && currentUser) {
           getDoc(doc(db, "users", currentUser.uid, "settings", "doaReadAll")).then(snap => {
             doaReadAllIndex = snap.exists() ? (snap.data().lastIndex || 0) : 0;
             rebuildRoutines();
           });
-          subscribeDoaReadAllIndex();
-        }
-        // Subscribe hadis read all index realtime
-        if (src === 'hadis' && hadisReadAllMode && currentUser) {
-          subscribeHadisReadAllIndex();
         }
       }
       updateTasbihUI();
@@ -12492,10 +12487,8 @@ document.getElementById('hadis-read-all-toggle').addEventListener('change', asyn
     async function syncHadisReadAllProgress(index) {
       if (!currentUser) return;
       hadisReadAllIndex = index;
-      _phoneWriting = true;
       const refProg = doc(db, "users", currentUser.uid, "settings", "hadisReadAll");
       await setDoc(refProg, { lastIndex: index, updatedAt: Date.now() }, { merge: true });
-      setTimeout(() => { _phoneWriting = false; }, 1000);
       const total = allRoutines.filter(r => !r.isTamat).length;
       const el = document.getElementById('hadis-read-all-progress');
       if (el) el.textContent = `${index + 1} / ${total}`;
@@ -12515,62 +12508,13 @@ document.addEventListener('change', async (e) => {
     async function syncDoaReadAllProgress(index) {
       if (!currentUser) return;
       doaReadAllIndex = index;
-      _phoneWriting = true;
       const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
       await setDoc(refProg, { lastIndex: index, updatedAt: Date.now() }, { merge: true });
-      setTimeout(() => { _phoneWriting = false; }, 1000);
       const total = allRoutines.filter(r => !r.isTamat).length;
       const el = document.getElementById('doa-read-all-progress');
       if (el) el.textContent = `${index + 1} / ${total}`;
     }
 
-let _doaReadAllUnsub = null;
-let _hadisReadAllUnsub = null;
-let _phoneWriting = false; // flag elak loop bila phone sendiri yang tulis
-
-function subscribeDoaReadAllIndex() {
-  if (!currentUser) return;
-  if (_doaReadAllUnsub) { _doaReadAllUnsub(); _doaReadAllUnsub = null; }
-  const refProg = doc(db, "users", currentUser.uid, "settings", "doaReadAll");
-  _doaReadAllUnsub = onSnapshot(refProg, (snap) => {
-    if (!snap.exists()) return;
-    if (_phoneWriting) return; // kita yang tulis — abaikan
-    const newIndex = snap.data().lastIndex || 0;
-    if (newIndex !== doaReadAllIndex) {
-      doaReadAllIndex = newIndex;
-      if (routineMode && routineModeSource === 'doa' && doaReadAllMode) {
-        if (newIndex < allRoutines.length) {
-          currentRoutineIndex = newIndex;
-          currentRoutineTarget = allRoutines[newIndex]?.target || 1;
-          renderCurrentFact();
-          updateTasbihUI();
-        }
-      }
-    }
-  }, (err) => { console.warn('subscribeDoaReadAllIndex error:', err); });
-}
-
-function subscribeHadisReadAllIndex() {
-  if (!currentUser) return;
-  if (_hadisReadAllUnsub) { _hadisReadAllUnsub(); _hadisReadAllUnsub = null; }
-  const refProg = doc(db, "users", currentUser.uid, "settings", "hadisReadAll");
-  _hadisReadAllUnsub = onSnapshot(refProg, (snap) => {
-    if (!snap.exists()) return;
-    if (_phoneWriting) return;
-    const newIndex = snap.data().lastIndex || 0;
-    if (newIndex !== hadisReadAllIndex) {
-      hadisReadAllIndex = newIndex;
-      if (routineMode && routineModeSource === 'hadis' && hadisReadAllMode) {
-        if (newIndex < allRoutines.length) {
-          currentRoutineIndex = newIndex;
-          currentRoutineTarget = allRoutines[newIndex]?.target || 1;
-          renderCurrentFact();
-          updateTasbihUI();
-        }
-      }
-    }
-  }, (err) => { console.warn('subscribeHadisReadAllIndex error:', err); });
-}
 // ══════════════════════════════════════════
     // QURAN KHATAM TRACKER
     // ══════════════════════════════════════════
