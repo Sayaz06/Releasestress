@@ -9003,15 +9003,15 @@ div.querySelectorAll(".btn-del-item-img").forEach(btn => {
           }
           // Daftar per-baris (sama seperti aliran play automatik)
           const items = data.items || [];
-          if (items.length === 0) {
-            await daftarSRBaru(data.id, 'fakta', null, '');
-          } else {
-            for (let bi = 0; bi < items.length; bi++) {
-              const ayat = (items[bi].ayat || items[bi].text || '').trim();
-              if (!ayat) continue;
-              const depan = ayat.includes('=') ? ayat.split('=')[0].trim() : ayat;
-              await daftarSRBaru(data.id, 'fakta', bi, depan);
-            }
+          if (!items.length) {
+            showToast('⚠️ Tiada baris dalam laci ini.', 3000);
+            return;
+          }
+          for (let bi = 0; bi < items.length; bi++) {
+            const ayat = (items[bi].ayat || items[bi].text || '').trim();
+            if (!ayat) continue;
+            const depan = ayat.includes('=') ? ayat.split('=')[0].trim() : ayat;
+            await daftarSRBaru(data.id, 'fakta', bi, depan);
           }
           await refreshSRQueueIds();
           renderDrawers();
