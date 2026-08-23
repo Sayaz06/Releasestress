@@ -14696,10 +14696,11 @@ ${pagesHtml}
         const laciNomborMapK = {};
         let nomborSemak = 0;
         semuaLaci.forEach(laci => {
-          const lines = (laci.notes || '').split('\n').filter(l => l.trim());
           let firstNombor = null;
-          lines.forEach(line => {
-            const atas = line.indexOf('=') !== -1 ? line.slice(0, line.indexOf('=')).trim() : line.trim();
+          (laci.items || []).forEach(it => {
+            const ayat = (it.ayat || it.text || '').trim();
+            if (!ayat) return;
+            const atas = ayat.indexOf('=') !== -1 ? ayat.slice(0, ayat.indexOf('=')).trim() : ayat;
             if (atas) {
               nomborSemak++;
               if (firstNombor === null) firstNombor = nomborSemak;
