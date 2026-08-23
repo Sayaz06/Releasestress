@@ -8973,7 +8973,18 @@ div.querySelectorAll(".btn-del-item-img").forEach(btn => {
             showToast('⏰ Laci ini sudah dalam SR queue.', 3000);
             return;
           }
-          await daftarSRBaru(data.id, 'fakta');
+          // Daftar per-baris (sama seperti aliran play automatik)
+          const items = data.items || [];
+          if (items.length === 0) {
+            await daftarSRBaru(data.id, 'fakta', null, '');
+          } else {
+            for (let bi = 0; bi < items.length; bi++) {
+              const ayat = (items[bi].ayat || items[bi].text || '').trim();
+              if (!ayat) continue;
+              const depan = ayat.includes('=') ? ayat.split('=')[0].trim() : ayat;
+              await daftarSRBaru(data.id, 'fakta', bi, depan);
+            }
+          }
           await refreshSRQueueIds();
           renderDrawers();
         });
