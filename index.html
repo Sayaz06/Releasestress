@@ -5731,10 +5731,11 @@ saveAppState();
     }
 
     function todayKey() {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const dd = String(now.getDate()).padStart(2, "0");
+      // Guna UTC+8 (Malaysia) supaya semua peranti guna tarikh yang sama
+      const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      const yyyy = now.getUTCFullYear();
+      const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(now.getUTCDate()).padStart(2, "0");
       return `${yyyy}-${mm}-${dd}`;
     }
 
