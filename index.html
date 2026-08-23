@@ -8884,6 +8884,34 @@ function renderDrawers() {
                 await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`));
               } catch(e) {}
             }
+
+            // Padam SR doc untuk baris ini kalau ada
+            const srDocIdPadam = data.id + '_b' + idx;
+            try {
+              await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", srDocIdPadam));
+              faktaSRQueueIds.delete(srDocIdPadam);
+            } catch(e) {}
+
+            // Update itemIndex SR doc untuk semua baris selepas idx
+            const srSnap = await getDocs(collection(db, "users", currentUser.uid, "fakta_sr_queue"));
+            const batch = writeBatch(db);
+            srSnap.docs.forEach(d => {
+              const srData = d.data();
+              if (srData.drawerId === data.id && srData.itemIndex != null && srData.itemIndex > idx) {
+                const idxBaru = srData.itemIndex - 1;
+                const idBaru = data.id + '_b' + idxBaru;
+                batch.delete(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
+                batch.set(doc(db, "users", currentUser.uid, "fakta_sr_queue", idBaru), {
+                  ...srData,
+                  itemIndex: idxBaru,
+                  srDocId: idBaru
+                });
+                faktaSRQueueIds.delete(d.id);
+                faktaSRQueueIds.add(idBaru);
+              }
+            });
+            await batch.commit();
+
             currentItems.splice(idx, 1);
             await simpanItems(currentItems);
           });
@@ -9030,6 +9058,20 @@ div.querySelectorAll(".btn-del-item-img").forEach(btn => {
               }
             }
           }
+
+          // Padam semua SR fakta untuk laci ini serta-merta
+          try {
+            const srSnap = await getDocs(collection(db, "users", currentUser.uid, "fakta_sr_queue"));
+            const batch = writeBatch(db);
+            srSnap.docs.forEach(d => {
+              if (d.data().drawerId === data.id) {
+                batch.delete(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
+                faktaSRQueueIds.delete(d.id);
+              }
+            });
+            await batch.commit();
+          } catch(e) {}
+
           await hantarKeTrashUniversal('drawer', data.id, data, data.title || 'Laci');
           await deleteDoc(doc(db, "users", currentUser.uid, "drawer", data.id));
           showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
@@ -20504,7 +20546,10 @@ const div = document.createElement('div');
               </div>
             </div>
 
-            <div style="font-size:0.95rem;font-weight:700;color:white;margin-bottom:4px;">${data.drawerTitle || 'Tiada Tajuk'}</div>
+            <div style="font-size:0.95rem;font-weight:700;color:white;margin-bottom:2px;">
+              ${data.drawerTitle || 'Tiada Tajuk'}${data.isFakta && data.itemIndex != null ? ` <span style="font-size:0.78rem;color:#fb923c;font-weight:700;">· Baris ${data.itemIndex + 1}</span>` : ''}
+            </div>
+            ${data.isFakta && data.barisText ? `<div style="font-size:0.75rem;color:#d1d5db;margin-bottom:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">"${data.barisText.slice(0, 60)}${data.barisText.length > 60 ? '…' : ''}"</div>` : ''}
 
             ${parentLabel ? `<div style="font-size:0.72rem;color:var(--subtext);margin-bottom:8px;">📂 ${jenisLabel ? jenisLabel + ' → ' : ''}${parentLabel}</div>` : ''}
 
