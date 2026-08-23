@@ -14588,7 +14588,10 @@ ${pagesHtml}
 
         const semuaLaci = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(d => d.topicId === currentTopicId && d.notes && d.notes.trim())
+          .filter(d => d.topicId === currentTopicId && (
+            (d.notes && d.notes.trim()) ||
+            (d.items && d.items.length && d.items.some(it => (it.ayat || it.text || '').trim()))
+          ))
           .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
 
         if (!semuaLaci.length) { removeLoadBar(); showToast('⚠️ Tiada laci dengan kandungan.'); return; }
@@ -14631,17 +14634,35 @@ ${pagesHtml}
         let nomborKad = 0;
         semuaLaci.forEach(laci => {
           const label = laci.title || '';
-          const imageUrl = laci.imageUrl ? (base64Map[laci.imageUrl] || '') : '';
-          const lines = (laci.notes || '').split('\n').filter(l => l.trim());
-          lines.forEach(line => {
-            const eqIdx = line.indexOf('=');
-            const atas = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
-            const bawahRaw = eqIdx !== -1 ? line.slice(eqIdx + 1).trim() : '';
-            if (atas) {
-              nomborKad++;
-              flashcards.push({ label, atas, bawahRaw, imageUrl, nombor: nomborKad });
-            }
-          });
+
+          // Format baru: items[]
+          if (laci.items && laci.items.length) {
+            laci.items.forEach(it => {
+              const ayat = (it.ayat || it.text || '').trim();
+              if (!ayat) return;
+              const eqIdx = ayat.indexOf('=');
+              const atas = eqIdx !== -1 ? ayat.slice(0, eqIdx).trim() : ayat;
+              const bawahRaw = eqIdx !== -1 ? ayat.slice(eqIdx + 1).trim() : '';
+              const imageUrl = it.imageUrl ? (base64Map[it.imageUrl] || '') : (laci.imageUrl ? (base64Map[laci.imageUrl] || '') : '');
+              if (atas) {
+                nomborKad++;
+                flashcards.push({ label, atas, bawahRaw, imageUrl, nombor: nomborKad });
+              }
+            });
+          } else {
+            // Format lama: notes
+            const imageUrl = laci.imageUrl ? (base64Map[laci.imageUrl] || '') : '';
+            const lines = (laci.notes || '').split('\n').filter(l => l.trim());
+            lines.forEach(line => {
+              const eqIdx = line.indexOf('=');
+              const atas = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
+              const bawahRaw = eqIdx !== -1 ? line.slice(eqIdx + 1).trim() : '';
+              if (atas) {
+                nomborKad++;
+                flashcards.push({ label, atas, bawahRaw, imageUrl, nombor: nomborKad });
+              }
+            });
+          }
         });
 
         if (!flashcards.length) { removeLoadBar(); showToast('⚠️ Tiada kad untuk dijana.'); return; }
