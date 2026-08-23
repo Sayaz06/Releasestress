@@ -21669,7 +21669,7 @@ function jbDapatKodSemasa() {
 
     if (adaPdfKod) {
       const nomborKadIni = drawer.pdfNombor + nomorBarisSebenar - 1;
-      const kod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-baris ${nomorBarisSebenar}`;
+      const kod = `${drawer.pdfSubjek}/${drawer.pdfTopik}/${tajukSlide}-${drawer.pdfNombor}-B${nomorBarisSebenar}`;
       return {
         kod,
         nomborPdf: nomborKadIni,
@@ -21686,7 +21686,7 @@ function jbDapatKodSemasa() {
       .filter(d => d.topicId === drawer.topicId)
       .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
     const idxSementara = laciDalamTopik.findIndex(d => d.id === drawer.id);
-    const kodSementara = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}`;
+    const kodSementara = `${subjekNama}/${topicNama}/${tajukSlide}-T${idxSementara + 1}-B${nomorBarisSebenar}`;
 
     return {
       kod: kodSementara,
