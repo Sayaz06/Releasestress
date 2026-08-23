@@ -9366,12 +9366,26 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
   
       // ── MOD BACA SEMUA DOA ──
       if (doaReadAllMode && routineModeSource === 'doa') {
-        const semuaDoa = [...allDoaDrawers]
-          .filter(d => d.zikir || d.target || d.maksud)
-          .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, {numeric: true}));
+        // Susun ikut kategori dulu (nama kat A-Z), kemudian laci dalam kat (title A-Z)
+        // — sama seperti logik app Kindle
+        const sortedTimes = [...allDoaTimes].sort((a, b) =>
+          (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })
+        );
+        const semuaDoa = allDoaDrawers.filter(d => d.zikir || d.target || d.maksud);
+        const laciTersusun = [];
+        sortedTimes.forEach(t => {
+          const laciDalamKat = semuaDoa
+            .filter(d => d.timeId === t.id)
+            .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+          laciDalamKat.forEach(d => laciTersusun.push(d));
+        });
+        // Laci tanpa timeId letak di hujung
+        semuaDoa.forEach(d => {
+          if (!laciTersusun.includes(d)) laciTersusun.push(d);
+        });
 
-        semuaDoa.forEach(data => {
-const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Kosong";
+        laciTersusun.forEach(data => {
+          const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Kosong";
           const targetVal = parseInt(data.target);
           allRoutines.push({
             title: data.title || "Tiada Tajuk",
