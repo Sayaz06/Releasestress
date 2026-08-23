@@ -16735,7 +16735,8 @@ async function syncSRQueuePdfKod() {
               .filter(d => d.topicId === laci.topicId)
               .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
             const idxSementara = laciDalamTopik.findIndex(d => d.id === laci.id);
-            const kodSementara = `${subjek?.name || 'Subjek'}/${topic?.name || 'Topik'}/${laci.title || 'Slide'}-T${idxSementara + 1}`;
+            const _barisNoSync = (srData.itemIndex !== null && srData.itemIndex !== undefined) ? `-B${srData.itemIndex + 1}` : '';
+            const kodSementara = `${subjek?.name || 'Subjek'}/${topic?.name || 'Topik'}/${laci.title || 'Slide'}-T${idxSementara + 1}${_barisNoSync}`;
 
             if (srData.pdfKod !== kodSementara || srData.isSementara !== true) {
               batch.update(doc(db, "users", currentUser.uid, "fakta_sr_queue", srDoc.id), {
@@ -16749,7 +16750,8 @@ async function syncSRQueuePdfKod() {
           }
 
           // Ada pdfNombor — kod tetap
-          const kodBaru = `${pdfSubjek}/${pdfTopik}/${laci.title || 'Slide'}-${pdfNombor}`;
+          const _barisNoSyncTetap = (srData.itemIndex !== null && srData.itemIndex !== undefined) ? `-B${srData.itemIndex + 1}` : '';
+          const kodBaru = `${pdfSubjek}/${pdfTopik}/${laci.title || 'Slide'}-${pdfNombor}${_barisNoSyncTetap}`;
           const kodLama = srData.pdfKod || null;
 
           if (kodBaru !== kodLama || srData.isSementara === true) {
