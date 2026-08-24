@@ -1363,8 +1363,26 @@ body.dark-mode {
   </div>
 </div>
 
+
+  <!-- ══ TIPS UPDATE NOTICE POPUP ══ -->
+<div id="tips-update-notice" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#0f172a;border:1px solid #334155;border-radius:16px;padding:24px;max-width:340px;width:100%;">
+    <div style="font-size:1.1rem;font-weight:700;color:#f1f5f9;margin-bottom:10px;">📋 Changes Saved</div>
+    <div style="font-size:0.85rem;color:#94a3b8;line-height:1.6;margin-bottom:20px;">Your updates to <span id="tips-notice-type" style="color:#22d3ee;font-weight:600;"></span> have been saved. The following will be refreshed to reflect the latest content:<br><br>
+      <span style="color:#a5b4fc;">• Pronunciation tips</span><br>
+      <span style="color:#a5b4fc;">• Notes &amp; facts</span><br>
+      <span style="color:#a5b4fc;">• Additional drawers</span><br>
+      <span style="color:#a5b4fc;">• Spaced repetition (SR) data</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="btn-tips-notice-ok" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;">OK, Got It</button>
+      <button id="btn-tips-notice-dismiss" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:0.9rem;cursor:pointer;">Dismiss</button>
+    </div>
+  </div>
+</div>
+
 <!-- TIPS FAKTA OVERLAY -->
-      <div id="tips-fakta-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
+  <div id="tips-fakta-overlay" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(2,6,23,0.98);flex-direction:column;padding:0;touch-action:none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();" ontouchmove="event.stopPropagation();" ontouchend="event.stopPropagation();">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
     <div>
       <div style="font-size:1rem;font-weight:700;color:#a78bfa;">📝 Nota / Skrip Fakta</div>
@@ -16311,9 +16329,11 @@ function bukaTipsFakta(drawerId, drawerTitle) {
 document.getElementById('btn-close-tips-fakta').addEventListener('click', () => {
   document.getElementById('tips-fakta-overlay').style.display = 'none';
   currentTipsFaktaDrawerId = null;
+  showTipsNotice('Facts & Notes');
 });
-
+    
 document.getElementById('tips-fakta-textarea').addEventListener('input', (e) => {
+  _tipsNoticeChanged = true; // ada perubahan
   const statusEl = document.getElementById('tips-fakta-status');
   if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
   if (tipsFaktaSaveTimer) clearTimeout(tipsFaktaSaveTimer);
@@ -16343,6 +16363,26 @@ document.getElementById('btn-copy-tips-fakta').addEventListener('click', () => {
 
 let currentTipsFasa = '1'; // '0' untuk fasa ejaan, '1' untuk fasa isi
 
+// ── Tips Update Notice ──
+let _tipsNoticeChanged = false; // track sama ada ada perubahan
+
+function showTipsNotice(type) {
+  if (!_tipsNoticeChanged) return; // tiada perubahan — tak perlu popup
+  const notice = document.getElementById('tips-update-notice');
+  const typeEl = document.getElementById('tips-notice-type');
+  if (!notice) return;
+  if (typeEl) typeEl.textContent = type;
+  notice.style.display = 'flex';
+  _tipsNoticeChanged = false;
+}
+
+document.getElementById('btn-tips-notice-ok').addEventListener('click', () => {
+  document.getElementById('tips-update-notice').style.display = 'none';
+});
+document.getElementById('btn-tips-notice-dismiss').addEventListener('click', () => {
+  document.getElementById('tips-update-notice').style.display = 'none';
+});
+    
 function bukaTipsSebutan(data, fasa = '1') {
   currentTipsDrawerId = data.id;
   currentTipsFasa = fasa;
@@ -16365,9 +16405,11 @@ function bukaTipsSebutan(data, fasa = '1') {
 document.getElementById('btn-close-tips-sebutan').addEventListener('click', () => {
   document.getElementById('tips-sebutan-overlay').style.display = 'none';
   currentTipsDrawerId = null;
+  showTipsNotice('Pronunciation Tips');
 });
 
 document.getElementById('tips-sebutan-textarea').addEventListener('input', (e) => {
+  _tipsNoticeChanged = true; // ada perubahan
   const statusEl = document.getElementById('tips-sebutan-status');
   if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
   if (tipsSaveTimer) clearTimeout(tipsSaveTimer);
