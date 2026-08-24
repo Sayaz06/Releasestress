@@ -19624,6 +19624,10 @@ parsed.forEach(p => {
         // Refresh render supaya tanda ✓ terkini
         renderBahasaDrawers();
 
+        // Popup notice
+        _tipsNoticeChanged = true;
+        showTipsNotice('Bulk Pronunciation Tips');
+
       } catch(e) {
         showToast('❌ Gagal: ' + e.message);
       }
@@ -20264,11 +20268,15 @@ list.innerHTML = '';
       const skipMsg = perkataaanSkip > 0 ? ` | ${perkataaanSkip} perkataan diskip` : '';
       showToast(`✅ Selesai! ${perkataaanDijana} perkataan & ${laciDijana} laci dijana${skipMsg}`, 5000);
 
+      // Popup notice
+      _tipsNoticeChanged = true;
+      showTipsNotice('Bulk Vocabulary');
+
       // Refresh senarai perkataan
       renderPerkataan();
     });
 
-    // ══════════════════════════════════════════
+// ══════════════════════════════════════════
 // BACAAN TAMBAHAN SYSTEM
 // ══════════════════════════════════════════
 let allBacaanTajuk = [];
@@ -23194,6 +23202,9 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
         Notification.requestPermission();
       }
     } catch (_) {}
+    // Popup notice selepas jana gambar selesai
+    _tipsNoticeChanged = true;
+    showTipsNotice('Image Generation (Vocabulary)');
   }
 }
 
@@ -23757,6 +23768,9 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
     const failed = mesinImejFaktaState.queue.filter(q => q.status === 'failed').length;
     const done = mesinImejFaktaState.queue.filter(q => q.status === 'done').length;
     showToast(failed ? `Selesai: ${done} ok, ${failed} gagal.` : `✅ Selesai jana ${done} imej fakta.`);
+    // Popup notice selepas jana gambar fakta selesai
+    _tipsNoticeChanged = true;
+    showTipsNotice('Image Generation (Facts)');
   }
 }
 
