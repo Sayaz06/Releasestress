@@ -16326,6 +16326,26 @@ function bukaTipsFakta(drawerId, drawerTitle) {
   overlay.style.display = 'flex';
 }
 
+// ── Tips Update Notice — letak di sini supaya sebelum semua penggunaan ──
+let _tipsNoticeChanged = false;
+
+function showTipsNotice(type) {
+  if (!_tipsNoticeChanged) return;
+  const notice = document.getElementById('tips-update-notice');
+  const typeEl = document.getElementById('tips-notice-type');
+  if (!notice) return;
+  if (typeEl) typeEl.textContent = type;
+  notice.style.display = 'flex';
+  _tipsNoticeChanged = false;
+}
+
+document.getElementById('btn-tips-notice-ok').addEventListener('click', () => {
+  document.getElementById('tips-update-notice').style.display = 'none';
+});
+document.getElementById('btn-tips-notice-dismiss').addEventListener('click', () => {
+  document.getElementById('tips-update-notice').style.display = 'none';
+});
+
 document.getElementById('btn-close-tips-fakta').addEventListener('click', () => {
   document.getElementById('tips-fakta-overlay').style.display = 'none';
   currentTipsFaktaDrawerId = null;
@@ -16362,26 +16382,6 @@ document.getElementById('btn-copy-tips-fakta').addEventListener('click', () => {
 });
 
 let currentTipsFasa = '1'; // '0' untuk fasa ejaan, '1' untuk fasa isi
-
-// ── Tips Update Notice ──
-let _tipsNoticeChanged = false; // track sama ada ada perubahan
-
-function showTipsNotice(type) {
-  if (!_tipsNoticeChanged) return; // tiada perubahan — tak perlu popup
-  const notice = document.getElementById('tips-update-notice');
-  const typeEl = document.getElementById('tips-notice-type');
-  if (!notice) return;
-  if (typeEl) typeEl.textContent = type;
-  notice.style.display = 'flex';
-  _tipsNoticeChanged = false;
-}
-
-document.getElementById('btn-tips-notice-ok').addEventListener('click', () => {
-  document.getElementById('tips-update-notice').style.display = 'none';
-});
-document.getElementById('btn-tips-notice-dismiss').addEventListener('click', () => {
-  document.getElementById('tips-update-notice').style.display = 'none';
-});
     
 function bukaTipsSebutan(data, fasa = '1') {
   currentTipsDrawerId = data.id;
