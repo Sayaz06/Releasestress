@@ -2070,8 +2070,10 @@ body.dark-mode {
             </div>
             <div id="xai-key-status" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
 
-            <div style="font-size:0.72rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">📝 Arahan gaya imej (jenis kata ini)</div>
-            <textarea id="arahan-imej-textarea" rows="3" placeholder="Cth: Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(99,102,241,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:70px;margin-bottom:8px;"></textarea>
+            <div style="font-size:0.72rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 1 (konsep utama)</div>
+            <textarea id="arahan-imej-textarea" rows="4" placeholder="Preset untuk Gambar 1 — panduan visual utama berdasarkan ayat/perkataan..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(99,102,241,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>
+            <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 2 (rujuk Gambar 1)</div>
+            <textarea id="arahan-imej-textarea2" rows="4" placeholder="Preset untuk Gambar 2 — gambar kedua akan hantar bersama Gambar 1 sebagai rujukan visual..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(139,92,246,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>            
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
               <label style="flex:1;min-width:90px;font-size:0.7rem;color:var(--subtext);">Delay (saat)
                 <input id="mesin-imej-delay" type="number" min="0" max="120" value="8" style="width:100%;margin-top:2px;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:6px;color:#e5e7eb;padding:6px;font-size:0.8rem;">
@@ -2336,8 +2338,11 @@ body.dark-mode {
             <div id="xai-key-status-fakta" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
 
             <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">📝 Arahan gaya imej (topik ini)</div>
-            <textarea id="arahan-imej-fakta-textarea" rows="3" placeholder="Cth: Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:70px;margin-bottom:8px;"></textarea>
-
+            
+            <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 1 (konsep utama)</div>
+            <textarea id="arahan-imej-fakta-textarea" rows="4" placeholder="Preset untuk Gambar 1 — panduan visual utama berdasarkan fakta/ayat..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>
+            <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 2 (rujuk Gambar 1)</div>
+            <textarea id="arahan-imej-fakta-textarea2" rows="4" placeholder="Preset untuk Gambar 2 — gambar kedua akan hantar bersama Gambar 1 sebagai rujukan visual..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(139,92,246,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
               <label style="flex:1;min-width:90px;font-size:0.7rem;color:var(--subtext);">Delay (saat)
                 <input id="mesin-imej-fakta-delay" type="number" min="0" max="120" value="8" style="width:100%;margin-top:2px;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:6px;color:#e5e7eb;padding:6px;font-size:0.8rem;">
@@ -8927,11 +8932,15 @@ function renderDrawers() {
                   <button class="btn-del-item btn btn-secondary btn-sm" data-idx="${idx}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
                 </div>
                 <textarea class="item-ayat drawer-notes" data-idx="${idx}" placeholder="Isi ayat/teks di sini..." style="min-height:60px;resize:none;width:100%;margin-bottom:6px;">${item.ayat || ''}</textarea>
-                <div style="display:flex;gap:6px;align-items:center;">
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                   <button class="btn-upload-item-img btn btn-secondary btn-sm" data-idx="${idx}" style="flex:1;font-size:0.72rem;border-color:#f59e0b;color:${item.imageUrl ? '#fcd34d' : 'var(--subtext)'};">
-                    🖼️ ${item.imageUrl ? 'Tukar Gambar ✓' : 'Upload Gambar'}
+                    🖼️1 ${item.imageUrl ? '✓' : 'Upload'}
                   </button>
-                  ${item.imageUrl ? `<button class="btn-del-item-img btn btn-secondary btn-sm" data-idx="${idx}" style="font-size:0.65rem;color:var(--danger);border-color:var(--danger);">✕ Gambar</button>` : ''}
+                  ${item.imageUrl ? `<button class="btn-del-item-img btn btn-secondary btn-sm" data-idx="${idx}" style="font-size:0.65rem;color:var(--danger);border-color:var(--danger);">✕ G1</button>` : ''}
+                  <button class="btn-upload-item-img2 btn btn-secondary btn-sm" data-idx="${idx}" style="flex:1;font-size:0.72rem;border-color:#a78bfa;color:${item.imageUrl11 ? '#c4b5fd' : 'var(--subtext)'};">
+                    🖼️2 ${item.imageUrl11 ? '✓' : 'Upload'}
+                  </button>
+                  ${item.imageUrl11 ? `<button class="btn-del-item-img2 btn btn-secondary btn-sm" data-idx="${idx}" style="font-size:0.65rem;color:var(--danger);border-color:var(--danger);">✕ G2</button>` : ''}
                 </div>
                 ${item.imageUrl ? (() => {
                   const rW = item.imgRatioW || 16;
@@ -8940,7 +8949,15 @@ function renderDrawers() {
                   return `<div style="margin-top:6px;border-radius:8px;overflow:hidden;position:relative;width:100%;padding-bottom:${pct}%;background:rgba(0,0,0,0.25);">
                     <img src="${item.imageUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.9;">
                   </div>`;
-                })() : ''}            
+                })() : ''}
+                ${item.imageUrl11 ? (() => {
+                  const rW = item.imgRatioW || 16;
+                  const rH = item.imgRatioH || 9;
+                  const pct = Math.max(20, Math.min(120, Math.round((rH / rW) * 100)));
+                  return `<div style="margin-top:4px;border-radius:8px;overflow:hidden;position:relative;width:100%;padding-bottom:${pct}%;background:rgba(0,0,0,0.25);border:1px solid rgba(167,139,250,0.3);">
+                    <img src="${item.imageUrl11}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.9;">
+                  </div>`;
+                })() : ''}
               </div>
             `).join('')}
           </div>
@@ -9100,10 +9117,10 @@ bukaCropTool(file, async (blob) => {
         });
 
         // ── PADAM GAMBAR ITEM ──
-        // ── PADAM GAMBAR ITEM ──
-div.querySelectorAll(".btn-del-item-img").forEach(btn => {
+        // ── PADAM GAMBAR 1 ITEM ──
+        div.querySelectorAll(".btn-del-item-img").forEach(btn => {
           btn.addEventListener("click", async () => {
-            if (!confirm('Buang gambar item ini?')) return;
+            if (!confirm('Buang Gambar 1 item ini?')) return;
             const idx = parseInt(btn.getAttribute('data-idx'));
             try {
               await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`)).catch(() => {});
@@ -9112,7 +9129,67 @@ div.querySelectorAll(".btn-del-item-img").forEach(btn => {
                 currentItems[idx].imageUrl = '';
                 await simpanItems(currentItems);
               }
-              showToast('🗑️ Gambar dibuang.');
+              showToast('🗑️ Gambar 1 dibuang.');
+              _tipsNoticeChanged = true;
+              showTipsNotice('Fakta Drawer');
+            } catch(e) {
+              showToast('❌ Gagal: ' + e.message);
+            }
+          });
+        });
+
+        // ── UPLOAD GAMBAR 2 ITEM ──
+        div.querySelectorAll(".btn-upload-item-img2").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.addEventListener('change', (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              bukaCropTool(file, async (blob) => {
+                const rW = blob._ratioW || cropRatioW || 16;
+                const rH = blob._ratioH || cropRatioH || 9;
+                showToast('⏳ Mengupload Gambar 2...', 0);
+                try {
+                  const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}_11.jpg`);
+                  const uploadTask = uploadBytesResumable(storageRefPath, blob);
+                  uploadTask.on('state_changed', null, (err) => {
+                    showToast('❌ Gagal upload: ' + err.message);
+                  }, async () => {
+                    const url = await getDownloadURL(uploadTask.snapshot.ref);
+                    const currentItems = data.items ? [...data.items] : [];
+                    if (currentItems[idx]) {
+                      currentItems[idx].imageUrl11 = url;
+                      await simpanItems(currentItems);
+                    }
+                    showToast('✅ Gambar 2 berjaya diupload!');
+                    _tipsNoticeChanged = true;
+                    showTipsNotice('Fakta Drawer');
+                  });
+                } catch(e) {
+                  showToast('❌ Gagal: ' + e.message);
+                }
+              });
+            });
+            input.click();
+          });
+        });
+
+        // ── PADAM GAMBAR 2 ITEM ──
+        div.querySelectorAll(".btn-del-item-img2").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (!confirm('Buang Gambar 2 item ini?')) return;
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            try {
+              await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}_11.jpg`)).catch(() => {});
+              const currentItems = data.items ? [...data.items] : [];
+              if (currentItems[idx]) {
+                currentItems[idx].imageUrl11 = '';
+                await simpanItems(currentItems);
+              }
+              showToast('🗑️ Gambar 2 dibuang.');
               _tipsNoticeChanged = true;
               showTipsNotice('Fakta Drawer');
             } catch(e) {
@@ -15663,7 +15740,10 @@ div.innerHTML = `
               📝 F1&2${adaTips ? ' ✓' : ''}
             </button>
             <button class="btn btn-secondary btn-sm btn-upload-img-bd" style="border-color:#f59e0b;color:${data.imageUrl ? '#fcd34d' : 'var(--subtext)'};${data.imageUrl ? 'background:rgba(245,158,11,0.12);' : ''}">
-              🖼️${data.imageUrl ? ' ✓' : ''}
+              🖼️1${data.imageUrl ? ' ✓' : ''}
+            </button>
+            <button class="btn btn-secondary btn-sm btn-upload-img-bd2" style="border-color:#a78bfa;color:${data.imageUrl11 ? '#c4b5fd' : 'var(--subtext)'};${data.imageUrl11 ? 'background:rgba(167,139,250,0.12);' : ''}">
+              🖼️2${data.imageUrl11 ? ' ✓' : ''}
             </button>
             <button class="btn btn-secondary btn-sm btn-del-bd" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
@@ -15673,7 +15753,16 @@ ${data.imageUrl ? (() => {
             const pct = Math.round((rH / rW) * 100);
             return `<div style="margin-top:6px;border-radius:8px;overflow:hidden;position:relative;width:100%;padding-bottom:${pct}%;" class="img-preview-container">
               <img src="${data.imageUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.7;">
-              <button class="btn-del-img-bd" style="position:absolute;top:4px;right:4px;background:rgba(239,68,68,0.9);border:none;border-radius:999px;color:white;font-size:0.7rem;padding:2px 8px;cursor:pointer;">✕ Buang</button>
+              <button class="btn-del-img-bd" style="position:absolute;top:4px;right:4px;background:rgba(239,68,68,0.9);border:none;border-radius:999px;color:white;font-size:0.7rem;padding:2px 8px;cursor:pointer;">✕ G1</button>
+            </div>`;
+          })() : ''}
+${data.imageUrl11 ? (() => {
+            const rW = data.imgRatioW || 70;
+            const rH = data.imgRatioH || 22;
+            const pct = Math.round((rH / rW) * 100);
+            return `<div style="margin-top:4px;border-radius:8px;overflow:hidden;position:relative;width:100%;padding-bottom:${pct}%;border:1px solid rgba(167,139,250,0.3);" class="img-preview-container2">
+              <img src="${data.imageUrl11}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.7;">
+              <button class="btn-del-img-bd2" style="position:absolute;top:4px;right:4px;background:rgba(139,92,246,0.9);border:none;border-radius:999px;color:white;font-size:0.7rem;padding:2px 8px;cursor:pointer;">✕ G2</button>
             </div>`;
           })() : ''}
         `;  
@@ -15769,16 +15858,74 @@ input.addEventListener('change', (e) => {
           input.click();
         });
 
-        // ── BUANG GAMBAR LACI ──
+        // ── BUANG GAMBAR 1 LACI ──
         div.querySelector('.btn-del-img-bd')?.addEventListener('click', async () => {
-          if (!confirm('Buang gambar laci ini?')) return;
+          if (!confirm('Buang Gambar 1 laci ini?')) return;
           try {
             const oldRef = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}.jpg`);
             await deleteObject(oldRef).catch(() => {});
             await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
               imageUrl: '', updatedAt: Date.now()
             }, { merge: true });
-            showToast('🗑️ Gambar dibuang.');
+            showToast('🗑️ Gambar 1 dibuang.');
+            _tipsNoticeChanged = true;
+            showTipsNotice('Bahasa Drawer');
+          } catch(e) {
+            showToast('❌ Gagal: ' + e.message);
+          }
+        });
+
+        // ── UPLOAD GAMBAR 2 LACI ──
+        div.querySelector('.btn-upload-img-bd2').addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            bukaCropTool(file, async (blob) => {
+              const rW = blob._ratioW || cropRatioW || 70;
+              const rH = blob._ratioH || cropRatioH || 22;
+              showToast('⏳ Mengupload Gambar 2...', 0);
+              try {
+                const storageRefPath = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}_11.jpg`);
+                const uploadTask = uploadBytesResumable(storageRefPath, blob);
+                uploadTask.on('state_changed', null, (err) => {
+                  showToast('❌ Gagal upload: ' + err.message);
+                }, async () => {
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
+                    imageUrl11: url, updatedAt: Date.now()
+                  }, { merge: true });
+                  const previewContainer2 = div.querySelector('.img-preview-container2');
+                  if (previewContainer2) {
+                    const pct = Math.round((rH / rW) * 100);
+                    previewContainer2.style.paddingBottom = pct + '%';
+                    const imgEl = previewContainer2.querySelector('img');
+                    if (imgEl) imgEl.src = url;
+                  }
+                  showToast('✅ Gambar 2 berjaya diupload!');
+                  _tipsNoticeChanged = true;
+                  showTipsNotice('Bahasa Drawer');
+                });
+              } catch(e) {
+                showToast('❌ Gagal: ' + e.message);
+              }
+            });
+          });
+          input.click();
+        });
+
+        // ── BUANG GAMBAR 2 LACI ──
+        div.querySelector('.btn-del-img-bd2')?.addEventListener('click', async () => {
+          if (!confirm('Buang Gambar 2 laci ini?')) return;
+          try {
+            const oldRef2 = ref(storage, `users/${currentUser.uid}/bahasa_images/${data.id}_11.jpg`);
+            await deleteObject(oldRef2).catch(() => {});
+            await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", data.id), {
+              imageUrl11: '', updatedAt: Date.now()
+            }, { merge: true });
+            showToast('🗑️ Gambar 2 dibuang.');
             _tipsNoticeChanged = true;
             showTipsNotice('Bahasa Drawer');
           } catch(e) {
@@ -22987,6 +23134,7 @@ function getDrawersForCurrentJenis() {
 
 async function loadArahanImejForCurrentJenis() {
   const ta = document.getElementById('arahan-imej-textarea');
+  const ta2 = document.getElementById('arahan-imej-textarea2');
   const delayEl = document.getElementById('mesin-imej-delay');
   const modelEl = document.getElementById('mesin-imej-model');
   const aspectEl = document.getElementById('mesin-imej-aspect');
@@ -22994,7 +23142,8 @@ async function loadArahanImejForCurrentJenis() {
   const j = (typeof allJenisKata !== 'undefined' ? allJenisKata : []).find(x => x.id === currentJenisKataId);
   const apply = (d) => {
     if (!d) return;
-    if (d.arahanImej != null) ta.value = d.arahanImej || '';
+        if (d.arahanImej != null) ta.value = d.arahanImej || '';
+    if (ta2 && d.arahanImej2 != null) ta2.value = d.arahanImej2 || '';
     if (delayEl && d.delaySec != null) delayEl.value = d.delaySec;
     if (modelEl && d.imageModel) modelEl.value = d.imageModel;
     if (aspectEl && d.imageAspect) aspectEl.value = d.imageAspect;
@@ -23010,15 +23159,17 @@ async function loadArahanImejForCurrentJenis() {
 
 async function simpanArahanImej() {
   if (!currentUser || !currentJenisKataId) {
-    showToast('Buka satu jenis kata dahulu.');
+    showToast('Buka halaman Perkataan dulu.');
     return;
   }
   const arahan = (document.getElementById('arahan-imej-textarea')?.value || '').trim();
+  const arahan2 = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
   const delaySec = parseInt(document.getElementById('mesin-imej-delay')?.value || '8', 10) || 8;
   const imageModel = document.getElementById('mesin-imej-model')?.value || 'grok-imagine-image';
   const imageAspect = document.getElementById('mesin-imej-aspect')?.value || '16:9';
   await setDoc(doc(db, "users", currentUser.uid, "jenis_kata", currentJenisKataId), {
     arahanImej: arahan,
+    arahanImej2: arahan2,
     delaySec,
     imageModel,
     imageAspect,
@@ -23130,24 +23281,106 @@ async function downloadImageAsBlob(urlOrBlob) {
   return await res.blob();
 }
 
-async function uploadBlobToBahasaDrawer(drawerId, blob, ratioW, ratioH) {
-  const storageRefPath = ref(storage, `users/${currentUser.uid}/bahasa_images/${drawerId}.jpg`);
+// ── Jana gambar dengan rujukan gambar pertama (vision input) ──
+async function callXaiImagineWithImage(prompt, imageUrl, { model, aspect_ratio, apiKey }) {
+  // Muat turun gambar 1 sebagai base64
+  let imageBase64 = '';
+  let imageMimeType = 'image/jpeg';
+  try {
+    const imgRes = await fetch(imageUrl);
+    if (imgRes.ok) {
+      const imgBlob = await imgRes.blob();
+      imageMimeType = imgBlob.type || 'image/jpeg';
+      const reader = new FileReader();
+      imageBase64 = await new Promise((res, rej) => {
+        reader.onload = () => res(reader.result.split(',')[1]);
+        reader.onerror = () => rej(new Error('Gagal baca gambar'));
+        reader.readAsDataURL(imgBlob);
+      });
+    }
+  } catch(e) {
+    console.warn('Gagal muat gambar 1 untuk rujukan:', e);
+  }
+
+  // Guna chat completions dengan vision untuk jana imej berdasarkan gambar rujukan
+  // xAI Grok vision: hantar gambar + teks, minta jana imej baru
+  const messages = [{ role: 'user', content: [] }];
+  if (imageBase64) {
+    messages[0].content.push({
+      type: 'image_url',
+      image_url: { url: `data:${imageMimeType};base64,${imageBase64}` }
+    });
+  }
+  messages[0].content.push({ type: 'text', text: prompt });
+
+  // Cuba guna image generation dengan image reference melalui chat
+  const body = {
+    model: model || 'grok-imagine-image',
+    prompt: imageBase64
+      ? `[Referring to the provided image as visual context and style reference]\n\n${prompt}`
+      : prompt,
+    n: 1,
+    aspect_ratio: aspect_ratio || '16:9'
+  };
+
+  let res = await fetch('https://api.x.ai/v1/images/generations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ ...body, response_format: 'b64_json' })
+  });
+  if (!res.ok) {
+    res = await fetch('https://api.x.ai/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ ...body, response_format: 'url' })
+    });
+  }
+  if (!res.ok) {
+    let errText = '';
+    try { errText = await res.text(); } catch (_) {}
+    throw new Error(`API ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const json = await res.json();
+  const item = json?.data?.[0];
+  if (!item) throw new Error('Tiada data imej dalam respons API');
+  if (item.b64_json) {
+    const byteChars = atob(item.b64_json);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    return new Blob([new Uint8Array(byteNumbers)], { type: item.mime_type || 'image/jpeg' });
+  }
+  if (item.url) {
+    try {
+      const imgRes = await fetch(item.url);
+      if (imgRes.ok) return await imgRes.blob();
+    } catch (_) {}
+  }
+  throw new Error('Tiada b64_json atau url dalam respons API (Gambar 2)');
+}
+    
+async function uploadBlobToBahasaDrawer(drawerId, blob, ratioW, ratioH, isGambar2 = false) {
+  const path = isGambar2
+    ? `users/${currentUser.uid}/bahasa_images/${drawerId}_11.jpg`
+    : `users/${currentUser.uid}/bahasa_images/${drawerId}.jpg`;
+  const storageRefPath = ref(storage, path);
   const uploadTask = uploadBytesResumable(storageRefPath, blob);
   await new Promise((resolve, reject) => {
     uploadTask.on('state_changed', null, reject, resolve);
   });
   const url = await getDownloadURL(uploadTask.snapshot.ref);
-  await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", drawerId), {
-    imageUrl: url,
-    imgRatioW: ratioW,
-    imgRatioH: ratioH,
-    updatedAt: Date.now()
-  }, { merge: true });
+  const updateData = isGambar2
+    ? { imageUrl11: url, updatedAt: Date.now() }
+    : { imageUrl: url, imgRatioW: ratioW, imgRatioH: ratioH, updatedAt: Date.now() };
+  await setDoc(doc(db, "users", currentUser.uid, "bahasa_drawers", drawerId), updateData, { merge: true });
   const d = allBahasaDrawers.find(x => x.id === drawerId);
   if (d) {
-    d.imageUrl = url;
-    d.imgRatioW = ratioW;
-    d.imgRatioH = ratioH;
+    if (isGambar2) {
+      d.imageUrl11 = url;
+    } else {
+      d.imageUrl = url;
+      d.imgRatioW = ratioW;
+      d.imgRatioH = ratioH;
+    }
   }
   return url;
 }
@@ -23306,10 +23539,22 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
 
       try {
         const perkName = item.perkataanName || nameById[drawer.perkataanId] || '';
-        const prompt = buildPromptForDrawer(arahan, drawer, perkName);
-        const imgBlob = await callXaiImagine(prompt, { model, aspect_ratio: aspect, apiKey });
-        const blob = await downloadImageAsBlob(imgBlob);
-        await uploadBlobToBahasaDrawer(drawer.id, blob, rW, rH);
+        const arahan2 = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
+
+        // ── Jana Gambar 1 ──
+        const prompt1 = buildPromptForDrawer(arahan, drawer, perkName);
+        const imgBlob1 = await callXaiImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
+        const blob1 = await downloadImageAsBlob(imgBlob1);
+        const url1 = await uploadBlobToBahasaDrawer(drawer.id, blob1, rW, rH, false);
+
+        // ── Jana Gambar 2 (hantar Gambar 1 sebagai rujukan) ──
+        if (arahan2) {
+          const prompt2 = buildPromptForDrawer(arahan2, drawer, perkName);
+          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
+          const blob2 = await downloadImageAsBlob(imgBlob2);
+          await uploadBlobToBahasaDrawer(drawer.id, blob2, rW, rH, true);
+        }
+
         item.status = 'done';
         item.error = null;
       } catch (err) {
@@ -23653,6 +23898,8 @@ async function mifLoadArahan() {
   const apply = (d) => {
     if (!d) return;
     if (d.arahanImejFakta != null) ta.value = d.arahanImejFakta || '';
+    const ta2 = document.getElementById('arahan-imej-fakta-textarea2');
+    if (ta2 && d.arahanImejFakta2 != null) ta2.value = d.arahanImejFakta2 || '';
     if (delayEl && d.delaySecFakta != null) delayEl.value = d.delaySecFakta;
     if (modelEl && d.imageModelFakta) modelEl.value = d.imageModelFakta;
     if (aspectEl && d.imageAspectFakta) aspectEl.value = d.imageAspectFakta;
@@ -23673,11 +23920,13 @@ async function mifSimpanArahan() {
     return;
   }
   const arahan = (document.getElementById('arahan-imej-fakta-textarea')?.value || '').trim();
+  const arahan2 = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
   const delaySec = parseInt(document.getElementById('mesin-imej-fakta-delay')?.value || '8', 10) || 8;
   const imageModel = document.getElementById('mesin-imej-fakta-model')?.value || 'grok-imagine-image';
   const imageAspect = document.getElementById('mesin-imej-fakta-aspect')?.value || '16:9';
   await setDoc(doc(db, "users", currentUser.uid, "topics", currentTopicId), {
     arahanImejFakta: arahan,
+    arahanImejFakta2: arahan2,
     delaySecFakta: delaySec,
     imageModelFakta: imageModel,
     imageAspectFakta: imageAspect,
@@ -23686,6 +23935,7 @@ async function mifSimpanArahan() {
   const t = allTopics.find(x => x.id === currentTopicId);
   if (t) {
     t.arahanImejFakta = arahan;
+    t.arahanImejFakta2 = arahan2;
     t.delaySecFakta = delaySec;
     t.imageModelFakta = imageModel;
     t.imageAspectFakta = imageAspect;
@@ -23760,8 +24010,11 @@ async function mifWaitPaused() {
   }
 }
 
-async function mifUploadToItem(drawerId, idx, blob, ratioW, ratioH) {
-  const storageRefPath = ref(storage, `users/${currentUser.uid}/fakta_images/${drawerId}_${idx}.jpg`);
+async function mifUploadToItem(drawerId, idx, blob, ratioW, ratioH, isGambar2 = false) {
+  const path = isGambar2
+    ? `users/${currentUser.uid}/fakta_images/${drawerId}_${idx}_11.jpg`
+    : `users/${currentUser.uid}/fakta_images/${drawerId}_${idx}.jpg`;
+  const storageRefPath = ref(storage, path);
   const uploadTask = uploadBytesResumable(storageRefPath, blob);
   await new Promise((resolve, reject) => {
     uploadTask.on('state_changed', null, reject, resolve);
@@ -23771,12 +24024,11 @@ async function mifUploadToItem(drawerId, idx, blob, ratioW, ratioH) {
   if (!drawer) throw new Error('Laci tidak dijumpai');
   const items = drawer.items ? [...drawer.items] : [];
   if (!items[idx]) throw new Error('Baris tidak dijumpai');
-  items[idx] = {
-    ...items[idx],
-    imageUrl: url,
-    imgRatioW: ratioW,
-    imgRatioH: ratioH
-  };
+  if (isGambar2) {
+    items[idx] = { ...items[idx], imageUrl11: url };
+  } else {
+    items[idx] = { ...items[idx], imageUrl: url, imgRatioW: ratioW, imgRatioH: ratioH };
+  }
   await setDoc(doc(db, "users", currentUser.uid, "drawer", drawerId), {
     items,
     updatedAt: Date.now()
@@ -23784,7 +24036,7 @@ async function mifUploadToItem(drawerId, idx, blob, ratioW, ratioH) {
   drawer.items = items;
   return url;
 }
-
+    
 async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
   if (!currentUser || !currentTopicId) {
     showToast('Buka page Isi Laci (topik) dulu.');
@@ -23883,10 +24135,22 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
       mifUpdateUI();
 
       try {
-        const prompt = mifBuildPrompt(arahan, item.title, liveAyat);
-        const imgBlob = await mifCallImagine(prompt, { model, aspect_ratio: aspect, apiKey });
-        const blob = await mifDownloadBlob(imgBlob);
-        await mifUploadToItem(item.drawerId, item.idx, blob, rW, rH);
+        const arahan2Fakta = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
+
+        // ── Jana Gambar 1 ──
+        const prompt1 = mifBuildPrompt(arahan, item.title, liveAyat);
+        const imgBlob1 = await mifCallImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
+        const blob1 = await mifDownloadBlob(imgBlob1);
+        const url1 = await mifUploadToItem(item.drawerId, item.idx, blob1, rW, rH, false);
+
+        // ── Jana Gambar 2 (hantar Gambar 1 sebagai rujukan) ──
+        if (arahan2Fakta) {
+          const prompt2 = mifBuildPrompt(arahan2Fakta, item.title, liveAyat);
+          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
+          const blob2 = await mifDownloadBlob(imgBlob2);
+          await mifUploadToItem(item.drawerId, item.idx, blob2, rW, rH, true);
+        }
+
         item.status = 'done';
         item.error = null;
       } catch (err) {
