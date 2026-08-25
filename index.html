@@ -23480,8 +23480,14 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
     });
   } else {
     let targets = drawers;
+    const arahan2 = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
     if (skipExisting) {
-      targets = drawers.filter(d => !d.imageUrl);
+      // Skip hanya kalau KEDUA-DUA gambar sudah ada (atau tiada arahan gambar 2)
+      targets = drawers.filter(d => {
+        if (!d.imageUrl) return true; // Gambar 1 belum ada — proses
+        if (arahan2 && !d.imageUrl11) return true; // Gambar 2 belum ada — proses
+        return false; // Kedua-dua dah ada — skip
+      });
     }
     if (!targets.length) {
       showToast('Semua laci sudah ada gambar.');
@@ -23528,10 +23534,15 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
         updateMesinImejUI();
         continue;
       }
-      if (skipExisting && drawer.imageUrl && !retryFailedOnly) {
-        item.status = 'skipped';
-        updateMesinImejUI();
-        continue;
+      const arahan2Loop = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
+      const g1Ada = !!drawer.imageUrl;
+      const g2Ada = !!drawer.imageUrl11;
+      if (skipExisting && !retryFailedOnly) {
+        if (g1Ada && (!arahan2Loop || g2Ada)) {
+          item.status = 'skipped';
+          updateMesinImejUI();
+          continue;
+        }
       }
 
       item.status = 'generating';
@@ -23541,18 +23552,23 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
         const perkName = item.perkataanName || nameById[drawer.perkataanId] || '';
         const arahan2 = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
 
-        // ── Jana Gambar 1 ──
-        const prompt1 = buildPromptForDrawer(arahan, drawer, perkName);
-        const imgBlob1 = await callXaiImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
-        const blob1 = await downloadImageAsBlob(imgBlob1);
-        const url1 = await uploadBlobToBahasaDrawer(drawer.id, blob1, rW, rH, false);
+        const arahan2FaktaJana = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
+        let url1Fakta = liveUrl;
 
-        // ── Jana Gambar 2 (hantar Gambar 1 sebagai rujukan) ──
-        if (arahan2) {
-          const prompt2 = buildPromptForDrawer(arahan2, drawer, perkName);
-          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
-          const blob2 = await downloadImageAsBlob(imgBlob2);
-          await uploadBlobToBahasaDrawer(drawer.id, blob2, rW, rH, true);
+        // ── Jana Gambar 1 (kalau belum ada) ──
+        if (!url1Fakta) {
+          const prompt1 = mifBuildPrompt(arahan, item.title, liveAyat);
+          const imgBlob1 = await mifCallImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
+          const blob1 = await mifDownloadBlob(imgBlob1);
+          url1Fakta = await mifUploadToItem(item.drawerId, item.idx, blob1, rW, rH, false);
+        }
+
+        // ── Jana Gambar 2 (kalau ada arahan2 dan Gambar 2 belum ada) ──
+        if (arahan2FaktaJana && !liveUrl11) {
+          const prompt2 = mifBuildPrompt(arahan2FaktaJana, item.title, liveAyat);
+          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1Fakta, { model, aspect_ratio: aspect, apiKey });
+          const blob2 = await mifDownloadBlob(imgBlob2);
+          await mifUploadToItem(item.drawerId, item.idx, blob2, rW, rH, true);
         }
 
         item.status = 'done';
@@ -23881,6 +23897,7 @@ function mifGetTargets() {
         title: d.title || 'Laci',
         ayat,
         imageUrl: item.imageUrl || '',
+        imageUrl11: item.imageUrl11 || '',
         label: `${(d.title || 'Laci').slice(0, 24)} · #${idx + 1} ${(ayat).slice(0, 40)}`
       });
     });
@@ -24075,7 +24092,14 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
     });
   } else {
     let list = targets;
-    if (skipExisting) list = targets.filter(t => !t.imageUrl);
+    const arahan2Fakta = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
+    if (skipExisting) {
+      list = targets.filter(t => {
+        if (!t.imageUrl) return true; // Gambar 1 belum ada — proses
+        if (arahan2Fakta && !t.imageUrl11) return true; // Gambar 2 belum ada — proses
+        return false; // Kedua-dua dah ada — skip
+      });
+    }
     if (!list.length) {
       showToast('Semua baris sudah ada gambar.');
       return;
@@ -24119,10 +24143,14 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
       const drawer = allDrawers.find(d => d.id === item.drawerId);
       const liveAyat = drawer?.items?.[item.idx]?.ayat || item.ayat;
       const liveUrl = drawer?.items?.[item.idx]?.imageUrl || '';
-      if (skipExisting && liveUrl && !retryFailedOnly) {
-        item.status = 'skipped';
-        mifUpdateUI();
-        continue;
+      const liveUrl11 = drawer?.items?.[item.idx]?.imageUrl11 || '';
+      const arahan2FaktaLoop = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
+      if (skipExisting && !retryFailedOnly) {
+        if (liveUrl && (!arahan2FaktaLoop || liveUrl11)) {
+          item.status = 'skipped';
+          mifUpdateUI();
+          continue;
+        }
       }
       if (!liveAyat || !String(liveAyat).trim()) {
         item.status = 'failed';
@@ -24137,18 +24165,23 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
       try {
         const arahan2Fakta = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
 
-        // ── Jana Gambar 1 ──
-        const prompt1 = mifBuildPrompt(arahan, item.title, liveAyat);
-        const imgBlob1 = await mifCallImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
-        const blob1 = await mifDownloadBlob(imgBlob1);
-        const url1 = await mifUploadToItem(item.drawerId, item.idx, blob1, rW, rH, false);
+        const arahan2Bahasa = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
+        let url1 = drawer.imageUrl || '';
 
-        // ── Jana Gambar 2 (hantar Gambar 1 sebagai rujukan) ──
-        if (arahan2Fakta) {
-          const prompt2 = mifBuildPrompt(arahan2Fakta, item.title, liveAyat);
+        // ── Jana Gambar 1 (kalau belum ada) ──
+        if (!url1) {
+          const prompt1 = buildPromptForDrawer(arahan, drawer, perkName);
+          const imgBlob1 = await callXaiImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
+          const blob1 = await downloadImageAsBlob(imgBlob1);
+          url1 = await uploadBlobToBahasaDrawer(drawer.id, blob1, rW, rH, false);
+        }
+
+        // ── Jana Gambar 2 (kalau ada arahan2 dan Gambar 2 belum ada) ──
+        if (arahan2Bahasa && !drawer.imageUrl11) {
+          const prompt2 = buildPromptForDrawer(arahan2Bahasa, drawer, perkName);
           const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
-          const blob2 = await mifDownloadBlob(imgBlob2);
-          await mifUploadToItem(item.drawerId, item.idx, blob2, rW, rH, true);
+          const blob2 = await downloadImageAsBlob(imgBlob2);
+          await uploadBlobToBahasaDrawer(drawer.id, blob2, rW, rH, true);
         }
 
         item.status = 'done';
