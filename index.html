@@ -23550,25 +23550,24 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
 
       try {
         const perkName = item.perkataanName || nameById[drawer.perkataanId] || '';
-        const arahan2 = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
-
-        const arahan2FaktaJana = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
-        let url1Fakta = liveUrl;
+        const arahan2Bahasa = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
+        let url1 = drawer.imageUrl || '';
+        const g2SudahAda = !!(drawer.imageUrl11 || '');
 
         // ── Jana Gambar 1 (kalau belum ada) ──
-        if (!url1Fakta) {
-          const prompt1 = mifBuildPrompt(arahan, item.title, liveAyat);
-          const imgBlob1 = await mifCallImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
-          const blob1 = await mifDownloadBlob(imgBlob1);
-          url1Fakta = await mifUploadToItem(item.drawerId, item.idx, blob1, rW, rH, false);
+        if (!url1) {
+          const prompt1 = buildPromptForDrawer(arahan, drawer, perkName);
+          const imgBlob1 = await callXaiImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
+          const blob1 = await downloadImageAsBlob(imgBlob1);
+          url1 = await uploadBlobToBahasaDrawer(drawer.id, blob1, rW, rH, false);
         }
 
         // ── Jana Gambar 2 (kalau ada arahan2 dan Gambar 2 belum ada) ──
-        if (arahan2FaktaJana && !liveUrl11) {
-          const prompt2 = mifBuildPrompt(arahan2FaktaJana, item.title, liveAyat);
-          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1Fakta, { model, aspect_ratio: aspect, apiKey });
-          const blob2 = await mifDownloadBlob(imgBlob2);
-          await mifUploadToItem(item.drawerId, item.idx, blob2, rW, rH, true);
+        if (arahan2Bahasa && !g2SudahAda) {
+          const prompt2 = buildPromptForDrawer(arahan2Bahasa, drawer, perkName);
+          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
+          const blob2 = await downloadImageAsBlob(imgBlob2);
+          await uploadBlobToBahasaDrawer(drawer.id, blob2, rW, rH, true);
         }
 
         item.status = 'done';
@@ -24141,7 +24140,6 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
       if (item.status === 'done' || item.status === 'skipped') continue;
 
       const drawer = allDrawers.find(d => d.id === item.drawerId);
-      const liveAyat = drawer?.items?.[item.idx]?.ayat || item.ayat;
       const liveAyat = drawer?.items?.[item.idx]?.ayat || item.ayat;
       const liveUrl = drawer?.items?.[item.idx]?.imageUrl || '';
       const liveUrl11 = drawer?.items?.[item.idx]?.imageUrl11 || '';
