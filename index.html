@@ -24142,6 +24142,7 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
 
       const drawer = allDrawers.find(d => d.id === item.drawerId);
       const liveAyat = drawer?.items?.[item.idx]?.ayat || item.ayat;
+      const liveAyat = drawer?.items?.[item.idx]?.ayat || item.ayat;
       const liveUrl = drawer?.items?.[item.idx]?.imageUrl || '';
       const liveUrl11 = drawer?.items?.[item.idx]?.imageUrl11 || '';
       const arahan2FaktaLoop = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
