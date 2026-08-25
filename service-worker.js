@@ -3,7 +3,7 @@
 // Tukar VERSI setiap kali update kod supaya
 // cache lama dibuang dan app di-refresh automatik.
 
-const VERSI = 'v33'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
+const VERSI = 'v34'; // ← TUKAR NOMBOR INI SETIAP KALI UPDATE
 const CACHE_NAME = `istigfar-${VERSI}`;
 
 const ASSETS = [
