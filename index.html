@@ -23535,8 +23535,8 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
         continue;
       }
       const arahan2Loop = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
-      const g1Ada = !!drawer.imageUrl;
-      const g2Ada = !!drawer.imageUrl11;
+      const g1Ada = !!(drawer.imageUrl || '');
+      const g2Ada = !!(drawer.imageUrl11 || '');
       if (skipExisting && !retryFailedOnly) {
         if (g1Ada && (!arahan2Loop || g2Ada)) {
           item.status = 'skipped';
@@ -24168,6 +24168,7 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
 
         const arahan2Bahasa = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
         let url1 = drawer.imageUrl || '';
+        const g2SudahAda = !!(drawer.imageUrl11 || '');
 
         // ── Jana Gambar 1 (kalau belum ada) ──
         if (!url1) {
@@ -24178,7 +24179,7 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false } = {}) {
         }
 
         // ── Jana Gambar 2 (kalau ada arahan2 dan Gambar 2 belum ada) ──
-        if (arahan2Bahasa && !drawer.imageUrl11) {
+        if (arahan2Bahasa && !g2SudahAda) {
           const prompt2 = buildPromptForDrawer(arahan2Bahasa, drawer, perkName);
           const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
           const blob2 = await downloadImageAsBlob(imgBlob2);
