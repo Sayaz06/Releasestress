@@ -23026,6 +23026,7 @@ let mesinImejState = {
   currentIndex: 0,
   total: 0
 };
+let mesinImejState2 = { running: false, paused: false, stopRequested: false, queue: [] };
 
 function getXaiKeyStorageKey() {
   return currentUser ? `xaiApiKey_${currentUser.uid}` : null;
@@ -23809,6 +23810,7 @@ let mesinImejFaktaState = {
   stopRequested: false,
   queue: []
 };
+let mesinImejFaktaState2 = { running: false, paused: false, stopRequested: false, queue: [] };
 
 async function mifLoadApiKey() {
   if (typeof loadXaiApiKey === 'function') return loadXaiApiKey();
@@ -24158,11 +24160,11 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false, gambar = 1 } = 
 
   await mifSimpanArahan();
 
-  const arahan = (document.getElementById('arahan-imej-fakta-textarea')?.value || '').trim();
+  const arahan = (document.getElementById(arahanElFakta)?.value || '').trim();
 
   if (!retryFailedOnly && !arahan) {
-    alert('⚠️ Sila isikan Arahan Gaya Imej dahulu sebelum mula jana.\n\nContoh: "Ilustrasi sinematik, cahaya keemasan, tiada teks pada imej, gaya digital art"');
-    document.getElementById('arahan-imej-fakta-textarea')?.focus();
+    alert('⚠️ Sila isikan Arahan Gaya Imej dahulu sebelum mula jana.');
+    document.getElementById(arahanElFakta)?.focus();
     return;
   }
   const delaySec = Math.max(0, parseInt(document.getElementById('mesin-imej-fakta-delay')?.value || '8', 10) || 8);
@@ -24178,27 +24180,22 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false, gambar = 1 } = 
   }
 
   if (retryFailedOnly) {
-    mesinImejFaktaState.queue.forEach(q => {
+    state.queue.forEach(q => {
       if (q.status === 'failed') q.status = 'pending';
     });
   } else {
     let list = targets;
-    const arahan2Fakta = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
     if (skipExisting) {
-      list = targets.filter(t => {
-        if (!t.imageUrl) return true; // Gambar 1 belum ada — proses
-        if (arahan2Fakta && !t.imageUrl11) return true; // Gambar 2 belum ada — proses
-        return false; // Kedua-dua dah ada — skip
-      });
+      list = targets.filter(t => isG2 ? !t.imageUrl11 : !t.imageUrl);
     }
     if (!list.length) {
-      showToast('Semua baris sudah ada gambar.');
+      showToast(`Semua baris sudah ada Gambar ${gambar}.`);
       return;
     }
     if (list.length > 15) {
-      if (!confirm(`Akan jana ${list.length} imej untuk baris dalam topik ini.\nIni mungkin guna kuota API anda.\nTeruskan?`)) return;
+      if (!confirm(`Akan jana ${list.length} imej G${gambar} untuk baris dalam topik ini.\nTeruskan?`)) return;
     }
-    mesinImejFaktaState.queue = list.map(t => ({
+    state.queue = list.map(t => ({
       drawerId: t.drawerId,
       idx: t.idx,
       title: t.title,
@@ -24209,13 +24206,13 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false, gambar = 1 } = 
     }));
   }
 
-  mesinImejFaktaState.running = true;
-  mesinImejFaktaState.paused = false;
-  mesinImejFaktaState.stopRequested = false;
-  mifUpdateUI();
+  state.running = true;
+  state.paused = false;
+  state.stopRequested = false;
+  updateUIFakta();
 
   const beforeUnload = (e) => {
-    if (mesinImejFaktaState.running) {
+    if (state.running) {
       e.preventDefault();
       e.returnValue = '';
     }
@@ -24223,59 +24220,42 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false, gambar = 1 } = 
   window.addEventListener('beforeunload', beforeUnload);
 
   try {
-    for (let i = 0; i < mesinImejFaktaState.queue.length; i++) {
-      if (mesinImejFaktaState.stopRequested) break;
+    for (let i = 0; i < state.queue.length; i++) {
+      if (state.stopRequested) break;
       await mifWaitPaused();
-      if (mesinImejFaktaState.stopRequested) break;
+      if (state.stopRequested) break;
 
-      const item = mesinImejFaktaState.queue[i];
+      const item = state.queue[i];
       if (item.status === 'done' || item.status === 'skipped') continue;
 
       const drawer = allDrawers.find(d => d.id === item.drawerId);
       const liveAyat = drawer?.items?.[item.idx]?.ayat || item.ayat;
       const liveUrl = drawer?.items?.[item.idx]?.imageUrl || '';
       const liveUrl11 = drawer?.items?.[item.idx]?.imageUrl11 || '';
-      const arahan2FaktaLoop = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
+
       if (skipExisting && !retryFailedOnly) {
-        if (liveUrl && (!arahan2FaktaLoop || liveUrl11)) {
+        if (isG2 ? liveUrl11 : liveUrl) {
           item.status = 'skipped';
-          mifUpdateUI();
+          updateUIFakta();
           continue;
         }
       }
       if (!liveAyat || !String(liveAyat).trim()) {
         item.status = 'failed';
         item.error = 'Ayat kosong';
-        mifUpdateUI();
+        updateUIFakta();
         continue;
       }
 
       item.status = 'generating';
-      mifUpdateUI();
+      updateUIFakta();
 
       try {
-        const arahan2Fakta = (document.getElementById('arahan-imej-fakta-textarea2')?.value || '').trim();
-
-        const arahan2Bahasa = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
-        let url1 = drawer.imageUrl || '';
-        const g2SudahAda = !!(drawer.imageUrl11 || '');
-
-        // ── Jana Gambar 1 (kalau belum ada) ──
-        if (!url1) {
-          const prompt1 = buildPromptForDrawer(arahan, drawer, perkName);
-          const imgBlob1 = await callXaiImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
-          const blob1 = await downloadImageAsBlob(imgBlob1);
-          url1 = await uploadBlobToBahasaDrawer(drawer.id, blob1, rW, rH, false);
-        }
-
-        // ── Jana Gambar 2 (kalau ada arahan2 dan Gambar 2 belum ada) ──
-        if (arahan2Bahasa && !g2SudahAda) {
-          const prompt2 = buildPromptForDrawer(arahan2Bahasa, drawer, perkName);
-          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
-          const blob2 = await downloadImageAsBlob(imgBlob2);
-          await uploadBlobToBahasaDrawer(drawer.id, blob2, rW, rH, true);
-        }
-
+        const arahanFakta = (document.getElementById(arahanElFakta)?.value || '').trim();
+        const prompt = mifBuildPrompt(arahanFakta, item.title, liveAyat);
+        const imgBlob = await mifCallImagine(prompt, { model, aspect_ratio: aspect, apiKey });
+        const blob = await mifDownloadBlob(imgBlob);
+        await mifUploadToItem(item.drawerId, item.idx, blob, rW, rH, isG2);
         item.status = 'done';
         item.error = null;
       } catch (err) {
@@ -24293,32 +24273,31 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false, gambar = 1 } = 
           lower.includes('insufficient') ||
           lower.includes("doesn't have any credits")
         ) {
-          mesinImejFaktaState.stopRequested = true;
+          state.stopRequested = true;
           showToast('❌ Credit / kuota tidak cukup. Jana dihentikan. Sila tambah credit di console.x.ai.', 5000);
         }
       }
-      mifUpdateUI();
+      updateUIFakta();
 
-      if (i < mesinImejFaktaState.queue.length - 1 && delaySec > 0 && !mesinImejFaktaState.stopRequested) {
+      if (i < state.queue.length - 1 && delaySec > 0 && !state.stopRequested) {
         const end = Date.now() + delaySec * 1000;
         while (Date.now() < end) {
-          if (mesinImejFaktaState.stopRequested) break;
+          if (state.stopRequested) break;
           await mifWaitPaused();
-          if (mesinImejFaktaState.stopRequested) break;
+          if (state.stopRequested) break;
           await mifSleep(200);
         }
       }
     }
   } finally {
-    mesinImejFaktaState.running = false;
-    mesinImejFaktaState.paused = false;
+    state.running = false;
+    state.paused = false;
     window.removeEventListener('beforeunload', beforeUnload);
-    mifUpdateUI();
+    updateUIFakta();
     try { renderDrawers(); } catch (_) {}
-    const failed = mesinImejFaktaState.queue.filter(q => q.status === 'failed').length;
-    const done = mesinImejFaktaState.queue.filter(q => q.status === 'done').length;
-    showToast(failed ? `Selesai: ${done} ok, ${failed} gagal.` : `✅ Selesai jana ${done} imej fakta.`);
-    // Popup notice selepas jana gambar fakta selesai (hanya kalau ada yang berjaya)
+    const failed = state.queue.filter(q => q.status === 'failed').length;
+    const done = state.queue.filter(q => q.status === 'done').length;
+    showToast(failed ? `Selesai G${gambar}: ${done} ok, ${failed} gagal.` : `✅ Selesai jana ${done} imej G${gambar}.`);
     if (done > 0) {
       _tipsNoticeChanged = true;
       showTipsNotice('Image Generation (Facts)');
