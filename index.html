@@ -4965,18 +4965,38 @@ function subscribeMyLaw() {
           renderArahanVersi();
         });
         div.querySelectorAll('button')[1].addEventListener('click', async () => {
-          if (!confirm("Padam tajuk ini dan semua versi di dalamnya?")) return;
-          const versiToDelete = allArahanVersi.filter(v => v.tajukId === data.id);
+          if (!confirm(`Padam "${data.name}"?`)) return;
+          const drawers = allBahasaDrawers.filter(d => d.perkataanId === data.id);
+          for (const dr of drawers)
+            await hantarKeTrashUniversal('bahasa_drawers', dr.id, dr, dr.title || 'Laci Bahasa');
           let i = 0;
-          while (i < versiToDelete.length) {
+          while (i < drawers.length) {
             const batch = writeBatch(db);
-            const end = Math.min(i + 499, versiToDelete.length);
-            for (let j = i; j < end; j++)
-              batch.delete(doc(db, "users", currentUser.uid, "arahan_versi", versiToDelete[j].id));
+            const end = Math.min(i+499, drawers.length);
+            for (let k = i; k < end; k++) {
+              batch.delete(doc(db,"users",currentUser.uid,"bahasa_drawers",drawers[k].id));
+            }
             await batch.commit(); i = end;
           }
-          await deleteDoc(doc(db, "users", currentUser.uid, "arahan_tajuk", data.id));
-          showToast('🗑️ Tajuk dan semua versi dipadam.');
+          // ── Padam SR queue untuk semua laci bawah perkataan ini ──
+          try {
+            const srSnap = await getDocs(collection(db,"users",currentUser.uid,"bahasa_sr_queue"));
+            const drawerIds = new Set(drawers.map(d => d.id));
+            const srBatch = writeBatch(db);
+            let srCount = 0;
+            srSnap.docs.forEach(d => {
+              if (drawerIds.has(d.data().drawerId)) {
+                srBatch.delete(doc(db,"users",currentUser.uid,"bahasa_sr_queue",d.id));
+                srQueueIds.delete(d.data().drawerId);
+                srCount++;
+              }
+            });
+            if (srCount > 0) await srBatch.commit();
+          } catch(e) { console.log("Gagal padam SR perkataan:", e); }
+          await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id));
+          showToast('🗑️ Dipadam.');
+          _tipsNoticeChanged = true;
+          showTipsNotice('Bahasa Drawer');
         });
         list.appendChild(div);
       });
@@ -13287,10 +13307,12 @@ document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
       if (sec) { showSection(sec); renderBahasaList(); }
     });
 
-document.getElementById('btn-add-bahasa-laci').addEventListener('click', () => {
+document.getElementById('btn-add-bahasa-laci').addEventListener('click', async () => {
   if (!currentUser || !currentPerkataanId) return;
-addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
-    showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
+  await addDoc(collection(db, "users", currentUser.uid, "bahasa_drawers"), { title: "~", notes: "", repeatCount: 0, jenisId: currentJenisKataId, perkataanId: currentPerkataanId, createdAt: Date.now() });
+  showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
+  _tipsNoticeChanged = true;
+  showTipsNotice('Bahasa Drawer');
 });
 
 document.getElementById('btn-open-jana-tips-pukal')?.addEventListener('click', () => {
@@ -15295,11 +15317,14 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
           await hantarKeTrashUniversal('bahasa_list', data.id, data, data.name || 'Bahasa');
           const jenis = allJenisKata.filter(j => j.bahasaId === data.id);
+          const semuaDrawerIds = new Set();
           for (const j of jenis) {
             await hantarKeTrashUniversal('jenis_kata', j.id, j, j.name || 'Jenis Kata');
             const drawers = allBahasaDrawers.filter(d => d.jenisId === j.id);
-            for (const dr of drawers)
+            for (const dr of drawers) {
               await hantarKeTrashUniversal('bahasa_drawers', dr.id, dr, dr.title || 'Laci Bahasa');
+              semuaDrawerIds.add(dr.id);
+            }
             let i = 0;
             while (i < drawers.length) {
               const batch = writeBatch(db);
@@ -15310,8 +15335,24 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
             }
             await deleteDoc(doc(db,"users",currentUser.uid,"jenis_kata",j.id));
           }
+          // ── Padam SR queue untuk semua laci bawah bahasa ini ──
+          try {
+            const srSnap = await getDocs(collection(db,"users",currentUser.uid,"bahasa_sr_queue"));
+            const srBatch = writeBatch(db);
+            let srCount = 0;
+            srSnap.docs.forEach(d => {
+              if (semuaDrawerIds.has(d.data().drawerId)) {
+                srBatch.delete(doc(db,"users",currentUser.uid,"bahasa_sr_queue",d.id));
+                srQueueIds.delete(d.data().drawerId);
+                srCount++;
+              }
+            });
+            if (srCount > 0) await srBatch.commit();
+          } catch(e) { console.log("Gagal padam SR bahasa list:", e); }
           await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id));
           showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
+          _tipsNoticeChanged = true;
+          showTipsNotice('Bahasa Drawer');
         });
         list.appendChild(div);
       });
@@ -15357,12 +15398,30 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
           while (i < drawers.length) {
             const batch = writeBatch(db);
             const end = Math.min(i+499, drawers.length);
-            for (let k = i; k < end; k++)
+            for (let k = i; k < end; k++) {
               batch.delete(doc(db,"users",currentUser.uid,"bahasa_drawers",drawers[k].id));
+            }
             await batch.commit(); i = end;
           }
+          // ── Padam SR queue untuk semua laci bawah jenis kata ini ──
+          try {
+            const srSnap = await getDocs(collection(db,"users",currentUser.uid,"bahasa_sr_queue"));
+            const drawerIds = new Set(drawers.map(d => d.id));
+            const srBatch = writeBatch(db);
+            let srCount = 0;
+            srSnap.docs.forEach(d => {
+              if (drawerIds.has(d.data().drawerId)) {
+                srBatch.delete(doc(db,"users",currentUser.uid,"bahasa_sr_queue",d.id));
+                srQueueIds.delete(d.data().drawerId);
+                srCount++;
+              }
+            });
+            if (srCount > 0) await srBatch.commit();
+          } catch(e) { console.log("Gagal padam SR jenis kata:", e); }
           await deleteDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id));
           showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
+          _tipsNoticeChanged = true;
+          showTipsNotice('Bahasa Drawer');
         });
         list.appendChild(div);
       });
@@ -15543,6 +15602,14 @@ const tajukEl = div.querySelector('.drawer-title');
           try {
             await setDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id),
               {title: e.target.value}, {merge: true});
+            // ── Kemas kini drawerTitle dalam SR queue ──
+            const srRef = doc(db,"users",currentUser.uid,"bahasa_sr_queue",data.id);
+            const srSnap = await getDoc(srRef);
+            if (srSnap.exists()) {
+              await updateDoc(srRef, { drawerTitle: e.target.value });
+            }
+            _tipsNoticeChanged = true;
+            showTipsNotice('Bahasa Drawer');
           } catch(err) { showToast('Gagal simpan tajuk: ' + err.message); }
         });
         div.querySelector('.drawer-notes').addEventListener('change', async e => {
@@ -15550,6 +15617,8 @@ const tajukEl = div.querySelector('.drawer-title');
           try {
             await setDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id),
               {notes: e.target.value, repeatCount: 0}, {merge: true});
+            _tipsNoticeChanged = true;
+            showTipsNotice('Bahasa Drawer');
           } catch(err) { showToast('Gagal simpan nota: ' + err.message); }
         });
         
@@ -15604,6 +15673,8 @@ input.addEventListener('change', (e) => {
                     if (imgEl) imgEl.src = url;
                   }
                   showToast('✅ Gambar berjaya diupload!');
+                  _tipsNoticeChanged = true;
+                  showTipsNotice('Bahasa Drawer');
                 });
               } catch(e) {
                 showToast('❌ Gagal: ' + e.message);
@@ -15623,6 +15694,8 @@ input.addEventListener('change', (e) => {
               imageUrl: '', updatedAt: Date.now()
             }, { merge: true });
             showToast('🗑️ Gambar dibuang.');
+            _tipsNoticeChanged = true;
+            showTipsNotice('Bahasa Drawer');
           } catch(e) {
             showToast('❌ Gagal: ' + e.message);
           }
@@ -15630,7 +15703,6 @@ input.addEventListener('change', (e) => {
 
         div.querySelector('.btn-del-bd').addEventListener('click', async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
-          showToast(`Debug: ID=${data.id} | jenisId=${data.jenisId || 'KOSONG'}`, 6000);
           try {
             await hantarKeTrashUniversal('bahasa_drawers', data.id, data, data.title || 'Laci Bahasa');
           } catch(trashErr) {
@@ -15640,7 +15712,9 @@ input.addEventListener('change', (e) => {
             await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_drawers",data.id));
             // ── AUTO-CLEAN SR QUEUE bila laci dipadam ──
             await deleteSRRekod(data.id);
-            showToast('✅ Padam berjaya dari Firestore');
+            showToast('🗑️ Laci dipadam.');
+            _tipsNoticeChanged = true;
+            showTipsNotice('Bahasa Drawer');
           } catch(delErr) {
             showToast('❌ Delete fail: ' + delErr.message, 6000);
             div.remove();
@@ -23202,9 +23276,11 @@ async function runMesinImejQueue({ retryFailedOnly = false } = {}) {
         Notification.requestPermission();
       }
     } catch (_) {}
-    // Popup notice selepas jana gambar selesai
-    _tipsNoticeChanged = true;
-    showTipsNotice('Image Generation (Vocabulary)');
+    // Popup notice selepas jana gambar selesai (hanya kalau ada yang berjaya)
+    if (done > 0) {
+      _tipsNoticeChanged = true;
+      showTipsNotice('Image Generation (Vocabulary)');
+    }
   }
 }
 
