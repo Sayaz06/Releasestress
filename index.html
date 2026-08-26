@@ -15118,133 +15118,224 @@ ${pagesHtml}
 document.getElementById('btn-export-format-ai')?.addEventListener('click', async () => {
     if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka halaman Perkataan dahulu.'); return; }
 
-      const loadBar = document.createElement('div');
-      loadBar.id = 'export-load-bar';
-      loadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
-      loadBar.innerHTML = `
-        <div style="height:4px;background:rgba(255,255,255,0.1);">
-          <div id="export-load-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width 0.3s ease;box-shadow:0 0 10px #7c3aed;"></div>
-        </div>
-        <div style="background:rgba(124,58,237,0.95);color:white;font-size:0.78rem;font-weight:600;padding:6px 16px;text-align:center;" id="export-load-msg">
-          ⏳ Mengambil semua laci dari Firestore...
+      // ── POPUP PILIHAN EXPORT ──
+      const popup = document.createElement('div');
+      popup.id = 'export-ai-pilihan-popup';
+      popup.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+      popup.innerHTML = `
+        <div style="background:#0a1628;border:1px solid #7c3aed;border-radius:18px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.9);">
+          <div style="font-size:1rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📤 Export Format AI (Sayaz)</div>
+          <div style="font-size:0.75rem;color:#9ca3af;margin-bottom:18px;">Pilih mod export untuk laci dalam jenis kata ini</div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+
+            <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">📋 Skop Laci</div>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:10px;">
+              <input type="radio" name="export-skop" value="semua" checked style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Semua Laci</div>
+                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Export semua laci ada dalam jenis kata ini</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;">
+              <input type="radio" name="export-skop" value="tiada-f0" style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Belum ada Tips F0</div>
+                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Hanya laci yang tiada tips sebutan (Fasa 0)</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;">
+              <input type="radio" name="export-skop" value="tiada-f1" style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Belum ada Tips F1</div>
+                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Hanya laci yang tiada tips ejaan (Fasa 1)</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;">
+              <input type="radio" name="export-skop" value="tiada-f0-dan-f1" style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
+              <div>
+                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Belum ada Tips F0 &amp; F1</div>
+                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Laci yang langsung tiada tips (F0 dan F1 kosong)</div>
+              </div>
+            </label>
+
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button id="btn-export-ai-confirm" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;">⚡ Export</button>
+            <button id="btn-export-ai-batal" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:0.9rem;cursor:pointer;">Batal</button>
+          </div>
         </div>`;
-      document.body.appendChild(loadBar);
+      document.body.appendChild(popup);
 
-      const setProgress = (pct, msg) => {
-        const fill = document.getElementById('export-load-fill');
-        const msgEl = document.getElementById('export-load-msg');
-        if (fill) fill.style.width = pct + '%';
-        if (msgEl && msg) msgEl.textContent = msg;
-      };
+      document.getElementById('btn-export-ai-batal').addEventListener('click', () => popup.remove());
 
-      const removeLoadBar = () => {
-        const el = document.getElementById('export-load-bar');
-        if (el) el.remove();
-      };
+      document.getElementById('btn-export-ai-confirm').addEventListener('click', async () => {
+        const skop = popup.querySelector('input[name="export-skop"]:checked')?.value || 'semua';
+        popup.remove();
 
-      try {
-        setProgress(20, '⏳ Menghubungi Firestore...');
+        const loadBar = document.createElement('div');
+        loadBar.id = 'export-load-bar';
+        loadBar.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999999;';
+        loadBar.innerHTML = `
+          <div style="height:4px;background:rgba(255,255,255,0.1);">
+            <div id="export-load-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width 0.3s ease;box-shadow:0 0 10px #7c3aed;"></div>
+          </div>
+          <div style="background:rgba(124,58,237,0.95);color:white;font-size:0.78rem;font-weight:600;padding:6px 16px;text-align:center;" id="export-load-msg">
+            ⏳ Mengambil semua laci dari Firestore...
+          </div>`;
+        document.body.appendChild(loadBar);
 
-        const snap = await getDocs(
-          query(
-            collection(db, "users", currentUser.uid, "bahasa_drawers"),
-            orderBy("title", "asc")
-          )
-        );
+        const setProgress = (pct, msg) => {
+          const fill = document.getElementById('export-load-fill');
+          const msgEl = document.getElementById('export-load-msg');
+          if (fill) fill.style.width = pct + '%';
+          if (msgEl && msg) msgEl.textContent = msg;
+        };
 
-        setProgress(60, `✅ ${snap.size} laci ditemui — memproses...`);
+        const removeLoadBar = () => {
+          const el = document.getElementById('export-load-bar');
+          if (el) el.remove();
+        };
 
-        // ── SUSUNAN SAMA DENGAN PDF EXPORT ──
-        const perkataanDalamJenis = allBahasaPerkataan
-          .filter(p => p.jenisId === currentJenisKataId)
-          .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+        try {
+          setProgress(20, '⏳ Menghubungi Firestore...');
 
-        const semuaLaciRaw = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(d => d.jenisId === currentJenisKataId && d.notes && d.notes.trim());
+          const snap = await getDocs(
+            query(
+              collection(db, "users", currentUser.uid, "bahasa_drawers"),
+              orderBy("title", "asc")
+            )
+          );
 
-        const semuaLaci = [];
-        perkataanDalamJenis.forEach(perkataan => {
-          const laciDalamPerkataan = semuaLaciRaw
-            .filter(d => d.perkataanId === perkataan.id)
-            .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
-          semuaLaci.push(...laciDalamPerkataan);
-        });
+          setProgress(60, `✅ ${snap.size} laci ditemui — memproses...`);
 
-        // Laci orphan — letak di hujung
-        const laciOrfan = semuaLaciRaw.filter(d =>
-          !d.perkataanId || !perkataanDalamJenis.find(p => p.id === d.perkataanId)
-        );
-        semuaLaci.push(...laciOrfan.sort((a, b) =>
-          (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
-        ));
+          // ── SUSUNAN SAMA DENGAN PDF EXPORT ──
+          const perkataanDalamJenis = allBahasaPerkataan
+            .filter(p => p.jenisId === currentJenisKataId)
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
 
-        if (!semuaLaci.length) {
-          removeLoadBar();
-          showToast('⚠️ Tiada laci dalam jenis kata ini.');
-          return;
-        }
+          const semuaLaciRaw = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(d => d.jenisId === currentJenisKataId && d.notes && d.notes.trim());
 
-        setProgress(80, `📝 Membina output dari ${semuaLaci.length} laci...`);
-
-        const outputLines = [];
-        let nomborLaci = 0;
-
-        semuaLaci.forEach(laci => {
-          if (!laci.notes || !laci.notes.trim()) return;
-
-          const tajuk = laci.title || '';
-          const arrowIdx = tajuk.indexOf('→');
-          if (arrowIdx === -1) return;
-
-          const english = tajuk.slice(arrowIdx + 1).trim();
-          if (!english) return;
-
-          nomborLaci++;
-          outputLines.push(`→ ${english}`);
-
-          const lines = laci.notes.split('\n').filter(l => l.trim());
-          lines.forEach(line => {
-            const eqIdx = line.indexOf('=');
-            const ayat = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
-            if (ayat) outputLines.push(ayat);
+          const semuaLaci = [];
+          perkataanDalamJenis.forEach(perkataan => {
+            const laciDalamPerkataan = semuaLaciRaw
+              .filter(d => d.perkataanId === perkataan.id)
+              .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+            semuaLaci.push(...laciDalamPerkataan);
           });
 
-          outputLines.push('');
-        });
+          // Laci orphan — letak di hujung
+          const laciOrfan = semuaLaciRaw.filter(d =>
+            !d.perkataanId || !perkataanDalamJenis.find(p => p.id === d.perkataanId)
+          );
+          semuaLaci.push(...laciOrfan.sort((a, b) =>
+            (a.title || '').localeCompare(b.title || '', undefined, { numeric: true })
+          ));
 
-        const finalText = outputLines.join('\n').trim();
+          if (!semuaLaci.length) {
+            removeLoadBar();
+            showToast('⚠️ Tiada laci dalam jenis kata ini.');
+            return;
+          }
 
-        if (!finalText) {
+          // ── TAPIS IKUT SKOP ──
+          let laciDiExport = semuaLaci;
+          if (skop === 'tiada-f0') {
+            laciDiExport = semuaLaci.filter(l => !l.tipsFasa0 || !l.tipsFasa0.trim());
+          } else if (skop === 'tiada-f1') {
+            laciDiExport = semuaLaci.filter(l => !l.tips || !l.tips.trim());
+          } else if (skop === 'tiada-f0-dan-f1') {
+            laciDiExport = semuaLaci.filter(l =>
+              (!l.tipsFasa0 || !l.tipsFasa0.trim()) && (!l.tips || !l.tips.trim())
+            );
+          }
+
+          if (!laciDiExport.length) {
+            removeLoadBar();
+            const labelSkop = {
+              'tiada-f0': 'belum ada Tips F0',
+              'tiada-f1': 'belum ada Tips F1',
+              'tiada-f0-dan-f1': 'belum ada Tips F0 & F1'
+            }[skop] || '';
+            showToast(`✅ Tiada laci ${labelSkop} — semua laci sudah lengkap!`);
+            return;
+          }
+
+          setProgress(80, `📝 Membina output dari ${laciDiExport.length} laci...`);
+
+          const outputLines = [];
+          let nomborLaci = 0;
+
+          laciDiExport.forEach(laci => {
+            if (!laci.notes || !laci.notes.trim()) return;
+
+            const tajuk = laci.title || '';
+            const arrowIdx = tajuk.indexOf('→');
+            if (arrowIdx === -1) return;
+
+            const english = tajuk.slice(arrowIdx + 1).trim();
+            if (!english) return;
+
+            nomborLaci++;
+            outputLines.push(`→ ${english}`);
+
+            const lines = laci.notes.split('\n').filter(l => l.trim());
+            lines.forEach(line => {
+              const eqIdx = line.indexOf('=');
+              const ayat = eqIdx !== -1 ? line.slice(0, eqIdx).trim() : line.trim();
+              if (ayat) outputLines.push(ayat);
+            });
+
+            outputLines.push('');
+          });
+
+          const finalText = outputLines.join('\n').trim();
+
+          if (!finalText) {
+            removeLoadBar();
+            showToast('⚠️ Tiada kandungan untuk diexport.');
+            return;
+          }
+
+          setProgress(95, '💾 Menyimpan fail...');
+
+          const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
+          const sufiksSkop = skop === 'semua' ? '' : `-${skop}`;
+          const namaFail = `export-${(jenisData?.name || 'bahasa').replace(/\s+/g, '-')}${sufiksSkop}-${dateKeyQ(Date.now())}.txt`;
+
+          const blob = new Blob([finalText], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = namaFail;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          setProgress(100, '✅ Fail berjaya dimuat turun!');
+          setTimeout(() => removeLoadBar(), 2000);
+
+          const labelSkopFinal = {
+            'semua': 'semua laci',
+            'tiada-f0': 'laci tiada F0',
+            'tiada-f1': 'laci tiada F1',
+            'tiada-f0-dan-f1': 'laci tiada F0 & F1'
+          }[skop] || '';
+          showToast(`✅ ${nomborLaci} laci (${labelSkopFinal}) diexport ke "${namaFail}"`, 5000);
+
+        } catch(e) {
           removeLoadBar();
-          showToast('⚠️ Tiada kandungan untuk diexport.');
-          return;
+          showToast('❌ Gagal export: ' + e.message);
         }
-
-        setProgress(95, '💾 Menyimpan fail...');
-
-        const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
-        const namaFail = `export-${(jenisData?.name || 'bahasa').replace(/\s+/g, '-')}-${dateKeyQ(Date.now())}.txt`;
-
-        const blob = new Blob([finalText], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = namaFail;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        setProgress(100, '✅ Fail berjaya dimuat turun!');
-        setTimeout(() => removeLoadBar(), 2000);
-
-        showToast(`✅ ${nomborLaci} laci diexport ke "${namaFail}"`, 5000);
-
-      } catch(e) {
-        removeLoadBar();
-        showToast('❌ Gagal export: ' + e.message);
-      }
+      });
     });
 
 // ── MUAT LACI SR KE DALAM FACTS ──
