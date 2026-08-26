@@ -23611,12 +23611,13 @@ function sleepMs(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function waitWhilePaused() {
-  while (mesinImejState.paused && !mesinImejState.stopRequested) {
+async function waitWhilePaused(stateRef) {
+  const s = stateRef || mesinImejState;
+  while (s.paused && !s.stopRequested) {
     await sleepMs(300);
   }
 }
-
+    
 async function runMesinImejQueue({ retryFailedOnly = false, gambar = 1 } = {}) {
   const isG2 = gambar === 2;
   const state = isG2 ? mesinImejState2 : mesinImejState;
@@ -23758,18 +23759,18 @@ async function runMesinImejQueue({ retryFailedOnly = false, gambar = 1 } = {}) {
           lower.includes('insufficient') ||
           lower.includes("doesn't have any credits")
         ) {
-          mesinImejState.stopRequested = true;
+          state.stopRequested = true;
           showToast('❌ Credit / kuota tidak cukup. Jana dihentikan. Sila tambah credit di console.x.ai.', 5000);
         }
       }
-      updateMesinImejUI();
+      updateUI();
 
-      if (i < mesinImejState.queue.length - 1 && delaySec > 0 && !mesinImejState.stopRequested) {
+      if (i < state.queue.length - 1 && delaySec > 0 && !state.stopRequested) {
         const end = Date.now() + delaySec * 1000;
         while (Date.now() < end) {
-          if (mesinImejState.stopRequested) break;
-          await waitWhilePaused();
-          if (mesinImejState.stopRequested) break;
+          if (state.stopRequested) break;
+          await waitWhilePaused(state);
+          if (state.stopRequested) break;
           await sleepMs(200);
         }
       }
@@ -24382,10 +24383,11 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false, gambar = 1 } = 
 
   try {
     for (let i = 0; i < state.queue.length; i++) {
-      if (state.stopRequested) break;
-      await mifWaitPaused();
+            if (state.stopRequested) break;
+      await waitWhilePaused(state);
       if (state.stopRequested) break;
 
+      
       const item = state.queue[i];
       if (item.status === 'done' || item.status === 'skipped') continue;
 
