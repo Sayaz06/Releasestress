@@ -3281,9 +3281,6 @@ body.dark-mode {
           <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
             <label style="font-size:0.8rem;color:var(--subtext);display:flex;align-items:center;gap:6px;cursor:pointer;">
               <input type="checkbox" id="gotick-emergency-check" style="width:16px;height:16px;cursor:pointer;">
-              🚨 Tajuk Kecemasan (sentiasa di atas)
-            </label>
-          </div>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
@@ -25139,7 +25136,6 @@ mifRefreshKeyStatus();
         document.getElementById('gotick-editor-title').textContent = isNew ? 'Tajuk Baru' : 'Edit Tajuk';
         document.getElementById('gotick-editor-sub').textContent = isNew ? '' : (t.title || '');
         document.getElementById('gotick-tajuk-input').value = isNew ? '' : (t.title || '');
-        document.getElementById('gotick-emergency-check').checked = isNew ? false : !!t.isEmergency;
         document.getElementById('gotick-editor-err').textContent = '';
         // Convert flat items → gtGroups
         const rawItems = isNew ? [] : (t.items || []);
@@ -25285,7 +25281,7 @@ mifRefreshKeyStatus();
           const old = oldItems.find(o => o.name === it.name && o.group === it.group);
           return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false };
         });
-        const isEmergency = document.getElementById('gotick-emergency-check').checked;
+        const isEmergency = false;
         const order = activeGoTickTajuk
           ? (activeGoTickTajuk.order || 0)
           : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
