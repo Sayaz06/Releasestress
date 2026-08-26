@@ -3187,6 +3187,18 @@ body.dark-mode {
           </div>
         </div>
 
+        <!-- ml sekali minum Kindle -->
+        <div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:8px;">📱 Kindle — ml Sekali Minum</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input id="water-kindle-ml" type="number" min="50" max="2000" step="50" placeholder="cth: 100"
+              style="flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:8px;font-size:1rem;outline:none;text-align:center;">
+            <span style="font-size:0.8rem;color:var(--subtext);flex-shrink:0;">ml</span>
+            <button id="btn-water-save-kindle-ml" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;color:#7dd3fc;flex-shrink:0;">Simpan</button>
+          </div>
+          <div style="font-size:0.7rem;color:var(--subtext);margin-top:5px;">Setiap kali Kindle papar air dan user tekan SETERUSNYA, jumlah ini akan direkod.</div>
+        </div>
+
         <!-- Tambah air manual -->
         <div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
           <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:8px;">➕ Tambah Air</div>
@@ -25542,10 +25554,12 @@ mifRefreshKeyStatus();
         var ref = doc(db, 'users', currentUser.uid, 'water_tracker', 'settings');
         var refHarian = doc(db, 'users', currentUser.uid, 'water_tracker', todayKey);
 
-        // Load goal
+        // Load goal + kindle ml
         getDoc(ref).then(function(snap) {
           waterData.goal = (snap.exists() && snap.data().goal) ? snap.data().goal : 2000;
+          waterData.kindleMl = (snap.exists() && snap.data().kindleMl) ? snap.data().kindleMl : 100;
           document.getElementById('water-goal-input').value = waterData.goal;
+          document.getElementById('water-kindle-ml').value = waterData.kindleMl;
           waterRenderStats();
         }).catch(function() {});
 
@@ -25677,6 +25691,21 @@ mifRefreshKeyStatus();
         showSection(sectionHome);
       });
       document.getElementById('btn-water-save-goal').addEventListener('click', waterSaveGoal);
+      document.getElementById('btn-water-save-kindle-ml').addEventListener('click', async function() {
+        if (!currentUser) return;
+        var val = parseInt(document.getElementById('water-kindle-ml').value);
+        if (!val || val < 50) { alert('Minimum 50ml.'); return; }
+        waterData.kindleMl = val;
+        try {
+          await setDoc(doc(db, 'users', currentUser.uid, 'water_tracker', 'settings'), { kindleMl: val, updatedAt: Date.now() }, { merge: true });
+          // Update champion_item supaya Kindle baca nilai baru
+          await setDoc(doc(db, 'users', currentUser.uid, 'water_tracker', 'champion_item'), { kindleMl: val }, { merge: true });
+          showToast('✅ Kindle ml disimpan: ' + val + 'ml');
+        } catch(e) {
+          var err = document.getElementById('water-err');
+          if (err) err.textContent = 'Gagal simpan: ' + e.message;
+        }
+      });      
       document.getElementById('btn-water-reset').addEventListener('click', waterReset);
       document.getElementById('btn-water-add-custom').addEventListener('click', function() {
         var val = parseInt(document.getElementById('water-custom-ml').value);
