@@ -15140,26 +15140,10 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
             </label>
 
             <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;">
-              <input type="radio" name="export-skop" value="tiada-f0" style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
+              <input type="radio" name="export-skop" value="tiada-mana-mana" style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
               <div>
-                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Belum ada Tips F0</div>
-                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Hanya laci yang tiada tips sebutan (Fasa 0)</div>
-              </div>
-            </label>
-
-            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;">
-              <input type="radio" name="export-skop" value="tiada-f1" style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
-              <div>
-                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Belum ada Tips F1</div>
-                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Hanya laci yang tiada tips ejaan (Fasa 1)</div>
-              </div>
-            </label>
-
-            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:10px;">
-              <input type="radio" name="export-skop" value="tiada-f0-dan-f1" style="margin-top:2px;accent-color:#a78bfa;width:16px;height:16px;flex-shrink:0;">
-              <div>
-                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Belum ada Tips F0 &amp; F1</div>
-                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Laci yang langsung tiada tips (F0 dan F1 kosong)</div>
+                <div style="font-size:0.85rem;font-weight:600;color:#e5e7eb;">Belum Lengkap Tips</div>
+                <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">Laci yang tiada Tips F0, atau tiada Tips F1&amp;F2, atau kedua-duanya sekali</div>
               </div>
             </label>
 
@@ -15247,24 +15231,15 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
 
           // ── TAPIS IKUT SKOP ──
           let laciDiExport = semuaLaci;
-          if (skop === 'tiada-f0') {
-            laciDiExport = semuaLaci.filter(l => !l.tipsFasa0 || !l.tipsFasa0.trim());
-          } else if (skop === 'tiada-f1') {
-            laciDiExport = semuaLaci.filter(l => !l.tips || !l.tips.trim());
-          } else if (skop === 'tiada-f0-dan-f1') {
+          if (skop === 'tiada-mana-mana') {
             laciDiExport = semuaLaci.filter(l =>
-              (!l.tipsFasa0 || !l.tipsFasa0.trim()) && (!l.tips || !l.tips.trim())
+              (!l.tipsFasa0 || !l.tipsFasa0.trim()) || (!l.tips || !l.tips.trim())
             );
           }
 
           if (!laciDiExport.length) {
             removeLoadBar();
-            const labelSkop = {
-              'tiada-f0': 'belum ada Tips F0',
-              'tiada-f1': 'belum ada Tips F1',
-              'tiada-f0-dan-f1': 'belum ada Tips F0 & F1'
-            }[skop] || '';
-            showToast(`✅ Tiada laci ${labelSkop} — semua laci sudah lengkap!`);
+            showToast(`✅ Tiada laci yang belum lengkap — semua laci sudah ada Tips F0 dan F1&F2!`);
             return;
           }
 
@@ -15307,7 +15282,7 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
           setProgress(95, '💾 Menyimpan fail...');
 
           const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
-          const sufiksSkop = skop === 'semua' ? '' : `-${skop}`;
+          const sufiksSkop = skop === 'semua' ? '' : '-tiada-tips';
           const namaFail = `export-${(jenisData?.name || 'bahasa').replace(/\s+/g, '-')}${sufiksSkop}-${dateKeyQ(Date.now())}.txt`;
 
           const blob = new Blob([finalText], { type: 'text/plain;charset=utf-8' });
@@ -15323,12 +15298,7 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
           setProgress(100, '✅ Fail berjaya dimuat turun!');
           setTimeout(() => removeLoadBar(), 2000);
 
-          const labelSkopFinal = {
-            'semua': 'semua laci',
-            'tiada-f0': 'laci tiada F0',
-            'tiada-f1': 'laci tiada F1',
-            'tiada-f0-dan-f1': 'laci tiada F0 & F1'
-          }[skop] || '';
+          const labelSkopFinal = skop === 'semua' ? 'semua laci' : 'laci belum lengkap tips';
           showToast(`✅ ${nomborLaci} laci (${labelSkopFinal}) diexport ke "${namaFail}"`, 5000);
 
         } catch(e) {
