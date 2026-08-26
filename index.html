@@ -2068,9 +2068,18 @@ body.dark-mode {
               <button id="btn-simpan-xai-key" type="button" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;color:white;">Simpan Key</button>
               <button id="btn-padam-xai-key" type="button" class="btn btn-secondary btn-sm" style="flex:1;border-color:#f87171;color:#f87171;">Padam Key</button>
             </div>
+
             <div id="xai-key-status" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
 
-            <div style="font-size:0.72rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 1 (konsep utama)</div>
+            <div style="font-size:0.72rem;color:#10b981;font-weight:700;margin-bottom:4px;">🔑 OpenAI API Key — untuk Jana G2 (per akaun)</div>
+            <input id="openai-api-key-input" type="password" autocomplete="off" placeholder="tampal OpenAI API key di sini..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(16,185,129,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;margin-bottom:6px;">
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <button id="btn-simpan-openai-key" type="button" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;">Simpan Key</button>
+              <button id="btn-padam-openai-key" type="button" class="btn btn-secondary btn-sm" style="flex:1;border-color:#f87171;color:#f87171;">Padam Key</button>
+            </div>
+            <div id="openai-key-status" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
+
+            <div style="font-size:0.72rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 1 (konsep utama)</div>            
             <textarea id="arahan-imej-textarea" rows="4" placeholder="Preset untuk Gambar 1 — panduan visual utama berdasarkan ayat/perkataan..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(99,102,241,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>
             <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 2 (rujuk Gambar 1)</div>
             <textarea id="arahan-imej-textarea2" rows="4" placeholder="Preset untuk Gambar 2 — gambar kedua akan hantar bersama Gambar 1 sebagai rujukan visual..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(139,92,246,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>            
@@ -2344,8 +2353,9 @@ body.dark-mode {
             <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">🔑 xAI API Key (sama dengan Mesin Imej Bahasa)</div>
             <div id="xai-key-status-fakta" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
 
-            <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">📝 Arahan gaya imej (topik ini)</div>
-            
+            <div style="font-size:0.72rem;color:#10b981;font-weight:700;margin-bottom:4px;">🔑 OpenAI API Key — untuk Jana G2 (sama dengan Mesin Imej Bahasa)</div>
+            <div id="openai-key-status-fakta" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
+
             <div style="font-size:0.72rem;color:#fcd34d;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 1 (konsep utama)</div>
             <textarea id="arahan-imej-fakta-textarea" rows="4" placeholder="Preset untuk Gambar 1 — panduan visual utama berdasarkan fakta/ayat..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>
             <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 2 (rujuk Gambar 1)</div>
@@ -23123,7 +23133,102 @@ function initXaiApiKeyUI() {
   refreshXaiKeyStatus();
 }
 
-function getPerkataanInCurrentJenis() {
+// ══════════════════════════════════════════
+// OPENAI API KEY — untuk Jana G2
+// ══════════════════════════════════════════
+function getOpenAIKeyStorageKey() {
+  return currentUser ? `openaiApiKey_${currentUser.uid}` : null;
+}
+
+async function loadOpenAIApiKey() {
+  if (!currentUser) return '';
+  const lsKey = getOpenAIKeyStorageKey();
+  let key = lsKey ? (localStorage.getItem(lsKey) || '') : '';
+  try {
+    const snap = await getDoc(doc(db, "users", currentUser.uid, "settings", "openaiApiKey"));
+    if (snap.exists() && snap.data().key) {
+      key = snap.data().key;
+      if (lsKey) localStorage.setItem(lsKey, key);
+    }
+  } catch (e) {
+    console.warn('loadOpenAIApiKey firestore', e);
+  }
+  return key || '';
+}
+
+async function saveOpenAIApiKey(key) {
+  if (!currentUser) throw new Error('Belum login');
+  const trimmed = (key || '').trim();
+  await setDoc(doc(db, "users", currentUser.uid, "settings", "openaiApiKey"), {
+    key: trimmed,
+    updatedAt: Date.now()
+  }, { merge: true });
+  const lsKey = getOpenAIKeyStorageKey();
+  if (lsKey) {
+    if (trimmed) localStorage.setItem(lsKey, trimmed);
+    else localStorage.removeItem(lsKey);
+  }
+}
+
+async function deleteOpenAIApiKey() {
+  if (!currentUser) return;
+  try {
+    await setDoc(doc(db, "users", currentUser.uid, "settings", "openaiApiKey"), {
+      key: '',
+      updatedAt: Date.now()
+    }, { merge: true });
+  } catch (e) {}
+  const lsKey = getOpenAIKeyStorageKey();
+  if (lsKey) localStorage.removeItem(lsKey);
+}
+
+async function refreshOpenAIKeyStatus() {
+  const statusEl = document.getElementById('openai-key-status');
+  const statusElFakta = document.getElementById('openai-key-status-fakta');
+  const inputEl = document.getElementById('openai-api-key-input');
+  if (!currentUser) {
+    if (statusEl) { statusEl.textContent = 'Status: belum login'; statusEl.style.color = 'var(--subtext)'; }
+    if (statusElFakta) { statusElFakta.textContent = 'Status: belum login'; statusElFakta.style.color = 'var(--subtext)'; }
+    return;
+  }
+  const key = await loadOpenAIApiKey();
+  const txt = key ? 'Status: ✅ Key ada' : 'Status: ❌ Tiada key';
+  const clr = key ? '#22c55e' : '#f87171';
+  if (statusEl) { statusEl.textContent = txt; statusEl.style.color = clr; }
+  if (statusElFakta) { statusElFakta.textContent = txt; statusElFakta.style.color = clr; }
+  if (inputEl && !inputEl.value && key) inputEl.placeholder = '•••••••• (key tersimpan)';
+}
+
+function initOpenAIApiKeyUI() {
+  const btnSimpan = document.getElementById('btn-simpan-openai-key');
+  const btnPadam = document.getElementById('btn-padam-openai-key');
+  if (!btnSimpan || btnSimpan._openAIBound) return;
+  btnSimpan._openAIBound = true;
+  btnSimpan.addEventListener('click', async () => {
+    const input = document.getElementById('openai-api-key-input');
+    const val = (input?.value || '').trim();
+    if (!val) { showToast('Sila tampal OpenAI API key.'); return; }
+    try {
+      await saveOpenAIApiKey(val);
+      if (input) input.value = '';
+      await refreshOpenAIKeyStatus();
+      showToast('✅ OpenAI API key disimpan.');
+    } catch (e) {
+      showToast('❌ Gagal simpan key: ' + e.message);
+    }
+  });
+  btnPadam.addEventListener('click', async () => {
+    if (!confirm('Padam OpenAI API key dari akaun ini?')) return;
+    await deleteOpenAIApiKey();
+    const input = document.getElementById('openai-api-key-input');
+    if (input) input.value = '';
+    await refreshOpenAIKeyStatus();
+    showToast('🗑️ OpenAI Key dipadam.');
+  });
+  refreshOpenAIKeyStatus();
+}
+
+function getPerkataanInCurrentJenis() {    
   return allBahasaPerkataan
     .filter(p => p.jenisId === currentJenisKataId)
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
@@ -23287,7 +23392,69 @@ async function callXaiImagine(prompt, { model, aspect_ratio, apiKey }) {
   throw new Error('Tiada b64_json atau url dalam respons API');
 }
 
-async function downloadImageAsBlob(urlOrBlob) {
+// ── Jana G2 menggunakan OpenAI gpt-image-1 dengan image input ──
+async function callOpenAIImageEdit(prompt, imageUrl, { aspect_ratio = '1:1' } = {}) {
+  const apiKey = await loadOpenAIApiKey();
+  if (!apiKey) throw new Error('Tiada OpenAI API key. Sila simpan key terlebih dahulu.');
+
+  // Muat turun gambar pertama sebagai blob
+  let imageBlob;
+  try {
+    const res = await fetch(imageUrl);
+    if (!res.ok) throw new Error('Gagal muat turun G1: ' + res.status);
+    imageBlob = await res.blob();
+  } catch (e) {
+    throw new Error('Gagal muat G1 sebagai rujukan: ' + e.message);
+  }
+
+  // Tentukan saiz berdasarkan aspect ratio
+  const sizeMap = {
+    '1:1': '1024x1024',
+    '16:9': '1792x1024',
+    '9:16': '1024x1792',
+    '4:3': '1024x768',
+    '3:4': '768x1024'
+  };
+  const size = sizeMap[aspect_ratio] || '1024x1024';
+
+  // Bina FormData untuk /v1/images/edits
+  const formData = new FormData();
+  formData.append('model', 'gpt-image-1');
+  formData.append('prompt', prompt);
+  formData.append('image', imageBlob, 'reference.jpg');
+  formData.append('size', size);
+  formData.append('n', '1');
+
+  const res = await fetch('https://api.openai.com/v1/images/edits', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + apiKey },
+    body: formData
+  });
+
+  if (!res.ok) {
+    let errText = '';
+    try { errText = await res.text(); } catch (_) {}
+    throw new Error(`OpenAI API ${res.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const json = await res.json();
+  const item = json?.data?.[0];
+  if (!item) throw new Error('Tiada data imej dalam respons OpenAI');
+
+  if (item.b64_json) {
+    const byteChars = atob(item.b64_json);
+    const byteArr = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+    return new Blob([byteArr], { type: 'image/png' });
+  }
+  if (item.url) {
+    const imgRes = await fetch(item.url);
+    if (imgRes.ok) return await imgRes.blob();
+  }
+  throw new Error('Tiada b64_json atau url dalam respons OpenAI');
+}
+
+async function downloadImageAsBlob(urlOrBlob) {    
   if (urlOrBlob instanceof Blob) return urlOrBlob;
   const res = await fetch(urlOrBlob);
   if (!res.ok) throw new Error('Gagal muat turun imej: ' + res.status);
@@ -23779,6 +23946,7 @@ function initMesinImejUI() {
   }
 
   initXaiApiKeyUI();
+  initOpenAIApiKeyUI();  
 }
 
 (function hookMesinImejOnPerkataanPage() {
@@ -24253,9 +24421,18 @@ async function runMesinImejFaktaQueue({ retryFailedOnly = false, gambar = 1 } = 
       try {
         const arahanFakta = (document.getElementById(arahanElFakta)?.value || '').trim();
         const prompt = mifBuildPrompt(arahanFakta, item.title, liveAyat);
-        const imgBlob = await mifCallImagine(prompt, { model, aspect_ratio: aspect, apiKey });
-        const blob = await mifDownloadBlob(imgBlob);
-        await mifUploadToItem(item.drawerId, item.idx, blob, rW, rH, isG2);
+        let blobFakta;
+        if (isG2) {
+          // G2 — guna OpenAI dengan G1 sebagai image input
+          const g1UrlFakta = liveUrl;
+          if (!g1UrlFakta) throw new Error('G1 belum ada. Jana G1 dahulu sebelum jana G2.');
+          blobFakta = await callOpenAIImageEdit(prompt, g1UrlFakta, { aspect_ratio: aspect });
+        } else {
+          // G1 — guna xAI seperti biasa
+          const imgBlob = await mifCallImagine(prompt, { model, aspect_ratio: aspect, apiKey });
+          blobFakta = await mifDownloadBlob(imgBlob);
+        }
+        await mifUploadToItem(item.drawerId, item.idx, blobFakta, rW, rH, isG2);
         item.status = 'done';
         item.error = null;
       } catch (err) {
