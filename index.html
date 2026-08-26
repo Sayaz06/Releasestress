@@ -3287,14 +3287,11 @@ body.dark-mode {
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
-          <div style="font-size:0.8rem;font-weight:700;color:#34d399;">Senarai Item</div>
-          <div style="display:flex;gap:6px;">
-            <button id="btn-add-gotick-group" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">+ Kumpulan</button>
-            <button id="btn-add-gotick-item" class="btn btn-secondary btn-sm" style="border-color:#6ee7b7;color:#6ee7b7;">+ Item</button>
-          </div>
+          <div style="font-size:0.8rem;font-weight:700;color:#34d399;">Senarai Kumpulan</div>
+          <button id="btn-add-gotick-group" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">+ Kumpulan</button>
         </div>
 
-        <div class="list" id="gotick-item-list" style="padding:10px;flex:1;min-height:0;"></div>
+        <div id="gotick-item-list" style="flex:1;min-height:0;overflow-y:auto;"></div>
 
         <div style="flex-shrink:0;margin-top:8px;display:flex;gap:8px;">
           <button id="btn-save-gotick" class="btn" style="background:linear-gradient(135deg,#059669,#047857);border:none;color:white;flex:1;">Simpan</button>
@@ -25144,128 +25141,119 @@ mifRefreshKeyStatus();
         document.getElementById('gotick-tajuk-input').value = isNew ? '' : (t.title || '');
         document.getElementById('gotick-emergency-check').checked = isNew ? false : !!t.isEmergency;
         document.getElementById('gotick-editor-err').textContent = '';
-        // Convert flat items → insert group headers untuk render natural
+        // Convert flat items → gtGroups
         const rawItems = isNew ? [] : (t.items || []);
-        const withHeaders = [];
-        let lastGroup = null;
+        gtGroups = [];
+        const groupMap = {};
         rawItems.forEach(it => {
-          if (it.group !== lastGroup) {
-            if (it.group) {
-              withHeaders.push({ isGroupHeader: true, name: it.group, group: '', ticked: false });
-            }
-            lastGroup = it.group;
+          const g = it.group || '';
+          if (!groupMap.hasOwnProperty(g)) {
+            groupMap[g] = gtGroups.length;
+            gtGroups.push({ name: g, items: [] });
           }
-          withHeaders.push({ isGroupHeader: false, group: it.group || '', name: it.name || '', ticked: it.ticked || false });
+          gtGroups[groupMap[g]].items.push(it.name || '');
         });
-        gtRenderItemList(withHeaders);        
+        gtRenderGroups();     
         showSection(sectionGoTickEditor);
       }
 
       // ── Render item list dalam editor ──
-      function gtRenderItemList(items) {
+      // gtGroups = array of { name, items:[] } — state editor
+      let gtGroups = [];
+
+      function gtRenderGroups() {
         const list = document.getElementById('gotick-item-list');
         if (!list) return;
-        if (!items.length) {
-          list.innerHTML = '<div class="empty-state">Tiada item. Tekan "+ Kumpulan" atau "+ Item".</div>';
+        list.innerHTML = '';
+        if (!gtGroups.length) {
+          list.innerHTML = '<div class="empty-state" style="padding:10px;">Tiada kumpulan. Tekan "+ Kumpulan".</div>';
           return;
         }
-        list.innerHTML = '';
+        gtGroups.forEach((grp, gi) => {
+          // Header kumpulan
+          const grpDiv = document.createElement('div');
+          grpDiv.style.cssText = 'margin-bottom:10px;border:1px solid rgba(52,211,153,0.3);border-radius:10px;overflow:hidden;';
 
-        // Kumpulkan ikut group untuk render natural
-        const groups = [];
-        const groupMap = {};
-        items.forEach((it, idx) => {
-          const g = it.isGroupHeader ? '__header__' + idx : (it.group || '');
-          if (it.isGroupHeader) {
-            groups.push({ name: it.name, headerIdx: idx, items: [] });
-          } else {
-            // Cari kumpulan terakhir yang match
-            let targetGroup = null;
-            for (let gi = groups.length - 1; gi >= 0; gi--) {
-              if (groups[gi].name === (it.group || '') || groups[gi].name === '') {
-                targetGroup = groups[gi];
-                break;
-              }
-            }
-            if (!targetGroup) {
-              // Item tanpa kumpulan — buat group kosong kalau belum ada
-              if (!groupMap['__none__']) {
-                groupMap['__none__'] = true;
-                groups.unshift({ name: '', headerIdx: -1, items: [] });
-              }
-              groups[0].items.push({ it, idx });
-            } else {
-              targetGroup.items.push({ it, idx });
-            }
-          }
-        });
+          // Row nama kumpulan
+          const headerRow = document.createElement('div');
+          headerRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(52,211,153,0.1);';
+          headerRow.innerHTML = `
+            <span style="font-size:0.85rem;color:#34d399;">📁</span>
+            <input class="gt-group-name-input" type="text" value="${grp.name || ''}" placeholder="Nama kumpulan..."
+              style="flex:1;background:transparent;border:none;border-bottom:1px solid rgba(52,211,153,0.4);color:#34d399;outline:none;font-size:0.85rem;font-weight:700;padding:2px 0;">
+            <button class="btn-del-grp btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;">✕</button>
+          `;
+          headerRow.querySelector('.btn-del-grp').onclick = () => {
+            if (!confirm('Padam kumpulan "' + (grp.name || 'ini') + '" dan semua itemnya?')) return;
+            gtGroups.splice(gi, 1);
+            gtRenderGroups();
+          };
+          grpDiv.appendChild(headerRow);
 
-        // Render semula ikut items array terus (lebih mudah dan reliable)
-        // Group header = row khas, item biasa = row dengan nama
-        items.forEach((it, idx) => {
-          if (it.isGroupHeader) {
-            // Row kumpulan
-            const div = document.createElement('div');
-            div.style.cssText = 'display:flex;align-items:center;gap:8px;margin:10px 0 4px;padding:6px 8px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:8px;';
-            div.innerHTML = `
-              <span style="font-size:0.75rem;color:#34d399;font-weight:700;">📁</span>
-              <input class="gt-item-name-input" type="text" value="${it.name || ''}" placeholder="Nama kumpulan..."
-                style="flex:1;background:transparent;border:none;border-bottom:1px solid rgba(52,211,153,0.5);color:#34d399;outline:none;font-size:0.85rem;font-weight:700;padding:2px 0;">
-              <button class="btn-del-gt-item btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;font-size:0.65rem;">✕</button>
-            `;
-            div.querySelector('.btn-del-gt-item').onclick = () => {
-              const cur = gtGetCurrentItems();
-              // Padam kumpulan ini + semua item dalam kumpulan ini
-              const groupName = cur[idx] ? cur[idx].name : '';
-              let toRemove = [idx];
-              for (let i = idx + 1; i < cur.length; i++) {
-                if (cur[i].isGroupHeader) break;
-                toRemove.push(i);
-              }
-              const filtered = cur.filter((_, i) => !toRemove.includes(i));
-              gtRenderItemList(filtered);
-            };
-            list.appendChild(div);
-          } else {
-            // Row item biasa
-            const div = document.createElement('div');
-            div.className = 'drawer-card';
-            div.style.cssText = 'padding:6px 8px;margin-bottom:4px;display:flex;align-items:center;gap:8px;border:1px solid var(--border-soft);margin-left:12px;';
-            div.innerHTML = `
+          // Senarai item dalam kumpulan
+          const itemsDiv = document.createElement('div');
+          itemsDiv.style.cssText = 'padding:4px 10px 4px 20px;';
+
+          grp.items.forEach((itemName, ii) => {
+            const itemRow = document.createElement('div');
+            itemRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-soft);';
+            itemRow.innerHTML = `
               <span style="font-size:0.75rem;color:var(--subtext);">•</span>
-              <input class="gt-item-name-input" type="text" value="${it.name || ''}" placeholder="Nama item..."
-                style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--border-mid);color:var(--text);outline:none;font-size:0.9rem;padding:2px 0;">
-              <button class="btn-del-gt-item btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;font-size:0.65rem;">✕</button>
+              <input class="gt-item-name-input" type="text" value="${itemName || ''}" placeholder="Nama item..."
+                style="flex:1;background:transparent;border:none;color:var(--text);outline:none;font-size:0.88rem;padding:2px 0;">
+              <button class="btn-del-item btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;">✕</button>
             `;
-            div.querySelector('.btn-del-gt-item').onclick = () => {
-              const cur = gtGetCurrentItems();
-              cur.splice(idx, 1);
-              gtRenderItemList(cur);
+            itemRow.querySelector('.btn-del-item').onclick = () => {
+              gtGroups[gi].items.splice(ii, 1);
+              gtRenderGroups();
             };
-            list.appendChild(div);
-          }
+            itemsDiv.appendChild(itemRow);
+          });
+
+          // Button + Tambah Item dalam kumpulan ini
+          const addItemBtn = document.createElement('button');
+          addItemBtn.textContent = '+ Tambah Item';
+          addItemBtn.style.cssText = 'font-size:0.72rem;color:#6ee7b7;background:transparent;border:none;padding:6px 0;cursor:pointer;display:block;width:100%;text-align:left;';
+          addItemBtn.onclick = () => {
+            gtGroups[gi].items.push('');
+            gtRenderGroups();
+            // Focus pada input baru
+            setTimeout(() => {
+              const inputs = itemsDiv.querySelectorAll('.gt-item-name-input');
+              if (inputs.length) inputs[inputs.length - 1].focus();
+            }, 50);
+          };
+          itemsDiv.appendChild(addItemBtn);
+          grpDiv.appendChild(itemsDiv);
+          list.appendChild(grpDiv);
         });
       }
 
-      // ── Ambil items semasa dari DOM — rebuild flat array ──
       function gtGetCurrentItems() {
+        // Baca dari gtGroups (auto-sync dari input onblur atau terus dari state)
+        // Sync dulu dari DOM
         const list = document.getElementById('gotick-item-list');
         if (!list) return [];
+        const grpDivs = list.querySelectorAll(':scope > div');
+        grpDivs.forEach((grpDiv, gi) => {
+          if (!gtGroups[gi]) return;
+          const nameInput = grpDiv.querySelector('.gt-group-name-input');
+          if (nameInput) gtGroups[gi].name = nameInput.value.trim();
+          const itemInputs = grpDiv.querySelectorAll('.gt-item-name-input');
+          itemInputs.forEach((inp, ii) => {
+            if (gtGroups[gi].items[ii] !== undefined) {
+              gtGroups[gi].items[ii] = inp.value.trim();
+            }
+          });
+        });
+        // Convert gtGroups → flat items array untuk Firestore
         const items = [];
-        let currentGroup = '';
-        // Scan semua children
-        Array.from(list.children).forEach(el => {
-          const input = el.querySelector('.gt-item-name-input');
-          if (!input) return;
-          const val = input.value.trim();
-          // Detect group header via background style
-          const isHeader = el.style.background && el.style.background.includes('52,211,153');
-          if (isHeader) {
-            currentGroup = val;
-            items.push({ isGroupHeader: true, name: val, group: '', ticked: false });
-          } else {
-            items.push({ isGroupHeader: false, group: currentGroup, name: val, ticked: false });
-          }
+        gtGroups.forEach(grp => {
+          grp.items.forEach(itemName => {
+            if (itemName.trim()) {
+              items.push({ group: grp.name || '', name: itemName.trim(), ticked: false });
+            }
+          });
         });
         return items;
       }
@@ -25279,15 +25267,12 @@ mifRefreshKeyStatus();
           return;
         }
         const rawItems = gtGetCurrentItems();
-        // Strip group header, kekalkan ticked lama
+        // Kekalkan ticked lama
         const oldItems = activeGoTickTajuk ? (activeGoTickTajuk.items || []) : [];
-        const items = rawItems
-          .filter(it => !it.isGroupHeader)
-          .map(it => {
-            // Cuba cari ticked lama ikut nama + group
-            const old = oldItems.find(o => o.name === it.name && o.group === it.group);
-            return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false };
-          });
+        const items = rawItems.map(it => {
+          const old = oldItems.find(o => o.name === it.name && o.group === it.group);
+          return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false };
+        });
         const isEmergency = document.getElementById('gotick-emergency-check').checked;
         const order = activeGoTickTajuk
           ? (activeGoTickTajuk.order || 0)
@@ -25330,19 +25315,12 @@ mifRefreshKeyStatus();
       document.getElementById('btn-back-gotick-list').addEventListener('click', () => showSection(sectionGoTick));
       document.getElementById('btn-add-gotick-tajuk').addEventListener('click', () => gtOpenEditor(null));
       document.getElementById('btn-add-gotick-group').addEventListener('click', () => {
-        const cur = gtGetCurrentItems();
-        cur.push({ isGroupHeader: true, name: '', group: '', ticked: false });
-        gtRenderItemList(cur);
-      });
-      document.getElementById('btn-add-gotick-item').addEventListener('click', () => {
-        const cur = gtGetCurrentItems();
-        // Cari group terakhir untuk assign
-        let lastGroup = '';
-        for (let i = cur.length - 1; i >= 0; i--) {
-          if (cur[i].isGroupHeader) { lastGroup = cur[i].name || ''; break; }
-        }
-        cur.push({ isGroupHeader: false, group: lastGroup, name: '', ticked: false });
-        gtRenderItemList(cur);
+        gtGroups.push({ name: '', items: [] });
+        gtRenderGroups();
+        setTimeout(() => {
+          const inputs = document.querySelectorAll('.gt-group-name-input');
+          if (inputs.length) inputs[inputs.length - 1].focus();
+        }, 50);
       });
       document.getElementById('btn-save-gotick').addEventListener('click', gtSaveTajuk);
       document.getElementById('btn-del-gotick-tajuk').addEventListener('click', gtDeleteTajuk);
