@@ -25149,11 +25149,11 @@ mifRefreshKeyStatus();
           const g = it.group || '';
           if (!groupMap.hasOwnProperty(g)) {
             groupMap[g] = gtGroups.length;
-            gtGroups.push({ name: g, items: [] });
+            gtGroups.push({ name: g, items: [], isEmergency: !!it.isEmergency });
           }
           gtGroups[groupMap[g]].items.push(it.name || '');
         });
-        gtRenderGroups();     
+        gtRenderGroups();
         showSection(sectionGoTickEditor);
       }
 
@@ -25177,12 +25177,19 @@ mifRefreshKeyStatus();
           // Row nama kumpulan
           const headerRow = document.createElement('div');
           headerRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(52,211,153,0.1);';
+          const isEmerg = !!grp.isEmergency;
+          headerRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:' + (isEmerg ? 'rgba(180,0,0,0.15)' : 'rgba(52,211,153,0.1)') + ';';
           headerRow.innerHTML = `
-            <span style="font-size:0.85rem;color:#34d399;">📁</span>
+            <span style="font-size:0.85rem;">${isEmerg ? '🚨' : '📁'}</span>
             <input class="gt-group-name-input" type="text" value="${grp.name || ''}" placeholder="Nama kumpulan..."
-              style="flex:1;background:transparent;border:none;border-bottom:1px solid rgba(52,211,153,0.4);color:#34d399;outline:none;font-size:0.85rem;font-weight:700;padding:2px 0;">
+              style="flex:1;background:transparent;border:none;border-bottom:1px solid ${isEmerg ? 'rgba(220,50,50,0.5)' : 'rgba(52,211,153,0.4)'};color:${isEmerg ? '#f87171' : '#34d399'};outline:none;font-size:0.85rem;font-weight:700;padding:2px 0;">
+            <button class="btn-toggle-emerg btn btn-secondary btn-sm" style="font-size:0.6rem;padding:2px 5px;border-color:${isEmerg ? '#f87171' : 'var(--border-mid)'};color:${isEmerg ? '#f87171' : 'var(--subtext)'};flex-shrink:0;">${isEmerg ? '🚨 Kecemasan' : 'Biasa'}</button>
             <button class="btn-del-grp btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;">✕</button>
           `;
+          headerRow.querySelector('.btn-toggle-emerg').onclick = () => {
+            gtGroups[gi].isEmergency = !gtGroups[gi].isEmergency;
+            gtRenderGroups();
+          };
           headerRow.querySelector('.btn-del-grp').onclick = () => {
             if (!confirm('Padam kumpulan "' + (grp.name || 'ini') + '" dan semua itemnya?')) return;
             gtGroups.splice(gi, 1);
@@ -25251,7 +25258,12 @@ mifRefreshKeyStatus();
         gtGroups.forEach(grp => {
           grp.items.forEach(itemName => {
             if (itemName.trim()) {
-              items.push({ group: grp.name || '', name: itemName.trim(), ticked: false });
+              items.push({
+                group: grp.name || '',
+                name: itemName.trim(),
+                ticked: false,
+                isEmergency: !!grp.isEmergency
+              });
             }
           });
         });
