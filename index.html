@@ -1535,6 +1535,9 @@ body.dark-mode {
             <span>🎧 AMT-AK — Aktivasi Solat</span>
           </button>
   
+<button id="btn-go-gotick" class="btn btn-secondary" style="border-color:#34d399;color:#34d399;">
+            ✓ Go-Tick
+          </button>
 <button id="btn-pembersih" class="btn btn-secondary" style="border-color:#f59e0b;color:#fcd34d;">
             🧹 Pembersih Data Yatim
           </button>
@@ -3050,8 +3053,71 @@ body.dark-mode {
 
   </div>
 </section>
-      
-      <section id="section-notes" class="section">
+
+      <!-- ══ GO-TICK: SENARAI TAJUK ══ -->
+      <section id="section-gotick" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-home-gotick" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#34d399;">✓ Go-Tick</div>
+            <div class="topbar-sub">Senarai semak sebelum bergerak</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#34d399;margin-bottom:6px;">📌 Cara Guna</div>
+          <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+            • Tambah tajuk perjalanan (contoh: "Pergi ke Kelas")<br>
+            • Dalam setiap tajuk, tambah kumpulan dan item<br>
+            • Tandakan <strong>🚨 Kecemasan</strong> untuk tajuk yang wajib di atas<br>
+            • Tick/Untick dilakukan di Kindle
+          </div>
+        </div>
+
+        <button id="btn-add-gotick-tajuk" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#059669,#047857);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+          + Tambah Tajuk
+        </button>
+
+        <div class="list" id="gotick-tajuk-list" style="padding:10px;"></div>
+      </section>
+
+      <!-- ══ GO-TICK: EDITOR ITEM ══ -->
+      <section id="section-gotick-editor" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-gotick-list" class="btn btn-secondary btn-sm">← Senarai</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#34d399;" id="gotick-editor-title">Edit Tajuk</div>
+            <div class="topbar-sub" id="gotick-editor-sub"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.75rem;color:var(--subtext);margin-bottom:4px;">Nama Tajuk</div>
+          <input id="gotick-tajuk-input" type="text" placeholder="Contoh: Pergi ke Kelas"
+            style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:10px;font-size:0.95rem;outline:none;">
+          <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+            <label style="font-size:0.8rem;color:var(--subtext);display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="gotick-emergency-check" style="width:16px;height:16px;cursor:pointer;">
+              🚨 Tajuk Kecemasan (sentiasa di atas)
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
+          <div style="font-size:0.8rem;font-weight:700;color:#34d399;">Senarai Item</div>
+          <button id="btn-add-gotick-item" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">+ Tambah Item</button>
+        </div>
+
+        <div class="list" id="gotick-item-list" style="padding:10px;flex:1;min-height:0;"></div>
+
+        <div style="flex-shrink:0;margin-top:8px;display:flex;gap:8px;">
+          <button id="btn-save-gotick" class="btn" style="background:linear-gradient(135deg,#059669,#047857);border:none;color:white;flex:1;">Simpan</button>
+          <button id="btn-del-gotick-tajuk" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">Padam</button>
+        </div>
+        <div id="gotick-editor-err" class="msg error" style="margin-top:6px;"></div>
+      </section>
+
+      <section id="section-notes" class="section">      
         <div class="topbar">
           <button id="btn-back-home-from-notes" class="btn btn-secondary btn-sm">← Menu</button>
           <div style="text-align:right;">
@@ -5769,6 +5835,8 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       if (sectionContactJournal) sectionContactJournal.classList.remove("active");
       if (sectionContactEditor)  sectionContactEditor.classList.remove("active");
       document.getElementById('section-sr-queue')?.classList.remove("active");
+      document.getElementById('section-gotick')?.classList.remove("active");
+      document.getElementById('section-gotick-editor')?.classList.remove("active");
           section.classList.add("active");
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
@@ -24812,6 +24880,203 @@ Press OK to proceed anyway, or Cancel to abort.`
 initMesinImejFaktaUI();
 mifLoadArahan();
 mifRefreshKeyStatus();
+
+    // ══════════════════════════════════════════
+    // GO-TICK — PHONE ENGINE
+    // ══════════════════════════════════════════
+    (function() {
+      const sectionGoTick = document.getElementById('section-gotick');
+      const sectionGoTickEditor = document.getElementById('section-gotick-editor');
+      let allGoTickTajuk = [];
+      let activeGoTickTajuk = null; // dokumen semasa diedit
+
+      // ── Realtime listener ──
+      let _gtUnsub = null;
+      function gtSubscribe() {
+        if (!currentUser) return;
+        if (_gtUnsub) _gtUnsub();
+        const { collection: col, query: qry, onSnapshot: ons, orderBy: ob } = window._fbImports || {};
+        // Guna API compat yang sama macam bahagian lain
+        _gtUnsub = onSnapshot(
+          query(collection(db, 'users', currentUser.uid, 'go_tick_tajuk')),
+          snap => {
+            allGoTickTajuk = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            allGoTickTajuk.sort((a, b) => {
+              if (a.isEmergency && !b.isEmergency) return -1;
+              if (!a.isEmergency && b.isEmergency) return 1;
+              return (a.order || 0) - (b.order || 0);
+            });
+            gtRenderTajukList();
+          },
+          () => {}
+        );
+      }
+
+      // ── Render senarai tajuk ──
+      function gtRenderTajukList() {
+        const list = document.getElementById('gotick-tajuk-list');
+        if (!list) return;
+        if (!allGoTickTajuk.length) {
+          list.innerHTML = '<div class="empty-state">Belum ada tajuk. Tekan "+ Tambah".</div>';
+          return;
+        }
+        list.innerHTML = '';
+        allGoTickTajuk.forEach((t, idx) => {
+          const items = t.items || [];
+          const ticked = items.filter(it => it.ticked).length;
+          const div = document.createElement('div');
+          div.className = 'drawer-card';
+          div.style.cssText = t.isEmergency
+            ? 'border:1px solid rgba(239,68,68,0.5);background:rgba(127,29,29,0.15);'
+            : 'border:1px solid rgba(52,211,153,0.25);';
+          div.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                ${t.isEmergency ? '<span style="font-size:0.7rem;background:rgba(239,68,68,0.8);color:white;padding:2px 7px;border-radius:999px;flex-shrink:0;">🚨 KECEMASAN</span>' : ''}
+                <span style="font-size:0.95rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.title || '(Tanpa Tajuk)'}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <span style="font-size:0.75rem;color:var(--subtext);">${items.length} item · ${ticked} tick</span>
+                <button class="btn-edit-gotick btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">Edit</button>
+              </div>
+            </div>
+          `;
+          div.querySelector('.btn-edit-gotick').onclick = () => gtOpenEditor(t);
+          list.appendChild(div);
+        });
+      }
+
+      // ── Buka editor ──
+      function gtOpenEditor(t) {
+        activeGoTickTajuk = t ? { ...t } : null;
+        const isNew = !t;
+        document.getElementById('gotick-editor-title').textContent = isNew ? 'Tajuk Baru' : 'Edit Tajuk';
+        document.getElementById('gotick-editor-sub').textContent = isNew ? '' : (t.title || '');
+        document.getElementById('gotick-tajuk-input').value = isNew ? '' : (t.title || '');
+        document.getElementById('gotick-emergency-check').checked = isNew ? false : !!t.isEmergency;
+        document.getElementById('gotick-editor-err').textContent = '';
+        gtRenderItemList(isNew ? [] : (t.items || []));
+        showSection(sectionGoTickEditor);
+      }
+
+      // ── Render item list dalam editor ──
+      function gtRenderItemList(items) {
+        const list = document.getElementById('gotick-item-list');
+        if (!list) return;
+        if (!items.length) {
+          list.innerHTML = '<div class="empty-state">Tiada item. Tekan "+ Tambah Item".</div>';
+          return;
+        }
+        list.innerHTML = '';
+        items.forEach((it, idx) => {
+          const div = document.createElement('div');
+          div.className = 'drawer-card';
+          div.style.cssText = 'padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;border:1px solid var(--border-soft);';
+          div.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+              <button class="btn-gt-item-up btn btn-secondary btn-sm" style="padding:1px 7px;font-size:0.65rem;" ${idx === 0 ? 'disabled' : ''}>↑</button>
+              <button class="btn-gt-item-down btn btn-secondary btn-sm" style="padding:1px 7px;font-size:0.65rem;" ${idx === items.length - 1 ? 'disabled' : ''}>↓</button>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+              <input class="gt-item-group" type="text" value="${it.group || ''}" placeholder="Kumpulan (kosongkan jika tiada)"
+                style="background:transparent;border:none;border-bottom:1px solid var(--border-mid);color:var(--subtext);outline:none;font-size:0.72rem;padding:2px 0;">
+              <input class="gt-item-name-input" type="text" value="${it.name || ''}" placeholder="Nama item..."
+                style="background:transparent;border:none;border-bottom:1px solid var(--border-mid);color:var(--text);outline:none;font-size:0.9rem;padding:2px 0;">
+            </div>
+            <button class="btn-del-gt-item btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">✕</button>
+          `;
+          // Naik
+          div.querySelector('.btn-gt-item-up').onclick = () => {
+            const cur = gtGetCurrentItems();
+            if (idx > 0) { [cur[idx - 1], cur[idx]] = [cur[idx], cur[idx - 1]]; gtRenderItemList(cur); }
+          };
+          // Turun
+          div.querySelector('.btn-gt-item-down').onclick = () => {
+            const cur = gtGetCurrentItems();
+            if (idx < cur.length - 1) { [cur[idx], cur[idx + 1]] = [cur[idx + 1], cur[idx]]; gtRenderItemList(cur); }
+          };
+          // Padam item
+          div.querySelector('.btn-del-gt-item').onclick = () => {
+            const cur = gtGetCurrentItems();
+            cur.splice(idx, 1);
+            gtRenderItemList(cur);
+          };
+          list.appendChild(div);
+        });
+      }
+
+      // ── Ambil items semasa dari DOM ──
+      function gtGetCurrentItems() {
+        const rows = document.querySelectorAll('#gotick-item-list .drawer-card');
+        const items = [];
+        rows.forEach(row => {
+          const group = row.querySelector('.gt-item-group')?.value.trim() || '';
+          const name = row.querySelector('.gt-item-name-input')?.value.trim() || '';
+          items.push({ group, name, ticked: false });
+        });
+        return items;
+      }
+
+      // ── Simpan tajuk ──
+      async function gtSaveTajuk() {
+        if (!currentUser) return;
+        const title = document.getElementById('gotick-tajuk-input').value.trim();
+        if (!title) {
+          document.getElementById('gotick-editor-err').textContent = 'Nama tajuk tidak boleh kosong.';
+          return;
+        }
+        const items = gtGetCurrentItems();
+        const isEmergency = document.getElementById('gotick-emergency-check').checked;
+        const order = activeGoTickTajuk
+          ? (activeGoTickTajuk.order || 0)
+          : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
+        const data = { title, isEmergency, items, order, updatedAt: Date.now() };
+        try {
+          if (activeGoTickTajuk && activeGoTickTajuk.id) {
+            await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id), data);
+          } else {
+            data.createdAt = Date.now();
+            await addDoc(collection(db, 'users', currentUser.uid, 'go_tick_tajuk'), data);
+          }
+          showSection(sectionGoTick);
+        } catch(e) {
+          document.getElementById('gotick-editor-err').textContent = 'Gagal simpan: ' + e.message;
+        }
+      }
+
+      // ── Padam tajuk ──
+      async function gtDeleteTajuk() {
+        if (!currentUser || !activeGoTickTajuk || !activeGoTickTajuk.id) return;
+        if (!confirm('Padam tajuk "' + (activeGoTickTajuk.title || '') + '"?\nSemua item akan dipadam.')) return;
+        try {
+          await deleteDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id));
+          showSection(sectionGoTick);
+        } catch(e) {
+          document.getElementById('gotick-editor-err').textContent = 'Gagal padam: ' + e.message;
+        }
+      }
+
+      // ── Event listeners ──
+      document.getElementById('btn-go-gotick').addEventListener('click', () => {
+        gtSubscribe();
+        showSection(sectionGoTick);
+      });
+      document.getElementById('btn-back-home-gotick').addEventListener('click', () => {
+        if (_gtUnsub) { _gtUnsub(); _gtUnsub = null; }
+        showSection(sectionHome);
+      });
+      document.getElementById('btn-back-gotick-list').addEventListener('click', () => showSection(sectionGoTick));
+      document.getElementById('btn-add-gotick-tajuk').addEventListener('click', () => gtOpenEditor(null));
+      document.getElementById('btn-add-gotick-item').addEventListener('click', () => {
+        const cur = gtGetCurrentItems();
+        cur.push({ group: '', name: '', ticked: false });
+        gtRenderItemList(cur);
+      });
+      document.getElementById('btn-save-gotick').addEventListener('click', gtSaveTajuk);
+      document.getElementById('btn-del-gotick-tajuk').addEventListener('click', gtDeleteTajuk);
+
+    })();
+    // ══════════════════════════════════════════
 
     if ("serviceWorker" in navigator) {    
       window.addEventListener("load", () => { 
