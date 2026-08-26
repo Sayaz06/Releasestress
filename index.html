@@ -23903,7 +23903,22 @@ function initMesinImejUI() {
     showToast('Menghentikan selepas item semasa...');
   });
   btnRetry?.addEventListener('click', () => runMesinImejQueue({ retryFailedOnly: true, gambar: 1 }));
-  btnMula2?.addEventListener('click', () => runMesinImejQueue({ gambar: 2 }));
+    btnMula2?.addEventListener('click', () => {
+    const confirmed = confirm(
+`⚠️ WARNING — Auto-Generate G2 Not Recommended
+
+Reasons:
+- Every API call reads the G1 image first — this costs extra credits just for image input processing
+- AI cannot consistently replicate the exact same angle and characters across images
+- ~30 images can consume USD $5+ (approx. RM25) with very inconsistent results
+- This applies to ALL image AI providers — any model that accepts image input charges for reading it
+
+✅ RECOMMENDED: Generate G1 via API, then manually create G2 using Grok Chat (free) with the prompt provided. Upload G2 manually using the 🖼️2 button on each drawer.
+
+Press OK to proceed anyway, or Cancel to abort.`
+    );
+    if (confirmed) runMesinImejQueue({ gambar: 2 });
+  });
   btnJeda2?.addEventListener('click', () => {
     mesinImejState2.paused = true;
     updateMesinImejUI2();
@@ -24514,7 +24529,22 @@ function initMesinImejFaktaUI() {
     showToast('Menghentikan selepas item semasa...');
   });
   document.getElementById('btn-mesin-imej-fakta-retry')?.addEventListener('click', () => runMesinImejFaktaQueue({ retryFailedOnly: true, gambar: 1 }));
-  document.getElementById('btn-mesin-imej-fakta-mula2')?.addEventListener('click', () => runMesinImejFaktaQueue({ gambar: 2 }));
+    document.getElementById('btn-mesin-imej-fakta-mula2')?.addEventListener('click', () => {
+    const confirmed = confirm(
+`⚠️ WARNING — Auto-Generate G2 Not Recommended
+
+Reasons:
+- Every API call reads the G1 image first — this costs extra credits just for image input processing
+- AI cannot consistently replicate the exact same angle and characters across images
+- ~30 images can consume USD $5+ (approx. RM25) with very inconsistent results
+- This applies to ALL image AI providers — any model that accepts image input charges for reading it
+
+✅ RECOMMENDED: Generate G1 via API, then manually create G2 using Grok Chat (free) with the prompt provided. Upload G2 manually using the 🖼️2 button on each drawer.
+
+Press OK to proceed anyway, or Cancel to abort.`
+    );
+    if (confirmed) runMesinImejFaktaQueue({ gambar: 2 });
+  });
   document.getElementById('btn-mesin-imej-fakta-jeda2')?.addEventListener('click', () => {
     mesinImejFaktaState2.paused = true;
     mifUpdateUI2();
