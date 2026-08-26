@@ -1541,6 +1541,9 @@ body.dark-mode {
 <button id="btn-go-supplement" class="btn btn-secondary" style="border-color:#a78bfa;color:#c4b5fd;">
             💊 Supplement Tracker
           </button>
+<button id="btn-go-water" class="btn btn-secondary" style="border-color:#38bdf8;color:#7dd3fc;">
+            💧 Water Tracker
+          </button>
 <button id="btn-go-gotick" class="btn btn-secondary" style="border-color:#34d399;color:#34d399;">
             ✓ Go-Tick
           </button>
@@ -3152,6 +3155,63 @@ body.dark-mode {
 
         </div>
         <div id="champion-save-status" style="text-align:center;font-size:0.75rem;color:#34d399;min-height:1.2em;padding:4px 0;flex-shrink:0;"></div>
+      </section>
+
+      <!-- ══ WATER TRACKER ══ -->
+      <section id="section-water" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-home-water" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#7dd3fc;">💧 Water Tracker</div>
+            <div class="topbar-sub">Jejak air harian</div>
+          </div>
+        </div>
+
+        <!-- Goal Setting -->
+        <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:14px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:10px;">🎯 Goal Harian</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <label style="font-size:0.8rem;color:var(--subtext);flex-shrink:0;">Goal (ml):</label>
+            <input id="water-goal-input" type="number" min="100" max="10000" step="100"
+              style="flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:8px;font-size:1rem;outline:none;text-align:center;">
+            <button id="btn-water-save-goal" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;color:#7dd3fc;flex-shrink:0;">Simpan</button>
+          </div>
+          <!-- Progress bar -->
+          <div style="background:rgba(255,255,255,0.1);border-radius:999px;height:12px;margin-bottom:6px;overflow:hidden;">
+            <div id="water-progress-bar" style="height:100%;background:linear-gradient(90deg,#38bdf8,#0ea5e9);border-radius:999px;transition:width 0.3s ease;width:0%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--subtext);">
+            <span id="water-stat-minum">Diminum: 0 ml</span>
+            <span id="water-stat-baki">Baki: 0 ml</span>
+            <span id="water-stat-pct">0%</span>
+          </div>
+        </div>
+
+        <!-- Tambah air manual -->
+        <div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#7dd3fc;margin-bottom:8px;">➕ Tambah Air</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            <button class="btn-water-quick btn btn-secondary btn-sm" data-ml="100" style="border-color:#38bdf8;color:#7dd3fc;">+100ml</button>
+            <button class="btn-water-quick btn btn-secondary btn-sm" data-ml="200" style="border-color:#38bdf8;color:#7dd3fc;">+200ml</button>
+            <button class="btn-water-quick btn btn-secondary btn-sm" data-ml="250" style="border-color:#38bdf8;color:#7dd3fc;">+250ml</button>
+            <button class="btn-water-quick btn btn-secondary btn-sm" data-ml="500" style="border-color:#38bdf8;color:#7dd3fc;">+500ml</button>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input id="water-custom-ml" type="number" min="1" placeholder="ml lain..."
+              style="flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:8px;font-size:0.9rem;outline:none;">
+            <button id="btn-water-add-custom" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;color:#7dd3fc;flex-shrink:0;">Tambah</button>
+          </div>
+        </div>
+
+        <!-- Reset harian -->
+        <button id="btn-water-reset" class="btn btn-secondary" style="border-color:#f97316;color:#fb923c;margin-bottom:10px;flex-shrink:0;">
+          🔄 Reset Hari Ini
+        </button>
+
+        <!-- Log minum hari ini -->
+        <div style="font-size:0.75rem;font-weight:700;color:var(--subtext);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;">Log Hari Ini</div>
+        <div class="list" id="water-log-list" style="padding:10px;"></div>
+        <div id="water-err" class="msg error" style="margin-top:6px;"></div>
       </section>
 
       <!-- ══ SUPPLEMENT TRACKER ══ -->
@@ -5962,6 +6022,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-gotick-editor')?.classList.remove("active");
       document.getElementById('section-champion')?.classList.remove("active");
       document.getElementById('section-supplement')?.classList.remove("active");
+      document.getElementById('section-water')?.classList.remove("active");
           section.classList.add("active");
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
@@ -25382,6 +25443,178 @@ mifRefreshKeyStatus();
         var order = allSupplements.length > 0 ? Math.max.apply(null, allSupplements.map(function(s) { return s.order || 0; })) + 1 : 0;
         await addDoc(collection(db, 'users', currentUser.uid, 'supplement_tracker'), {
           title: '', text: '', order: order, createdAt: Date.now()
+        });
+      });
+    })();
+    // ══════════════════════════════════════════
+
+    // ══════════════════════════════════════════
+    // WATER TRACKER — PHONE ENGINE
+    // ══════════════════════════════════════════
+    (function() {
+      const sectionWater = document.getElementById('section-water');
+      let waterData = { goal: 2000, minum: 0, log: [], dateKey: '' };
+      let _waterUnsub = null;
+
+      function waterTodayKey() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      }
+
+      function waterSubscribe() {
+        if (!currentUser) return;
+        if (_waterUnsub) _waterUnsub();
+        var todayKey = waterTodayKey();
+        // Doc utama: settings (goal)
+        // Doc harian: log minum hari ini
+        var ref = doc(db, 'users', currentUser.uid, 'water_tracker', 'settings');
+        var refHarian = doc(db, 'users', currentUser.uid, 'water_tracker', todayKey);
+
+        // Load goal
+        getDoc(ref).then(function(snap) {
+          waterData.goal = (snap.exists() && snap.data().goal) ? snap.data().goal : 2000;
+          document.getElementById('water-goal-input').value = waterData.goal;
+          waterRenderStats();
+        }).catch(function() {});
+
+        // Subscribe log harian
+        _waterUnsub = onSnapshot(refHarian, function(snap) {
+          if (snap.exists()) {
+            waterData.minum = snap.data().minum || 0;
+            waterData.log = snap.data().log || [];
+            waterData.dateKey = todayKey;
+          } else {
+            waterData.minum = 0;
+            waterData.log = [];
+            waterData.dateKey = todayKey;
+          }
+          waterRenderStats();
+          waterRenderLog();
+          // Update water_tracker champion item
+          waterUpdateChampionItem();
+        }, function() {});
+      }
+
+      function waterRenderStats() {
+        var goal = waterData.goal || 2000;
+        var minum = waterData.minum || 0;
+        var baki = Math.max(0, goal - minum);
+        var pct = Math.min(100, Math.round(minum / goal * 100));
+        var bar = document.getElementById('water-progress-bar');
+        if (bar) bar.style.width = pct + '%';
+        var elMinum = document.getElementById('water-stat-minum');
+        var elBaki = document.getElementById('water-stat-baki');
+        var elPct = document.getElementById('water-stat-pct');
+        if (elMinum) elMinum.textContent = 'Diminum: ' + minum + ' ml';
+        if (elBaki) elBaki.textContent = 'Baki: ' + baki + ' ml';
+        if (elPct) elPct.textContent = pct + '%';
+      }
+
+      function waterRenderLog() {
+        var list = document.getElementById('water-log-list');
+        if (!list) return;
+        var log = waterData.log || [];
+        if (!log.length) {
+          list.innerHTML = '<div class="empty-state">Belum ada rekod hari ini.</div>';
+          return;
+        }
+        list.innerHTML = '';
+        // Tunjuk dari baru ke lama
+        var reversed = log.slice().reverse();
+        reversed.forEach(function(entry, i) {
+          var div = document.createElement('div');
+          div.className = 'list-item';
+          var t = new Date(entry.ts);
+          var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+          div.innerHTML = '<div class="list-main"><div class="list-title" style="color:#7dd3fc;">+' + entry.ml + ' ml</div><div class="list-sub">' + timeStr + '</div></div>';
+          list.appendChild(div);
+        });
+      }
+
+      async function waterTambah(ml) {
+        if (!currentUser || !ml || ml <= 0) return;
+        var todayKey = waterTodayKey();
+        var newMinum = (waterData.minum || 0) + ml;
+        var newLog = (waterData.log || []).concat([{ ml: ml, ts: Date.now() }]);
+        var refHarian = doc(db, 'users', currentUser.uid, 'water_tracker', todayKey);
+        try {
+          await setDoc(refHarian, { minum: newMinum, log: newLog, dateKey: todayKey, updatedAt: Date.now() }, { merge: true });
+        } catch(e) {
+          var err = document.getElementById('water-err');
+          if (err) err.textContent = 'Gagal simpan: ' + e.message;
+        }
+      }
+
+      async function waterReset() {
+        if (!currentUser) return;
+        if (!confirm('Reset rekod air hari ini?')) return;
+        var todayKey = waterTodayKey();
+        var refHarian = doc(db, 'users', currentUser.uid, 'water_tracker', todayKey);
+        try {
+          await setDoc(refHarian, { minum: 0, log: [], dateKey: todayKey, updatedAt: Date.now() });
+        } catch(e) {
+          var err = document.getElementById('water-err');
+          if (err) err.textContent = 'Gagal reset: ' + e.message;
+        }
+      }
+
+      // Update champion item — supaya Kindle boleh baca status terkini
+      function waterUpdateChampionItem() {
+        if (!currentUser) return;
+        var goal = waterData.goal || 2000;
+        var minum = waterData.minum || 0;
+        var baki = Math.max(0, goal - minum);
+        var pct = Math.min(100, Math.round(minum / goal * 100));
+        // "title" = mesej untuk Kindle papar
+        var titleText = '💧 Air: ' + minum + 'ml / ' + goal + 'ml (' + pct + '%)';
+        var textText = baki > 0 ? 'Baki ' + baki + 'ml lagi untuk capai goal hari ini.' : '✅ Goal air hari ini dah tercapai!';
+        setDoc(doc(db, 'users', currentUser.uid, 'water_tracker', 'champion_item'), {
+          title: titleText,
+          text: textText,
+          minum: minum,
+          goal: goal,
+          baki: baki,
+          pct: pct,
+          updatedAt: Date.now()
+        }).catch(function() {});
+      }
+
+      async function waterSaveGoal() {
+        if (!currentUser) return;
+        var val = parseInt(document.getElementById('water-goal-input').value);
+        if (!val || val < 100) { alert('Goal minimum 100ml.'); return; }
+        waterData.goal = val;
+        try {
+          await setDoc(doc(db, 'users', currentUser.uid, 'water_tracker', 'settings'), { goal: val, updatedAt: Date.now() }, { merge: true });
+          waterRenderStats();
+          waterUpdateChampionItem();
+          showToast('✅ Goal disimpan: ' + val + 'ml');
+        } catch(e) {
+          var err = document.getElementById('water-err');
+          if (err) err.textContent = 'Gagal simpan goal: ' + e.message;
+        }
+      }
+
+      // Wire buttons
+      document.getElementById('btn-go-water').addEventListener('click', function() {
+        waterSubscribe();
+        showSection(sectionWater);
+      });
+      document.getElementById('btn-back-home-water').addEventListener('click', function() {
+        if (_waterUnsub) { _waterUnsub(); _waterUnsub = null; }
+        showSection(sectionHome);
+      });
+      document.getElementById('btn-water-save-goal').addEventListener('click', waterSaveGoal);
+      document.getElementById('btn-water-reset').addEventListener('click', waterReset);
+      document.getElementById('btn-water-add-custom').addEventListener('click', function() {
+        var val = parseInt(document.getElementById('water-custom-ml').value);
+        if (!val || val <= 0) return;
+        waterTambah(val);
+        document.getElementById('water-custom-ml').value = '';
+      });
+      document.querySelectorAll('.btn-water-quick').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          waterTambah(parseInt(this.getAttribute('data-ml')));
         });
       });
     })();
