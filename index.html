@@ -1535,6 +1535,12 @@ body.dark-mode {
             <span>🎧 AMT-AK — Aktivasi Solat</span>
           </button>
   
+<button id="btn-go-champion" class="btn btn-secondary" style="border-color:#f59e0b;color:#fbbf24;">
+            🏆 Champion Queue
+          </button>
+<button id="btn-go-supplement" class="btn btn-secondary" style="border-color:#a78bfa;color:#c4b5fd;">
+            💊 Supplement Tracker
+          </button>
 <button id="btn-go-gotick" class="btn btn-secondary" style="border-color:#34d399;color:#34d399;">
             ✓ Go-Tick
           </button>
@@ -3053,6 +3059,123 @@ body.dark-mode {
 
   </div>
 </section>
+
+      <!-- ══ CHAMPION QUEUE ══ -->
+      <section id="section-champion" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-home-champion" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#fbbf24;">🏆 Champion Queue</div>
+            <div class="topbar-sub">Pilih sumber giliran JQ</div>
+          </div>
+        </div>
+        <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:12px;margin-bottom:12px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#fbbf24;margin-bottom:6px;">📌 Cara Guna</div>
+          <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+            • Tick sumber yang nak masuk dalam giliran JQ<br>
+            • Kindle akan papar satu item dari setiap sumber secara bergilir<br>
+            • Tick "Semua" untuk aktifkan semua sumber sekaligus<br>
+            • Setting disimpan ke Firestore — Kindle baca secara automatik
+          </div>
+        </div>
+        <div class="list" style="padding:14px;flex:1;min-height:0;">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--subtext);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Sumber Queue</div>
+
+          <!-- Tick All -->
+          <div id="champ-row-all" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.1rem;">⚡</span>
+              <span style="font-size:0.95rem;font-weight:600;color:var(--text);">Semua Sumber</span>
+            </div>
+            <div id="champ-tick-all" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
+          </div>
+
+          <!-- Motivasi Jogging -->
+          <div id="champ-row-motivasi" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.1rem;">🏃</span>
+              <div>
+                <div style="font-size:0.95rem;font-weight:500;color:var(--text);">Motivasi Jogging</div>
+                <div style="font-size:0.72rem;color:var(--subtext);">jogging_motivasi</div>
+              </div>
+            </div>
+            <div id="champ-tick-motivasi" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
+          </div>
+
+          <!-- Laci Perjanjian -->
+          <div id="champ-row-perjanjian" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.1rem;">🤝</span>
+              <div>
+                <div style="font-size:0.95rem;font-weight:500;color:var(--text);">Laci Perjanjian</div>
+                <div style="font-size:0.72rem;color:var(--subtext);">jogging_perjanjian</div>
+              </div>
+            </div>
+            <div id="champ-tick-perjanjian" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
+          </div>
+
+          <!-- Laci Rutin -->
+          <div id="champ-row-rutin" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.1rem;">🔄</span>
+              <div>
+                <div style="font-size:0.95rem;font-weight:500;color:var(--text);">Laci Rutin</div>
+                <div style="font-size:0.72rem;color:var(--subtext);">routine_drawers</div>
+              </div>
+            </div>
+            <div id="champ-tick-rutin" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
+          </div>
+
+          <!-- Supplement Tracker -->
+          <div id="champ-row-supplement" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.1rem;">💊</span>
+              <div>
+                <div style="font-size:0.95rem;font-weight:500;color:var(--text);">Supplement Tracker</div>
+                <div style="font-size:0.72rem;color:var(--subtext);">supplement_tracker</div>
+              </div>
+            </div>
+            <div id="champ-tick-supplement" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
+          </div>
+
+          <!-- Water Tracker -->
+          <div id="champ-row-water" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.1rem;">💧</span>
+              <div>
+                <div style="font-size:0.95rem;font-weight:500;color:var(--text);">Water Tracker</div>
+                <div style="font-size:0.72rem;color:var(--subtext);">water_tracker</div>
+              </div>
+            </div>
+            <div id="champ-tick-water" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
+          </div>
+
+        </div>
+        <div id="champion-save-status" style="text-align:center;font-size:0.75rem;color:#34d399;min-height:1.2em;padding:4px 0;flex-shrink:0;"></div>
+      </section>
+
+      <!-- ══ SUPPLEMENT TRACKER ══ -->
+      <section id="section-supplement" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-home-supplement" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#c4b5fd;">💊 Supplement Tracker</div>
+            <div class="topbar-sub">Senarai suplemen harian</div>
+          </div>
+        </div>
+        <div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.78rem;font-weight:700;color:#c4b5fd;margin-bottom:6px;">📌 Cara Guna</div>
+          <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+            • <strong>Tajuk</strong> = nama suplemen (cth: Vitamin C 1000mg)<br>
+            • <strong>Penerangan</strong> = sebab/cara makan (cth: Tingkatkan imun, selepas sarapan)<br>
+            • Item ini akan bergilir dalam Champion Queue di Kindle
+          </div>
+        </div>
+        <button id="btn-add-supplement" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+          + Tambah Suplemen
+        </button>
+        <div class="list" id="supplement-list" style="padding:10px;"></div>
+      </section>
 
       <!-- ══ GO-TICK: SENARAI TAJUK ══ -->
       <section id="section-gotick" class="section">
@@ -5837,6 +5960,8 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-sr-queue')?.classList.remove("active");
       document.getElementById('section-gotick')?.classList.remove("active");
       document.getElementById('section-gotick-editor')?.classList.remove("active");
+      document.getElementById('section-champion')?.classList.remove("active");
+      document.getElementById('section-supplement')?.classList.remove("active");
           section.classList.add("active");
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
@@ -25075,6 +25200,190 @@ mifRefreshKeyStatus();
       document.getElementById('btn-save-gotick').addEventListener('click', gtSaveTajuk);
       document.getElementById('btn-del-gotick-tajuk').addEventListener('click', gtDeleteTajuk);
 
+    })();
+    // ══════════════════════════════════════════
+
+    // ══════════════════════════════════════════
+    // CHAMPION QUEUE — PHONE ENGINE
+    // ══════════════════════════════════════════
+    (function() {
+      const sectionChampion = document.getElementById('section-champion');
+      const CHAMP_SOURCES = ['motivasi', 'perjanjian', 'rutin', 'supplement', 'water'];
+      let champSetting = { sources: [], lastSourceIndex: 0 };
+
+      function champTickEl(id) { return document.getElementById('champ-tick-' + id); }
+
+      function champRenderTicks() {
+        CHAMP_SOURCES.forEach(function(s) {
+          var el = champTickEl(s);
+          if (!el) return;
+          var active = champSetting.sources.indexOf(s) !== -1;
+          el.textContent = active ? '✓' : '';
+          el.style.background = active ? '#fbbf24' : 'transparent';
+          el.style.borderColor = active ? '#fbbf24' : 'var(--border-mid)';
+          el.style.color = '#000';
+        });
+        var allActive = CHAMP_SOURCES.every(function(s) { return champSetting.sources.indexOf(s) !== -1; });
+        var elAll = champTickEl('all');
+        if (elAll) {
+          elAll.textContent = allActive ? '✓' : '';
+          elAll.style.background = allActive ? '#fbbf24' : 'transparent';
+          elAll.style.borderColor = allActive ? '#fbbf24' : 'var(--border-mid)';
+          elAll.style.color = '#000';
+        }
+      }
+
+      function champToggle(source) {
+        var idx = champSetting.sources.indexOf(source);
+        if (idx === -1) champSetting.sources.push(source);
+        else champSetting.sources.splice(idx, 1);
+        champSave();
+        champRenderTicks();
+      }
+
+      function champToggleAll() {
+        var allActive = CHAMP_SOURCES.every(function(s) { return champSetting.sources.indexOf(s) !== -1; });
+        champSetting.sources = allActive ? [] : CHAMP_SOURCES.slice();
+        champSave();
+        champRenderTicks();
+      }
+
+      function champSave() {
+        if (!currentUser) return;
+        setDoc(doc(db, 'users', currentUser.uid, 'kindle_settings', 'champion'), {
+          sources: champSetting.sources,
+          lastSourceIndex: champSetting.lastSourceIndex || 0,
+          updatedAt: Date.now()
+        }).then(function() {
+          var el = document.getElementById('champion-save-status');
+          if (el) { el.textContent = '✓ Disimpan'; setTimeout(function() { if(el) el.textContent = ''; }, 2000); }
+        }).catch(function(e) {
+          var el = document.getElementById('champion-save-status');
+          if (el) el.textContent = 'Gagal simpan: ' + e.message;
+        });
+      }
+
+      function champLoad() {
+        if (!currentUser) return;
+        getDoc(doc(db, 'users', currentUser.uid, 'kindle_settings', 'champion'))
+          .then(function(snap) {
+            if (snap.exists()) {
+              champSetting = snap.data();
+              champSetting.sources = champSetting.sources || [];
+            }
+            champRenderTicks();
+          }).catch(function() { champRenderTicks(); });
+      }
+
+      // Wire rows
+      document.getElementById('champ-row-all').onclick = champToggleAll;
+      CHAMP_SOURCES.forEach(function(s) {
+        var row = document.getElementById('champ-row-' + s);
+        if (row) row.onclick = function() { champToggle(s); };
+      });
+
+      document.getElementById('btn-go-champion').addEventListener('click', function() {
+        champLoad();
+        showSection(sectionChampion);
+      });
+      document.getElementById('btn-back-home-champion').addEventListener('click', function() {
+        showSection(sectionHome);
+      });
+    })();
+
+    // ══════════════════════════════════════════
+    // SUPPLEMENT TRACKER — PHONE ENGINE
+    // ══════════════════════════════════════════
+    (function() {
+      const sectionSupplement = document.getElementById('section-supplement');
+      let allSupplements = [];
+      let _supUnsub = null;
+
+      function supSubscribe() {
+        if (!currentUser) return;
+        if (_supUnsub) _supUnsub();
+        _supUnsub = onSnapshot(
+          query(collection(db, 'users', currentUser.uid, 'supplement_tracker')),
+          function(snap) {
+            allSupplements = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+            allSupplements.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+            supRender();
+          },
+          function() {}
+        );
+      }
+
+      function supRender() {
+        var list = document.getElementById('supplement-list');
+        if (!list) return;
+        if (!allSupplements.length) {
+          list.innerHTML = '<div class="empty-state">Belum ada suplemen. Tekan "+ Tambah".</div>';
+          return;
+        }
+        list.innerHTML = '';
+        allSupplements.forEach(function(data, idx) {
+          var div = document.createElement('div');
+          div.className = 'drawer-card';
+          div.style.cssText = 'border:1px solid rgba(167,139,250,0.3);';
+          div.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <button class="btn-sup-up btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.7rem;" ${idx === 0 ? 'disabled' : ''}>↑</button>
+                <button class="btn-sup-down btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.7rem;" ${idx === allSupplements.length - 1 ? 'disabled' : ''}>↓</button>
+              </div>
+              <span style="font-size:0.75rem;background:rgba(167,139,250,0.2);color:#c4b5fd;padding:2px 8px;border-radius:999px;font-weight:700;">#${idx + 1}</span>
+              <input class="sup-title" value="${data.title || ''}" placeholder="Nama suplemen (cth: Vitamin C 1000mg)"
+                style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:0.9rem;">
+              <button class="btn-del-sup btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">✕</button>
+            </div>
+            <textarea class="sup-text drawer-notes" placeholder="Penerangan / sebab makan (cth: Tingkatkan imun, selepas sarapan)">${data.text || ''}</textarea>
+          `;
+          // Naik
+          div.querySelector('.btn-sup-up').onclick = async function() {
+            if (idx === 0) return;
+            var a = allSupplements[idx - 1], b = allSupplements[idx];
+            await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', a.id), { order: b.order || idx });
+            await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', b.id), { order: a.order || idx - 1 });
+          };
+          // Turun
+          div.querySelector('.btn-sup-down').onclick = async function() {
+            if (idx === allSupplements.length - 1) return;
+            var a = allSupplements[idx], b = allSupplements[idx + 1];
+            await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', a.id), { order: b.order || idx + 1 });
+            await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', b.id), { order: a.order || idx });
+          };
+          // Auto-save title
+          div.querySelector('.sup-title').onblur = async function() {
+            await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', data.id), { title: this.value });
+          };
+          // Auto-save text
+          div.querySelector('.sup-text').onblur = async function() {
+            await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', data.id), { text: this.value });
+          };
+          // Padam
+          div.querySelector('.btn-del-sup').onclick = async function() {
+            if (!confirm('Padam "' + (data.title || 'suplemen ini') + '"?')) return;
+            await deleteDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', data.id));
+          };
+          list.appendChild(div);
+        });
+      }
+
+      document.getElementById('btn-go-supplement').addEventListener('click', function() {
+        supSubscribe();
+        showSection(sectionSupplement);
+      });
+      document.getElementById('btn-back-home-supplement').addEventListener('click', function() {
+        if (_supUnsub) { _supUnsub(); _supUnsub = null; }
+        showSection(sectionHome);
+      });
+      document.getElementById('btn-add-supplement').addEventListener('click', async function() {
+        if (!currentUser) return;
+        var order = allSupplements.length > 0 ? Math.max.apply(null, allSupplements.map(function(s) { return s.order || 0; })) + 1 : 0;
+        await addDoc(collection(db, 'users', currentUser.uid, 'supplement_tracker'), {
+          title: '', text: '', order: order, createdAt: Date.now()
+        });
+      });
     })();
     // ══════════════════════════════════════════
 
