@@ -23726,26 +23726,19 @@ async function runMesinImejQueue({ retryFailedOnly = false, gambar = 1 } = {}) {
 
       try {
         const perkName = item.perkataanName || nameById[drawer.perkataanId] || '';
-        const arahan2Bahasa = (document.getElementById('arahan-imej-textarea2')?.value || '').trim();
-        let url1 = drawer.imageUrl || '';
-        const g2SudahAda = !!(drawer.imageUrl11 || '');
-
-        // ── Jana Gambar 1 (kalau belum ada) ──
-        if (!url1) {
-          const prompt1 = buildPromptForDrawer(arahan, drawer, perkName);
-          const imgBlob1 = await callXaiImagine(prompt1, { model, aspect_ratio: aspect, apiKey });
-          const blob1 = await downloadImageAsBlob(imgBlob1);
-          url1 = await uploadBlobToBahasaDrawer(drawer.id, blob1, rW, rH, false);
+        const prompt = buildPromptForDrawer(arahan, drawer, perkName);
+        let blob;
+        if (isG2) {
+          // G2 — guna OpenAI dengan G1 sebagai image input
+          const g1Url = drawer.imageUrl || '';
+          if (!g1Url) throw new Error('G1 belum ada. Jana G1 dahulu sebelum jana G2.');
+          blob = await callOpenAIImageEdit(prompt, g1Url, { aspect_ratio: aspect });
+        } else {
+          // G1 — guna xAI seperti biasa
+          const imgBlob = await callXaiImagine(prompt, { model, aspect_ratio: aspect, apiKey });
+          blob = await downloadImageAsBlob(imgBlob);
         }
-
-        // ── Jana Gambar 2 (kalau ada arahan2 dan Gambar 2 belum ada) ──
-        if (arahan2Bahasa && !g2SudahAda) {
-          const prompt2 = buildPromptForDrawer(arahan2Bahasa, drawer, perkName);
-          const imgBlob2 = await callXaiImagineWithImage(prompt2, url1, { model, aspect_ratio: aspect, apiKey });
-          const blob2 = await downloadImageAsBlob(imgBlob2);
-          await uploadBlobToBahasaDrawer(drawer.id, blob2, rW, rH, true);
-        }
-
+        await uploadBlobToBahasaDrawer(drawer.id, blob, rW, rH, isG2);
         item.status = 'done';
         item.error = null;
       } catch (err) {
