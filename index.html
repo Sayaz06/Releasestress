@@ -3290,9 +3290,6 @@ body.dark-mode {
           <div style="font-size:0.75rem;color:var(--subtext);margin-bottom:4px;">Nama Tajuk</div>
           <input id="gotick-tajuk-input" type="text" placeholder="Contoh: Pergi ke Kelas"
             style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:10px;font-size:0.95rem;outline:none;">
-          <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
-            <label style="font-size:0.8rem;color:var(--subtext);display:flex;align-items:center;gap:6px;cursor:pointer;">
-              <input type="checkbox" id="gotick-emergency-check" style="width:16px;height:16px;cursor:pointer;">
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
@@ -3303,7 +3300,7 @@ body.dark-mode {
         <div id="gotick-item-list" style="flex:1;min-height:0;overflow-y:auto;"></div>
 
         <div style="flex-shrink:0;margin-top:8px;display:flex;gap:8px;">
-          <button id="btn-save-gotick" class="btn" style="background:linear-gradient(135deg,#059669,#047857);border:none;color:white;flex:1;">Simpan</button>
+          <span id="gotick-save-indicator" style="font-size:0.72rem;color:#34d399;align-self:center;flex:1;">✓ Auto-save aktif</span>
           <button id="btn-del-gotick-tajuk" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">Padam</button>
         </div>
         <div id="gotick-editor-err" class="msg error" style="margin-top:6px;"></div>
@@ -25194,14 +25191,19 @@ mifRefreshKeyStatus();
             <button class="btn-toggle-emerg btn btn-secondary btn-sm" style="font-size:0.6rem;padding:2px 5px;border-color:${isEmerg ? '#f87171' : 'var(--border-mid)'};color:${isEmerg ? '#f87171' : 'var(--subtext)'};flex-shrink:0;">${isEmerg ? '🚨 Kecemasan' : 'Biasa'}</button>
             <button class="btn-del-grp btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;">✕</button>
           `;
+          headerRow.querySelector('.gt-group-name-input').addEventListener('blur', gtAutoSave);
           headerRow.querySelector('.btn-toggle-emerg').onclick = () => {
+            gtSyncDomToGroups();
             gtGroups[gi].isEmergency = !gtGroups[gi].isEmergency;
             gtRenderGroups();
+            gtAutoSave();
           };
           headerRow.querySelector('.btn-del-grp').onclick = () => {
             if (!confirm('Padam kumpulan "' + (grp.name || 'ini') + '" dan semua itemnya?')) return;
+            gtSyncDomToGroups();
             gtGroups.splice(gi, 1);
             gtRenderGroups();
+            gtAutoSave();
           };
           grpDiv.appendChild(headerRow);
 
@@ -25219,10 +25221,17 @@ mifRefreshKeyStatus();
               <button class="btn-del-item btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;">✕</button>
             `;
             itemRow.querySelector('.btn-del-item').onclick = () => {
+              gtSyncDomToGroups();
               gtGroups[gi].items.splice(ii, 1);
               gtRenderGroups();
+              gtAutoSave();
             };
             itemsDiv.appendChild(itemRow);
+          });
+
+          // Attach blur auto-save pada semua item input dalam kumpulan ini
+          itemsDiv.querySelectorAll('.gt-item-name-input').forEach(inp => {
+            inp.addEventListener('blur', gtAutoSave);
           });
 
           // Button + Tambah Item dalam kumpulan ini
@@ -25230,6 +25239,7 @@ mifRefreshKeyStatus();
           addItemBtn.textContent = '+ Tambah Item';
           addItemBtn.style.cssText = 'font-size:0.72rem;color:#6ee7b7;background:transparent;border:none;padding:6px 0;cursor:pointer;display:block;width:100%;text-align:left;';
           addItemBtn.onclick = () => {
+            gtSyncDomToGroups(); // simpan nilai semasa sebelum render semula
             gtGroups[gi].items.push('');
             gtRenderGroups();
             // Focus pada input baru
@@ -25244,28 +25254,30 @@ mifRefreshKeyStatus();
         });
       }
 
-      function gtGetCurrentItems() {
-        // Baca dari gtGroups (auto-sync dari input onblur atau terus dari state)
-        // Sync dulu dari DOM
+      // ── Sync DOM → gtGroups (panggil sebelum render semula) ──
+      function gtSyncDomToGroups() {
         const list = document.getElementById('gotick-item-list');
-        if (!list) return [];
+        if (!list) return;
         const grpDivs = list.querySelectorAll(':scope > div');
         grpDivs.forEach((grpDiv, gi) => {
           if (!gtGroups[gi]) return;
           const nameInput = grpDiv.querySelector('.gt-group-name-input');
-          if (nameInput) gtGroups[gi].name = nameInput.value.trim();
+          if (nameInput) gtGroups[gi].name = nameInput.value;
           const itemInputs = grpDiv.querySelectorAll('.gt-item-name-input');
           itemInputs.forEach((inp, ii) => {
             if (gtGroups[gi].items[ii] !== undefined) {
-              gtGroups[gi].items[ii] = inp.value.trim();
+              gtGroups[gi].items[ii] = inp.value;
             }
           });
         });
-        // Convert gtGroups → flat items array untuk Firestore
+      }
+
+      function gtGetCurrentItems() {
+        gtSyncDomToGroups();
         const items = [];
         gtGroups.forEach(grp => {
           grp.items.forEach(itemName => {
-            if (itemName.trim()) {
+            if ((itemName || '').trim()) {
               items.push({
                 group: grp.name || '',
                 name: itemName.trim(),
@@ -25278,37 +25290,43 @@ mifRefreshKeyStatus();
         return items;
       }
 
-      // ── Simpan tajuk ──
-      async function gtSaveTajuk() {
-        if (!currentUser) return;
-        const title = document.getElementById('gotick-tajuk-input').value.trim();
-        if (!title) {
-          document.getElementById('gotick-editor-err').textContent = 'Nama tajuk tidak boleh kosong.';
-          return;
-        }
-        const rawItems = gtGetCurrentItems();
-        // Kekalkan ticked lama
-        const oldItems = activeGoTickTajuk ? (activeGoTickTajuk.items || []) : [];
-        const items = rawItems.map(it => {
-          const old = oldItems.find(o => o.name === it.name && o.group === it.group);
-          return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false };
-        });
-        const isEmergency = false;
-        const order = activeGoTickTajuk
-          ? (activeGoTickTajuk.order || 0)
-          : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
-        const data = { title, isEmergency, items, order, updatedAt: Date.now() };
-        try {
-          if (activeGoTickTajuk && activeGoTickTajuk.id) {
-            await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id), data);
-          } else {
-            data.createdAt = Date.now();
-            await addDoc(collection(db, 'users', currentUser.uid, 'go_tick_tajuk'), data);
+      // ── Auto-save ke Firestore (debounced 800ms) ──
+      let _gtSaveTimer = null;
+      function gtAutoSave() {
+        const indicator = document.getElementById('gotick-save-indicator');
+        if (indicator) { indicator.textContent = '⏳ Menyimpan...'; indicator.style.color = '#fcd34d'; }
+        if (_gtSaveTimer) clearTimeout(_gtSaveTimer);
+        _gtSaveTimer = setTimeout(async () => {
+          if (!currentUser) return;
+          const title = document.getElementById('gotick-tajuk-input').value.trim();
+          if (!title) {
+            if (indicator) { indicator.textContent = '⚠️ Nama tajuk kosong'; indicator.style.color = '#f87171'; }
+            return;
           }
-          showSection(sectionGoTick);
-        } catch(e) {
-          document.getElementById('gotick-editor-err').textContent = 'Gagal simpan: ' + e.message;
-        }
+          const rawItems = gtGetCurrentItems();
+          const oldItems = activeGoTickTajuk ? (activeGoTickTajuk.items || []) : [];
+          const items = rawItems.map(it => {
+            const old = oldItems.find(o => o.name === it.name && o.group === it.group);
+            return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false };
+          });
+          const isEmergency = false;
+          const order = activeGoTickTajuk
+            ? (activeGoTickTajuk.order || 0)
+            : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
+          const data = { title, isEmergency, items, order, updatedAt: Date.now() };
+          try {
+            if (activeGoTickTajuk && activeGoTickTajuk.id) {
+              await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id), data);
+            } else {
+              data.createdAt = Date.now();
+              const newRef = await addDoc(collection(db, 'users', currentUser.uid, 'go_tick_tajuk'), data);
+              activeGoTickTajuk = { id: newRef.id, ...data };
+            }
+            if (indicator) { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#34d399'; }
+          } catch(e) {
+            if (indicator) { indicator.textContent = '❌ Gagal simpan'; indicator.style.color = '#f87171'; }
+          }
+        }, 800);
       }
 
       // ── Padam tajuk ──
@@ -25332,18 +25350,43 @@ mifRefreshKeyStatus();
         if (_gtUnsub) { _gtUnsub(); _gtUnsub = null; }
         showSection(sectionHome);
       });
-      document.getElementById('btn-back-gotick-list').addEventListener('click', () => showSection(sectionGoTick));
-      document.getElementById('btn-add-gotick-tajuk').addEventListener('click', () => gtOpenEditor(null));
+      document.getElementById('btn-back-gotick-list').addEventListener('click', () => {
+        gtSyncDomToGroups();
+        showSection(sectionGoTick);
+      });
+      document.getElementById('btn-add-gotick-tajuk').addEventListener('click', async () => {
+        if (!currentUser) return;
+        try {
+          const order = allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0;
+          const newRef = await addDoc(collection(db, 'users', currentUser.uid, 'go_tick_tajuk'), {
+            title: 'Tajuk Baru',
+            isEmergency: false,
+            items: [],
+            order,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          });
+          // Terus buka editor untuk tajuk baru yang baru dicipta
+          const newTajuk = { id: newRef.id, title: 'Tajuk Baru', isEmergency: false, items: [], order };
+          gtOpenEditor(newTajuk);
+        } catch(e) {
+          showToast('❌ Gagal tambah tajuk: ' + e.message);
+        }
+      });      
       document.getElementById('btn-add-gotick-group').addEventListener('click', () => {
-        gtGroups.push({ name: '', items: [] });
+        gtSyncDomToGroups(); // simpan nilai semasa dulu sebelum render semula
+        gtGroups.push({ name: '', items: [''] });
         gtRenderGroups();
         setTimeout(() => {
           const inputs = document.querySelectorAll('.gt-group-name-input');
           if (inputs.length) inputs[inputs.length - 1].focus();
         }, 50);
       });
-      document.getElementById('btn-save-gotick').addEventListener('click', gtSaveTajuk);
       document.getElementById('btn-del-gotick-tajuk').addEventListener('click', gtDeleteTajuk);
+
+      // Auto-save bila nama tajuk berubah
+      document.getElementById('gotick-tajuk-input').addEventListener('blur', gtAutoSave);
+      document.getElementById('gotick-tajuk-input').addEventListener('input', gtAutoSave);
 
     })();
     // ══════════════════════════════════════════
