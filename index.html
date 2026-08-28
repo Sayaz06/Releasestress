@@ -9111,10 +9111,6 @@ function renderTopics() {
           if (isChecked) {
             const others = allTopics.filter(t => t.isActive && t.id !== data.id);
             for (let t of others) {
-              await updateDoc(doc(db, "users", currentUser.uid, "topics", t.id), { isActive: false });
-            }
-            // Reset topik baru + topik sebelum ke laci/baris pertama
-            for (let t of others) {
               await updateDoc(doc(db, "users", currentUser.uid, "topics", t.id), { isActive: false, lastIndex: 0, lastDrawerId: null, lastItemIndex: null });
             }
             await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: true, lastIndex: 0, lastDrawerId: null, lastItemIndex: null });
