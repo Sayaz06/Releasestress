@@ -16370,10 +16370,12 @@ async function lompatKePerkataanSeterusnyaBahasa() {
         }
         batch.update(doc(db, "users", currentUser.uid, "bahasa_perkataan", next.id), {
           isActive: true,
-          lastIndex: 0
+          lastIndex: 0,
+          lastDrawerId: null
         });
         next.isActive = true;
         next.lastIndex = 0;
+        next.lastDrawerId = null;
         await batch.commit();
 
         currentPerkataanId = next.id;
