@@ -9113,7 +9113,10 @@ function renderTopics() {
             for (let t of others) {
               await updateDoc(doc(db, "users", currentUser.uid, "topics", t.id), { isActive: false });
             }
-            // Reset lastDrawerId dan lastItemIndex topik baru yang ditick
+            // Reset topik baru + topik sebelum ke laci/baris pertama
+            for (let t of others) {
+              await updateDoc(doc(db, "users", currentUser.uid, "topics", t.id), { isActive: false, lastIndex: 0, lastDrawerId: null, lastItemIndex: null });
+            }
             await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: true, lastIndex: 0, lastDrawerId: null, lastItemIndex: null });
           } else {
             await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: false });
