@@ -9113,8 +9113,11 @@ function renderTopics() {
             for (let t of others) {
               await updateDoc(doc(db, "users", currentUser.uid, "topics", t.id), { isActive: false });
             }
+            // Reset lastDrawerId dan lastItemIndex topik baru yang ditick
+            await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: true, lastIndex: 0, lastDrawerId: null, lastItemIndex: null });
+          } else {
+            await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: false });
           }
-          await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: isChecked }); 
         });
         
         div.querySelector(".topic-title").addEventListener("change", (e) => {
@@ -16001,8 +16004,11 @@ div.innerHTML = `
           if (checked) {
             for (const p of allBahasaPerkataan.filter(p => p.isActive && p.id !== data.id))
               await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",p.id), {isActive: false});
+            // Reset lastDrawerId perkataan baru yang ditick
+            await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: true, lastIndex: 0, lastDrawerId: null});
+          } else {
+            await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: false});
           }
-          await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: checked});
         });
         div.querySelectorAll('input')[1].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {name: e.target.value}));
