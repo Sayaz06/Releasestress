@@ -16003,7 +16003,7 @@ div.innerHTML = `
           const checked = e.target.checked;
           if (checked) {
             for (const p of allBahasaPerkataan.filter(p => p.isActive && p.id !== data.id))
-              await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",p.id), {isActive: false});
+              await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",p.id), {isActive: false, lastIndex: 0, lastDrawerId: null});
             // Reset lastDrawerId perkataan baru yang ditick
             await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: true, lastIndex: 0, lastDrawerId: null});
           } else {
