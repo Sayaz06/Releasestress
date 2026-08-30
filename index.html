@@ -4222,6 +4222,8 @@ if (snap.exists()) {
 
           setTimeout(async () => {
             factContentEl.style.color = '';
+            // Load bahasa drawers jenis semasa dulu — on-demand
+            await new Promise(res => loadBahasaDrawersJenis(currentJenisKataId, res));
             await refreshSRQueueIds();
             const adaSR = await checkSRQueue();
             if (adaSR && muatSRLaciSeterusnya()) {
@@ -10218,12 +10220,15 @@ showSection(secToShow);
         if (_unsubQuranDrawers) { _unsubQuranDrawers(); _unsubQuranDrawers = null; _unsubQuranDrawersSurah = 0; }
         if (_unsubDoaDrawers) { _unsubDoaDrawers(); _unsubDoaDrawers = null; }
         if (_unsubHadisDrawers) { _unsubHadisDrawers(); _unsubHadisDrawers = null; }
+        if (_unsubBahasaDrawers) { _unsubBahasaDrawers(); _unsubBahasaDrawers = null; _unsubBahasaDrawersJenisId = null; }
         allQuranDrawers = [];
         allDoaDrawers = [];
         allHadisDrawers = [];
+        allBahasaDrawers = [];
         doaDrawerCache = null;
         hadisDrawerCache = null;
-        console.log('🧹 Cache doa & hadis dibersihkan — logout');
+        bahasaDrawerCache = {};
+        console.log('🧹 Cache doa, hadis & bahasa dibersihkan — logout');
         showSection(sectionLogin);
       }
     });
@@ -16445,6 +16450,8 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
         });
         div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?`)) return;
+          // Load dulu kalau cache kosong — padam perlukan data drawer
+          await new Promise(res => loadBahasaDrawersJenis(currentJenisKataId, res));
           const drawers = allBahasaDrawers.filter(d => d.perkataanId === data.id);
           for (const dr of drawers)
             await hantarKeTrashUniversal('bahasa_drawers', dr.id, dr, dr.title || 'Laci Bahasa');
@@ -16456,6 +16463,8 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
               batch.delete(doc(db,"users",currentUser.uid,"bahasa_drawers",drawers[k].id));
             await batch.commit(); i = end;
           }
+          // Clear cache jenis ini — data dah berubah
+          delete bahasaDrawerCache[currentJenisKataId];
           await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id));
           showToast('🗑️ Dipadam.');
         });
@@ -17992,51 +18001,85 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         if (bahasaMode) rebuildBahasa();
       });
 
-onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
-        const prevDrawers = [...allBahasaDrawers];
-        allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
-        if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
-if (bahasaMode) {
-          // Simpan index dan fasa semasa sebelum semak
-          const savedIndex = currentFactIndex;
-          const savedRestPhase = bahasaRestPhase;
-          const savedRestCount = bahasaRestCount;
-          const savedEjaanCount = bahasaEjaanCount;
+    // ── CACHE BAHASA DRAWERS ──
+    // Prinsip: load per jenis kata sahaja, simpan dalam cache
+    // Tiada double work — selagi dalam cache, tidak sentuh Firestore
+    var bahasaDrawerCache = {}; // { jenisKataId: [drawers] }
+    var _unsubBahasaDrawers = null;
+    var _unsubBahasaDrawersJenisId = null;
 
-          // Semak sama ada perubahan hanya pada field tips/tipsFasa0/updatedAt sahaja
-          const hanyaTipsUpdate = snap.docs.every(d => {
-            const prev = prevDrawers.find(p => p.id === d.id);
-            if (!prev) return false;
-            const data = d.data();
-            // Bandingkan field yang penting sahaja — ignore tips, tipsFasa0, updatedAt
-            return (
-              prev.title === data.title &&
-              prev.notes === data.notes &&
-              prev.repeatCount === data.repeatCount &&
-              prev.jenisId === data.jenisId &&
-              prev.perkataanId === data.perkataanId
-            );
-          });
+    function loadBahasaDrawersJenis(jenisKataId, cbSelesai) {
+      if (!currentUser || !jenisKataId) { cbSelesai && cbSelesai(); return; }
 
-          if (hanyaTipsUpdate) {
-            // Hanya tips berubah — tak perlu rebuild, kekalkan kedudukan semasa
-            return;
+      // ✅ Check cache dulu
+      if (bahasaDrawerCache[jenisKataId]) {
+        console.log('✅ Cache hit — bahasa_drawers jenis', jenisKataId, 'dari memori, tiada query Firestore');
+        allBahasaDrawers = bahasaDrawerCache[jenisKataId];
+        cbSelesai && cbSelesai();
+        return;
+      }
+
+      // 📥 Cache miss — unsub lama, subscribe jenis baru
+      if (_unsubBahasaDrawers && _unsubBahasaDrawersJenisId === jenisKataId) {
+        cbSelesai && cbSelesai();
+        return;
+      }
+      if (_unsubBahasaDrawers) {
+        _unsubBahasaDrawers();
+        _unsubBahasaDrawers = null;
+      }
+      _unsubBahasaDrawersJenisId = jenisKataId;
+      console.log('📥 Cache miss — bahasa_drawers jenis', jenisKataId, 'diload dari Firestore');
+
+      _unsubBahasaDrawers = onSnapshot(
+        query(
+          collection(db, "users", currentUser.uid, "bahasa_drawers"),
+          where("jenisId", "==", jenisKataId)
+        ),
+        snap => {
+          const prevDrawers = [...allBahasaDrawers];
+          allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
+          bahasaDrawerCache[jenisKataId] = allBahasaDrawers;
+          console.log('📥 Cache miss — bahasa_drawers jenis', jenisKataId, 'disimpan dalam cache');
+          if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
+          if (bahasaMode) {
+            const savedIndex = currentFactIndex;
+            const savedRestPhase = bahasaRestPhase;
+            const savedRestCount = bahasaRestCount;
+            const savedEjaanCount = bahasaEjaanCount;
+
+            const hanyaTipsUpdate = prevDrawers.length === allBahasaDrawers.length &&
+              allBahasaDrawers.every(d => {
+                const prev = prevDrawers.find(p => p.id === d.id);
+                if (!prev) return false;
+                return (
+                  prev.title === d.title &&
+                  prev.notes === d.notes &&
+                  prev.repeatCount === d.repeatCount &&
+                  prev.jenisId === d.jenisId &&
+                  prev.perkataanId === d.perkataanId
+                );
+              });
+
+            if (!hanyaTipsUpdate) {
+              rebuildBahasa();
+              if (savedIndex < allFacts.length) {
+                currentFactIndex = savedIndex;
+                bahasaRestPhase = savedRestPhase;
+                bahasaRestCount = savedRestCount;
+                bahasaEjaanCount = savedEjaanCount;
+                renderCurrentFact();
+              }
+            }
           }
-
-          // Ada perubahan lain — rebuild tapi cuba kekalkan kedudukan
-          rebuildBahasa();
-
-          // Pulihkan kedudukan selepas rebuild kalau masih dalam julat
-          if (savedIndex < allFacts.length) {
-            currentFactIndex = savedIndex;
-            bahasaRestPhase = savedRestPhase;
-            bahasaRestCount = savedRestCount;
-            bahasaEjaanCount = savedEjaanCount;
-            renderCurrentFact();
-          }
-        }
-      });
+          if (cbSelesai) { const cb = cbSelesai; cbSelesai = null; cb(); }
+        },
+        err => { console.error('❌ Gagal load bahasa_drawers:', err); cbSelesai && cbSelesai(); }
+      );
     }
+
+    // bahasa_drawers TIDAK disubscribe di sini — load on-demand per jenis kata
+    // Guna loadBahasaDrawersJenis(jenisKataId) bila user buka laci atau bahasa mode ON
 
 // ══════════════════════════════════════════
     // JOURNAL SYSTEM
