@@ -9937,19 +9937,22 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
         if (!surah) return;
 
         const activeDrawers = allQuranDrawers
-          .filter(d => d.timeId === currentQuranSurahNum)
-          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+          .filter(d => d.surahNum === currentQuranSurahNum)
+          .sort((a, b) => (a.ayatNum || 0) - (b.ayatNum || 0)); // sort nombor terus, lebih tepat
 
         activeDrawers.forEach(data => {
-          const tajukLaci = data.title || 'Tiada Tajuk';
-          const zikirText = (data.zikir || '').trim() || (data.maksud || '').trim() || 'Kosong';
-          const maksudText = data.zikir ? (data.maksud ? data.maksud.trim() : null) : null;
+          // Tajuk dijana hardcode — konsisten, tidak bergantung pada data Firestore
+          const tajukLaci = `${data.surahNum}. ${QURAN_SURAH_NAMES[data.surahNum - 1]} Ayat ${data.ayatNum}`;
+          const zikirText = (data.arab || '').trim() || (data.maksud || '').trim() || 'Kosong';
+          const maksudText = data.arab ? (data.maksud ? data.maksud.trim() : null) : null;
 
           allRoutines.push({
             title: tajukLaci,
             text: zikirText,
             target: 1,
             translation: maksudText,
+            surahNum: data.surahNum,   // simpan untuk sync tanpa perlu parse title
+            ayatNum: data.ayatNum,     // simpan untuk sync tanpa perlu parse title
             isTamat: false
           });
         });
@@ -10089,9 +10092,9 @@ if (routineMode && allRoutines.length > 0) {
         if (!allRoutines.length) return;
         if (!targetAyat) return;
 
-        const targetTitle = `${targetSurah}. ${QURAN_SURAH_NAMES[targetSurah - 1]} Ayat ${targetAyat}`;
+        // Guna surahNum + ayatNum terus — tiada lagi isu apostrof atau format nama
         const targetIdx = allRoutines.findIndex(r =>
-          r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
+          r.surahNum === targetSurah && r.ayatNum === targetAyat
         );
 
         if (targetIdx !== -1 && targetIdx > currentRoutineIndex) {
@@ -12504,7 +12507,7 @@ document.getElementById('btn-go-quran-times').addEventListener('click', () => {
 
       SURAH_PERMANENT.forEach(surah => {
         // Kira berapa ayat dah ada dalam Firestore
-        const ayatAda = allQuranDrawers.filter(d => d.timeId === surah.num).length;
+        const ayatAda = allQuranDrawers.filter(d => d.surahNum === surah.num).length;        
         const isLengkap = ayatAda >= surah.jumlahAyat;
         const isAktif = surah.num === currentQuranSurahNum;
 
@@ -18395,7 +18398,7 @@ document.getElementById('btn-buka-countdown-mini').addEventListener('click', asy
       document.getElementById('countdown-mini-surah-name').textContent = surahName;
 
       cmDrawers = allQuranDrawers
-        .filter(d => d.timeId === surahNum && d.zikir && d.zikir.trim())
+        .filter(d => d.surahNum === surahNum && d.arab && d.arab.trim())    
         .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
 
       if (!cmDrawers.length) {
@@ -18450,7 +18453,7 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       document.getElementById('countdown-mini-surah-name').textContent = cmSurahName;
 
       cmDrawers = allQuranDrawers
-        .filter(d => d.timeId === timeId && d.zikir && d.zikir.trim())
+        .filter(d => d.surahNum === alQuranPenuhSurahIdx && d.arab && d.arab.trim())    
         .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
 
       if (!cmDrawers.length) {
@@ -18493,7 +18496,7 @@ if (!cmFlipped) {
         contentEl.style.direction = 'rtl';
         contentEl.style.textAlign = 'right';
         contentEl.style.lineHeight = '3';
-        contentEl.textContent = data.zikir || '(Tiada teks Arab)';
+        contentEl.textContent = data.arab || '(Tiada teks Arab)';    
         hintEl.textContent = '(Tap skrin untuk papar maksud)';
       } else {
         titleEl.textContent = `[ ${data.title} ] — Maksud`;
@@ -19699,7 +19702,7 @@ document.getElementById('btn-close-qr').addEventListener('click', () => {
               ayat: drawers.map(d => ({
                 id: d.id,
                 tajuk: d.title || '',
-                arab: d.zikir || '',
+                arab: d.arab || '',    
                 maksud: d.maksud || '',
                 target: d.target || ''
               }))
@@ -20156,7 +20159,7 @@ const targetCard = zikir.closest('.drawer-card');
       if (carian === null || carian.trim() === '') return;
 
       const calon = allQuranDrawers
-        .filter(d => d.timeId === currentQuranTimeId && d.zikir && d.zikir.includes(carian))
+        .filter(d => d.surahNum === currentQuranSurahNum && d.arab && d.arab.includes(carian))    
         .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
 
       if (!calon.length) {
