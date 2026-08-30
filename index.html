@@ -2615,6 +2615,16 @@ body.dark-mode {
     <button id="btn-import-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;color:white;box-shadow:0 6px 18px rgba(16,185,129,.3);">📥 Import Data Quran (JSON)</button>
     <button id="btn-export-quran-data" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;box-shadow:0 6px 18px rgba(245,158,11,.3);">📦 Export Semua Data Quran (JSON)</button>
 
+    <!-- ── MIGRATE HARDCODE ── -->
+    <button id="btn-migrate-hardcode" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;color:white;box-shadow:0 6px 18px rgba(99,102,241,.3);">🔄 Migrate ke Format Hardcode</button>
+    <div id="migrate-status-box" style="display:none;margin-top:8px;padding:10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:10px;">
+      <div id="migrate-progress-text" style="font-size:0.78rem;color:#a5b4fc;margin-bottom:6px;"></div>
+      <div style="background:rgba(15,23,42,0.6);border-radius:6px;overflow:hidden;height:10px;margin-bottom:8px;">
+        <div id="migrate-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#a5b4fc);transition:width 0.3s ease;"></div>
+      </div>
+      <div id="migrate-log" style="font-size:0.7rem;color:var(--subtext);max-height:160px;overflow-y:auto;line-height:1.6;"></div>
+    </div>
+
     <!-- 114 SURAH PERMANENT -->
     <div style="margin-top:12px;font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:6px;">
       Pilih surah untuk buka laci ayat
@@ -12548,6 +12558,171 @@ document.getElementById('btn-add-quran-drawer').addEventListener('click', () => 
   if(currentQuranTimeId) {
 addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"~",zikir:"",target:"",maksud:"",timeId:currentQuranTimeId,createdAt:Date.now()});
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
+  }
+});
+
+// ══════════════════════════════════════════
+// MIGRATE QURAN DRAWERS KE FORMAT HARDCODE
+// Fasa 1: Tambah field surahNum, ayatNum, arab (copy dari zikir)
+// Fasa 2: Verify — semak data betul, repair kalau rosak
+// Field zikir KEKAL dulu — buang kemudian selepas confirm ok
+// ══════════════════════════════════════════
+document.getElementById('btn-migrate-hardcode').addEventListener('click', async () => {
+  if (!currentUser) { showToast('Sila login dulu.'); return; }
+
+  const konfirm = confirm(
+    '🔄 Migrate Quran Drawers ke Format Hardcode\n\n' +
+    'Proses ini akan:\n' +
+    '✅ Tambah field surahNum, ayatNum, arab pada setiap laci\n' +
+    '✅ Verify dan repair kalau ada yang rosak\n' +
+    '⚠️ Field zikir dan title KEKAL (tidak dipadam)\n\n' +
+    'Teruskan?'
+  );
+  if (!konfirm) return;
+
+  const statusBox = document.getElementById('migrate-status-box');
+  const progressText = document.getElementById('migrate-progress-text');
+  const progressBar = document.getElementById('migrate-progress-bar');
+  const log = document.getElementById('migrate-log');
+  const btn = document.getElementById('btn-migrate-hardcode');
+
+  statusBox.style.display = 'block';
+  btn.disabled = true;
+  log.innerHTML = '';
+
+  function addLog(msg, warna) {
+    const div = document.createElement('div');
+    div.style.color = warna || 'var(--subtext)';
+    div.textContent = msg;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function setProgress(peratusan, teks) {
+    progressBar.style.width = peratusan + '%';
+    progressText.textContent = teks;
+  }
+
+  try {
+    // ── FASA 1: MIGRATE ──
+    addLog('── Fasa 1: Migrate ──', '#a5b4fc');
+    let jumlahOk = 0;
+    let jumlahGagal = 0;
+    let jumlahSkip = 0;
+
+    for (let s = 1; s <= 114; s++) {
+      const surahName = QURAN_SURAH_NAMES[s - 1];
+      const peratusan = Math.round((s / 114) * 50); // 0-50% untuk fasa 1
+      setProgress(peratusan, `[1/2] Migrate Surah ${s}/114 — ${surahName}`);
+
+      // Ambil semua laci surah ini
+      const snap = await getDocs(
+        query(
+          collection(db, 'users', currentUser.uid, 'quran_drawers'),
+          where('timeId', '==', s)
+        )
+      );
+
+      if (snap.empty) {
+        addLog(`⚠️ Surah ${s}. ${surahName} — tiada laci`, '#fbbf24');
+        jumlahSkip++;
+        continue;
+      }
+
+      // Update setiap laci
+      const batch = writeBatch(db);
+      let batchCount = 0;
+
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+
+        // Parse surahNum dan ayatNum dari title
+        const parsed = parseLaciQuran(data.title || '');
+        if (!parsed) {
+          addLog(`❌ Skip — title format salah: "${data.title}"`, '#f87171');
+          jumlahGagal++;
+          continue;
+        }
+
+        // Copy zikir ke arab, tambah surahNum dan ayatNum
+        batch.update(doc(db, 'users', currentUser.uid, 'quran_drawers', docSnap.id), {
+          surahNum: parsed.surahNum,
+          ayatNum: parsed.ayatNum,
+          arab: data.zikir || ''
+          // zikir dan title KEKAL — tidak dipadam
+        });
+        batchCount++;
+      }
+
+      if (batchCount > 0) await batch.commit();
+      jumlahOk += batchCount;
+    }
+
+    addLog(`✅ Fasa 1 selesai — ${jumlahOk} laci diupdate, ${jumlahGagal} gagal, ${jumlahSkip} surah kosong`, '#34d399');
+
+    // ── FASA 2: VERIFY & REPAIR ──
+    addLog('── Fasa 2: Verify & Repair ──', '#a5b4fc');
+    let jumlahVerifyOk = 0;
+    let jumlahRepair = 0;
+
+    for (let s = 1; s <= 114; s++) {
+      const surahName = QURAN_SURAH_NAMES[s - 1];
+      const peratusan = 50 + Math.round((s / 114) * 50); // 50-100% untuk fasa 2
+      setProgress(peratusan, `[2/2] Verify Surah ${s}/114 — ${surahName}`);
+
+      const snap = await getDocs(
+        query(
+          collection(db, 'users', currentUser.uid, 'quran_drawers'),
+          where('timeId', '==', s)
+        )
+      );
+
+      const repairBatch = writeBatch(db);
+      let perluRepair = 0;
+
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+        const rosak = [];
+
+        // Semak surahNum
+        if (data.surahNum !== s) rosak.push('surahNum');
+
+        // Semak ayatNum
+        const parsed = parseLaciQuran(data.title || '');
+        if (parsed && data.ayatNum !== parsed.ayatNum) rosak.push('ayatNum');
+
+        // Semak arab === zikir
+        if (data.arab !== (data.zikir || '')) rosak.push('arab');
+
+        if (rosak.length > 0) {
+          addLog(`🔧 Repair Surah ${s} Ayat ${data.ayatNum || '?'} — field rosak: ${rosak.join(', ')}`, '#fbbf24');
+          const fix = {};
+          if (rosak.includes('surahNum')) fix.surahNum = s;
+          if (rosak.includes('ayatNum') && parsed) fix.ayatNum = parsed.ayatNum;
+          if (rosak.includes('arab')) fix.arab = data.zikir || '';
+          repairBatch.update(doc(db, 'users', currentUser.uid, 'quran_drawers', docSnap.id), fix);
+          perluRepair++;
+        } else {
+          jumlahVerifyOk++;
+        }
+      }
+
+      if (perluRepair > 0) {
+        await repairBatch.commit();
+        jumlahRepair += perluRepair;
+      }
+    }
+
+    setProgress(100, 'Selesai!');
+    addLog(`✅ Verify selesai — ${jumlahVerifyOk} ok, ${jumlahRepair} direpair`, '#34d399');
+    addLog('🎉 Migrate lengkap! Sedia untuk tukar kod query.', '#34d399');
+    showToast('✅ Migrate berjaya!');
+
+  } catch(e) {
+    addLog('❌ Ralat: ' + e.message, '#f87171');
+    showToast('❌ Migrate gagal: ' + e.message);
+  } finally {
+    btn.disabled = false;
   }
 });
 
