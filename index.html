@@ -19094,38 +19094,6 @@ async function activateQuranPenuhSurah(timeId) {
     }
 
     // renderSusunAlQuran dan tetapkanSurah dibuang — sistem quran_times tidak diperlukan lagi
-      if (!allQuranTimes.length) { showToast('Tiada kategori Quran. Tambah dahulu.'); return; }
-
-      const sorted = [...allQuranTimes].sort((a, b) =>
-        (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
-
-      const pilihan = sorted.map((t, i) => `${i + 1}. ${t.name || 'Tanpa Nama'}`).join('\n');
-      const current = quranSusunan[String(surahNum)];
-      const currentName = current ? (allQuranTimes.find(t => t.id === current)?.name || '') : '';
-      const hint = currentName ? `\n\nSemasa: ${currentName}` : '';
-
-      const input = prompt(
-        `Surah ${surahNum}. ${QURAN_SURAH_NAMES[surahNum - 1]}\nPilih kategori laci:${hint}\n\n${pilihan}\n\nTaip nombor (atau kosong untuk nyah-tetap):`
-      );
-      if (input === null) return;
-
-      const trimmed = input.trim();
-      if (trimmed === '') {
-        delete quranSusunan[String(surahNum)];
-        saveQuranSusunan();
-        renderSusunAlQuran();
-        showToast(`Surah ${surahNum} dinyah-tetap.`);
-        return;
-      }
-
-      const idx = parseInt(trimmed) - 1;
-      if (isNaN(idx) || idx < 0 || idx >= sorted.length) { showToast('Nombor tidak sah.'); return; }
-
-      quranSusunan[String(surahNum)] = sorted[idx].id;
-      saveQuranSusunan();
-      renderSusunAlQuran();
-      showToast(`✅ Surah ${surahNum} → "${sorted[idx].name}"`);
-    }
 
 // ── IMPORT DATA QURAN ──
     document.getElementById('btn-import-quran-data').addEventListener('click', () => {
