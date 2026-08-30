@@ -2625,6 +2625,16 @@ body.dark-mode {
       <div id="migrate-log" style="font-size:0.7rem;color:var(--subtext);max-height:160px;overflow-y:auto;line-height:1.6;"></div>
     </div>
 
+    <!-- ── CLEANUP FIELD LAMA ── -->
+    <button id="btn-cleanup-fields" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#dc2626,#991b1b);border:none;color:white;box-shadow:0 6px 18px rgba(220,38,38,.3);">🧹 Cleanup Field Lama (zikir, title, timeId)</button>
+    <div id="cleanup-status-box" style="display:none;margin-top:8px;padding:10px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.3);border-radius:10px;">
+      <div id="cleanup-progress-text" style="font-size:0.78rem;color:#fca5a5;margin-bottom:6px;"></div>
+      <div style="background:rgba(15,23,42,0.6);border-radius:6px;overflow:hidden;height:10px;margin-bottom:8px;">
+        <div id="cleanup-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#dc2626,#fca5a5);transition:width 0.3s ease;"></div>
+      </div>
+      <div id="cleanup-log" style="font-size:0.7rem;color:var(--subtext);max-height:160px;overflow-y:auto;line-height:1.6;"></div>
+    </div>
+
     <!-- 114 SURAH PERMANENT -->
     <div style="margin-top:12px;font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:6px;">
       Pilih surah untuk buka laci ayat
@@ -3612,7 +3622,8 @@ import {
       where,
       orderBy,
       limit,
-      writeBatch
+      writeBatch,
+      deleteField
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
     
@@ -12729,6 +12740,106 @@ document.getElementById('btn-migrate-hardcode').addEventListener('click', async 
   }
 });
 
+// ══════════════════════════════════════════
+// CLEANUP FIELD LAMA QURAN DRAWERS
+// Buang field: zikir, title, timeId, target
+// Pastikan field baru: surahNum, ayatNum, arab, maksud ada dulu
+// ══════════════════════════════════════════
+document.getElementById('btn-cleanup-fields').addEventListener('click', async () => {
+  if (!currentUser) { showToast('Sila login dulu.'); return; }
+
+  const konfirm = confirm(
+    '🧹 Cleanup Field Lama\n\n' +
+    'Ini akan PADAM field lama dari setiap laci:\n' +
+    '❌ zikir\n❌ title\n❌ timeId\n❌ target\n\n' +
+    '⚠️ Pastikan Migrate dah berjaya (surahNum, ayatNum, arab ada) sebelum proceed!\n\n' +
+    'Teruskan?'
+  );
+  if (!konfirm) return;
+
+  const statusBox = document.getElementById('cleanup-status-box');
+  const progressText = document.getElementById('cleanup-progress-text');
+  const progressBar = document.getElementById('cleanup-progress-bar');
+  const log = document.getElementById('cleanup-log');
+  const btn = document.getElementById('btn-cleanup-fields');
+
+  statusBox.style.display = 'block';
+  btn.disabled = true;
+  log.innerHTML = '';
+
+  function addLog(msg, warna) {
+    const div = document.createElement('div');
+    div.style.color = warna || 'var(--subtext)';
+    div.textContent = msg;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function setProgress(peratusan, teks) {
+    progressBar.style.width = peratusan + '%';
+    progressText.textContent = teks;
+  }
+
+  try {
+    let jumlahOk = 0;
+    let jumlahSkip = 0;
+    let jumlahGagal = 0;
+
+    for (let s = 1; s <= 114; s++) {
+      const surahName = QURAN_SURAH_NAMES[s - 1];
+      setProgress(Math.round((s / 114) * 100), `Cleanup Surah ${s}/114 — ${surahName}`);
+
+      const snap = await getDocs(
+        query(
+          collection(db, 'users', currentUser.uid, 'quran_drawers'),
+          where('surahNum', '==', s)
+        )
+      );
+
+      if (snap.empty) {
+        addLog(`⚠️ Surah ${s}. ${surahName} — tiada laci`, '#fbbf24');
+        jumlahSkip++;
+        continue;
+      }
+
+      // Verify dulu — pastikan surahNum, ayatNum, arab ada sebelum buang field lama
+      let adaYangTakSedia = false;
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+        if (!data.surahNum || !data.ayatNum) {
+          addLog(`❌ Skip Surah ${s} — ada laci tanpa surahNum/ayatNum. Jalankan Migrate dulu!`, '#f87171');
+          adaYangTakSedia = true;
+          break;
+        }
+      }
+      if (adaYangTakSedia) { jumlahGagal++; continue; }
+
+      // Buang field lama
+      const batch = writeBatch(db);
+      for (const docSnap of snap.docs) {
+        batch.update(doc(db, 'users', currentUser.uid, 'quran_drawers', docSnap.id), {
+          zikir: deleteField(),
+          title: deleteField(),
+          timeId: deleteField(),
+          target: deleteField()
+        });
+      }
+      await batch.commit();
+      jumlahOk += snap.docs.length;
+    }
+
+    setProgress(100, 'Selesai!');
+    addLog(`✅ Cleanup selesai — ${jumlahOk} laci dibersihkan, ${jumlahSkip} surah kosong, ${jumlahGagal} surah gagal`, '#34d399');
+    showToast('✅ Cleanup berjaya!');
+
+  } catch(e) {
+    addLog('❌ Ralat: ' + e.message, '#f87171');
+    showToast('❌ Cleanup gagal: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ── DEBUG LOG QURAN DRAWERS ──
 window.logQuranDrawers = function() {
   console.log('=== QURAN DRAWERS DEBUG ===');
@@ -20293,8 +20404,9 @@ if (match) {
       if (!parsed.length) { showToast('⚠️ Tiada ayat bernombor dijumpai.'); return; }
 
       const calon = parsed.map(p => {
-        const laci = allQuranDrawers.find(d => d.timeId === currentQuranTimeId && d.title === `${prefix} Ayat ${p.number}`);
-        return laci ? { id: laci.id, maksud: p.maksud } : null;
+        const laci = allQuranDrawers.find(d => d.surahNum === currentQuranSurahNum && d.ayatNum === p.number);
+        return laci ? { id: laci.id, arab: p.zikir } : null;    
+
       }).filter(Boolean);
 
       if (!calon.length) { showToast('⚠️ Tiada laci sepadan dijumpai. Semak nama awalan.'); return; }
@@ -20721,7 +20833,7 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
           const batch = writeBatch(db);
           const endIdx = Math.min(i + 499, calon.length);
           for (let j = i; j < endIdx; j++)
-            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",calon[j].id), { zikir: calon[j].zikir });
+            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",calon[j].id), { arab: calon[j].arab });    
           await batch.commit();
           i = endIdx;
         }
@@ -20943,7 +21055,7 @@ function cariYatim() {
       });
       allQuranDrawers.forEach(d => {
         if (typeof d.timeId === 'string')
-          yatim.push({ coll:'quran_drawers', id:d.id, data:d, label:d.title||'Tiada Tajuk' });
+          yatim.push({ coll:'quran_drawers', id:d.id, data:d, label: d.surahNum ? (d.surahNum + '. ' + QURAN_SURAH_NAMES[d.surahNum-1] + ' Ayat ' + (d.ayatNum||'?')) : 'Tiada Tajuk' });    
       });
       allDoaDrawers.forEach(d => {
         if (!doaIds.has(d.timeId))
