@@ -6940,9 +6940,9 @@ if (isFlipKeArab) {
 
 if (isFlipKeMaksud) {
             const laciSemasaNow = allRoutines[currentRoutineIndex];
-            const parsedNow = laciSemasaNow ? parseLaciQuran(laciSemasaNow.title) : null;
-            const ayatUntukSave = parsedNow ? parsedNow.ayatNum : 0;
-            const surahUntukSave = parsedNow ? parsedNow.surahNum : 0;
+            // Guna surahNum + ayatNum terus — tiada lagi parseLaciQuran
+            const ayatUntukSave = laciSemasaNow ? (laciSemasaNow.ayatNum || 0) : 0;
+            const surahUntukSave = laciSemasaNow ? (laciSemasaNow.surahNum || 0) : 0;
             const jumlahAyatSurah = surahUntukSave > 0 ? QURAN_SURAH_AYAT[surahUntukSave - 1] : 0;
 
             quranSessionTapCount++;
@@ -7065,9 +7065,9 @@ if (isQuran && learningMode === 0) {
           if (comboStep === 0) {
             // Simpan ayat semasa SEKARANG sebelum flip — ini ayat yang sedang dibaca
             const laciSemasaArab = allRoutines[currentRoutineIndex];
-            const parsedArab = laciSemasaArab ? parseLaciQuran(laciSemasaArab.title) : null;
-            quranAyatSemasa = parsedArab ? parsedArab.ayatNum : 0;
-            quranSurahSemasa = parsedArab ? parsedArab.surahNum : 0;
+            // Guna surahNum + ayatNum terus — tiada lagi parseLaciQuran
+            quranAyatSemasa = laciSemasaArab ? (laciSemasaArab.ayatNum || 0) : 0;
+            quranSurahSemasa = laciSemasaArab ? (laciSemasaArab.surahNum || 0) : 0;
             isFlipped = true;
             comboStep = 1;
             triggerFlipAnimation(renderCurrentFact);
@@ -18916,6 +18916,20 @@ async function alQuranPenuhNextSurah() {
         savedAt: Date.now(),
         isNextSurah: true
       });
+
+      // Update quranKhatamData supaya card kemajuan tunjuk surah baru
+      if (quranKhatamData) {
+        quranKhatamData.currentSurah = nextSurahNum;
+        quranKhatamData.currentAyat = 1;
+        renderQuranKhatamCard();
+      }
+
+      // Sync ke Kindle supaya Kindle tahu surah bertukar
+      try {
+        await setDoc(doc(db, "users", currentUser.uid, "kindle_quran", "current"), {
+          surahNum: nextSurahNum, ayatNum: 1, savedAt: Date.now()
+        });
+      } catch(e) { console.log("Gagal sync surah baru ke Kindle:", e); }
 
       rebuildRoutines();
       return true;
