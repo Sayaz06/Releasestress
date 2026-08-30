@@ -19849,6 +19849,12 @@ currentQuranSurahNum = 1;
       if (routineMode && routineModeSource === 'quran') rebuildRoutines();
       renderQuranKhatamCard();
       updateTasbihUI();
+      // Reset Kindle juga supaya tidak overwrite balik kemajuan phone
+      try {
+        await setDoc(doc(db, "users", currentUser.uid, "kindle_quran", "current"), {
+          surahNum: 1, ayatNum: 0, savedAt: Date.now()
+        });
+      } catch(e) { console.log("Gagal reset Kindle:", e); }
       showToast("✅ Reset penuh berjaya! Bermula semula dari Surah 1.");
     });
     
@@ -20022,6 +20028,12 @@ currentQuranSurahNum = 1;
       if (routineMode && routineModeSource === 'quran') rebuildRoutines();
       renderQuranKhatamCard();
       updateTasbihUI();
+      // Reset Kindle juga supaya tidak overwrite balik kemajuan phone
+      try {
+        await setDoc(doc(db, "users", currentUser.uid, "kindle_quran", "current"), {
+          surahNum: 1, ayatNum: 0, savedAt: Date.now()
+        });
+      } catch(e) { console.log("Gagal reset Kindle:", e); }
       showToast("✅ Mula semula dari Surah 1 (Al-Fatihah)! Sejarah kekal. 🕌", 4000);
     });
 
