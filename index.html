@@ -13035,19 +13035,17 @@ const allFiltered = cfg.drawers.filter(d => mode === 'quran' ? d.surahNum === cf
             : (d.title||'').toLowerCase().includes(searchTerm))
         : allFiltered;
 
-const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').length;
+const emptyCount = allFiltered.filter(d => mode === 'quran'
+  ? (!d.arab || d.arab.trim() === '')
+  : (!d.zikir || d.zikir.trim() === '')).length;    
       document.querySelectorAll(`.btn-goto-empty-generic[data-mode="${mode}"]`).forEach(b => {
         b.textContent = emptyCount > 0 ? `⚡ Kosong (${emptyCount})` : '✅ Penuh';
       });
 
       // Semak format dan nama laci untuk mode quran
       if (mode === 'quran') {
-        const kategoriSemasa = allQuranTimes.find(t => t.id === cfg.timeId());
-// Keluarkan nombor surah dari nama kategori (contoh: "2. Al-Baqarah" → 2)
-        const namaSurahBetul = kategoriSemasa ? (() => {
-          const match = (kategoriSemasa.name || '').match(/^(\d+)\.\s+(.+)/);
-          return match ? match[2].trim() : null;
-        })() : null;
+        // Guna hardcode terus — tiada lagi bergantung pada allQuranTimes
+        const namaSurahBetul = QURAN_SURAH_NAMES[currentQuranSurahNum - 1] || null;
 
 const laciFormatSalah = [];
         const laciNamaSalah = [];
@@ -13119,10 +13117,13 @@ if (semuaSalah.length > 0 || ayatTertinggal.length > 0) {
 
 if(!filtered.length){list.innerHTML='<div class="empty-state">Tiada laci dijumpai.</div>';return;}
       filtered.forEach(data => {
-const isEmpty = !data.zikir || data.zikir.trim() === '';
+const isEmpty = mode === 'quran'
+  ? (!data.arab || data.arab.trim() === '')
+  : (!data.zikir || data.zikir.trim() === '');
         const div = document.createElement("div");
         div.className = "drawer-card";
         div.setAttribute('data-id-laci', data.id);
+        if (mode === 'quran') div.setAttribute('data-ayat-num', data.ayatNum || '');
         if (isEmpty) {
           div.setAttribute('data-empty', 'true');
           div.style.borderColor = 'rgba(245,158,11,0.4)';
@@ -13132,13 +13133,16 @@ const selectCbHtml = (mode === 'quran' && quranSelectMode)
           : '';
         div.innerHTML = `
           ${selectCbHtml}
-          <input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">
+          ${mode === 'quran'
+            ? `<div style="font-size:.78rem;color:#34d399;font-weight:bold;margin-bottom:8px;">${data.surahNum}. ${QURAN_SURAH_NAMES[data.surahNum-1]} Ayat ${data.ayatNum}</div>`
+            : `<input class="drawer-title" value="${data.title||''}" placeholder="Tajuk Laci" style="width:100%;margin-bottom:12px;font-size:1.05rem;">`
+          }
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">1. Teks (RTL / Arab)</div>
 
         
 ${hurufPickerHtml}
           <div class="arabic-toolbar">${arabicSymbols.map(s=>`<button class="arabic-btn">${s}</button>`).join('')}</div>
-<textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};max-height:${zikirMinHeight};overflow-y:auto;resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'UthmanicHafs','Traditional Arabic',serif" : 'inherit'};">${data.zikir||''}</textarea>
+<textarea class="drawer-input-box drawer-zikir" dir="rtl" style="text-align:right;font-size:${zikirFontSize};min-height:${zikirMinHeight};max-height:${zikirMinHeight};overflow-y:auto;resize:none;line-height:${mode === 'quran' ? '3' : '2'};font-family:${mode === 'quran' ? "'UthmanicHafs','Traditional Arabic',serif" : 'inherit'};">${mode === 'quran' ? (data.arab||'') : (data.zikir||'')}</textarea>    
 ${mode !== 'quran' ? `<div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">2. Target Mini</div>
           <input type="number" class="drawer-input-box drawer-target" placeholder="Cth: 33" value="${data.target||''}" style="font-size:1rem;">` : ''}
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
@@ -13148,12 +13152,14 @@ ${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-detect-simbol"
                         <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
 </div>`;
 
-        div.querySelector('.drawer-title').addEventListener("change", e =>
-
+        // Title hanya untuk doa/hadis — quran guna tajuk hardcode
+        const titleInput = div.querySelector('.drawer-title');
+        if (titleInput) titleInput.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{title:e.target.value}));
 const tz = div.querySelector('.drawer-zikir');
         tz.addEventListener("change", e =>
-          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:e.target.value}));
+          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),
+            mode === 'quran' ? {arab:e.target.value} : {zikir:e.target.value}));
 if (mode === 'quran') {
 tz.addEventListener('paste', (e) => {
             e.preventDefault();
@@ -13171,17 +13177,19 @@ tz.addEventListener('paste', (e) => {
                         const s = tz.selectionStart, en = tz.selectionEnd, v = tz.value;
 tz.value = v.substring(0, s) + bersih + v.substring(en);
             tz.selectionStart = tz.selectionEnd = s + bersih.length;
-            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id), { zikir: tz.value });
+            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),
+              mode === 'quran' ? { arab: tz.value } : { zikir: tz.value });    
             if (quranScrollDefault === 'bawah') tz.scrollTop = tz.scrollHeight;
 
             // Auto lompat selepas paste (tunggu re-render Firestore)
             if (quranAutoJumpEmpty && tz.value.trim()) {
-              const tajukSemasa = data.title;
+              const ayatSemasa = data.ayatNum;
               setTimeout(() => {
-                const semuaTajuk = [...document.querySelectorAll('#quran-drawers-list .drawer-title')];
+                const semuaCards = [...document.querySelectorAll('#quran-drawers-list .drawer-card')];
                 const semuaZikir = [...document.querySelectorAll('#quran-drawers-list .drawer-zikir')];
                 let jumpa = false;
                 for (let i = 0; i < semuaZikir.length; i++) {
+                  const cardAyat = parseInt(semuaCards[i]?.getAttribute('data-ayat-num') || '0');
                   if (jumpa && !semuaZikir[i].value.trim()) {
 const targetCard = semuaZikir[i].closest('.drawer-card');
                     targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -13193,7 +13201,7 @@ const targetCard = semuaZikir[i].closest('.drawer-card');
                     }, 2500);
                     return;
                   }
-                  if (semuaTajuk[i] && semuaTajuk[i].value === tajukSemasa) jumpa = true;
+                  if (cardAyat === ayatSemasa) jumpa = true;    
                 }
                 if (jumpa) showToast('✅ Tiada lagi laci kosong!');
               }, 800);
