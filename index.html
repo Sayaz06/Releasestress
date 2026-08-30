@@ -16445,7 +16445,8 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
           document.getElementById('parent-perkataan-name').textContent = data.name || '';
           if (sectionBahasaDrawer) {
             showSection(sectionBahasaDrawer);
-            renderBahasaDrawers();
+            // Load on-demand — hanya jenis kata semasa
+            loadBahasaDrawersJenis(currentJenisKataId, () => renderBahasaDrawers());
           }
         });
         div.querySelectorAll('button')[1].addEventListener('click', async () => {
