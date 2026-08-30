@@ -12551,6 +12551,38 @@ addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"~",zikir:"
   }
 });
 
+// ── DEBUG LOG QURAN DRAWERS ──
+window.logQuranDrawers = function() {
+  console.log('=== QURAN DRAWERS DEBUG ===');
+  console.log('Jumlah laci:', allQuranDrawers.length);
+
+  // Log semua timeId unik
+  const timeIds = [...new Set(allQuranDrawers.map(d => d.timeId))].sort((a,b) => a - b);
+  console.log('TimeId unik (surah):', timeIds);
+
+  // Log 5 laci pertama sebagai contoh struktur
+  console.log('--- 5 laci pertama (contoh struktur) ---');
+  allQuranDrawers.slice(0, 5).forEach(d => {
+    console.log({
+      id: d.id,
+      timeId: d.timeId,
+      title: d.title,
+      arabLength: (d.zikir || '').length,
+      maksudLength: (d.maksud || '').length
+    });
+  });
+
+  // Log semua title untuk surah semasa
+  console.log('--- Title laci surah semasa (timeId=' + currentQuranTimeId + ') ---');
+  const surahSemasa = allQuranDrawers
+    .filter(d => d.timeId === currentQuranTimeId)
+    .sort((a,b) => (a.title||'').localeCompare(b.title||'', undefined, {numeric:true}));
+  surahSemasa.forEach(d => console.log(d.title, '| arab:', (d.zikir||'').length, 'aksara | maksud:', (d.maksud||'').length, 'aksara'));
+
+  console.log('=== HABIS ===');
+};
+console.log('💡 Taip logQuranDrawers() dalam console F12 untuk debug laci Quran');
+
     // ── NAV DOA ──
     document.getElementById('btn-go-doa-times').addEventListener('click', () => {
       showSection(document.getElementById('section-doa-times'));
