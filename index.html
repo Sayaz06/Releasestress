@@ -18570,8 +18570,8 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       document.getElementById('countdown-mini-surah-name').textContent = cmSurahName;
 
       cmDrawers = allQuranDrawers
-        .filter(d => d.surahNum === alQuranPenuhSurahIdx && d.arab && d.arab.trim())    
-        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+        .filter(d => d.surahNum === alQuranPenuhSurahIdx && d.arab && d.arab.trim())
+        .sort((a, b) => (a.ayatNum || 0) - (b.ayatNum || 0));
 
       if (!cmDrawers.length) {
         showToast('Tiada laci dengan teks Arab dalam kategori ini.');
@@ -18597,7 +18597,9 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       const total = cmDrawers.length;
       const baki = total - cmIndex;
 
-      document.getElementById('cm-ayat-label').textContent = data.title || `Ayat ${cmIndex + 1}`;
+      document.getElementById('cm-ayat-label').textContent = data.surahNum
+        ? `${data.surahNum}. ${QURAN_SURAH_NAMES[data.surahNum - 1]} Ayat ${data.ayatNum}`
+        : `Ayat ${cmIndex + 1}`;    
       document.getElementById('cm-progress').textContent = `${cmIndex + 1} / ${total}`;
       document.getElementById('cm-baki').textContent = baki;
       document.getElementById('cm-dibaca').textContent = cmSesiDibaca;
@@ -18606,15 +18608,22 @@ document.getElementById('btn-tutup-panduan-quran').addEventListener('click', () 
       const contentEl = document.getElementById('cm-content');
       const hintEl = document.getElementById('cm-hint');
 
+      // Jana tajuk hardcode — konsisten, tiada isu nama/format
+      const cmTajuk = data.surahNum
+        ? `${data.surahNum}. ${QURAN_SURAH_NAMES[data.surahNum - 1]} Ayat ${data.ayatNum}`
+        : `Ayat ${cmIndex + 1}`;
+
 if (!cmFlipped) {
-        titleEl.textContent = `[ ${data.title} ]`;
+        titleEl.textContent = `[ ${cmTajuk} ]`;
         contentEl.style.fontSize = `${quranFontSize}rem`;
         contentEl.style.fontFamily = "'UthmanicHafs','Traditional Arabic',serif";
         contentEl.style.direction = 'rtl';
         contentEl.style.textAlign = 'right';
         contentEl.style.lineHeight = '3';
-        contentEl.textContent = data.arab || '(Tiada teks Arab)';    
+        contentEl.textContent = data.arab || '(Tiada teks Arab)';
         hintEl.textContent = '(Tap skrin untuk papar maksud)';
+      } else {
+        titleEl.textContent = `[ ${cmTajuk} ] — Maksud`;
       } else {
         titleEl.textContent = `[ ${data.title} ] — Maksud`;
         contentEl.style.fontSize = '1rem';
