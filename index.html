@@ -13022,7 +13022,8 @@ const zikirFontSize = mode === 'quran' ? `${quranFontSize}rem` : '1.15rem';
 const zikirMinHeight = mode === 'quran' ? `calc(${quranFontSize * 3}rem + 16px)` : '70px';
       const searchEl = document.getElementById(`${mode}-drawer-search`);
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
-const allFiltered = cfg.drawers.filter(d => mode === 'quran' ? d.surahNum === cfg.timeId() : d.timeId === cfg.timeId())
+if (mode === 'quran') console.log('🔍 renderGenericDrawers quran — allQuranDrawers:', allQuranDrawers.length, '| surahNum:', cfg.timeId());
+const allFiltered = cfg.drawers.filter(d => mode === 'quran' ? d.surahNum === cfg.timeId() : d.timeId === cfg.timeId())      
   .sort((a, b) => {
     if (mode === 'quran') return (a.ayatNum || 0) - (b.ayatNum || 0);
     if ((a.title || "") === "~") return 1;
