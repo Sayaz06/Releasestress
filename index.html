@@ -10831,10 +10831,9 @@ function syncFullscreenFact() {
       const surahName = QURAN_SURAH_NAMES[surahNum - 1] || '';
       const jumlahAyat = QURAN_SURAH_AYAT[surahNum - 1] || 1;
 
-      // Ayat semasa dari laci
+      // Ayat semasa dari laci — guna surahNum + ayatNum terus
       const laciSemasa = allRoutines[currentRoutineIndex];
-      const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
-      const ayatSemasa = parsed ? parsed.ayatNum : 0;
+      const ayatSemasa = laciSemasa ? (laciSemasa.ayatNum || 0) : 0;
 
       // Progress
       const percent = Math.round((ayatSemasa / jumlahAyat) * 100);
@@ -12929,20 +12928,18 @@ const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').le
 const laciFormatSalah = [];
         const laciNamaSalah = [];
 
-        // Kumpul semua nombor ayat yang ada
+        // Kumpul semua nombor ayat yang ada — guna field surahNum + ayatNum terus
         const ayatAdaSet = new Set();
         allFiltered.forEach(d => {
-          if (!d.title) return;
-          const parsed = parseLaciQuran(d.title);
-          if (!parsed) {
+          if (!d.surahNum || !d.ayatNum) {
             laciFormatSalah.push(d.id);
-          } else if (namaSurahBetul && parsed.surahName.trim() !== namaSurahBetul.trim()) {
+          } else if (namaSurahBetul && QURAN_SURAH_NAMES[d.surahNum - 1] !== namaSurahBetul) {
             laciNamaSalah.push(d.id);
           } else {
-            ayatAdaSet.add(parsed.ayatNum);
+            ayatAdaSet.add(d.ayatNum);
           }
         });
-
+        
         // Detect ayat tertinggal
         const ayatTertinggal = [];
         if (namaSurahBetul) {
@@ -13886,12 +13883,9 @@ function kiraTotalAyatDibaca(surahNum, ayatNum) {
       return total;
     }
 
-    async function updateQuranKhatamDariLaci(title) {
+    async function updateQuranKhatamDariLaci(surahNum, ayatNum) {
       if (!currentUser || !quranKhatamData) return;
-      const parsed = parseLaciQuran(title);
-      if (!parsed) return;
-
-      const { surahNum, ayatNum } = parsed;
+      if (!surahNum || !ayatNum) return;
       const totalRead = kiraTotalAyatDibaca(surahNum, ayatNum);
       const prevTotal = quranKhatamData.totalAyatRead || 0;
       if (totalRead <= prevTotal) return; // Jangan update kalau tak maju
@@ -18657,10 +18651,10 @@ async function cmTap() {
     async function simpanStatusKeluar() {
       if (!currentUser || !quranKhatamData) return;
 
+      // Guna surahNum + ayatNum terus — tiada lagi parseLaciQuran
       const laciSemasa = allRoutines[currentRoutineIndex];
-      const parsed = laciSemasa ? parseLaciQuran(laciSemasa.title) : null;
-      const curSurah = parsed ? parsed.surahNum : (quranKhatamData.currentSurah || 1);
-      const curAyat = parsed ? parsed.ayatNum : (quranKhatamData.currentAyat || 0);
+      const curSurah = laciSemasa ? (laciSemasa.surahNum || quranKhatamData.currentSurah || 1) : (quranKhatamData.currentSurah || 1);
+      const curAyat = laciSemasa ? (laciSemasa.ayatNum || quranKhatamData.currentAyat || 0) : (quranKhatamData.currentAyat || 0);
 
       const statusData = {
         surah: curSurah,
@@ -18981,19 +18975,16 @@ function renderSusunAlQuran() {
           const namaSurahBetul = QURAN_SURAH_NAMES[idx];
 
           drawersDalamKategori.forEach(d => {
-            if (!d.title) return;
-            const parsed = parseLaciQuran(d.title);
-            if (!parsed) {
+            if (!d.surahNum || !d.ayatNum) {
               adaFormatSalah = true;
-            } else if (parsed.surahName.trim() !== namaSurahBetul.trim()) {
+            } else if (QURAN_SURAH_NAMES[d.surahNum - 1] !== namaSurahBetul) {
               isSerasi = false;
             }
           });
 
-          // Semak bilangan ayat
+          // Semak bilangan ayat — guna field surahNum terus
           const jumlahLaciAda = drawersDalamKategori.filter(d => {
-            const parsed = parseLaciQuran(d.title);
-            return parsed && parsed.surahName.trim() === namaSurahBetul.trim();
+            return d.surahNum && QURAN_SURAH_NAMES[d.surahNum - 1] === namaSurahBetul;
           }).length;
 
           if (jumlahLaciAda < jumlahAyatSebenar) {
