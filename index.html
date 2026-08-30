@@ -10367,7 +10367,15 @@ let janaPukalConfig = { coll: 'routine_drawers', timeId: null };
           const batchEnd = Math.min(i + CHUNK - 1, end);
           for (let j = i; j <= batchEnd; j++) {
 const ref = doc(collection(db, "users", currentUser.uid, janaPukalConfig.coll));
-              batch.set(ref, {
+              // Quran guna format hardcode — doa/hadis kekal format lama
+              const isQuranColl = janaPukalConfig.coll === 'quran_drawers';
+              batch.set(ref, isQuranColl ? {
+                surahNum: currentQuranSurahNum,
+                ayatNum:  j,
+                arab:     "",
+                maksud:   "",
+                createdAt: Date.now() + (j - start)
+              } : {
                 title: `${prefix} ${j}`,
                 zikir: "", target: "", maksud: "",
                 timeId: janaPukalConfig.timeId,
