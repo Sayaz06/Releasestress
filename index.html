@@ -12559,7 +12559,7 @@ document.getElementById('btn-back-quran-drawer').addEventListener('click', () =>
 
 document.getElementById('btn-add-quran-drawer').addEventListener('click', () => {
   if(currentQuranTimeId) {
-addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{title:"~",zikir:"",target:"",maksud:"",timeId:currentQuranTimeId,createdAt:Date.now()});
+addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{surahNum:currentQuranTimeId,ayatNum:0,arab:"",maksud:"",createdAt:Date.now()});    
         showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
   }
 });
@@ -12735,8 +12735,8 @@ window.logQuranDrawers = function() {
   console.log('Jumlah laci:', allQuranDrawers.length);
 
   // Log semua timeId unik
-  const timeIds = [...new Set(allQuranDrawers.map(d => d.timeId))].sort((a,b) => a - b);
-  console.log('TimeId unik (surah):', timeIds);
+  const surahNums = [...new Set(allQuranDrawers.map(d => d.surahNum))].sort((a,b) => a - b);
+  console.log('SurahNum unik:', surahNums);
 
   // Log 5 laci pertama sebagai contoh struktur
   console.log('--- 5 laci pertama (contoh struktur) ---');
@@ -12745,17 +12745,17 @@ window.logQuranDrawers = function() {
       id: d.id,
       timeId: d.timeId,
       title: d.title,
-      arabLength: (d.zikir || '').length,
+      arabLength: (d.arab || '').length,    
       maksudLength: (d.maksud || '').length
     });
   });
 
   // Log semua title untuk surah semasa
-  console.log('--- Title laci surah semasa (timeId=' + currentQuranTimeId + ') ---');
+  console.log('--- Laci surah semasa (surahNum=' + currentQuranTimeId + ') ---');    
   const surahSemasa = allQuranDrawers
-    .filter(d => d.timeId === currentQuranTimeId)
+    .filter(d => d.surahNum === currentQuranTimeId)    
     .sort((a,b) => (a.title||'').localeCompare(b.title||'', undefined, {numeric:true}));
-  surahSemasa.forEach(d => console.log(d.title, '| arab:', (d.zikir||'').length, 'aksara | maksud:', (d.maksud||'').length, 'aksara'));
+  surahSemasa.forEach(d => console.log(d.surahNum + '. ' + QURAN_SURAH_NAMES[d.surahNum-1] + ' Ayat ' + d.ayatNum, '| arab:', (d.arab||'').length, 'aksara | maksud:', (d.maksud||'').length, 'aksara'));    
 
   console.log('=== HABIS ===');
 };
@@ -12877,7 +12877,7 @@ div.querySelectorAll('button')[1].addEventListener("click", async () => {
 
     function renderGenericDrawers(mode) {
       const cfg = {
-        quran: {drawers:allQuranDrawers, timeId:()=>currentQuranTimeId, listId:'quran-drawers-list', coll:'quran_drawers'},
+        quran: {drawers:allQuranDrawers, timeId:()=>currentQuranSurahNum, listId:'quran-drawers-list', coll:'quran_drawers'},    
         doa:   {drawers:allDoaDrawers, timeId:()=>currentDoaTimeId, listId:'doa-drawers-list', coll:'doa_drawers'},
         hadis: {drawers:allHadisDrawers, timeId:()=>currentHadisTimeId, listId:'hadis-drawers-list', coll:'hadis_drawers'},
       }[mode];
@@ -18975,7 +18975,7 @@ function renderSusunAlQuran() {
         let adaFormatSalah = false;
         let kurangAyat = 0;
         if (isTetap && category) {
-          const drawersDalamKategori = allQuranDrawers.filter(d => d.timeId === timeId);
+          const drawersDalamKategori = allQuranDrawers.filter(d => d.surahNum === num);    
           const jumlahAyatSebenar = QURAN_SURAH_AYAT[idx];
           const namaSurahBetul = QURAN_SURAH_NAMES[idx];
 
@@ -19149,7 +19149,7 @@ document.getElementById('quran-import-input').addEventListener('change', async (
           const timeId = surahNum;
 
           // Semak ayat yang sudah wujud
-          const existingDrawers = allQuranDrawers.filter(d => d.timeId === timeId);
+          const existingDrawers = allQuranDrawers.filter(d => d.surahNum === currentQuranSurahNum);  
           const existingTitles = new Set(existingDrawers.map(d => d.title));
 
           const ayatBaru = (surah.ayat || []).filter(a => !existingTitles.has(a.tajuk));
@@ -19302,7 +19302,7 @@ const lainnya = allQuranTimes
           const batch = writeBatch(db);
           const end = Math.min(i + 499, ids.length);
           for (let j = i; j < end; j++)
-            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",ids[j]), { timeId: destId });
+            batch.update(doc(db,"users",currentUser.uid,"quran_drawers",ids[j]), { surahNum: destId });    
           await batch.commit();
           i = end;
         }
@@ -20276,10 +20276,10 @@ if (match) {
       const parsed = parseMaksudPukal(teks);
       if (!parsed.length) { prev.style.color='#f87171'; prev.textContent='⚠️ Tiada ayat bernombor dijumpai.'; return; }
       const calon = parsed.filter(p =>
-        allQuranDrawers.some(d => d.timeId === currentQuranTimeId && d.title === `${prefix} Ayat ${p.number}`)
+        allQuranDrawers.some(d => d.surahNum === currentQuranSurahNum && d.ayatNum === p.number)
       );
       prev.style.color = '#34d399';
-      prev.textContent = `✅ ${parsed.length} ayat dikesan. ${calon.length} laci sepadan dijumpai. Contoh: "${prefix} Ayat ${parsed[0].number}"`;
+      prev.textContent = `✅ ${parsed.length} ayat dikesan. ${calon.length} laci sepadan dijumpai. Contoh: "Ayat ${parsed[0].number}"`;
     }
 
     document.getElementById('maksud-pukal-prefix').addEventListener('input', updateMaksudPukalPreview);
@@ -20692,10 +20692,10 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       const parsed = parseArabPukal(teks);
       if (!parsed.length) { prev.style.color='#f87171'; prev.textContent='⚠️ Tiada ayat bernombor Arab dijumpai.'; return; }
       const calon = parsed.filter(p =>
-        allQuranDrawers.some(d => d.timeId === currentQuranTimeId && d.title === `${prefix} Ayat ${p.number}`)
+        allQuranDrawers.some(d => d.surahNum === currentQuranSurahNum && d.ayatNum === p.number)
       );
       prev.style.color = '#a78bfa';
-      prev.textContent = `✅ ${parsed.length} ayat dikesan. ${calon.length} laci sepadan. Contoh: "${prefix} Ayat ${parsed[0].number}" → "${parsed[0].zikir.substring(0,20)}..."`;
+      prev.textContent = `✅ ${parsed.length} ayat dikesan. ${calon.length} laci sepadan. Contoh: "Ayat ${parsed[0].number}" → "${parsed[0].zikir.substring(0,20)}..."`;
     }
 
     document.getElementById('arab-pukal-prefix').addEventListener('input', updateArabPukalPreview);
@@ -20708,9 +20708,10 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       const parsed = parseArabPukal(teks);
       if (!parsed.length) { showToast('⚠️ Tiada ayat bernombor Arab dijumpai.'); return; }
       const calon = parsed.map(p => {
-        const laci = allQuranDrawers.find(d => d.timeId === currentQuranTimeId && d.title === `${prefix} Ayat ${p.number}`);
-        return laci ? { id: laci.id, zikir: p.zikir } : null;
-      }).filter(Boolean);
+        const laci = allQuranDrawers.find(d => d.surahNum === currentQuranSurahNum && d.ayatNum === p.number);
+        return laci ? { id: laci.id, maksud: p.maksud } : null;
+      }).filter(Boolean);    
+
       if (!calon.length) { showToast('⚠️ Tiada laci sepadan. Semak nama awalan.'); return; }
       document.getElementById('arab-pukal-modal').style.display = 'none';
       showToast(`⏳ Mengemas kini ${calon.length} laci...`, 0);
