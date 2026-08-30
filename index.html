@@ -4825,19 +4825,27 @@ factDisplayBox.classList.add("show");
 if (src === 'quran') {
           learningMode=3; btnToggleMode.textContent="Mode: Combo";
           btnToggleMainRestMax.style.display="none";
-          // OFF suis popup, lock aktif — hilang bila user sampai ayat gandaan 1 atau 6
           quranPopupSuisOn = false;
           quranPopupSuisLock = true;
           console.log('🔒 Quran ON — suis lock aktif');
-          // Tunjuk overlay countdown keselamatan sebelum sync leaderboard
           mulakanCountdownQuran(() => {
             syncLaciDariLeaderboard();
           });
+        } else if (src === 'doa') {
+          learningMode=2; btnToggleMode.textContent="Mode: Rest";
+          btnToggleMainRestMax.style.display="inline-flex";
+          // Load doa drawers on-demand bila doa ON
+          loadDoaDrawers(() => rebuildRoutines());
+        } else if (src === 'hadis') {
+          learningMode=2; btnToggleMode.textContent="Mode: Rest";
+          btnToggleMainRestMax.style.display="inline-flex";
+          // Load hadis drawers on-demand bila hadis ON
+          loadHadisDrawers(() => rebuildRoutines());
         } else {
           learningMode=2; btnToggleMode.textContent="Mode: Rest";
           btnToggleMainRestMax.style.display="inline-flex";
         }
-        rebuildRoutines();
+        if (src !== 'doa' && src !== 'hadis') rebuildRoutines();
 // Pastikan countdown harian wujud untuk mode baru
         if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
 
@@ -10208,7 +10216,14 @@ showSection(secToShow);
         if (window._kindleCmdUnsub) { window._kindleCmdUnsub(); window._kindleCmdUnsub = null; }
         // Unsub quran drawers bila logout
         if (_unsubQuranDrawers) { _unsubQuranDrawers(); _unsubQuranDrawers = null; _unsubQuranDrawersSurah = 0; }
+        if (_unsubDoaDrawers) { _unsubDoaDrawers(); _unsubDoaDrawers = null; }
+        if (_unsubHadisDrawers) { _unsubHadisDrawers(); _unsubHadisDrawers = null; }
         allQuranDrawers = [];
+        allDoaDrawers = [];
+        allHadisDrawers = [];
+        doaDrawerCache = null;
+        hadisDrawerCache = null;
+        console.log('🧹 Cache doa & hadis dibersihkan — logout');
         showSection(sectionLogin);
       }
     });
@@ -12864,7 +12879,8 @@ console.log('💡 Taip logQuranDrawers() dalam console F12 untuk debug laci Qura
     // ── NAV DOA ──
     document.getElementById('btn-go-doa-times').addEventListener('click', () => {
       showSection(document.getElementById('section-doa-times'));
-      renderGenericTimes('doa');
+      // Load doa drawers on-demand bila user buka section doa
+      loadDoaDrawers(() => renderGenericTimes('doa'));
     });
     document.getElementById('btn-back-tasbih-doa').addEventListener('click', () => showSection(sectionTasbih));
     document.getElementById('btn-back-doa-drawer').addEventListener('click', () => {
@@ -12883,7 +12899,8 @@ addDoc(collection(db,"users",currentUser.uid,"doa_drawers"),{title:"~",zikir:"",
     // ── NAV HADIS ──
     document.getElementById('btn-go-hadis-times').addEventListener('click', () => {
       showSection(document.getElementById('section-hadis-times'));
-      renderGenericTimes('hadis');
+      // Load hadis drawers on-demand bila user buka section hadis
+      loadHadisDrawers(() => renderGenericTimes('hadis'));
     });
     document.getElementById('btn-back-tasbih-hadis').addEventListener('click', () => showSection(sectionTasbih));
     document.getElementById('btn-back-hadis-drawer').addEventListener('click', () => {
@@ -13341,15 +13358,67 @@ list.appendChild(div);
       );
     }
 
+    // ── CACHE DOA & HADIS DRAWERS ──
+    // Prinsip: load on-demand sahaja, simpan dalam cache
+    // Tiada double work — selagi dalam cache, tidak sentuh Firestore
+    var doaDrawerCache = null;
+    var hadisDrawerCache = null;
+    var _unsubDoaDrawers = null;
+    var _unsubHadisDrawers = null;
+
+    function loadDoaDrawers(cbSelesai) {
+      if (!currentUser) return;
+      if (doaDrawerCache) {
+        console.log('✅ Cache hit — doa_drawers dari memori, tiada query Firestore');
+        allDoaDrawers = doaDrawerCache;
+        cbSelesai && cbSelesai();
+        return;
+      }
+      if (_unsubDoaDrawers) { cbSelesai && cbSelesai(); return; }
+      console.log('📥 Cache miss — doa_drawers diload dari Firestore');
+      _unsubDoaDrawers = onSnapshot(
+        query(collection(db,"users",currentUser.uid,"doa_drawers")),
+        snap => {
+          allDoaDrawers = snap.docs.map(d=>({id:d.id,...d.data()}));
+          doaDrawerCache = allDoaDrawers;
+          console.log('📥 Cache miss — doa_drawers disimpan dalam cache');
+          if(document.getElementById('section-doa-drawers')?.classList.contains('active')) renderGenericDrawers('doa');
+          rebuildIfActive('doa');
+          if (cbSelesai) { const cb = cbSelesai; cbSelesai = null; cb(); }
+        }
+      );
+    }
+
+    function loadHadisDrawers(cbSelesai) {
+      if (!currentUser) return;
+      if (hadisDrawerCache) {
+        console.log('✅ Cache hit — hadis_drawers dari memori, tiada query Firestore');
+        allHadisDrawers = hadisDrawerCache;
+        cbSelesai && cbSelesai();
+        return;
+      }
+      if (_unsubHadisDrawers) { cbSelesai && cbSelesai(); return; }
+      console.log('📥 Cache miss — hadis_drawers diload dari Firestore');
+      _unsubHadisDrawers = onSnapshot(
+        query(collection(db,"users",currentUser.uid,"hadis_drawers")),
+        snap => {
+          allHadisDrawers = snap.docs.map(d=>({id:d.id,...d.data()}));
+          hadisDrawerCache = allHadisDrawers;
+          console.log('📥 Cache miss — hadis_drawers disimpan dalam cache');
+          if(document.getElementById('section-hadis-drawers')?.classList.contains('active')) renderGenericDrawers('hadis');
+          rebuildIfActive('hadis');
+          if (cbSelesai) { const cb = cbSelesai; cbSelesai = null; cb(); }
+        }
+      );
+    }
+
     function subscribeNewModes() {
       if(!currentUser) return;
       const modes = [
-        // quran_drawers TIDAK disubscribe di sini — load on-demand ikut surah
-        {coll:'quran_times', arr:(d)=>{allQuranTimes=d; if(document.getElementById('section-quran-times')?.classList.contains('active')) renderSurahPermanentList(); rebuildIfActive('quran');} },
+        // quran_drawers, doa_drawers, hadis_drawers — load on-demand sahaja
+        // quran_times — tidak relevan lagi
         {coll:'doa_times', arr:(d)=>{allDoaTimes=d; if(document.getElementById('section-doa-times')?.classList.contains('active')) renderGenericTimes('doa'); rebuildIfActive('doa');} },
-        {coll:'doa_drawers', arr:(d)=>{allDoaDrawers=d; if(document.getElementById('section-doa-drawers')?.classList.contains('active')) renderGenericDrawers('doa'); rebuildIfActive('doa');} },
         {coll:'hadis_times', arr:(d)=>{allHadisTimes=d; if(document.getElementById('section-hadis-times')?.classList.contains('active')) renderGenericTimes('hadis'); rebuildIfActive('hadis');} },
-        {coll:'hadis_drawers', arr:(d)=>{allHadisDrawers=d; if(document.getElementById('section-hadis-drawers')?.classList.contains('active')) renderGenericDrawers('hadis'); rebuildIfActive('hadis');} },
       ];
       modes.forEach(m => onSnapshot(query(collection(db,"users",currentUser.uid,m.coll)), snap => {
         m.arr(snap.docs.map(d=>({id:d.id,...d.data()})));
