@@ -18911,10 +18911,15 @@ async function alQuranPenuhNextSurah() {
         isNextSurah: true
       });
 
-      // Update quranKhatamData supaya card kemajuan tunjuk surah baru
+      // Update quranKhatamData dan simpan ke Firestore supaya kekal bila reopen
       if (quranKhatamData) {
         quranKhatamData.currentSurah = nextSurahNum;
         quranKhatamData.currentAyat = 1;
+        quranKhatamData.lastUpdateTs = Date.now();
+        try {
+          await setDoc(doc(db, "users", currentUser.uid, "settings", "quranKhatam"),
+            quranKhatamData, { merge: true });
+        } catch(e) { console.log("Gagal simpan kemajuan surah baru:", e); }
         renderQuranKhatamCard();
       }
 
