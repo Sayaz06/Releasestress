@@ -8897,6 +8897,7 @@ onSnapshot(query(collection(db, "users", currentUser.uid, "drawer")), snap => {
         allDrawers = snap.docs.map(d => ({id: d.id, ...d.data()}));
         if(sectionDrawer.classList.contains('active')) renderDrawers();
         rebuildFacts();
+        kemaskiniIsLastFakta();
         // Auto-sync SR queue fakta bila drawer berubah
         setTimeout(() => syncFaktaSRQueuePdfKod(), 2000);
       });
@@ -9606,7 +9607,27 @@ bukaCropTool(file, async (blob) => {
       });
     }
 
-function rebuildFacts() {
+    async function kemaskiniIsLastFakta() {
+      if (!currentUser) return;
+      const activeTopic = allTopics.find(t => t.isActive);
+      if (!activeTopic) return;
+      const activeDrawers = allDrawers
+        .filter(d => d.topicId === activeTopic.id)
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+      // Kira jumlah baris sebenar
+      var totalBaris = 0;
+      activeDrawers.forEach(function(d) {
+        if (d.items && d.items.length > 0) {
+          d.items.forEach(function(item) { if (item.ayat && item.ayat.trim()) totalBaris++; });
+        }
+      });
+      // Simpan dalam topics doc
+      await updateDoc(doc(db, 'users', currentUser.uid, 'topics', activeTopic.id), {
+        totalBaris: totalBaris
+      }).catch(function() {});
+    }
+
+    function rebuildFacts() {
       allFacts = [];
       const activeTopic = allTopics.find(t => t.isActive);
       
