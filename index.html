@@ -3609,6 +3609,7 @@ import {
       deleteDoc,
       onSnapshot,
       query,
+      where,
       orderBy,
       limit,
       writeBatch
@@ -12616,10 +12617,12 @@ document.getElementById('btn-migrate-hardcode').addEventListener('click', async 
       setProgress(peratusan, `[1/2] Migrate Surah ${s}/114 — ${surahName}`);
 
       // Ambil semua laci surah ini
-      const snap = await db.collection('users').doc(currentUser.uid)
-        .collection('quran_drawers')
-        .where('timeId', '==', s)
-        .get();
+      const snap = await getDocs(
+        query(
+          collection(db, 'users', currentUser.uid, 'quran_drawers'),
+          where('timeId', '==', s)
+        )
+      );
 
       if (snap.empty) {
         addLog(`⚠️ Surah ${s}. ${surahName} — tiada laci`, '#fbbf24');
@@ -12628,7 +12631,7 @@ document.getElementById('btn-migrate-hardcode').addEventListener('click', async 
       }
 
       // Update setiap laci
-      const batch = db.batch();
+      const batch = writeBatch(db);      
       let batchCount = 0;
 
       for (const docSnap of snap.docs) {
@@ -12643,8 +12646,7 @@ document.getElementById('btn-migrate-hardcode').addEventListener('click', async 
         }
 
         // Copy zikir ke arab, tambah surahNum dan ayatNum
-        batch.update(db.collection('users').doc(currentUser.uid)
-          .collection('quran_drawers').doc(docSnap.id), {
+        batch.update(doc(db, 'users', currentUser.uid, 'quran_drawers', docSnap.id), {
           surahNum: parsed.surahNum,
           ayatNum: parsed.ayatNum,
           arab: data.zikir || ''
@@ -12669,12 +12671,14 @@ document.getElementById('btn-migrate-hardcode').addEventListener('click', async 
       const peratusan = 50 + Math.round((s / 114) * 50); // 50-100% untuk fasa 2
       setProgress(peratusan, `[2/2] Verify Surah ${s}/114 — ${surahName}`);
 
-      const snap = await db.collection('users').doc(currentUser.uid)
-        .collection('quran_drawers')
-        .where('timeId', '==', s)
-        .get();
+      const snap = await getDocs(
+        query(
+          collection(db, 'users', currentUser.uid, 'quran_drawers'),
+          where('timeId', '==', s)
+        )
+      );
 
-      const repairBatch = db.batch();
+      const repairBatch = writeBatch(db);
       let perluRepair = 0;
 
       for (const docSnap of snap.docs) {
@@ -12697,8 +12701,7 @@ document.getElementById('btn-migrate-hardcode').addEventListener('click', async 
           if (rosak.includes('surahNum')) fix.surahNum = s;
           if (rosak.includes('ayatNum') && parsed) fix.ayatNum = parsed.ayatNum;
           if (rosak.includes('arab')) fix.arab = data.zikir || '';
-          repairBatch.update(db.collection('users').doc(currentUser.uid)
-            .collection('quran_drawers').doc(docSnap.id), fix);          
+          repairBatch.update(doc(db, 'users', currentUser.uid, 'quran_drawers', docSnap.id), fix);       
           perluRepair++;
         } else {
           jumlahVerifyOk++;
