@@ -9,7 +9,7 @@ const CACHE_NAME = `istigfar-${VERSI}`;
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.webmanifest'
 ];
 
 // Install — cache assets asas
