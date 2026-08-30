@@ -16383,9 +16383,10 @@ div.innerHTML = `
           const checked = e.target.checked;
           if (checked) {
             for (const p of allBahasaPerkataan.filter(p => p.isActive && p.id !== data.id))
-              await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",p.id), {isActive: false, lastIndex: 0, lastDrawerId: null});
+              await updateDoc(doc(db,\"users\",currentUser.uid,\"bahasa_perkataan\",p.id), {isActive: false, lastIndex: 0, lastDrawerId: null});
             // Reset lastDrawerId perkataan baru yang ditick
-            await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: true, lastIndex: 0, lastDrawerId: null});
+            await updateDoc(doc(db,\"users\",currentUser.uid,\"bahasa_perkataan\",data.id), {isActive: true, lastIndex: 0, lastDrawerId: null});
+            await kemaskiniIsLastPerkataan(data.jenisId);
           } else {
             await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: false});
           }
@@ -16714,8 +16715,24 @@ input.addEventListener('change', (e) => {
       });
     }
 
+    async function kemaskiniIsLastPerkataan(jenisId) {
+      if (!currentUser || !jenisId) return;
+      const sorted = allBahasaPerkataan
+        .filter(p => p.jenisId === jenisId)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+      if (!sorted.length) return;
+      const lastId = sorted[sorted.length - 1].id;
+      const batch = writeBatch(db);
+      sorted.forEach(p => {
+        batch.update(doc(db, 'users', currentUser.uid, 'bahasa_perkataan', p.id), {
+          isLastPerkataan: p.id === lastId
+        });
+        p.isLastPerkataan = p.id === lastId;
+      });
+      await batch.commit().catch(function() {});
+    }
 
-async function lompatKePerkataanSeterusnyaBahasa() {
+    async function lompatKePerkataanSeterusnyaBahasa() {
       if (!bahasaMode || !currentUser) return false;
       const active = allBahasaPerkataan.find(p => p.isActive);
       if (!active) return false;
@@ -16758,6 +16775,7 @@ async function lompatKePerkataanSeterusnyaBahasa() {
         next.lastDrawerId = null;
         await batch.commit();
 
+        await kemaskiniIsLastPerkataan(active.jenisId);
         currentPerkataanId = next.id;
         activeGlobalBahasaId = next.id;
         localStorage.removeItem('bahasaLastIndex');
