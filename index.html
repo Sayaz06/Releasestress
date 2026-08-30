@@ -4715,6 +4715,7 @@ let currentQuranSurahNum = 1;
     const QURAN_KHATAM_START = new Date('2026-05-21T00:00:00');
     const QURAN_KHATAM_END   = new Date(QURAN_KHATAM_START.getTime() + 342 * 864e5);
     let quranKhatamData    = null;
+    let _quranKhatamReady  = false;    
     let quranEtaLabel = ''; // Simpan anggaran khatam dari renderQuranKhatamCard
     let quranSpeedInterval = null;
     let currentQuranTasbihRef = null, currentQuranTasbihData = null;
@@ -10198,7 +10199,15 @@ showSection(secToShow);
         subscribePerjanjian();
         subscribeWallpaper();
         subscribeBahasa();    // ← Tambah balik baris ini
-        loadQuranKhatam().then(() => semakStatusKeluar());
+        // Block quran mode selagi loadQuranKhatam belum selesai
+        _quranKhatamReady = false;
+        const btnQuran = document.getElementById('btn-toggle-quran');
+        if (btnQuran) { btnQuran.disabled = true; btnQuran.style.opacity = '0.4'; btnQuran.title = 'Tunggu...'; }
+        loadQuranKhatam().then(() => {
+          semakStatusKeluar();
+          _quranKhatamReady = true;
+          if (btnQuran) { btnQuran.disabled = false; btnQuran.style.opacity = ''; btnQuran.title = ''; }
+        });
         subscribeKindleCommand(); // Kindle remote control
         
       } else {
@@ -12496,7 +12505,13 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
     });
 
 // ── TOGGLE QURAN / DOA / HADIS ──
-    document.getElementById('btn-toggle-quran').addEventListener('click', () => activateRoutineMode('quran'));
+    document.getElementById('btn-toggle-quran').addEventListener('click', () => {
+      if (!_quranKhatamReady) {
+        showToast('⏳ Tunggu sebentar, data Quran sedang dimuatkan...');
+        return;
+      }
+      activateRoutineMode('quran');
+    });    
     document.getElementById('btn-toggle-doa').addEventListener('click',   () => activateRoutineMode('doa'));
     document.getElementById('btn-toggle-hadis').addEventListener('click', () => activateRoutineMode('hadis'));
 
