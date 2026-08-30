@@ -18001,6 +18001,9 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         if (bahasaMode) rebuildBahasa();
       });
 
+      // bahasa_drawers TIDAK disubscribe di sini — load on-demand per jenis kata
+    }
+
     // ── CACHE BAHASA DRAWERS ──
     // Prinsip: load per jenis kata sahaja, simpan dalam cache
     // Tiada double work — selagi dalam cache, tidak sentuh Firestore
