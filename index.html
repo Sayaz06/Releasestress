@@ -18515,8 +18515,8 @@ document.getElementById('btn-buka-countdown-mini').addEventListener('click', asy
       document.getElementById('countdown-mini-surah-name').textContent = surahName;
 
       cmDrawers = allQuranDrawers
-        .filter(d => d.surahNum === surahNum && d.arab && d.arab.trim())    
-        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+        .filter(d => d.surahNum === surahNum && d.arab && d.arab.trim())
+        .sort((a, b) => (a.ayatNum || 0) - (b.ayatNum || 0));
 
       if (!cmDrawers.length) {
         showToast('Tiada laci dengan teks Arab dalam surah ini.');
