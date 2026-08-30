@@ -16387,7 +16387,6 @@ div.innerHTML = `
             // Reset lastDrawerId perkataan baru yang ditick
             await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: true, lastIndex: 0, lastDrawerId: null});
             await kemaskiniIsLastPerkataan(data.jenisId);
-            await kemaskiniIsLastPerkataan(data.jenisId);
           } else {
             await updateDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id), {isActive: false});
           }
