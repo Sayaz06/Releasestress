@@ -25728,10 +25728,34 @@ mifRefreshKeyStatus();
         if (row) row.onclick = function() { champToggle(s); };
       });
 
-      document.getElementById('btn-go-champion').addEventListener('click', function() {
+    document.getElementById('btn-go-champion').addEventListener('click', function() {
         champLoad();
         showSection(sectionChampion);
       });
+
+      async function kunciUntickSkipGambar(el) {
+        if (!el) return;
+        el.addEventListener('click', async function(e) {
+          if (el.checked) return;
+          e.preventDefault();
+          el.checked = true;
+          var pin = prompt('Masukkan PIN untuk nyah-tick langkau gambar:');
+          if (!pin || !currentUser) return;
+          try {
+            const credential = EmailAuthProvider.credential(ADMIN_EMAIL, pin);
+            await reauthenticateWithCredential(currentUser, credential);
+            el.checked = false;
+          } catch (err) {
+            alert('PIN salah');
+            el.checked = true;
+          }
+        });
+      }
+      kunciUntickSkipGambar(document.getElementById('mesin-imej-skip-existing'));
+      kunciUntickSkipGambar(document.getElementById('mesin-imej-skip-existing2'));
+      kunciUntickSkipGambar(document.getElementById('mesin-imej-fakta-skip-existing'));
+      kunciUntickSkipGambar(document.getElementById('mesin-imej-fakta-skip-existing2'));      
+
       document.getElementById('btn-back-home-champion').addEventListener('click', function() {
         showSection(sectionHome);
       });
