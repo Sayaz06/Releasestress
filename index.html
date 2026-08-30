@@ -2653,9 +2653,8 @@ body.dark-mode {
         </div>
 
 <div style="display:flex; gap:8px; margin-top:8px;">
-          <button id="btn-add-quran-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Ayat</button>
           <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="quran" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; box-shadow:0 6px 18px rgba(124,58,237,.3);">🗂️ Jana Pukal</button>
-        </div>       
+        </div>
 <button id="btn-open-jana-pukal-v2" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border:none;box-shadow:0 6px 18px rgba(16,185,129,.3);">📖 Jana Pukal v2 — Tampal Format Ayat</button>
 
 <button id="btn-quran-toggle-select" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#a78bfa;">☐ Mod Pilih &amp; Alih</button>
@@ -12583,12 +12582,7 @@ document.getElementById('btn-back-quran-drawer').addEventListener('click', () =>
       renderSurahPermanentList();
     });
 
-document.getElementById('btn-add-quran-drawer').addEventListener('click', () => {
-  if(currentQuranTimeId) {
-addDoc(collection(db,"users",currentUser.uid,"quran_drawers"),{surahNum:currentQuranTimeId,ayatNum:0,arab:"",maksud:"",createdAt:Date.now()});    
-        showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
-  }
-});
+// btn-add-quran-drawer dibuang — laci quran dah hardcode, tidak perlu tambah manual
 
 // ══════════════════════════════════════════
 // MIGRATE QURAN DRAWERS KE FORMAT HARDCODE
@@ -13155,8 +13149,7 @@ ${mode !== 'quran' ? `<div style="font-size:.75rem;color:var(--grad1);margin-bot
           <div style="font-size:.75rem;color:var(--grad1);margin-bottom:4px;font-weight:bold;">3. Maksud / Huraian</div>
           <textarea class="drawer-input-box drawer-maksud" style="font-size:.85rem;color:var(--subtext);min-height:60px;resize:none;">${data.maksud||''}</textarea>
 <div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
-${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-detect-simbol" style="color:#a5b4fc;border-color:#6366f1;">🔍 Detect Simbol</button><button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang</button>' : ''}
-                        <button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
+${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-detect-simbol" style="color:#a5b4fc;border-color:#6366f1;">🔍 Detect Simbol</button><button class="btn btn-secondary btn-sm btn-buang-alif" style="color:#fcd34d;border-color:#f59e0b;">🧹 Buang</button>' : '<button class="btn btn-secondary btn-sm btn-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>'}
 </div>`;
 
         // Title hanya untuk doa/hadis — quran guna tajuk hardcode
