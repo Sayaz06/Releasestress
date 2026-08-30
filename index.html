@@ -9947,9 +9947,15 @@ const zikirText = (data.zikir || "").trim() || (data.maksud || "").trim() || "Ko
         const surah = SURAH_PERMANENT[currentQuranSurahNum - 1];
         if (!surah) return;
 
+        // Kalau data surah belum ada — subscribe dulu, rebuild akan dipanggil semula oleh callback
+        if (_unsubQuranDrawersSurah !== currentQuranSurahNum) {
+          subscribeQuranDrawersSurah(currentQuranSurahNum);
+          return;
+        }
+
         const activeDrawers = allQuranDrawers
           .filter(d => d.surahNum === currentQuranSurahNum)
-          .sort((a, b) => (a.ayatNum || 0) - (b.ayatNum || 0)); // sort nombor terus, lebih tepat
+          .sort((a, b) => (a.ayatNum || 0) - (b.ayatNum || 0));
 
         activeDrawers.forEach(data => {
           // Tajuk dijana hardcode — konsisten, tidak bergantung pada data Firestore
@@ -10221,6 +10227,9 @@ showSection(secToShow);
         if (notesUnsub) notesUnsub();
         if (historyUnsub) historyUnsub();
         if (window._kindleCmdUnsub) { window._kindleCmdUnsub(); window._kindleCmdUnsub = null; }
+        // Unsub quran drawers bila logout
+        if (_unsubQuranDrawers) { _unsubQuranDrawers(); _unsubQuranDrawers = null; _unsubQuranDrawersSurah = 0; }
+        allQuranDrawers = [];
         showSection(sectionLogin);
       }
     });
@@ -12562,7 +12571,8 @@ document.getElementById('btn-go-quran-times').addEventListener('click', () => {
           currentQuranTimeId = surah.num;
           document.getElementById('parent-quran-time-name').textContent = surah.namaLengkap;
           showSection(document.getElementById('section-quran-drawers'));
-          renderGenericDrawers('quran');
+          // Subscribe surah ini sahaja — load on-demand, jimat kos Firebase
+          subscribeQuranDrawersSurah(surah.num, () => renderGenericDrawers('quran'));
         });
 
         list.appendChild(div);
@@ -13322,11 +13332,50 @@ list.appendChild(div);
     }
 
     // ── SUBSCRIBE COLLECTIONS BARU ── 
+    // ── SUBSCRIBE QURAN DRAWERS SATU SURAH ──
+    // Hanya load surah yang diperlukan — jimat kos Firebase
+    var _unsubQuranDrawers = null;
+    var _unsubQuranDrawersSurah = 0;
+
+    function subscribeQuranDrawersSurah(surahNum, cbSelesai) {
+      if (!currentUser) { cbSelesai && cbSelesai(); return; }
+
+      // Kalau surah sama dan dah subscribe — guna data sedia ada
+      if (_unsubQuranDrawers && _unsubQuranDrawersSurah === surahNum) {
+        cbSelesai && cbSelesai();
+        return;
+      }
+
+      // Unsub surah lama
+      if (_unsubQuranDrawers) {
+        _unsubQuranDrawers();
+        _unsubQuranDrawers = null;
+      }
+
+      _unsubQuranDrawersSurah = surahNum;
+
+      _unsubQuranDrawers = onSnapshot(
+        query(
+          collection(db, 'users', currentUser.uid, 'quran_drawers'),
+          where('surahNum', '==', surahNum)
+        ),
+        snap => {
+          allQuranDrawers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (document.getElementById('section-quran-drawers')?.classList.contains('active')) {
+            renderGenericDrawers('quran');
+          }
+          rebuildIfActive('quran');
+          if (cbSelesai) { const cb = cbSelesai; cbSelesai = null; cb(); }
+        },
+        () => { allQuranDrawers = []; cbSelesai && cbSelesai(); }
+      );
+    }
+
     function subscribeNewModes() {
       if(!currentUser) return;
       const modes = [
+        // quran_drawers TIDAK disubscribe di sini — load on-demand ikut surah
         {coll:'quran_times', arr:(d)=>{allQuranTimes=d; if(document.getElementById('section-quran-times')?.classList.contains('active')) renderSurahPermanentList(); rebuildIfActive('quran');} },
-        {coll:'quran_drawers', arr:(d)=>{allQuranDrawers=d; if(document.getElementById('section-quran-drawers')?.classList.contains('active')) renderGenericDrawers('quran'); rebuildIfActive('quran');} },
         {coll:'doa_times', arr:(d)=>{allDoaTimes=d; if(document.getElementById('section-doa-times')?.classList.contains('active')) renderGenericTimes('doa'); rebuildIfActive('doa');} },
         {coll:'doa_drawers', arr:(d)=>{allDoaDrawers=d; if(document.getElementById('section-doa-drawers')?.classList.contains('active')) renderGenericDrawers('doa'); rebuildIfActive('doa');} },
         {coll:'hadis_times', arr:(d)=>{allHadisTimes=d; if(document.getElementById('section-hadis-times')?.classList.contains('active')) renderGenericTimes('hadis'); rebuildIfActive('hadis');} },
@@ -19070,7 +19119,9 @@ async function alQuranPenuhNextSurah() {
         });
       } catch(e) { console.log("Gagal sync surah baru ke Kindle:", e); }
 
-      rebuildRoutines();
+      // Subscribe surah baru — unsub surah lama berlaku dalam subscribeQuranDrawersSurah
+      subscribeQuranDrawersSurah(nextSurahNum);
+      // rebuildRoutines akan dipanggil oleh callback subscribeQuranDrawersSurah
       return true;
     }
 
