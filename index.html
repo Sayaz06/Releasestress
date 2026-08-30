@@ -12977,7 +12977,14 @@ div.querySelectorAll('button')[1].addEventListener("click", async () => {
 
     function renderGenericDrawers(mode) {
       const cfg = {
-        quran: {drawers:allQuranDrawers, timeId:()=>currentQuranSurahNum, listId:'quran-drawers-list', coll:'quran_drawers'},    
+        quran: {drawers:allQuranDrawers, timeId:()=>currentQuranSurahNum, listId:'quran-drawers-list', coll:'quran_drawers', onBeforeRender: () => {
+          // Pastikan data surah semasa diload sebelum render
+          if (_unsubQuranDrawersSurah !== currentQuranSurahNum) {
+            subscribeQuranDrawersSurah(currentQuranSurahNum, () => renderGenericDrawers('quran'));
+            return false; // tunggu data tiba dulu
+          }
+          return true;
+        }},    
         doa:   {drawers:allDoaDrawers, timeId:()=>currentDoaTimeId, listId:'doa-drawers-list', coll:'doa_drawers'},
         hadis: {drawers:allHadisDrawers, timeId:()=>currentHadisTimeId, listId:'hadis-drawers-list', coll:'hadis_drawers'},
       }[mode];
@@ -13002,7 +13009,9 @@ const zikirFontSize = mode === 'quran' ? `${quranFontSize}rem` : '1.15rem';
 const zikirMinHeight = mode === 'quran' ? `calc(${quranFontSize * 3}rem + 16px)` : '70px';
       const searchEl = document.getElementById(`${mode}-drawer-search`);
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
-const allFiltered = cfg.drawers.filter(d => mode === 'quran' ? d.surahNum === cfg.timeId() : d.timeId === cfg.timeId())
+// Check onBeforeRender — kalau return false, tunggu data tiba dulu
+if (cfg.onBeforeRender && !cfg.onBeforeRender()) return;
+const allFiltered = cfg.drawers.filter(d => mode === 'quran' ? d.surahNum === cfg.timeId() : d.timeId === cfg.timeId())    
   .sort((a, b) => {
     if (mode === 'quran') return (a.ayatNum || 0) - (b.ayatNum || 0);
     if ((a.title || "") === "~") return 1;
