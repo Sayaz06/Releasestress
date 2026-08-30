@@ -13158,7 +13158,7 @@ ${mode === 'quran' ? '<button class="btn btn-secondary btn-sm btn-detect-simbol"
         if (titleInput) titleInput.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{title:e.target.value}));
 const tz = div.querySelector('.drawer-zikir');
-        tz.addEventListener("change", e =>
+        if (tz) tz.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),
             mode === 'quran' ? {arab:e.target.value} : {zikir:e.target.value}));
 if (mode === 'quran') {
@@ -13213,7 +13213,8 @@ const targetCard = semuaZikir[i].closest('.drawer-card');
 const targetEl = div.querySelector('.drawer-target');
         if (targetEl) targetEl.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{target:e.target.value}));        
-        div.querySelector('.drawer-maksud').addEventListener("change", e =>
+        const mEl = div.querySelector('.drawer-maksud');
+        if (mEl) mEl.addEventListener("change", e =>
           updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{maksud:e.target.value}));
     const toggleHuruf = div.querySelector('.btn-toggle-huruf-picker');
         const hurufGrid = div.querySelector('.huruf-picker-grid');
@@ -13232,14 +13233,16 @@ div.querySelectorAll('.huruf-pick-btn').forEach(hBtn => {
             tz.value = v.substring(0,s) + char + v.substring(e2);
             tz.selectionStart = tz.selectionEnd = s + char.length;
             tz.focus();
-            updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:tz.value});
+          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),
+            mode === 'quran' ? {arab:tz.value} : {zikir:tz.value});
           });
         });
         div.querySelectorAll('.arabic-btn').forEach(btn => btn.addEventListener("click", () => {
           const sym=btn.textContent, s=tz.selectionStart, e2=tz.selectionEnd, v=tz.value;
           tz.value=v.substring(0,s)+sym+v.substring(e2);
           tz.selectionStart=tz.selectionEnd=s+sym.length; tz.focus();
-          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),{zikir:tz.value});
+          updateDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id),
+            mode === 'quran' ? {arab:tz.value} : {zikir:tz.value});
         }));
 if (mode === 'quran') {
           const btnDetect = div.querySelector('.btn-detect-simbol');
