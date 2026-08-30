@@ -12944,7 +12944,12 @@ const isQuranMode = mode === 'quran';
           cfg.setCurrent(data.id);
           document.getElementById(cfg.parentEl).textContent = data.name||'';
           showSection(document.getElementById(cfg.drawersSection));
-          renderGenericDrawers(mode);
+          // Quran — subscribe surah semasa dulu sebelum render
+          if (mode === 'quran') {
+            subscribeQuranDrawersSurah(currentQuranSurahNum, () => renderGenericDrawers('quran'));
+          } else {
+            renderGenericDrawers(mode);
+          }
         });
 
 div.querySelectorAll('button')[1].addEventListener("click", async () => {
