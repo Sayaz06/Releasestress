@@ -18891,7 +18891,9 @@ function bukaTerskipAyat(source) {
       }
 
       const data = terskipDrawers[terskipIndex];
-      const tajuk = terskipSource === 'main' ? data.title : (data.title || `Ayat ${terskipIndex + 1}`);
+      const tajuk = terskipSource === 'main'
+        ? data.title
+        : (data.surahNum ? `${data.surahNum}. ${QURAN_SURAH_NAMES[data.surahNum - 1]} Ayat ${data.ayatNum}` : `Ayat ${terskipIndex + 1}`);    
       labelEl.textContent = tajuk;
 
       if (!terskipFlipped) {
@@ -18900,7 +18902,7 @@ function bukaTerskipAyat(source) {
         contentEl.style.fontFamily = "'UthmanicHafs','Traditional Arabic',serif";
         contentEl.style.direction = 'rtl';
         contentEl.style.textAlign = 'right';
-        contentEl.textContent = terskipSource === 'main' ? (data.text || '') : (data.zikir || '');
+        contentEl.textContent = terskipSource === 'main' ? (data.text || '') : (data.arab || '');    
         hintEl.textContent = '(Ketik 1x untuk papar maksud | Ketik 2x untuk keluar)';
       } else {
         titleEl.textContent = `[ ${tajuk} ] — Maksud`;
@@ -19808,40 +19810,40 @@ document.getElementById('btn-close-qr').addEventListener('click', () => {
       showToast('⏳ Sedang mengumpul data... Jangan tutup app.', 0);
 
       try {
-        // Kumpul semua quran_times dan quran_drawers
-        const timesSnap = await getDocs(collection(db, "users", currentUser.uid, "quran_times"));
+        // Kumpul semua quran_drawers — guna field baru surahNum, ayatNum, arab
         const drawersSnap = await getDocs(collection(db, "users", currentUser.uid, "quran_drawers"));
-
-        const allTimes = timesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         const allDrawersRaw = drawersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        // Susun ikut nama surah (numeric sort)
-        const timesSorted = [...allTimes].sort((a, b) =>
-          (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })
-        );
+        // Susun ikut surah dan ayat
+        const surahMap = {};
+        allDrawersRaw.forEach(d => {
+          if (!d.surahNum) return;
+          if (!surahMap[d.surahNum]) surahMap[d.surahNum] = [];
+          surahMap[d.surahNum].push(d);
+        });
+
+        const surahList = Object.keys(surahMap)
+          .map(Number)
+          .sort((a, b) => a - b);
 
         // Bina struktur export
         const exportData = {
           exportedAt: new Date().toISOString(),
           exportedBy: currentUser.email,
-          totalSurah: timesSorted.length,
-          surah: timesSorted.map(time => {
-            const drawers = allDrawersRaw
-              .filter(d => d.timeId === time.id)
-              .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+          totalSurah: surahList.length,
+          surah: surahList.map(sNum => {
+            const drawers = surahMap[sNum]
+              .sort((a, b) => (a.ayatNum || 0) - (b.ayatNum || 0));
 
             return {
-              id: time.id,
-              nama: time.name || '',
-              isActive: time.isActive || false,
-              lastIndex: time.lastIndex || 0,
+              surahNum: sNum,
+              nama: `${sNum}. ${QURAN_SURAH_NAMES[sNum - 1]}`,
               totalAyat: drawers.length,
               ayat: drawers.map(d => ({
                 id: d.id,
-                tajuk: d.title || '',
-                arab: d.arab || '',    
-                maksud: d.maksud || '',
-                target: d.target || ''
+                num: d.ayatNum,
+                arab: d.arab || '',
+                maksud: d.maksud || ''
               }))
             };
           })
