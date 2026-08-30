@@ -13305,12 +13305,13 @@ if (mode === 'quran') {
         }
 
 
-div.querySelector('.btn-del').addEventListener("click", async () => {
+const btnDel = div.querySelector('.btn-del');
+        if (btnDel) btnDel.addEventListener("click", async () => {
           if (!confirm("Padam laci ini?\n\nData akan disimpan dalam Tong Sampah 30 hari.")) return;
           await hantarKeTrashUniversal(cfg.coll, data.id, data, data.title || 'Laci');
           await deleteDoc(doc(db,"users",currentUser.uid,cfg.coll,data.id));
           showToast('🗑️ Disimpan dalam Tong Sampah 30 hari.');
-        });        
+        });
         if (mode === 'quran' && quranSelectMode) {
           const cb = div.querySelector('.quran-select-cb');
           if (cb) cb.addEventListener('change', () => {
