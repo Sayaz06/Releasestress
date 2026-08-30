@@ -12854,9 +12854,9 @@ window.logQuranDrawers = function() {
   allQuranDrawers.slice(0, 5).forEach(d => {
     console.log({
       id: d.id,
-      timeId: d.timeId,
-      title: d.title,
-      arabLength: (d.arab || '').length,    
+      surahNum: d.surahNum,
+      ayatNum: d.ayatNum,
+      arabLength: (d.arab || '').length,
       maksudLength: (d.maksud || '').length
     });
   });
@@ -13013,14 +13013,19 @@ const zikirFontSize = mode === 'quran' ? `${quranFontSize}rem` : '1.15rem';
 const zikirMinHeight = mode === 'quran' ? `calc(${quranFontSize * 3}rem + 16px)` : '70px';
       const searchEl = document.getElementById(`${mode}-drawer-search`);
       const searchTerm = (searchEl?.value || '').toLowerCase().trim();
-const allFiltered = cfg.drawers.filter(d=>d.timeId===cfg.timeId())
+const allFiltered = cfg.drawers.filter(d => mode === 'quran' ? d.surahNum === cfg.timeId() : d.timeId === cfg.timeId())
   .sort((a, b) => {
+    if (mode === 'quran') return (a.ayatNum || 0) - (b.ayatNum || 0);
     if ((a.title || "") === "~") return 1;
     if ((b.title || "") === "~") return -1;
     const t = (a.title || "").localeCompare(b.title || "", undefined, {numeric: true});
     return t !== 0 ? t : (a.createdAt || 0) - (b.createdAt || 0);
   });
-      const filtered = searchTerm ? allFiltered.filter(d=>(d.title||'').toLowerCase().includes(searchTerm)) : allFiltered;
+      const filtered = searchTerm
+        ? allFiltered.filter(d => mode === 'quran'
+            ? ((d.arab||'') + ' ' + (d.maksud||'')).toLowerCase().includes(searchTerm)
+            : (d.title||'').toLowerCase().includes(searchTerm))
+        : allFiltered;
 
 const emptyCount = allFiltered.filter(d => !d.zikir || d.zikir.trim() === '').length;
       document.querySelectorAll(`.btn-goto-empty-generic[data-mode="${mode}"]`).forEach(b => {
@@ -13957,11 +13962,10 @@ document.getElementById('btn-toggle-panduan-v2').addEventListener('click', () =>
             const a = r.ayats[j];
             const ref = doc(collection(db,"users",currentUser.uid,"quran_drawers"));
             batch.set(ref, {
-              title:   `${r.surahName} ayat ${a.num}`,
-              zikir:   a.arab,
-              target:  "",
-              maksud:  a.penerangan,
-              timeId:  currentQuranTimeId,
+              surahNum: currentQuranSurahNum,
+              ayatNum:  a.num,
+              arab:     a.arab,
+              maksud:   a.penerangan,
               createdAt: Date.now() + j
             });
           }
@@ -19261,9 +19265,9 @@ document.getElementById('quran-import-input').addEventListener('change', async (
 
           // Semak ayat yang sudah wujud
           const existingDrawers = allQuranDrawers.filter(d => d.surahNum === currentQuranSurahNum);  
-          const existingTitles = new Set(existingDrawers.map(d => d.title));
+          const existingAyatNums = new Set(existingDrawers.map(d => d.ayatNum));
 
-          const ayatBaru = (surah.ayat || []).filter(a => !existingTitles.has(a.tajuk));
+          const ayatBaru = (surah.ayat || []).filter(a => !existingAyatNums.has(a.num || parseInt((a.tajuk||'').match(/\d+$/)?.[0])));
 
           if (ayatBaru.length > 0) {
             let i = 0;
@@ -19272,13 +19276,13 @@ document.getElementById('quran-import-input').addEventListener('change', async (
               const end = Math.min(i + 499, ayatBaru.length);
               for (let j = i; j < end; j++) {
                 const a = ayatBaru[j];
+                const ayatNum = a.num || parseInt((a.tajuk||'').match(/\d+$/)?.[0]) || 0;
                 const ref = doc(collection(db, "users", currentUser.uid, "quran_drawers"));
                 batch.set(ref, {
-                  title: a.tajuk || '',
-                  zikir: a.arab || '',
-                  maksud: a.maksud || '',
-                  target: a.target || '',
-                  timeId: timeId,
+                  surahNum: surahNum,
+                  ayatNum:  ayatNum,
+                  arab:     a.arab || '',
+                  maksud:   a.maksud || '',
                   createdAt: Date.now() + j
                 });
               }
@@ -19447,22 +19451,19 @@ const lainnya = allQuranTimes
       const prev  = document.getElementById('edit-pukal-preview');
       if (!lama || !baru) { prev.textContent = ''; return; }
       const calon = allQuranDrawers.filter(d => {
-        if (d.timeId !== currentQuranTimeId) return false;
-        if (!d.title || !d.title.startsWith(lama)) return false;
+        if (d.surahNum !== currentQuranSurahNum) return false;
         if (!isNaN(start) && !isNaN(end)) {
-          const num = parseInt(d.title.slice(lama.length).trim());
-          if (isNaN(num) || num < start || num > end) return false;
+          if (!d.ayatNum || d.ayatNum < start || d.ayatNum > end) return false;
         }
         return true;
       });
       if (!calon.length) {
         prev.style.color = '#f87171';
-        prev.textContent = '⚠️ Tiada laci dijumpai dengan awalan tersebut.';
+        prev.textContent = '⚠️ Tiada laci dijumpai.';
         return;
       }
-      const suffix0 = calon[0].title.slice(lama.length);
       prev.style.color = '#34d399';
-      prev.textContent = `✅ ${calon.length} laci dijumpai. Contoh: "${calon[0].title}" → "${baru}${suffix0}"`;
+      prev.textContent = `✅ ${calon.length} laci dijumpai. Contoh: Ayat ${calon[0].ayatNum}`;
     }
 
     ['edit-pukal-lama','edit-pukal-baru','edit-pukal-start','edit-pukal-end'].forEach(id => {
@@ -19477,11 +19478,9 @@ const lainnya = allQuranTimes
       if (!lama) { showToast('⚠️ Sila masukkan nama lama.'); return; }
       if (!baru) { showToast('⚠️ Sila masukkan nama baru.'); return; }
       const calon = allQuranDrawers.filter(d => {
-        if (d.timeId !== currentQuranTimeId) return false;
-        if (!d.title || !d.title.startsWith(lama)) return false;
+        if (d.surahNum !== currentQuranSurahNum) return false;
         if (!isNaN(start) && !isNaN(end)) {
-          const num = parseInt(d.title.slice(lama.length).trim());
-          if (isNaN(num) || num < start || num > end) return false;
+          if (!d.ayatNum || d.ayatNum < start || d.ayatNum > end) return false;
         }
         return true;
       });
@@ -20224,11 +20223,9 @@ const targetCard = zikir.closest('.drawer-card');
       const prev   = document.getElementById('kosong-pukal-preview');
       if (!prefix) { prev.textContent = ''; return; }
       const calon = allQuranDrawers.filter(d => {
-        if (d.timeId !== currentQuranTimeId) return false;
-        if (!d.title || !d.title.startsWith(prefix)) return false;
+        if (d.surahNum !== currentQuranSurahNum) return false;
         if (!isNaN(start) && !isNaN(end)) {
-          const num = parseInt(d.title.slice(prefix.length).trim());
-          if (isNaN(num) || num < start || num > end) return false;
+          if (!d.ayatNum || d.ayatNum < start || d.ayatNum > end) return false;
         }
         return true;
       });
@@ -20238,7 +20235,7 @@ const targetCard = zikir.closest('.drawer-card');
         return;
       }
       prev.style.color = '#34d399';
-      prev.textContent = `✅ ${calon.length} laci dijumpai. Contoh: "${calon[0].title}"`;
+      prev.textContent = `✅ ${calon.length} laci dijumpai. Contoh: Ayat ${calon[0].ayatNum}`;
     }
 
     ['kosong-pukal-prefix','kosong-pukal-start','kosong-pukal-end'].forEach(id => {
@@ -20254,11 +20251,9 @@ const targetCard = zikir.closest('.drawer-card');
       if (!prefix) { showToast('⚠️ Sila masukkan nama awalan.'); return; }
       if (!kosongZikir && !kosongMaksud) { showToast('⚠️ Pilih sekurang-kurangnya satu medan untuk dikosongkan.'); return; }
       const calon = allQuranDrawers.filter(d => {
-        if (d.timeId !== currentQuranTimeId) return false;
-        if (!d.title || !d.title.startsWith(prefix)) return false;
+        if (d.surahNum !== currentQuranSurahNum) return false;
         if (!isNaN(start) && !isNaN(end)) {
-          const num = parseInt(d.title.slice(prefix.length).trim());
-          if (isNaN(num) || num < start || num > end) return false;
+          if (!d.ayatNum || d.ayatNum < start || d.ayatNum > end) return false;
         }
         return true;
       });
@@ -20273,7 +20268,7 @@ const targetCard = zikir.closest('.drawer-card');
           const endIdx = Math.min(i + 499, calon.length);
           for (let j = i; j < endIdx; j++) {
             const update = {};
-            if (kosongZikir)  update.zikir  = '';
+            if (kosongZikir)  update.arab  = '';            
             if (kosongMaksud) update.maksud = '';
             batch.update(doc(db,"users",currentUser.uid,"quran_drawers",calon[j].id), update);
           }
@@ -20292,8 +20287,8 @@ const targetCard = zikir.closest('.drawer-card');
       if (carian === null || carian.trim() === '') return;
 
       const calon = allQuranDrawers
-        .filter(d => d.surahNum === currentQuranSurahNum && d.arab && d.arab.includes(carian))    
-        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+        .filter(d => d.surahNum === currentQuranSurahNum && d.arab && d.arab.includes(carian))
+        .sort((a, b) => (a.ayatNum || 0) - (b.ayatNum || 0));
 
       if (!calon.length) {
         showToast('⚠️ Tiada laci dijumpai yang mengandungi teks tersebut.');
