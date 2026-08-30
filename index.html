@@ -10715,9 +10715,9 @@ const btnCopyFact = document.getElementById('btn-copy-fact');
         const maksimumCuba = 33; // 33 x 300ms = ~10 saat maksimum
         const semakSelari = setInterval(() => {
           cuba++;
-          const targetTitle = `${targetSurah}. ${QURAN_SURAH_NAMES[targetSurah - 1]} Ayat ${targetAyat}`;
+          // Guna surahNum + ayatNum — tiada lagi isu format nama atau apostrof
           const targetIdx = allRoutines.findIndex(r =>
-            r.title && r.title.trim().toLowerCase() === targetTitle.trim().toLowerCase()
+            r.surahNum === targetSurah && r.ayatNum === targetAyat
           );
 
 const sudahSelari = targetIdx !== -1;
