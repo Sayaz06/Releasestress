@@ -4222,8 +4222,6 @@ if (snap.exists()) {
 
           setTimeout(async () => {
             factContentEl.style.color = '';
-            // Load bahasa drawers jenis semasa dulu — on-demand
-            await new Promise(res => loadBahasaDrawersJenis(currentJenisKataId, res));
             await refreshSRQueueIds();
             const adaSR = await checkSRQueue();
             if (adaSR && muatSRLaciSeterusnya()) {
@@ -4827,27 +4825,19 @@ factDisplayBox.classList.add("show");
 if (src === 'quran') {
           learningMode=3; btnToggleMode.textContent="Mode: Combo";
           btnToggleMainRestMax.style.display="none";
+          // OFF suis popup, lock aktif — hilang bila user sampai ayat gandaan 1 atau 6
           quranPopupSuisOn = false;
           quranPopupSuisLock = true;
           console.log('🔒 Quran ON — suis lock aktif');
+          // Tunjuk overlay countdown keselamatan sebelum sync leaderboard
           mulakanCountdownQuran(() => {
             syncLaciDariLeaderboard();
           });
-        } else if (src === 'doa') {
-          learningMode=2; btnToggleMode.textContent="Mode: Rest";
-          btnToggleMainRestMax.style.display="inline-flex";
-          // Load doa drawers on-demand bila doa ON
-          loadDoaDrawers(() => rebuildRoutines());
-        } else if (src === 'hadis') {
-          learningMode=2; btnToggleMode.textContent="Mode: Rest";
-          btnToggleMainRestMax.style.display="inline-flex";
-          // Load hadis drawers on-demand bila hadis ON
-          loadHadisDrawers(() => rebuildRoutines());
         } else {
           learningMode=2; btnToggleMode.textContent="Mode: Rest";
           btnToggleMainRestMax.style.display="inline-flex";
         }
-        if (src !== 'doa' && src !== 'hadis') rebuildRoutines();
+        rebuildRoutines();
 // Pastikan countdown harian wujud untuk mode baru
         if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
 
@@ -10218,17 +10208,7 @@ showSection(secToShow);
         if (window._kindleCmdUnsub) { window._kindleCmdUnsub(); window._kindleCmdUnsub = null; }
         // Unsub quran drawers bila logout
         if (_unsubQuranDrawers) { _unsubQuranDrawers(); _unsubQuranDrawers = null; _unsubQuranDrawersSurah = 0; }
-        if (_unsubDoaDrawers) { _unsubDoaDrawers(); _unsubDoaDrawers = null; }
-        if (_unsubHadisDrawers) { _unsubHadisDrawers(); _unsubHadisDrawers = null; }
-        if (_unsubBahasaDrawers) { _unsubBahasaDrawers(); _unsubBahasaDrawers = null; _unsubBahasaDrawersJenisId = null; }
         allQuranDrawers = [];
-        allDoaDrawers = [];
-        allHadisDrawers = [];
-        allBahasaDrawers = [];
-        doaDrawerCache = null;
-        hadisDrawerCache = null;
-        bahasaDrawerCache = {};
-        console.log('🧹 Cache doa, hadis & bahasa dibersihkan — logout');
         showSection(sectionLogin);
       }
     });
@@ -12884,8 +12864,7 @@ console.log('💡 Taip logQuranDrawers() dalam console F12 untuk debug laci Qura
     // ── NAV DOA ──
     document.getElementById('btn-go-doa-times').addEventListener('click', () => {
       showSection(document.getElementById('section-doa-times'));
-      // Load doa drawers on-demand bila user buka section doa
-      loadDoaDrawers(() => renderGenericTimes('doa'));
+      renderGenericTimes('doa');
     });
     document.getElementById('btn-back-tasbih-doa').addEventListener('click', () => showSection(sectionTasbih));
     document.getElementById('btn-back-doa-drawer').addEventListener('click', () => {
@@ -12904,8 +12883,7 @@ addDoc(collection(db,"users",currentUser.uid,"doa_drawers"),{title:"~",zikir:"",
     // ── NAV HADIS ──
     document.getElementById('btn-go-hadis-times').addEventListener('click', () => {
       showSection(document.getElementById('section-hadis-times'));
-      // Load hadis drawers on-demand bila user buka section hadis
-      loadHadisDrawers(() => renderGenericTimes('hadis'));
+      renderGenericTimes('hadis');
     });
     document.getElementById('btn-back-tasbih-hadis').addEventListener('click', () => showSection(sectionTasbih));
     document.getElementById('btn-back-hadis-drawer').addEventListener('click', () => {
@@ -13363,67 +13341,15 @@ list.appendChild(div);
       );
     }
 
-    // ── CACHE DOA & HADIS DRAWERS ──
-    // Prinsip: load on-demand sahaja, simpan dalam cache
-    // Tiada double work — selagi dalam cache, tidak sentuh Firestore
-    var doaDrawerCache = null;
-    var hadisDrawerCache = null;
-    var _unsubDoaDrawers = null;
-    var _unsubHadisDrawers = null;
-
-    function loadDoaDrawers(cbSelesai) {
-      if (!currentUser) return;
-      if (doaDrawerCache) {
-        console.log('✅ Cache hit — doa_drawers dari memori, tiada query Firestore');
-        allDoaDrawers = doaDrawerCache;
-        cbSelesai && cbSelesai();
-        return;
-      }
-      if (_unsubDoaDrawers) { cbSelesai && cbSelesai(); return; }
-      console.log('📥 Cache miss — doa_drawers diload dari Firestore');
-      _unsubDoaDrawers = onSnapshot(
-        query(collection(db,"users",currentUser.uid,"doa_drawers")),
-        snap => {
-          allDoaDrawers = snap.docs.map(d=>({id:d.id,...d.data()}));
-          doaDrawerCache = allDoaDrawers;
-          console.log('📥 Cache miss — doa_drawers disimpan dalam cache');
-          if(document.getElementById('section-doa-drawers')?.classList.contains('active')) renderGenericDrawers('doa');
-          rebuildIfActive('doa');
-          if (cbSelesai) { const cb = cbSelesai; cbSelesai = null; cb(); }
-        }
-      );
-    }
-
-    function loadHadisDrawers(cbSelesai) {
-      if (!currentUser) return;
-      if (hadisDrawerCache) {
-        console.log('✅ Cache hit — hadis_drawers dari memori, tiada query Firestore');
-        allHadisDrawers = hadisDrawerCache;
-        cbSelesai && cbSelesai();
-        return;
-      }
-      if (_unsubHadisDrawers) { cbSelesai && cbSelesai(); return; }
-      console.log('📥 Cache miss — hadis_drawers diload dari Firestore');
-      _unsubHadisDrawers = onSnapshot(
-        query(collection(db,"users",currentUser.uid,"hadis_drawers")),
-        snap => {
-          allHadisDrawers = snap.docs.map(d=>({id:d.id,...d.data()}));
-          hadisDrawerCache = allHadisDrawers;
-          console.log('📥 Cache miss — hadis_drawers disimpan dalam cache');
-          if(document.getElementById('section-hadis-drawers')?.classList.contains('active')) renderGenericDrawers('hadis');
-          rebuildIfActive('hadis');
-          if (cbSelesai) { const cb = cbSelesai; cbSelesai = null; cb(); }
-        }
-      );
-    }
-
     function subscribeNewModes() {
       if(!currentUser) return;
       const modes = [
-        // quran_drawers, doa_drawers, hadis_drawers — load on-demand sahaja
-        // quran_times — tidak relevan lagi
+        // quran_drawers TIDAK disubscribe di sini — load on-demand ikut surah
+        {coll:'quran_times', arr:(d)=>{allQuranTimes=d; if(document.getElementById('section-quran-times')?.classList.contains('active')) renderSurahPermanentList(); rebuildIfActive('quran');} },
         {coll:'doa_times', arr:(d)=>{allDoaTimes=d; if(document.getElementById('section-doa-times')?.classList.contains('active')) renderGenericTimes('doa'); rebuildIfActive('doa');} },
+        {coll:'doa_drawers', arr:(d)=>{allDoaDrawers=d; if(document.getElementById('section-doa-drawers')?.classList.contains('active')) renderGenericDrawers('doa'); rebuildIfActive('doa');} },
         {coll:'hadis_times', arr:(d)=>{allHadisTimes=d; if(document.getElementById('section-hadis-times')?.classList.contains('active')) renderGenericTimes('hadis'); rebuildIfActive('hadis');} },
+        {coll:'hadis_drawers', arr:(d)=>{allHadisDrawers=d; if(document.getElementById('section-hadis-drawers')?.classList.contains('active')) renderGenericDrawers('hadis'); rebuildIfActive('hadis');} },
       ];
       modes.forEach(m => onSnapshot(query(collection(db,"users",currentUser.uid,m.coll)), snap => {
         m.arr(snap.docs.map(d=>({id:d.id,...d.data()})));
@@ -16445,14 +16371,11 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
           document.getElementById('parent-perkataan-name').textContent = data.name || '';
           if (sectionBahasaDrawer) {
             showSection(sectionBahasaDrawer);
-            // Load on-demand — hanya jenis kata semasa
-            loadBahasaDrawersJenis(currentJenisKataId, () => renderBahasaDrawers());
+            renderBahasaDrawers();
           }
         });
         div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?`)) return;
-          // Load dulu kalau cache kosong — padam perlukan data drawer
-          await new Promise(res => loadBahasaDrawersJenis(currentJenisKataId, res));
           const drawers = allBahasaDrawers.filter(d => d.perkataanId === data.id);
           for (const dr of drawers)
             await hantarKeTrashUniversal('bahasa_drawers', dr.id, dr, dr.title || 'Laci Bahasa');
@@ -16464,8 +16387,6 @@ div.querySelectorAll('button')[0].addEventListener('click', () => {
               batch.delete(doc(db,"users",currentUser.uid,"bahasa_drawers",drawers[k].id));
             await batch.commit(); i = end;
           }
-          // Clear cache jenis ini — data dah berubah
-          delete bahasaDrawerCache[currentJenisKataId];
           await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_perkataan",data.id));
           showToast('🗑️ Dipadam.');
         });
@@ -18002,88 +17923,51 @@ onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         if (bahasaMode) rebuildBahasa();
       });
 
-      // bahasa_drawers TIDAK disubscribe di sini — load on-demand per jenis kata
-    }
+onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_drawers")), snap => {
+        const prevDrawers = [...allBahasaDrawers];
+        allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
+        if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
+if (bahasaMode) {
+          // Simpan index dan fasa semasa sebelum semak
+          const savedIndex = currentFactIndex;
+          const savedRestPhase = bahasaRestPhase;
+          const savedRestCount = bahasaRestCount;
+          const savedEjaanCount = bahasaEjaanCount;
 
-    // ── CACHE BAHASA DRAWERS ──
-    // Prinsip: load per jenis kata sahaja, simpan dalam cache
-    // Tiada double work — selagi dalam cache, tidak sentuh Firestore
-    var bahasaDrawerCache = {}; // { jenisKataId: [drawers] }
-    var _unsubBahasaDrawers = null;
-    var _unsubBahasaDrawersJenisId = null;
+          // Semak sama ada perubahan hanya pada field tips/tipsFasa0/updatedAt sahaja
+          const hanyaTipsUpdate = snap.docs.every(d => {
+            const prev = prevDrawers.find(p => p.id === d.id);
+            if (!prev) return false;
+            const data = d.data();
+            // Bandingkan field yang penting sahaja — ignore tips, tipsFasa0, updatedAt
+            return (
+              prev.title === data.title &&
+              prev.notes === data.notes &&
+              prev.repeatCount === data.repeatCount &&
+              prev.jenisId === data.jenisId &&
+              prev.perkataanId === data.perkataanId
+            );
+          });
 
-    function loadBahasaDrawersJenis(jenisKataId, cbSelesai) {
-      if (!currentUser || !jenisKataId) { cbSelesai && cbSelesai(); return; }
-
-      // ✅ Check cache dulu
-      if (bahasaDrawerCache[jenisKataId]) {
-        console.log('✅ Cache hit — bahasa_drawers jenis', jenisKataId, 'dari memori, tiada query Firestore');
-        allBahasaDrawers = bahasaDrawerCache[jenisKataId];
-        cbSelesai && cbSelesai();
-        return;
-      }
-
-      // 📥 Cache miss — unsub lama, subscribe jenis baru
-      if (_unsubBahasaDrawers && _unsubBahasaDrawersJenisId === jenisKataId) {
-        cbSelesai && cbSelesai();
-        return;
-      }
-      if (_unsubBahasaDrawers) {
-        _unsubBahasaDrawers();
-        _unsubBahasaDrawers = null;
-      }
-      _unsubBahasaDrawersJenisId = jenisKataId;
-      console.log('📥 Cache miss — bahasa_drawers jenis', jenisKataId, 'diload dari Firestore');
-
-      _unsubBahasaDrawers = onSnapshot(
-        query(
-          collection(db, "users", currentUser.uid, "bahasa_drawers"),
-          where("jenisId", "==", jenisKataId)
-        ),
-        snap => {
-          const prevDrawers = [...allBahasaDrawers];
-          allBahasaDrawers = snap.docs.map(d => ({id:d.id,...d.data()}));
-          bahasaDrawerCache[jenisKataId] = allBahasaDrawers;
-          console.log('📥 Cache miss — bahasa_drawers jenis', jenisKataId, 'disimpan dalam cache');
-          if (sectionBahasaDrawer && sectionBahasaDrawer.classList.contains('active')) renderBahasaDrawers();
-          if (bahasaMode) {
-            const savedIndex = currentFactIndex;
-            const savedRestPhase = bahasaRestPhase;
-            const savedRestCount = bahasaRestCount;
-            const savedEjaanCount = bahasaEjaanCount;
-
-            const hanyaTipsUpdate = prevDrawers.length === allBahasaDrawers.length &&
-              allBahasaDrawers.every(d => {
-                const prev = prevDrawers.find(p => p.id === d.id);
-                if (!prev) return false;
-                return (
-                  prev.title === d.title &&
-                  prev.notes === d.notes &&
-                  prev.repeatCount === d.repeatCount &&
-                  prev.jenisId === d.jenisId &&
-                  prev.perkataanId === d.perkataanId
-                );
-              });
-
-            if (!hanyaTipsUpdate) {
-              rebuildBahasa();
-              if (savedIndex < allFacts.length) {
-                currentFactIndex = savedIndex;
-                bahasaRestPhase = savedRestPhase;
-                bahasaRestCount = savedRestCount;
-                bahasaEjaanCount = savedEjaanCount;
-                renderCurrentFact();
-              }
-            }
+          if (hanyaTipsUpdate) {
+            // Hanya tips berubah — tak perlu rebuild, kekalkan kedudukan semasa
+            return;
           }
-          if (cbSelesai) { const cb = cbSelesai; cbSelesai = null; cb(); }
-        },
-        err => { console.error('❌ Gagal load bahasa_drawers:', err); cbSelesai && cbSelesai(); }
-      );
-    }
 
-    // bahasa_drawers TIDAK disubscribe di sini — load on-demand per jenis kata
-    // Guna loadBahasaDrawersJenis(jenisKataId) bila user buka laci atau bahasa mode ON
+          // Ada perubahan lain — rebuild tapi cuba kekalkan kedudukan
+          rebuildBahasa();
+
+          // Pulihkan kedudukan selepas rebuild kalau masih dalam julat
+          if (savedIndex < allFacts.length) {
+            currentFactIndex = savedIndex;
+            bahasaRestPhase = savedRestPhase;
+            bahasaRestCount = savedRestCount;
+            bahasaEjaanCount = savedEjaanCount;
+            renderCurrentFact();
+          }
+        }
+      });
+    }
 
 // ══════════════════════════════════════════
     // JOURNAL SYSTEM
@@ -19133,6 +19017,9 @@ if (isDoubleTap) {
 
 // ── SUSUN AL-QURAN (PERMANENT — ikut nombor surah) ──
     let alQuranPenuhSurahIdx = 1;
+      }
+      return null;
+    }
 
 async function alQuranPenuhNextSurah() {
       const nextSurahNum = currentQuranSurahNum + 1;
