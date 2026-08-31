@@ -1525,6 +1525,9 @@ body.dark-mode {
 <button id="btn-go-motivasi-jogging" class="btn btn-secondary" style="border-color: #f97316; color: #fb923c;">
             <span>🏃 Motivasi Jogging</span>
           </button>
+<button id="btn-go-other-motivation" class="btn btn-secondary" style="border-color:#a78bfa;color:#c4b5fd;">
+            <span>✨ Other Motivation</span>
+          </button>
 <button id="btn-go-perjanjian" class="btn btn-secondary" style="border-color: #38bdf8; color: #7dd3fc;">
             <span>🤝 Laci Perjanjian</span>
           </button>
@@ -1599,6 +1602,21 @@ body.dark-mode {
         </button>
 
         <div class="list" id="motivasi-list" style="padding:10px;"></div>
+      </section>
+
+<!-- ══ OTHER MOTIVATION ══ -->
+      <section id="section-other-motivation" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-other-motivation" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#a78bfa;">✨ Other Motivation</div>
+            <div class="topbar-sub">Motivasi dengan gambar</div>
+          </div>
+        </div>
+        <button id="btn-add-other-motivation" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+          + Tambah Motivasi
+        </button>
+        <div class="list" id="other-motivation-list" style="padding:10px;"></div>
       </section>
 
 <!-- ══ LACI PERJANJIAN ══ -->
@@ -3941,6 +3959,7 @@ function bukaBahasaRehatPopup(callback) {
     let queueBahasaSavedIndex = 0;
     let joggingQueueMode = false;
     let allJoggingMotivasi = [];
+    let allOtherMotivation = [];    
     let currentJoggingMotivasiIdx = 0;
     let perjanjianQueueMode = false;
     let allPerjanjian = [];
@@ -5999,7 +6018,7 @@ function showSection(section) {
       sectionPrompterEditor.classList.remove("active"); 
       if (sectionMyLaw) sectionMyLaw.classList.remove("active");
       document.getElementById('section-sr-queue')?.classList.remove("active");
-['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history','section-progress-log','section-countdown-mini','section-cm-history'].forEach(id => {  
+['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history','section-progress-log','section-countdown-mini','section-cm-history','section-other-motivation'].forEach(id => {  
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
   
@@ -10217,6 +10236,7 @@ showSection(secToShow);
         subscribeReminders();
         mulakanReminderCheck();
                 subscribeJoggingMotivasi();
+        subscribeOtherMotivation();
         subscribePerjanjian();
         subscribeWallpaper();
         subscribeBahasa();    // ← Tambah balik baris ini
@@ -12180,6 +12200,87 @@ if (result.score > 0) {
 
     // ── MOTIVASI JOGGING ──
     const sectionMotivasiJogging = document.getElementById('section-motivasi-jogging');
+    const sectionOtherMotivation = document.getElementById('section-other-motivation');
+
+    // ══════════════════════════════════════════
+    // OTHER MOTIVATION
+    // ══════════════════════════════════════════
+    document.getElementById('btn-go-other-motivation').addEventListener('click', () => {
+      showSection(sectionOtherMotivation);
+      renderOtherMotivation();
+    });
+
+    document.getElementById('btn-back-other-motivation').addEventListener('click', () => {
+      showSection(document.getElementById('section-home'));
+    });
+
+    document.getElementById('btn-add-other-motivation').addEventListener('click', async () => {
+      const maxOrder = allOtherMotivation.reduce((m, x) => Math.max(m, x.order || 0), 0);
+      await addDoc(collection(db, "users", currentUser.uid, "other_motivation"), {
+        title: '', text: '', imageUrl: '', order: maxOrder + 1, createdAt: Date.now()
+      });
+      showToast('✅ Motivasi berjaya ditambah.');
+    });
+
+    function renderOtherMotivation() {
+      const list = document.getElementById('other-motivation-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (!allOtherMotivation.length) {
+        list.innerHTML = '<div style="text-align:center;color:var(--subtext);padding:20px;">Tiada motivasi. Tekan + Tambah.</div>';
+        return;
+      }
+
+      allOtherMotivation.forEach((data, idx) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:12px;margin-bottom:10px;';
+        div.innerHTML = `
+          <input class="om-title" value="${(data.title||'').replace(/"/g,'&quot;')}" placeholder="Tajuk motivasi..." style="width:100%;margin-bottom:8px;font-size:0.9rem;font-weight:bold;">
+          <textarea class="om-text" rows="3" placeholder="Teks motivasi..." style="width:100%;resize:none;margin-bottom:8px;font-size:0.85rem;">${data.text||''}</textarea>
+          <div style="margin-bottom:8px;">
+            ${data.imageUrl ? `<img src="${data.imageUrl}" style="max-height:80px;max-width:120px;border:1px solid #ccc;border-radius:6px;">` : '<span style="font-size:0.72rem;color:var(--subtext);">Tiada gambar</span>'}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${idx > 0 ? '<button class="btn btn-secondary btn-sm om-up">↑</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↑</button>'}
+            ${idx < allOtherMotivation.length - 1 ? '<button class="btn btn-secondary btn-sm om-down">↓</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↓</button>'}
+            <button class="btn btn-secondary btn-sm om-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
+          </div>
+        `;
+
+        div.querySelector('.om-title').addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id), {title: e.target.value}));
+
+        div.querySelector('.om-text').addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id), {text: e.target.value}));
+
+        const upBtn = div.querySelector('.om-up');
+        if (upBtn) upBtn.addEventListener('click', async () => {
+          const prev = allOtherMotivation[idx - 1];
+          const batch = writeBatch(db);
+          batch.update(doc(db,"users",currentUser.uid,"other_motivation",data.id), {order: prev.order});
+          batch.update(doc(db,"users",currentUser.uid,"other_motivation",prev.id), {order: data.order});
+          await batch.commit();
+        });
+
+        const downBtn = div.querySelector('.om-down');
+        if (downBtn) downBtn.addEventListener('click', async () => {
+          const next = allOtherMotivation[idx + 1];
+          const batch = writeBatch(db);
+          batch.update(doc(db,"users",currentUser.uid,"other_motivation",data.id), {order: next.order});
+          batch.update(doc(db,"users",currentUser.uid,"other_motivation",next.id), {order: data.order});
+          await batch.commit();
+        });
+
+        div.querySelector('.om-del').addEventListener('click', async () => {
+          if (!confirm(`Padam "${data.title || 'motivasi ini'}"?`)) return;
+          await deleteDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id));
+          showToast('🗑️ Dipadam.');
+        });
+
+        list.appendChild(div);
+      });
+    }    
 
     document.getElementById('btn-go-motivasi-jogging').addEventListener('click', () => {
       showSection(sectionMotivasiJogging);
@@ -22237,6 +22338,17 @@ function subscribeJoggingMotivasi() {
           allJoggingMotivasi = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           const sec = document.getElementById('section-motivasi-jogging');
           if (sec && sec.classList.contains('active')) renderMotivasiList();
+        }
+      );
+    }
+
+    function subscribeOtherMotivation() {
+      if (!currentUser) return;
+      onSnapshot(
+        query(collection(db, "users", currentUser.uid, "other_motivation"), orderBy("order", "asc")),
+        snap => {
+          allOtherMotivation = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (sectionOtherMotivation?.classList.contains('active')) renderOtherMotivation();
         }
       );
     }
