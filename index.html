@@ -12235,11 +12235,19 @@ if (result.score > 0) {
       allOtherMotivation.forEach((data, idx) => {
         const div = document.createElement('div');
         div.style.cssText = 'background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:12px;margin-bottom:10px;';
+        const imgPreview = data.imageUrl
+          ? `<div class="om-img-preview" style="position:relative;width:100%;padding-bottom:${Math.round(((data.imgRatioH||9)/(data.imgRatioW||16))*100)}%;border-radius:8px;overflow:hidden;margin-bottom:6px;">
+               <img src="${data.imageUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
+             </div>`
+          : `<div style="font-size:0.72rem;color:var(--subtext);margin-bottom:6px;">Tiada gambar</div>`;
+
         div.innerHTML = `
           <input class="om-title" value="${(data.title||'').replace(/"/g,'&quot;')}" placeholder="Tajuk motivasi..." style="width:100%;margin-bottom:8px;font-size:0.9rem;font-weight:bold;">
           <textarea class="om-text" rows="3" placeholder="Teks motivasi..." style="width:100%;resize:none;margin-bottom:8px;font-size:0.85rem;">${data.text||''}</textarea>
-          <div style="margin-bottom:8px;">
-            ${data.imageUrl ? `<img src="${data.imageUrl}" style="max-height:80px;max-width:120px;border:1px solid #ccc;border-radius:6px;">` : '<span style="font-size:0.72rem;color:var(--subtext);">Tiada gambar</span>'}
+          ${imgPreview}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            <button class="btn btn-secondary btn-sm om-upload-img" style="color:#a78bfa;border-color:#7c3aed;">📷 ${data.imageUrl ? 'Tukar' : 'Upload'} Gambar</button>
+            ${data.imageUrl ? '<button class="btn btn-secondary btn-sm om-del-img" style="color:var(--danger);border-color:var(--danger);">🗑️ Buang Gambar</button>' : ''}
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             ${idx > 0 ? '<button class="btn btn-secondary btn-sm om-up">↑</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↑</button>'}
@@ -12253,6 +12261,53 @@ if (result.score > 0) {
 
         div.querySelector('.om-text').addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id), {text: e.target.value}));
+
+        // ── UPLOAD GAMBAR ──
+        div.querySelector('.om-upload-img').addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            bukaCropTool(file, async (blob) => {
+              const rW = blob._ratioW || cropRatioW || 16;
+              const rH = blob._ratioH || cropRatioH || 9;
+              showToast('⏳ Mengupload gambar...', 0);
+              try {
+                const storageRefPath = ref(storage, `users/${currentUser.uid}/other_motivation/${data.id}.jpg`);
+                const uploadTask = uploadBytesResumable(storageRefPath, blob);
+                uploadTask.on('state_changed', null, (err) => {
+                  showToast('❌ Gagal upload: ' + err.message);
+                }, async () => {
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  await setDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id), {
+                    imageUrl: url, imgRatioW: rW, imgRatioH: rH, updatedAt: Date.now()
+                  }, { merge: true });
+                  showToast('✅ Gambar berjaya diupload!');
+                });
+              } catch(e) {
+                showToast('❌ Gagal: ' + e.message);
+              }
+            });
+          });
+          input.click();
+        });
+
+        // ── BUANG GAMBAR ──
+        div.querySelector('.om-del-img')?.addEventListener('click', async () => {
+          if (!confirm('Buang gambar ini?')) return;
+          try {
+            const oldRef = ref(storage, `users/${currentUser.uid}/other_motivation/${data.id}.jpg`);
+            await deleteObject(oldRef).catch(() => {});
+            await setDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id), {
+              imageUrl: '', updatedAt: Date.now()
+            }, { merge: true });
+            showToast('🗑️ Gambar dibuang.');
+          } catch(e) {
+            showToast('❌ Gagal: ' + e.message);
+          }
+        });
 
         const upBtn = div.querySelector('.om-up');
         if (upBtn) upBtn.addEventListener('click', async () => {
@@ -12274,13 +12329,22 @@ if (result.score > 0) {
 
         div.querySelector('.om-del').addEventListener('click', async () => {
           if (!confirm(`Padam "${data.title || 'motivasi ini'}"?`)) return;
-          await deleteDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id));
-          showToast('🗑️ Dipadam.');
+          try {
+            // Buang gambar dari Storage dulu kalau ada
+            if (data.imageUrl) {
+              const oldRef = ref(storage, `users/${currentUser.uid}/other_motivation/${data.id}.jpg`);
+              await deleteObject(oldRef).catch(() => {});
+            }
+            await deleteDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id));
+            showToast('🗑️ Dipadam.');
+          } catch(e) {
+            showToast('❌ Gagal: ' + e.message);
+          }
         });
 
         list.appendChild(div);
       });
-    }    
+    }
 
     document.getElementById('btn-go-motivasi-jogging').addEventListener('click', () => {
       showSection(sectionMotivasiJogging);
