@@ -13054,7 +13054,7 @@ const allFiltered = cfg.drawers.filter(d => mode === 'quran' ? d.surahNum === cf
   });
       const filtered = searchTerm
         ? allFiltered.filter(d => mode === 'quran'
-            ? ((d.arab||'') + ' ' + (d.maksud||'')).toLowerCase().includes(searchTerm)
+            ? ((d.arab||'') + ' ' + (d.maksud||'') + ' ' + (d.surahNum + '. ' + QURAN_SURAH_NAMES[d.surahNum-1] + ' Ayat ' + d.ayatNum)).toLowerCase().includes(searchTerm)
             : (d.title||'').toLowerCase().includes(searchTerm))
         : allFiltered;
 
