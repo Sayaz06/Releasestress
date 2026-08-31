@@ -20226,13 +20226,14 @@ const targetCard = zikir.closest('.drawer-card');
       }
 
       const terakhir = calon[calon.length - 1];
-      showToast(`📌 Laci terakhir: "${terakhir.title}"`, 5000);
+      // Jana tajuk hardcode — title dah dibuang dari Firestore
+      const tajukTerakhir = terakhir.surahNum + '. ' + QURAN_SURAH_NAMES[terakhir.surahNum - 1] + ' Ayat ' + terakhir.ayatNum;
+      showToast(`📌 Laci terakhir: "${tajukTerakhir}"`, 5000);
 
-      // Scroll dan highlight laci tu
-      const semua = document.querySelectorAll('#quran-drawers-list .drawer-title');
-      for (let input of semua) {
-        if (input.value === terakhir.title) {
-          const card = input.closest('.drawer-card');
+      // Scroll dan highlight guna data-ayat-num — drawer-title tiada untuk quran
+      const semua = document.querySelectorAll('#quran-drawers-list .drawer-card');
+      for (let card of semua) {
+        if (parseInt(card.getAttribute('data-ayat-num')) === terakhir.ayatNum) {
           card.scrollIntoView({ behavior: 'smooth', block: 'center' });
           card.style.outline = '2px solid #60a5fa';
           card.style.boxShadow = '0 0 14px rgba(96,165,250,0.5)';
