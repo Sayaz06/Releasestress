@@ -12291,6 +12291,7 @@ if (result.score > 0) {
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             ${idx > 0 ? '<button class="btn btn-secondary btn-sm mm-up">↑</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↑</button>'}
             ${idx < allMainMotivation.length - 1 ? '<button class="btn btn-secondary btn-sm mm-down">↓</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↓</button>'}
+            <button class="btn btn-secondary btn-sm mm-pindah-om" style="color:#a78bfa;border-color:#7c3aed;">✨ → Other</button>
             <button class="btn btn-secondary btn-sm mm-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
         `;
@@ -12300,6 +12301,20 @@ if (result.score > 0) {
 
         div.querySelector('.mm-text').addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"main_motivation",data.id), {text: e.target.value}));
+
+        div.querySelector('.mm-pindah-om').addEventListener('click', async () => {
+          if (!confirm(`Pindah "${data.title || 'motivasi ini'}" ke Other Motivation?`)) return;
+          try {
+            const maxOrder = allOtherMotivation.reduce((m, x) => Math.max(m, x.order || 0), 0);
+            await addDoc(collection(db,"users",currentUser.uid,"other_motivation"), {
+              title: data.title || '', text: data.text || '', imageUrl: data.imageUrl || '',
+              imgRatioW: data.imgRatioW || 16, imgRatioH: data.imgRatioH || 9,
+              order: maxOrder + 1, createdAt: Date.now()
+            });
+            await deleteDoc(doc(db,"users",currentUser.uid,"main_motivation",data.id));
+            showToast('✨ Dipindah ke Other Motivation.');
+          } catch(e) { showToast('❌ Gagal: ' + e.message); }
+        });
 
         div.querySelector('.mm-upload-img').addEventListener('click', () => {
           const input = document.createElement('input');
@@ -12432,6 +12447,7 @@ if (result.score > 0) {
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             ${idx > 0 ? '<button class="btn btn-secondary btn-sm om-up">↑</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↑</button>'}
             ${idx < allOtherMotivation.length - 1 ? '<button class="btn btn-secondary btn-sm om-down">↓</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↓</button>'}
+            <button class="btn btn-secondary btn-sm om-pindah-mm" style="color:#fbbf24;border-color:#d97706;">⭐ → Main</button>
             <button class="btn btn-secondary btn-sm om-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
         `;
@@ -12503,6 +12519,20 @@ if (result.score > 0) {
           batch.update(doc(db,"users",currentUser.uid,"other_motivation",data.id), {order: next.order});
           batch.update(doc(db,"users",currentUser.uid,"other_motivation",next.id), {order: data.order});
           await batch.commit();
+        });
+
+        div.querySelector('.om-pindah-mm').addEventListener('click', async () => {
+          if (!confirm(`Pindah "${data.title || 'motivasi ini'}" ke Main Motivation?`)) return;
+          try {
+            const maxOrder = allMainMotivation.reduce((m, x) => Math.max(m, x.order || 0), 0);
+            await addDoc(collection(db,"users",currentUser.uid,"main_motivation"), {
+              title: data.title || '', text: data.text || '', imageUrl: data.imageUrl || '',
+              imgRatioW: data.imgRatioW || 16, imgRatioH: data.imgRatioH || 9,
+              order: maxOrder + 1, createdAt: Date.now()
+            });
+            await deleteDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id));
+            showToast('⭐ Dipindah ke Main Motivation.');
+          } catch(e) { showToast('❌ Gagal: ' + e.message); }
         });
 
         div.querySelector('.om-del').addEventListener('click', async () => {
