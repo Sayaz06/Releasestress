@@ -1525,6 +1525,9 @@ body.dark-mode {
 <button id="btn-go-motivasi-jogging" class="btn btn-secondary" style="border-color: #f97316; color: #fb923c;">
             <span>🏃 Motivasi Jogging</span>
           </button>
+<button id="btn-go-main-motivation" class="btn btn-secondary" style="border-color:#f59e0b;color:#fbbf24;">
+            <span>⭐ Main Motivation</span>
+          </button>
 <button id="btn-go-other-motivation" class="btn btn-secondary" style="border-color:#a78bfa;color:#c4b5fd;">
             <span>✨ Other Motivation</span>
           </button>
@@ -1602,6 +1605,21 @@ body.dark-mode {
         </button>
 
         <div class="list" id="motivasi-list" style="padding:10px;"></div>
+      </section>
+
+<!-- ══ MAIN MOTIVATION ══ -->
+      <section id="section-main-motivation" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-main-motivation" class="btn btn-secondary btn-sm">← Menu</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#f59e0b;">⭐ Main Motivation</div>
+            <div class="topbar-sub">Motivasi utama penting</div>
+          </div>
+        </div>
+        <button id="btn-add-main-motivation" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;margin-bottom:10px;flex-shrink:0;">
+          + Tambah Motivasi
+        </button>
+        <div class="list" id="main-motivation-list" style="padding:10px;"></div>
       </section>
 
 <!-- ══ OTHER MOTIVATION ══ -->
@@ -3169,6 +3187,17 @@ body.dark-mode {
             </div>
             <div id="champ-tick-water" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
           </div>
+          <div id="champ-row-mainMotivation" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.1rem;">⭐</span>
+              <div>
+                <div style="font-size:0.95rem;font-weight:500;color:var(--text);">Main Motivation</div>
+                <div style="font-size:0.72rem;color:var(--subtext);">main_motivation</div>
+              </div>
+            </div>
+            <div id="champ-tick-mainMotivation" style="width:24px;height:24px;border:2px solid var(--border-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;"></div>
+          </div>
+
           <div id="champ-row-otherMotivation" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:1.1rem;">✨</span>
@@ -3969,6 +3998,7 @@ function bukaBahasaRehatPopup(callback) {
     let queueBahasaSavedIndex = 0;
     let joggingQueueMode = false;
     let allJoggingMotivasi = [];
+    let allMainMotivation = [];
     let allOtherMotivation = [];    
     let currentJoggingMotivasiIdx = 0;
     let perjanjianQueueMode = false;
@@ -6028,7 +6058,7 @@ function showSection(section) {
       sectionPrompterEditor.classList.remove("active"); 
       if (sectionMyLaw) sectionMyLaw.classList.remove("active");
       document.getElementById('section-sr-queue')?.classList.remove("active");
-['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history','section-progress-log','section-countdown-mini','section-cm-history','section-other-motivation'].forEach(id => {  
+['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history','section-progress-log','section-countdown-mini','section-cm-history','section-other-motivation','section-main-motivation'].forEach(id => {  
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
   
@@ -10246,6 +10276,7 @@ showSection(secToShow);
         subscribeReminders();
         mulakanReminderCheck();
                 subscribeJoggingMotivasi();
+        subscribeMainMotivation();
         subscribeOtherMotivation();
         subscribePerjanjian();
         subscribeWallpaper();
@@ -12210,7 +12241,149 @@ if (result.score > 0) {
 
     // ── MOTIVASI JOGGING ──
     const sectionMotivasiJogging = document.getElementById('section-motivasi-jogging');
+    const sectionMainMotivation = document.getElementById('section-main-motivation');
     const sectionOtherMotivation = document.getElementById('section-other-motivation');
+
+    // ══════════════════════════════════════════
+    // MAIN MOTIVATION
+    // ══════════════════════════════════════════
+    document.getElementById('btn-go-main-motivation').addEventListener('click', () => {
+      showSection(sectionMainMotivation);
+      renderMainMotivation();
+    });
+
+    document.getElementById('btn-back-main-motivation').addEventListener('click', () => {
+      showSection(document.getElementById('section-home'));
+    });
+
+    document.getElementById('btn-add-main-motivation').addEventListener('click', async () => {
+      const maxOrder = allMainMotivation.reduce((m, x) => Math.max(m, x.order || 0), 0);
+      await addDoc(collection(db, "users", currentUser.uid, "main_motivation"), {
+        title: '', text: '', imageUrl: '', order: maxOrder + 1, createdAt: Date.now()
+      });
+      showToast('✅ Main Motivation berjaya ditambah.');
+    });
+
+    function renderMainMotivation() {
+      const list = document.getElementById('main-motivation-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (!allMainMotivation.length) {
+        list.innerHTML = '<div style="text-align:center;color:var(--subtext);padding:20px;">Tiada motivasi. Tekan + Tambah.</div>';
+        return;
+      }
+
+      allMainMotivation.forEach((data, idx) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.3);border-radius:12px;padding:12px;margin-bottom:10px;';
+        const imgPreview = data.imageUrl
+          ? `<div style="position:relative;width:100%;padding-bottom:${Math.round(((data.imgRatioH||9)/(data.imgRatioW||16))*100)}%;border-radius:8px;overflow:hidden;margin-bottom:6px;">
+               <img src="${data.imageUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
+             </div>`
+          : `<div style="font-size:0.72rem;color:var(--subtext);margin-bottom:6px;">Tiada gambar</div>`;
+
+        div.innerHTML = `
+          <input class="mm-title" value="${(data.title||'').replace(/"/g,'&quot;')}" placeholder="Tajuk motivasi..." style="width:100%;margin-bottom:8px;font-size:0.9rem;font-weight:bold;">
+          <textarea class="mm-text" rows="3" placeholder="Teks motivasi..." style="width:100%;resize:none;margin-bottom:8px;font-size:0.85rem;">${data.text||''}</textarea>
+          ${imgPreview}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            <button class="btn btn-secondary btn-sm mm-upload-img" style="color:#fbbf24;border-color:#d97706;">📷 ${data.imageUrl ? 'Tukar' : 'Upload'} Gambar</button>
+            ${data.imageUrl ? '<button class="btn btn-secondary btn-sm mm-del-img" style="color:var(--danger);border-color:var(--danger);">🗑️ Buang Gambar</button>' : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${idx > 0 ? '<button class="btn btn-secondary btn-sm mm-up">↑</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↑</button>'}
+            ${idx < allMainMotivation.length - 1 ? '<button class="btn btn-secondary btn-sm mm-down">↓</button>' : '<button class="btn btn-secondary btn-sm" disabled style="opacity:0.3;">↓</button>'}
+            <button class="btn btn-secondary btn-sm mm-del" style="color:var(--danger);border-color:var(--danger);">Padam</button>
+          </div>
+        `;
+
+        div.querySelector('.mm-title').addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"main_motivation",data.id), {title: e.target.value}));
+
+        div.querySelector('.mm-text').addEventListener('change', e =>
+          updateDoc(doc(db,"users",currentUser.uid,"main_motivation",data.id), {text: e.target.value}));
+
+        div.querySelector('.mm-upload-img').addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            bukaCropTool(file, async (blob) => {
+              const rW = blob._ratioW || cropRatioW || 16;
+              const rH = blob._ratioH || cropRatioH || 9;
+              showToast('⏳ Mengupload gambar...', 0);
+              try {
+                const storageRefPath = ref(storage, `users/${currentUser.uid}/main_motivation/${data.id}.jpg`);
+                const uploadTask = uploadBytesResumable(storageRefPath, blob);
+                uploadTask.on('state_changed', null, (err) => {
+                  showToast('❌ Gagal upload: ' + err.message);
+                }, async () => {
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  await setDoc(doc(db,"users",currentUser.uid,"main_motivation",data.id), {
+                    imageUrl: url, imgRatioW: rW, imgRatioH: rH, updatedAt: Date.now()
+                  }, { merge: true });
+                  showToast('✅ Gambar berjaya diupload!');
+                });
+              } catch(e) {
+                showToast('❌ Gagal: ' + e.message);
+              }
+            });
+          });
+          input.click();
+        });
+
+        div.querySelector('.mm-del-img')?.addEventListener('click', async () => {
+          if (!confirm('Buang gambar ini?')) return;
+          try {
+            const oldRef = ref(storage, `users/${currentUser.uid}/main_motivation/${data.id}.jpg`);
+            await deleteObject(oldRef).catch(() => {});
+            await setDoc(doc(db,"users",currentUser.uid,"main_motivation",data.id), {
+              imageUrl: '', updatedAt: Date.now()
+            }, { merge: true });
+            showToast('🗑️ Gambar dibuang.');
+          } catch(e) {
+            showToast('❌ Gagal: ' + e.message);
+          }
+        });
+
+        const upBtn = div.querySelector('.mm-up');
+        if (upBtn) upBtn.addEventListener('click', async () => {
+          const prev = allMainMotivation[idx - 1];
+          const batch = writeBatch(db);
+          batch.update(doc(db,"users",currentUser.uid,"main_motivation",data.id), {order: prev.order});
+          batch.update(doc(db,"users",currentUser.uid,"main_motivation",prev.id), {order: data.order});
+          await batch.commit();
+        });
+
+        const downBtn = div.querySelector('.mm-down');
+        if (downBtn) downBtn.addEventListener('click', async () => {
+          const next = allMainMotivation[idx + 1];
+          const batch = writeBatch(db);
+          batch.update(doc(db,"users",currentUser.uid,"main_motivation",data.id), {order: next.order});
+          batch.update(doc(db,"users",currentUser.uid,"main_motivation",next.id), {order: data.order});
+          await batch.commit();
+        });
+
+        div.querySelector('.mm-del').addEventListener('click', async () => {
+          if (!confirm(`Padam "${data.title || 'motivasi ini'}"?`)) return;
+          try {
+            if (data.imageUrl) {
+              const oldRef = ref(storage, `users/${currentUser.uid}/main_motivation/${data.id}.jpg`);
+              await deleteObject(oldRef).catch(() => {});
+            }
+            await deleteDoc(doc(db,"users",currentUser.uid,"main_motivation",data.id));
+            showToast('🗑️ Dipadam.');
+          } catch(e) {
+            showToast('❌ Gagal: ' + e.message);
+          }
+        });
+
+        list.appendChild(div);
+      });
+    }
 
     // ══════════════════════════════════════════
     // OTHER MOTIVATION
@@ -12272,7 +12445,6 @@ if (result.score > 0) {
         div.querySelector('.om-text').addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"other_motivation",data.id), {text: e.target.value}));
 
-        // ── UPLOAD GAMBAR ──
         div.querySelector('.om-upload-img').addEventListener('click', () => {
           const input = document.createElement('input');
           input.type = 'file';
@@ -12304,7 +12476,6 @@ if (result.score > 0) {
           input.click();
         });
 
-        // ── BUANG GAMBAR ──
         div.querySelector('.om-del-img')?.addEventListener('click', async () => {
           if (!confirm('Buang gambar ini?')) return;
           try {
@@ -12340,7 +12511,6 @@ if (result.score > 0) {
         div.querySelector('.om-del').addEventListener('click', async () => {
           if (!confirm(`Padam "${data.title || 'motivasi ini'}"?`)) return;
           try {
-            // Buang gambar dari Storage dulu kalau ada
             if (data.imageUrl) {
               const oldRef = ref(storage, `users/${currentUser.uid}/other_motivation/${data.id}.jpg`);
               await deleteObject(oldRef).catch(() => {});
@@ -22416,6 +22586,17 @@ function subscribeJoggingMotivasi() {
       );
     }
 
+    function subscribeMainMotivation() {
+      if (!currentUser) return;
+      onSnapshot(
+        query(collection(db, "users", currentUser.uid, "main_motivation"), orderBy("order", "asc")),
+        snap => {
+          allMainMotivation = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (sectionMainMotivation?.classList.contains('active')) renderMainMotivation();
+        }
+      );
+    }
+
     function subscribeOtherMotivation() {
       if (!currentUser) return;
       onSnapshot(
@@ -25861,7 +26042,7 @@ mifRefreshKeyStatus();
     // ══════════════════════════════════════════
     (function() {
       const sectionChampion = document.getElementById('section-champion');
-      const CHAMP_SOURCES = ['motivasi', 'perjanjian', 'rutin', 'supplement', 'water', 'otherMotivation'];      
+      const CHAMP_SOURCES = ['motivasi', 'perjanjian', 'rutin', 'supplement', 'water', 'mainMotivation', 'otherMotivation'];
       let champSetting = { sources: [], lastSourceIndex: 0 };
 
       function champTickEl(id) { return document.getElementById('champ-tick-' + id); }
