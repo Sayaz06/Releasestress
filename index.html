@@ -21028,7 +21028,7 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
         const isArrow = trimmed.startsWith('→') || trimmed.startsWith('->');
         if (isArrow) {
           const afterArrow = trimmed.replace(/^→\s*|^->\s*/, '').trim();
-          const isAyatMarker = afterArrow.toLowerCase() === 'ayat';
+          const isAyatMarker = afterArrow.toLowerCase().startsWith('ayat');
           if (isAyatMarker) {
             fasa = 'f1';
           } else {
@@ -21088,6 +21088,7 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
       _draftPendingItems.forEach((item, idx) => {
         const ringkasanF0 = item.tips.f0 ? item.tips.f0.split('\n')[0].slice(0, 70) : '(kosong)';
         const ringkasanF1Ayat = _ringkasF1Ayat(item.tips.f1);
+        const ayatKosong = ringkasanF1Ayat === '(kosong)';
 
         const card = document.createElement('div');
         card.style.cssText = 'background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px;';
@@ -21096,7 +21097,8 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
           <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:8px 10px;margin-bottom:10px;">
             <div style="font-size:0.68rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">Isi Tips ini:</div>
             <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:2px;">F0: <span style="color:#e5e7eb;">${ringkasanF0}</span></div>
-            <div style="font-size:0.7rem;color:#9ca3af;">F1&amp;2 (ayat): <span style="color:#22d3ee;font-style:italic;">"${ringkasanF1Ayat}"</span></div>
+            <div style="font-size:0.7rem;color:#9ca3af;">F1&amp;2 (ayat): <span style="color:${ayatKosong ? '#f87171' : '#22d3ee'};font-style:italic;">"${ringkasanF1Ayat}"</span></div>
+            ${ayatKosong ? `<div style="font-size:0.65rem;color:#f87171;margin-top:4px;">⚠️ Tiada ayat dikesan dalam teks yang disisipkan. Kemungkinan penanda <em>→ Ayat</em> tidak hadir atau format kandungan tidak diiktiraf. Sila semak semula teks sumber sebelum meneruskan.</div>` : ''}
           </div>
           <div style="font-size:0.72rem;color:#22d3ee;font-weight:700;margin-bottom:6px;">🗂️ Padankan dengan laci mana?</div>
           <div style="display:flex;flex-direction:column;gap:6px;">
