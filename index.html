@@ -21104,7 +21104,7 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
               const dipilih = item.pilihanId === c.id;
               const sudahDipilihLain = _draftPendingItems.some((d, di) => di !== idx && d.pilihanId === c.id);
               const laciData = allBahasaDrawers.find(d => d.id === c.id);
-              const notesRingkas = laciData ? _ringkasNotesLaci(laciData.notes) : '(tiada data)';
+              const notesRingkas = (laciData && laciData.notes) ? _ringkasNotesLaci(laciData.notes) : ((laciData && laciData.tips) ? _ringkasF1Ayat(laciData.tips) : '(tiada ayat)');
               return `<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:8px 10px;background:${dipilih ? 'rgba(34,211,153,0.12)' : 'rgba(0,0,0,0.2)'};border:1px solid ${dipilih ? '#34d399' : (sudahDipilihLain ? 'rgba(248,113,113,0.4)' : 'rgba(255,255,255,0.08)')};border-radius:8px;">
                 <input type="radio" name="draft-pilih-${idx}" value="${c.id}" ${dipilih ? 'checked' : ''} style="accent-color:#34d399;width:16px;height:16px;flex-shrink:0;margin-top:2px;">
                 <div style="flex:1;min-width:0;">
@@ -21314,8 +21314,24 @@ hasil.push({ number: num, zikir: (ayatText + ' ' + match[0]).trim().replace(/\u0
         }
       }
 
-      // Kalau ada draft, buka modal matching
+      // Kalau ada draft, fetch semula dari Firestore dulu supaya notes lengkap
       if (draftItems.length) {
+        showToast(`⏳ Memuat data laci untuk draft...`, 0);
+        const idCalon = [...new Set(draftItems.flatMap(d => d.calon.map(c => c.id)))];
+        try {
+          // Fetch laci yang ada dalam draft sahaja
+          const snapDraft = await getDocs(query(
+            collection(db, 'users', currentUser.uid, 'bahasa_drawers'),
+            where('jenisId', '==', currentJenisKataId)
+          ));
+          snapDraft.forEach(d => {
+            const idx = allBahasaDrawers.findIndex(x => x.id === d.id);
+            const data = { id: d.id, ...d.data() };
+            if (idx !== -1) allBahasaDrawers[idx] = data;
+            else allBahasaDrawers.push(data);
+          });
+        } catch(e) { /* guna data memori sedia ada kalau gagal */ }
+
         _draftPendingItems = draftItems;
         document.getElementById('draft-progress-bar').textContent = '';
         renderDraftMatching();
