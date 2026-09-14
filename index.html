@@ -26481,6 +26481,11 @@ mifRefreshKeyStatus();
                 style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:0.9rem;">
               <button class="btn-del-sup btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">✕</button>
             </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:4px;">
+              <span style="font-size:0.72rem;color:#a78bfa;white-space:nowrap;">Kali sehari:</span>
+              <input class="sup-daily-limit" type="number" min="1" max="10" value="${data.dailyLimit || 1}"
+                style="width:50px;border:none;background:rgba(167,139,250,0.15);color:white;border-radius:4px;padding:3px 6px;font-size:0.85rem;text-align:center;">
+            </div>
             <textarea class="sup-text drawer-notes" placeholder="Penerangan / sebab makan (cth: Tingkatkan imun, selepas sarapan)">${data.text || ''}</textarea>
           `;
           // Naik
@@ -26504,6 +26509,13 @@ mifRefreshKeyStatus();
           // Auto-save text
           div.querySelector('.sup-text').onblur = async function() {
             await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', data.id), { text: this.value });
+          };
+          // Auto-save daily limit
+          div.querySelector('.sup-daily-limit').onblur = async function() {
+            var val = parseInt(this.value) || 1;
+            if (val < 1) val = 1;
+            this.value = val;
+            await updateDoc(doc(db, 'users', currentUser.uid, 'supplement_tracker', data.id), { dailyLimit: val });
           };
           // Padam
           div.querySelector('.btn-del-sup').onclick = async function() {
