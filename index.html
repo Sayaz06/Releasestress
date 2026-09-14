@@ -2416,6 +2416,20 @@ body.dark-mode {
           <button id="btn-duplikasi-info-fakta" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">👻 Ghost Button</button>
         </div>
         <button id="btn-open-jana-pukal-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">🗂️ Jana Pukal Fakta</button>
+
+<!-- MODAL JANA PUKAL FAKTA -->
+<div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
+  <div style="background:#0f172a;border:1px solid #0891b2;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+    <div style="font-size:1rem;font-weight:700;color:#22d3ee;">🗂️ Jana Pukal Fakta</div>
+    <div style="font-size:0.72rem;color:#94a3b8;">Tampal output Sayaz Extractor di sini. Satu slide = satu laci.</div>
+    <textarea id="jana-fakta-input" placeholder="Slide 7 — Classification of Law (Klasifikasi Undang-undang):&#10;-ayat 1: Rangka kerja...&#10;-K1: Legal framework (rangka kerja)" style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #0891b2;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;"></textarea>
+    <div id="jana-fakta-preview" style="font-size:.72rem;color:#9ca3af;font-style:italic;min-height:18px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-jana-fakta-cancel" style="flex:1;padding:10px;border-radius:999px;background:transparent;border:1px solid #334155;color:#94a3b8;cursor:pointer;">Batal</button>
+      <button id="btn-jana-fakta-execute" style="flex:2;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
+    </div>
+  </div>
+</div>
 <div style="display:flex;gap:6px;margin-top:8px;">
 <button id="btn-export-pdf-fakta" data-orient="portrait" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;">🖨️ Portrait 2×3</button>
           <button id="btn-export-pdf-fakta-landscape" data-orient="landscape" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">⭐ Landscape 3×2</button>
@@ -14928,269 +14942,8 @@ Kertas: <strong>A4</strong> · Orientasi: <strong>${isLandscape ? 'Landscape' : 
 
 ${pagesHtml}
 
-<!-- MODAL JANA PUKAL FAKTA -->
-<div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
-  <div style="background:#0f172a;border:1px solid #0891b2;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-    <div style="font-size:1rem;font-weight:700;color:#22d3ee;">🗂️ Jana Pukal Fakta</div>
-    <div style="font-size:0.72rem;color:#94a3b8;">Tampal output Sayaz Extractor (format kata kunci) di sini. Satu slide = satu laci.</div>
-    <textarea id="jana-fakta-input" placeholder="Slide 7 — Classification of Law (Klasifikasi Undang-undang):&#10;-ayat 1: Rangka kerja...&#10;-K1: Legal framework (rangka kerja)&#10;-K2: Three distinct domains..." style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #0891b2;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;"></textarea>
-    <div id="jana-fakta-preview" style="font-size:.72rem;color:#9ca3af;font-style:italic;min-height:18px;"></div>
-    <div style="display:flex;gap:8px;">
-      <button id="btn-jana-fakta-cancel" style="flex:1;padding:10px;border-radius:999px;background:transparent;border:1px solid #334155;color:#94a3b8;cursor:pointer;">Batal</button>
-      <button id="btn-jana-fakta-execute" style="flex:2;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
-    </div>
-  </div>
-</div>
-
-<script style="display:none">
-  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
-  function parseKamusFaktaOLD(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      // Detect tajuk slide — Slide X — Tajuk (Terjemahan):
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = {
-          tajuk: trimmed.replace(/:$/, '').trim(),
-          items: []
-        };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      // Detect -ayat
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      // Detect -K1, -K2 dll
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    // Format: "ayat teks = K1: keyword K2: keyword"
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      // Semak sama ada laci dengan tajuk sama dah wujud
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        // Tambah baris ke laci sedia ada
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        // Cipta laci baru
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
 </body>
-</html>
+</html>`;
 
         // ── SIMPAN pdfNombor KE FIRESTORE ──
         setProgress(90, '💾 Menyimpan nombor kad...');
@@ -15713,269 +15466,8 @@ pagesHtml += `<div class="page">`;
 <!-- FLASHCARD PAGES -->
 ${pagesHtml}
 
-<!-- MODAL JANA PUKAL FAKTA -->
-<div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
-  <div style="background:#0f172a;border:1px solid #0891b2;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-    <div style="font-size:1rem;font-weight:700;color:#22d3ee;">🗂️ Jana Pukal Fakta</div>
-    <div style="font-size:0.72rem;color:#94a3b8;">Tampal output Sayaz Extractor (format kata kunci) di sini. Satu slide = satu laci.</div>
-    <textarea id="jana-fakta-input" placeholder="Slide 7 — Classification of Law (Klasifikasi Undang-undang):&#10;-ayat 1: Rangka kerja...&#10;-K1: Legal framework (rangka kerja)&#10;-K2: Three distinct domains..." style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #0891b2;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;"></textarea>
-    <div id="jana-fakta-preview" style="font-size:.72rem;color:#9ca3af;font-style:italic;min-height:18px;"></div>
-    <div style="display:flex;gap:8px;">
-      <button id="btn-jana-fakta-cancel" style="flex:1;padding:10px;border-radius:999px;background:transparent;border:1px solid #334155;color:#94a3b8;cursor:pointer;">Batal</button>
-      <button id="btn-jana-fakta-execute" style="flex:2;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
-    </div>
-  </div>
-</div>
-
-<script style="display:none">
-  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
-  function parseKamusFaktaOLD(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      // Detect tajuk slide — Slide X — Tajuk (Terjemahan):
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = {
-          tajuk: trimmed.replace(/:$/, '').trim(),
-          items: []
-        };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      // Detect -ayat
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      // Detect -K1, -K2 dll
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    // Format: "ayat teks = K1: keyword K2: keyword"
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      // Semak sama ada laci dengan tajuk sama dah wujud
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        // Tambah baris ke laci sedia ada
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        // Cipta laci baru
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
 </body>
-</html>
+</html>`;
 
 setProgress(100, '✅ Buka tetingkap print...');
 
@@ -16430,269 +15922,8 @@ printWindow.onload = () => {
 
 ${pagesHtml}
 
-<!-- MODAL JANA PUKAL FAKTA -->
-<div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
-  <div style="background:#0f172a;border:1px solid #0891b2;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-    <div style="font-size:1rem;font-weight:700;color:#22d3ee;">🗂️ Jana Pukal Fakta</div>
-    <div style="font-size:0.72rem;color:#94a3b8;">Tampal output Sayaz Extractor (format kata kunci) di sini. Satu slide = satu laci.</div>
-    <textarea id="jana-fakta-input" placeholder="Slide 7 — Classification of Law (Klasifikasi Undang-undang):&#10;-ayat 1: Rangka kerja...&#10;-K1: Legal framework (rangka kerja)&#10;-K2: Three distinct domains..." style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #0891b2;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;"></textarea>
-    <div id="jana-fakta-preview" style="font-size:.72rem;color:#9ca3af;font-style:italic;min-height:18px;"></div>
-    <div style="display:flex;gap:8px;">
-      <button id="btn-jana-fakta-cancel" style="flex:1;padding:10px;border-radius:999px;background:transparent;border:1px solid #334155;color:#94a3b8;cursor:pointer;">Batal</button>
-      <button id="btn-jana-fakta-execute" style="flex:2;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
-    </div>
-  </div>
-</div>
-
-<script style="display:none">
-  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
-  function parseKamusFaktaOLD(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      // Detect tajuk slide — Slide X — Tajuk (Terjemahan):
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = {
-          tajuk: trimmed.replace(/:$/, '').trim(),
-          items: []
-        };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      // Detect -ayat
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      // Detect -K1, -K2 dll
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    // Format: "ayat teks = K1: keyword K2: keyword"
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      // Semak sama ada laci dengan tajuk sama dah wujud
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        // Tambah baris ke laci sedia ada
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        // Cipta laci baru
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
 </body>
-</html>
+</html>`;
 
         setProgress(100, '✅ Buka tetingkap print...');
 
@@ -16946,269 +16177,8 @@ ${pagesHtml}
 
 ${pagesHtml}
 
-<!-- MODAL JANA PUKAL FAKTA -->
-<div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
-  <div style="background:#0f172a;border:1px solid #0891b2;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-    <div style="font-size:1rem;font-weight:700;color:#22d3ee;">🗂️ Jana Pukal Fakta</div>
-    <div style="font-size:0.72rem;color:#94a3b8;">Tampal output Sayaz Extractor (format kata kunci) di sini. Satu slide = satu laci.</div>
-    <textarea id="jana-fakta-input" placeholder="Slide 7 — Classification of Law (Klasifikasi Undang-undang):&#10;-ayat 1: Rangka kerja...&#10;-K1: Legal framework (rangka kerja)&#10;-K2: Three distinct domains..." style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #0891b2;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;"></textarea>
-    <div id="jana-fakta-preview" style="font-size:.72rem;color:#9ca3af;font-style:italic;min-height:18px;"></div>
-    <div style="display:flex;gap:8px;">
-      <button id="btn-jana-fakta-cancel" style="flex:1;padding:10px;border-radius:999px;background:transparent;border:1px solid #334155;color:#94a3b8;cursor:pointer;">Batal</button>
-      <button id="btn-jana-fakta-execute" style="flex:2;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
-    </div>
-  </div>
-</div>
-
-<script style="display:none">
-  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
-  function parseKamusFaktaOLD(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      // Detect tajuk slide — Slide X — Tajuk (Terjemahan):
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = {
-          tajuk: trimmed.replace(/:$/, '').trim(),
-          items: []
-        };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      // Detect -ayat
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      // Detect -K1, -K2 dll
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    // Format: "ayat teks = K1: keyword K2: keyword"
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      // Semak sama ada laci dengan tajuk sama dah wujud
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        // Tambah baris ke laci sedia ada
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        // Cipta laci baru
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
-
 </body>
-</html>
+</html>`;
 
         setProgress(100, '✅ Buka tetingkap print...');
 
@@ -27780,152 +26750,9 @@ mifRefreshKeyStatus();
 
     if ("serviceWorker" in navigator) {    
       window.addEventListener("load", () => { 
-        navigator.serviceWorker.register("./service-worker.js").catch(console.error); 
+Worker.register("./service-worker.js").catch(console.error); 
       });
     }
-  </script>          
-<!-- MODAL JANA PUKAL FAKTA -->
-<div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
-  <div style="background:#0f172a;border:1px solid #0891b2;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-    <div style="font-size:1rem;font-weight:700;color:#22d3ee;">🗂️ Jana Pukal Fakta</div>
-    <div style="font-size:0.72rem;color:#94a3b8;">Tampal output Sayaz Extractor (format kata kunci) di sini. Satu slide = satu laci.</div>
-    <textarea id="jana-fakta-input" placeholder="Slide 7 — Classification of Law (Klasifikasi Undang-undang):&#10;-ayat 1: Rangka kerja...&#10;-K1: Legal framework (rangka kerja)&#10;-K2: Three distinct domains..." style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #0891b2;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;"></textarea>
-    <div id="jana-fakta-preview" style="font-size:.72rem;color:#9ca3af;font-style:italic;min-height:18px;"></div>
-    <div style="display:flex;gap:8px;">
-      <button id="btn-jana-fakta-cancel" style="flex:1;padding:10px;border-radius:999px;background:transparent;border:1px solid #334155;color:#94a3b8;cursor:pointer;">Batal</button>
-      <button id="btn-jana-fakta-execute" style="flex:2;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
-    </div>
-  </div>
-</div>
-
-<script style="display:none">
-  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
-  function parseKamusFaktaOLD(text) {
-    const lines = text.split('\n');
-    const slides = [];
-    let current = null;
-    let currentAyat = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-      if (!trimmed) continue;
-
-      // Detect tajuk slide — Slide X — Tajuk (Terjemahan):
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
-      if (mSlide) {
-        if (current) slides.push(current);
-        current = {
-          tajuk: trimmed.replace(/:$/, '').trim(),
-          items: []
-        };
-        currentAyat = null;
-        continue;
-      }
-
-      if (!current) continue;
-
-      // Detect -ayat
-      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
-      if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
-        current.items.push(currentAyat);
-        continue;
-      }
-
-      // Detect -K1, -K2 dll
-      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
-      if (mK && currentAyat) {
-        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
-        continue;
-      }
-    }
-
-    if (current) slides.push(current);
-    return slides;
-  }
-
-  function buatAyatFakta(ayatObj) {
-    // Format: "ayat teks = K1: keyword K2: keyword"
-    const depan = ayatObj.ayatText;
-    if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
-  }
-
-  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
-    document.getElementById('jana-fakta-input').value = '';
-    document.getElementById('jana-fakta-preview').textContent = '';
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
-  });
-
-  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-  });
-
-  document.getElementById('jana-fakta-input').addEventListener('input', () => {
-    const teks = document.getElementById('jana-fakta-input').value;
-    const prev = document.getElementById('jana-fakta-preview');
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { prev.textContent = ''; return; }
-    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
-    prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
-  });
-
-  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
-    if (!currentUser || !currentTopicId) {
-      showToast('⚠️ Sila buka topik dahulu.'); return;
-    }
-    const teks = document.getElementById('jana-fakta-input').value;
-    const parsed = parseKamusFakta(teks);
-    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
-    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
-    let laciDijana = 0;
-    let laciSkip = 0;
-
-    for (const slide of parsed) {
-      // Semak sama ada laci dengan tajuk sama dah wujud
-      const existing = allDrawers.find(d =>
-        d.topicId === currentTopicId &&
-        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
-      );
-
-      if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
-        if (!jawab) { laciSkip++; continue; }
-      }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
-      if (existing) {
-        // Tambah baris ke laci sedia ada
-        const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
-      } else {
-        // Cipta laci baru
-        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
-        });
-        laciDijana++;
-      }
-    }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
-  });
 
   // ── JANA PUKAL FAKTA ──
   function parseKamusFakta(text) {
@@ -27933,11 +26760,9 @@ mifRefreshKeyStatus();
     const slides = [];
     let current = null;
     let currentAyat = null;
-
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
       if (!trimmed) continue;
-
       const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
       if (mSlide) {
         if (current) slides.push(current);
@@ -27945,23 +26770,19 @@ mifRefreshKeyStatus();
         currentAyat = null;
         continue;
       }
-
       if (!current) continue;
-
       const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
       if (mAyat) {
         currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
         current.items.push(currentAyat);
         continue;
       }
-
       const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
       if (mK && currentAyat) {
         currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
         continue;
       }
     }
-
     if (current) slides.push(current);
     return slides;
   }
@@ -27969,8 +26790,8 @@ mifRefreshKeyStatus();
   function buatAyatFakta(ayatObj) {
     const depan = ayatObj.ayatText;
     if (!ayatObj.keywords.length) return depan;
-    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
-    return `${depan} = ${belakang}`;
+    const belakang = ayatObj.keywords.map(k => 'K' + k.num + ': ' + k.teks).join(' ');
+    return depan + ' = ' + belakang;
   }
 
   document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
@@ -27991,7 +26812,7 @@ mifRefreshKeyStatus();
     if (!parsed.length) { prev.textContent = ''; return; }
     const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
     prev.style.color = '#22d3ee';
-    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
+    prev.textContent = parsed.length + ' slide dijumpai | ' + totalItems + ' baris akan dijana';
   });
 
   document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
@@ -28001,49 +26822,34 @@ mifRefreshKeyStatus();
     const teks = document.getElementById('jana-fakta-input').value;
     const parsed = parseKamusFakta(teks);
     if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
-
     document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
-    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
-
+    showToast('⏳ Menjana ' + parsed.length + ' laci...', 0);
     let laciDijana = 0;
     let laciSkip = 0;
-
     for (const slide of parsed) {
       const existing = allDrawers.find(d =>
         d.topicId === currentTopicId &&
         d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
       );
-
       if (existing) {
-        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
+        const jawab = confirm('Laci ini sudah wujud:\n\n"' + slide.tajuk + '"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.');
         if (!jawab) { laciSkip++; continue; }
       }
-
-      const items = slide.items.map(ayatObj => ({
-        ayat: buatAyatFakta(ayatObj),
-        imageUrl: ''
-      }));
-
+      const items = slide.items.map(ayatObj => ({ ayat: buatAyatFakta(ayatObj), imageUrl: '' }));
       if (existing) {
         const itemsGabung = [...(existing.items || []), ...items];
-        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
-          items: itemsGabung
-        });
+        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), { items: itemsGabung });
       } else {
         await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
-          title: slide.tajuk,
-          items: items,
-          notes: '',
-          repeatCount: 0,
-          topicId: currentTopicId,
-          createdAt: Date.now()
+          title: slide.tajuk, items: items, notes: '', repeatCount: 0,
+          topicId: currentTopicId, createdAt: Date.now()
         });
         laciDijana++;
       }
     }
-
-    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
+    showToast('✅ ' + laciDijana + ' laci berjaya dijana! ' + (laciSkip ? laciSkip + ' diskip.' : ''), 4000);
   });
 
+  </script>
 </body>
 </html>
