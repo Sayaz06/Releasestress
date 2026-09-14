@@ -14942,9 +14942,9 @@ ${pagesHtml}
   </div>
 </div>
 
-<script>
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
+<script style="display:none">
+  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
+  function parseKamusFaktaOLD(text) {
     const lines = text.split('\n');
     const slides = [];
     let current = null;
@@ -15070,7 +15070,124 @@ ${pagesHtml}
 
     showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
   });
-</script>
+
+  // ── JANA PUKAL FAKTA ──
+  function parseKamusFakta(text) {
+    const lines = text.split('\n');
+    const slides = [];
+    let current = null;
+    let currentAyat = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+
+      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
+      if (mSlide) {
+        if (current) slides.push(current);
+        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
+        currentAyat = null;
+        continue;
+      }
+
+      if (!current) continue;
+
+      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
+      if (mAyat) {
+        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
+        current.items.push(currentAyat);
+        continue;
+      }
+
+      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
+      if (mK && currentAyat) {
+        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
+        continue;
+      }
+    }
+
+    if (current) slides.push(current);
+    return slides;
+  }
+
+  function buatAyatFakta(ayatObj) {
+    const depan = ayatObj.ayatText;
+    if (!ayatObj.keywords.length) return depan;
+    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
+    return `${depan} = ${belakang}`;
+  }
+
+  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
+    document.getElementById('jana-fakta-input').value = '';
+    document.getElementById('jana-fakta-preview').textContent = '';
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
+  });
+
+  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+  });
+
+  document.getElementById('jana-fakta-input').addEventListener('input', () => {
+    const teks = document.getElementById('jana-fakta-input').value;
+    const prev = document.getElementById('jana-fakta-preview');
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { prev.textContent = ''; return; }
+    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
+    prev.style.color = '#22d3ee';
+    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
+  });
+
+  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
+    if (!currentUser || !currentTopicId) {
+      showToast('⚠️ Sila buka topik dahulu.'); return;
+    }
+    const teks = document.getElementById('jana-fakta-input').value;
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
+
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
+
+    let laciDijana = 0;
+    let laciSkip = 0;
+
+    for (const slide of parsed) {
+      const existing = allDrawers.find(d =>
+        d.topicId === currentTopicId &&
+        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
+      );
+
+      if (existing) {
+        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
+        if (!jawab) { laciSkip++; continue; }
+      }
+
+      const items = slide.items.map(ayatObj => ({
+        ayat: buatAyatFakta(ayatObj),
+        imageUrl: ''
+      }));
+
+      if (existing) {
+        const itemsGabung = [...(existing.items || []), ...items];
+        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
+          items: itemsGabung
+        });
+      } else {
+        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
+          title: slide.tajuk,
+          items: items,
+          notes: '',
+          repeatCount: 0,
+          topicId: currentTopicId,
+          createdAt: Date.now()
+        });
+        laciDijana++;
+      }
+    }
+
+    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
+  });
 
 </body>
 </html>
@@ -15610,9 +15727,9 @@ ${pagesHtml}
   </div>
 </div>
 
-<script>
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
+<script style="display:none">
+  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
+  function parseKamusFaktaOLD(text) {
     const lines = text.split('\n');
     const slides = [];
     let current = null;
@@ -15738,7 +15855,124 @@ ${pagesHtml}
 
     showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
   });
-</script>
+
+  // ── JANA PUKAL FAKTA ──
+  function parseKamusFakta(text) {
+    const lines = text.split('\n');
+    const slides = [];
+    let current = null;
+    let currentAyat = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+
+      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
+      if (mSlide) {
+        if (current) slides.push(current);
+        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
+        currentAyat = null;
+        continue;
+      }
+
+      if (!current) continue;
+
+      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
+      if (mAyat) {
+        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
+        current.items.push(currentAyat);
+        continue;
+      }
+
+      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
+      if (mK && currentAyat) {
+        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
+        continue;
+      }
+    }
+
+    if (current) slides.push(current);
+    return slides;
+  }
+
+  function buatAyatFakta(ayatObj) {
+    const depan = ayatObj.ayatText;
+    if (!ayatObj.keywords.length) return depan;
+    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
+    return `${depan} = ${belakang}`;
+  }
+
+  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
+    document.getElementById('jana-fakta-input').value = '';
+    document.getElementById('jana-fakta-preview').textContent = '';
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
+  });
+
+  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+  });
+
+  document.getElementById('jana-fakta-input').addEventListener('input', () => {
+    const teks = document.getElementById('jana-fakta-input').value;
+    const prev = document.getElementById('jana-fakta-preview');
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { prev.textContent = ''; return; }
+    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
+    prev.style.color = '#22d3ee';
+    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
+  });
+
+  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
+    if (!currentUser || !currentTopicId) {
+      showToast('⚠️ Sila buka topik dahulu.'); return;
+    }
+    const teks = document.getElementById('jana-fakta-input').value;
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
+
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
+
+    let laciDijana = 0;
+    let laciSkip = 0;
+
+    for (const slide of parsed) {
+      const existing = allDrawers.find(d =>
+        d.topicId === currentTopicId &&
+        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
+      );
+
+      if (existing) {
+        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
+        if (!jawab) { laciSkip++; continue; }
+      }
+
+      const items = slide.items.map(ayatObj => ({
+        ayat: buatAyatFakta(ayatObj),
+        imageUrl: ''
+      }));
+
+      if (existing) {
+        const itemsGabung = [...(existing.items || []), ...items];
+        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
+          items: itemsGabung
+        });
+      } else {
+        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
+          title: slide.tajuk,
+          items: items,
+          notes: '',
+          repeatCount: 0,
+          topicId: currentTopicId,
+          createdAt: Date.now()
+        });
+        laciDijana++;
+      }
+    }
+
+    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
+  });
 
 </body>
 </html>
@@ -16210,9 +16444,9 @@ ${pagesHtml}
   </div>
 </div>
 
-<script>
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
+<script style="display:none">
+  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
+  function parseKamusFaktaOLD(text) {
     const lines = text.split('\n');
     const slides = [];
     let current = null;
@@ -16338,7 +16572,124 @@ ${pagesHtml}
 
     showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
   });
-</script>
+
+  // ── JANA PUKAL FAKTA ──
+  function parseKamusFakta(text) {
+    const lines = text.split('\n');
+    const slides = [];
+    let current = null;
+    let currentAyat = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+
+      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
+      if (mSlide) {
+        if (current) slides.push(current);
+        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
+        currentAyat = null;
+        continue;
+      }
+
+      if (!current) continue;
+
+      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
+      if (mAyat) {
+        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
+        current.items.push(currentAyat);
+        continue;
+      }
+
+      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
+      if (mK && currentAyat) {
+        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
+        continue;
+      }
+    }
+
+    if (current) slides.push(current);
+    return slides;
+  }
+
+  function buatAyatFakta(ayatObj) {
+    const depan = ayatObj.ayatText;
+    if (!ayatObj.keywords.length) return depan;
+    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
+    return `${depan} = ${belakang}`;
+  }
+
+  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
+    document.getElementById('jana-fakta-input').value = '';
+    document.getElementById('jana-fakta-preview').textContent = '';
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
+  });
+
+  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+  });
+
+  document.getElementById('jana-fakta-input').addEventListener('input', () => {
+    const teks = document.getElementById('jana-fakta-input').value;
+    const prev = document.getElementById('jana-fakta-preview');
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { prev.textContent = ''; return; }
+    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
+    prev.style.color = '#22d3ee';
+    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
+  });
+
+  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
+    if (!currentUser || !currentTopicId) {
+      showToast('⚠️ Sila buka topik dahulu.'); return;
+    }
+    const teks = document.getElementById('jana-fakta-input').value;
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
+
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
+
+    let laciDijana = 0;
+    let laciSkip = 0;
+
+    for (const slide of parsed) {
+      const existing = allDrawers.find(d =>
+        d.topicId === currentTopicId &&
+        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
+      );
+
+      if (existing) {
+        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
+        if (!jawab) { laciSkip++; continue; }
+      }
+
+      const items = slide.items.map(ayatObj => ({
+        ayat: buatAyatFakta(ayatObj),
+        imageUrl: ''
+      }));
+
+      if (existing) {
+        const itemsGabung = [...(existing.items || []), ...items];
+        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
+          items: itemsGabung
+        });
+      } else {
+        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
+          title: slide.tajuk,
+          items: items,
+          notes: '',
+          repeatCount: 0,
+          topicId: currentTopicId,
+          createdAt: Date.now()
+        });
+        laciDijana++;
+      }
+    }
+
+    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
+  });
 
 </body>
 </html>
@@ -16609,9 +16960,9 @@ ${pagesHtml}
   </div>
 </div>
 
-<script>
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
+<script style="display:none">
+  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
+  function parseKamusFaktaOLD(text) {
     const lines = text.split('\n');
     const slides = [];
     let current = null;
@@ -16737,7 +17088,124 @@ ${pagesHtml}
 
     showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
   });
-</script>
+
+  // ── JANA PUKAL FAKTA ──
+  function parseKamusFakta(text) {
+    const lines = text.split('\n');
+    const slides = [];
+    let current = null;
+    let currentAyat = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+
+      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
+      if (mSlide) {
+        if (current) slides.push(current);
+        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
+        currentAyat = null;
+        continue;
+      }
+
+      if (!current) continue;
+
+      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
+      if (mAyat) {
+        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
+        current.items.push(currentAyat);
+        continue;
+      }
+
+      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
+      if (mK && currentAyat) {
+        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
+        continue;
+      }
+    }
+
+    if (current) slides.push(current);
+    return slides;
+  }
+
+  function buatAyatFakta(ayatObj) {
+    const depan = ayatObj.ayatText;
+    if (!ayatObj.keywords.length) return depan;
+    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
+    return `${depan} = ${belakang}`;
+  }
+
+  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
+    document.getElementById('jana-fakta-input').value = '';
+    document.getElementById('jana-fakta-preview').textContent = '';
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
+  });
+
+  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+  });
+
+  document.getElementById('jana-fakta-input').addEventListener('input', () => {
+    const teks = document.getElementById('jana-fakta-input').value;
+    const prev = document.getElementById('jana-fakta-preview');
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { prev.textContent = ''; return; }
+    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
+    prev.style.color = '#22d3ee';
+    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
+  });
+
+  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
+    if (!currentUser || !currentTopicId) {
+      showToast('⚠️ Sila buka topik dahulu.'); return;
+    }
+    const teks = document.getElementById('jana-fakta-input').value;
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
+
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
+
+    let laciDijana = 0;
+    let laciSkip = 0;
+
+    for (const slide of parsed) {
+      const existing = allDrawers.find(d =>
+        d.topicId === currentTopicId &&
+        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
+      );
+
+      if (existing) {
+        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
+        if (!jawab) { laciSkip++; continue; }
+      }
+
+      const items = slide.items.map(ayatObj => ({
+        ayat: buatAyatFakta(ayatObj),
+        imageUrl: ''
+      }));
+
+      if (existing) {
+        const itemsGabung = [...(existing.items || []), ...items];
+        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
+          items: itemsGabung
+        });
+      } else {
+        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
+          title: slide.tajuk,
+          items: items,
+          notes: '',
+          repeatCount: 0,
+          topicId: currentTopicId,
+          createdAt: Date.now()
+        });
+        laciDijana++;
+      }
+    }
+
+    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
+  });
 
 </body>
 </html>
@@ -27330,9 +27798,9 @@ mifRefreshKeyStatus();
   </div>
 </div>
 
-<script>
-  // ── JANA PUKAL FAKTA ──
-  function parseKamusFakta(text) {
+<script style="display:none">
+  // ── JANA PUKAL FAKTA (MOVED TO MAIN SCRIPT) ──
+  function parseKamusFaktaOLD(text) {
     const lines = text.split('\n');
     const slides = [];
     let current = null;
@@ -27458,7 +27926,124 @@ mifRefreshKeyStatus();
 
     showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
   });
-</script>
+
+  // ── JANA PUKAL FAKTA ──
+  function parseKamusFakta(text) {
+    const lines = text.split('\n');
+    const slides = [];
+    let current = null;
+    let currentAyat = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+
+      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
+      if (mSlide) {
+        if (current) slides.push(current);
+        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
+        currentAyat = null;
+        continue;
+      }
+
+      if (!current) continue;
+
+      const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
+      if (mAyat) {
+        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
+        current.items.push(currentAyat);
+        continue;
+      }
+
+      const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
+      if (mK && currentAyat) {
+        currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
+        continue;
+      }
+    }
+
+    if (current) slides.push(current);
+    return slides;
+  }
+
+  function buatAyatFakta(ayatObj) {
+    const depan = ayatObj.ayatText;
+    if (!ayatObj.keywords.length) return depan;
+    const belakang = ayatObj.keywords.map(k => `K${k.num}: ${k.teks}`).join(' ');
+    return `${depan} = ${belakang}`;
+  }
+
+  document.getElementById('btn-open-jana-pukal-fakta').addEventListener('click', () => {
+    document.getElementById('jana-fakta-input').value = '';
+    document.getElementById('jana-fakta-preview').textContent = '';
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('jana-fakta-input').focus(), 80);
+  });
+
+  document.getElementById('btn-jana-fakta-cancel').addEventListener('click', () => {
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+  });
+
+  document.getElementById('jana-fakta-input').addEventListener('input', () => {
+    const teks = document.getElementById('jana-fakta-input').value;
+    const prev = document.getElementById('jana-fakta-preview');
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { prev.textContent = ''; return; }
+    const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
+    prev.style.color = '#22d3ee';
+    prev.textContent = `✅ ${parsed.length} slide dijumpai | ${totalItems} baris akan dijana`;
+  });
+
+  document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
+    if (!currentUser || !currentTopicId) {
+      showToast('⚠️ Sila buka topik dahulu.'); return;
+    }
+    const teks = document.getElementById('jana-fakta-input').value;
+    const parsed = parseKamusFakta(teks);
+    if (!parsed.length) { showToast('⚠️ Tiada slide dijumpai. Semak format teks.'); return; }
+
+    document.getElementById('jana-pukal-fakta-modal').style.display = 'none';
+    showToast(`⏳ Menjana ${parsed.length} laci...`, 0);
+
+    let laciDijana = 0;
+    let laciSkip = 0;
+
+    for (const slide of parsed) {
+      const existing = allDrawers.find(d =>
+        d.topicId === currentTopicId &&
+        d.title && d.title.trim().toLowerCase() === slide.tajuk.trim().toLowerCase()
+      );
+
+      if (existing) {
+        const jawab = confirm(`Laci ini sudah wujud:\n\n"${slide.tajuk}"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.`);
+        if (!jawab) { laciSkip++; continue; }
+      }
+
+      const items = slide.items.map(ayatObj => ({
+        ayat: buatAyatFakta(ayatObj),
+        imageUrl: ''
+      }));
+
+      if (existing) {
+        const itemsGabung = [...(existing.items || []), ...items];
+        await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), {
+          items: itemsGabung
+        });
+      } else {
+        await addDoc(collection(db, 'users', currentUser.uid, 'drawer'), {
+          title: slide.tajuk,
+          items: items,
+          notes: '',
+          repeatCount: 0,
+          topicId: currentTopicId,
+          createdAt: Date.now()
+        });
+        laciDijana++;
+      }
+    }
+
+    showToast(`✅ ${laciDijana} laci berjaya dijana! ${laciSkip ? laciSkip + ' diskip.' : ''}`, 4000);
+  });
 
 </body>
 </html>
