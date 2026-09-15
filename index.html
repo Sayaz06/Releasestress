@@ -2278,7 +2278,7 @@ body.dark-mode {
             <button id="btn-toggle-fakta-sr" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;color:#fcd34d;display:none;">⏰ SR Fakta: OFF</button>
             <button id="btn-toggle-bahasa" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Bahasa: OFF</button>
             <button id="btn-skip-bahasa-laci" class="btn btn-secondary btn-sm" style="display:none;border-color:#f59e0b;color:#fcd34d;">⏭ Skip Laci</button>
-            <button id="btn-toggle-rutin" class="btn btn-secondary btn-sm">Rutin: OFF</button>
+            <button id="btn-toggle-rutin" class="btn btn-secondary btn-sm">Wirid: OFF</button>
             <button id="btn-toggle-quran" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Quran: OFF</button>
             <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
@@ -2301,7 +2301,7 @@ body.dark-mode {
             <div style="display:flex; gap:6px;">
               <button id="btn-go-subjects" class="btn btn-secondary btn-sm">Laci Fakta</button>
               <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
-              <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Rutin</button>
+              <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Wirid</button>
               <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
               <button id="btn-go-doa-times" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Laci Doa</button>
               <button id="btn-go-hadis-times" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Laci Hadis</button>
@@ -4861,10 +4861,11 @@ let currentQuranSurahNum = 1;
       if (routineModeSource === 'quran') return { data: currentQuranTasbihData, ref: currentQuranTasbihRef };
       if (routineModeSource === 'doa')   return { data: currentDoaTasbihData,   ref: currentDoaTasbihRef   };
       if (routineModeSource === 'hadis') return { data: currentHadisTasbihData, ref: currentHadisTasbihRef };
+      if (routineModeSource === 'solat') return { data: currentSolatTasbihData, ref: currentSolatTasbihRef };
       return { data: null, ref: null };
     }
 
-const _modeTasbihUnsub = { doa: null, hadis: null, quran: null };
+const _modeTasbihUnsub = { doa: null, hadis: null, quran: null, solat: null };
 
 async function ensureTodayModeTasbih(mode) {
       if (!currentUser) return;
@@ -4891,7 +4892,7 @@ async function ensureTodayModeTasbih(mode) {
       });
     }
     function getModeLabel(src) {
-      return {rutin:'Rutin', quran:'📖 Quran', doa:'🤲 Doa', hadis:'📚 Hadis', solat:'🕌 Solat'}[src] || src;
+      return {rutin:'Wirid', quran:'📖 Quran', doa:'🤲 Doa', hadis:'📚 Hadis', solat:'🕌 Solat'}[src] || src;
     }
 
 function getRoutineSrc() {
@@ -4903,6 +4904,8 @@ function getRoutineSrc() {
           return { times: allDoaTimes, drawers: allDoaDrawers, globalId: activeGlobalDoaId, coll: 'doa' };
         case 'hadis':
           return { times: allHadisTimes, drawers: allHadisDrawers, globalId: activeGlobalHadisId, coll: 'hadis' };
+        case 'solat':
+          return { times: allSolatTimes, drawers: allSolatDrawers, globalId: activeGlobalSolatId, coll: 'solat' };
         default:
           return { times: allRoutineTimes, drawers: allRoutineDrawers, globalId: activeGlobalRoutineId, coll: 'routine' };
       }
@@ -4927,12 +4930,12 @@ function activateRoutineMode(src) {
 // Reset semua
       factMode = false; routineMode = false; bahasaMode = false;
       btnToggleFact.textContent="Fakta: OFF"; btnToggleFact.classList.remove("btn-active");
-      btnToggleRutin.textContent="Rutin: OFF"; btnToggleRutin.classList.remove("btn-active");
+      btnToggleRutin.textContent="Wirid: OFF"; btnToggleRutin.classList.remove("btn-active");
       const btnBahasaToggle = document.getElementById('btn-toggle-bahasa');
       if (btnBahasaToggle) { btnBahasaToggle.textContent="📝 Bahasa: OFF"; btnBahasaToggle.classList.remove("btn-active"); }
       const cbBahasa = document.getElementById('btn-toggle-bahasa-cb');
       if (cbBahasa) cbBahasa.checked = false;
-      ['quran','doa','hadis'].forEach(s => {
+      ['quran','doa','hadis','solat'].forEach(s => {
         const b = document.getElementById(`btn-toggle-${s}`);
         if(b){b.textContent=`${getModeLabel(s)}: OFF`; b.classList.remove("btn-active");}
       });
@@ -4966,7 +4969,7 @@ if (src === 'quran') {
         }
         rebuildRoutines();
 // Pastikan countdown harian wujud untuk mode baru
-        if (['quran','doa','hadis'].includes(src)) ensureTodayModeTasbih(src);
+        if (['quran','doa','hadis','solat'].includes(src)) ensureTodayModeTasbih(src);
 
         // Load lastIndex untuk doa kalau doaReadAllMode on
         if (src === 'doa' && doaReadAllMode && currentUser) {
