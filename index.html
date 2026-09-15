@@ -2282,6 +2282,7 @@ body.dark-mode {
             <button id="btn-toggle-quran" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Quran: OFF</button>
             <button id="btn-toggle-doa" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Doa: OFF</button>
             <button id="btn-toggle-hadis" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Hadis: OFF</button>
+            <button id="btn-toggle-solat" class="btn btn-secondary btn-sm" style="border-color:#fb7185;">🕌 Solat: OFF</button>
             <button id="btn-go-sr-queue" class="btn btn-secondary btn-sm" style="border-color:#fcd34d;color:#fcd34d;">⏰ SR Queue</button>
             <button id="btn-toggle-rehat" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">💤 Rehat: ON</button>
             <button id="btn-toggle-audio-mode" class="btn btn-secondary btn-sm" style="border-color:#f43f5e;color:#fb7185;">🎧 Audio: OFF</button>
@@ -2304,6 +2305,7 @@ body.dark-mode {
               <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
               <button id="btn-go-doa-times" class="btn btn-secondary btn-sm" style="border-color:#f59e0b;">🤲 Laci Doa</button>
               <button id="btn-go-hadis-times" class="btn btn-secondary btn-sm" style="border-color:#ec4899;">📚 Laci Hadis</button>
+              <button id="btn-go-solat-times" class="btn btn-secondary btn-sm" style="border-color:#fb7185;">🕌 Laci Solat</button>
                           </div>
             <div class="topbar-sub" id="tasbih-date-label" style="margin-top: 4px;"></div>
           </div>
@@ -2889,6 +2891,37 @@ body.dark-mode {
           <span id="hadis-read-all-progress" style="font-size:0.7rem;color:var(--subtext);margin-left:auto;"></span>
         </div>
 </section>
+
+      <section id="section-solat-times" class="section">
+        <div class="topbar">
+          <button id="btn-back-tasbih-solat" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div class="topbar-title" style="color:#fda4af;">🕌 Kategori Solat</div>
+        </div>
+        <div style="font-size:.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">Tanda (tick) SATU sahaja untuk aktifkan.</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-add-solat-time" class="btn btn-sm" style="flex:1;">Tambah Kategori</button>
+          <button id="btn-trash-solat" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
+        </div>
+        <div class="list mt-8" id="solat-times-list" style="padding:10px;"></div>
+      </section>
+      <section id="section-solat-drawers" class="section">
+        <div class="topbar">
+          <button id="btn-back-solat-drawer" class="btn btn-secondary btn-sm">← Kategori</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#fda4af;">🕌 Laci Solat</div>
+            <div class="topbar-sub" id="parent-solat-time-name" style="color:var(--grad2);font-weight:bold;"></div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button id="btn-add-solat-drawer" class="btn btn-sm" style="flex:1;">Tambah Laci Solat</button>
+          <button class="btn btn-sm btn-open-jana-pukal-generic" data-mode="solat" style="flex:1; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none;">🗂️ Jana Pukal</button>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <input id="solat-drawer-search" type="text" placeholder="🔍 Cari tajuk laci..." class="drawer-input-box" style="flex:1; margin-bottom:0; padding:6px 10px; font-size:0.8rem;">
+          <button class="btn btn-secondary btn-sm btn-goto-empty-generic" data-mode="solat" style="white-space:nowrap; border-color:#f59e0b; color:#fcd34d;">⚡ Kosong</button>
+        </div>
+        <div class="list mt-8" id="solat-drawers-list" style="padding:10px;"></div>
+      </section>
 
       <section id="section-history" class="section">
         <div class="topbar">
@@ -4763,6 +4796,9 @@ let allSems = [];
     let allQuranTimes = [], allQuranDrawers = [], currentQuranTimeId = null, activeGlobalQuranId = 'default';
     let allDoaTimes = [], allDoaDrawers = [], currentDoaTimeId = null, activeGlobalDoaId = 'default';
     let allHadisTimes = [], allHadisDrawers = [], currentHadisTimeId = null, activeGlobalHadisId = 'default';
+    let allSolatTimes = [], allSolatDrawers = [], currentSolatTimeId = null, activeGlobalSolatId = 'default';
+    let currentSolatTasbihRef = null, currentSolatTasbihData = null;
+    let _seedHadisSolatDone = false;
 
     let doaReadAllMode = true;
     let doaReadAllIndex = 0;
@@ -4775,7 +4811,8 @@ let allBahasaList = [], allJenisKata = [], allBahasaPerkataan = [], allBahasaDra
     let hadisReadAllMode = false;
     let hadisReadAllIndex = 0;
 // ── COUNTDOWN HARIAN UNTUK QURAN / DOA / HADIS ──
-const MODE_DAILY_DEFAULTS = { quran: 6236, doa: 1000, hadis: 10 };
+const MODE_DAILY_DEFAULTS = { quran: 6236, doa: 1000, hadis: 10, solat: 33 };
+const MODE_LACI_SRCS = ['quran','doa','hadis','solat'];
        const HURUF_TASYDID_KASRA = [
       ['أ','Alif'],['ب','Ba'],['ت','Ta'],['ث','Tha'],
       ['ج','Jim'],['ح','Ha'],['خ','Kha'],['د','Dal'],
@@ -4847,13 +4884,14 @@ async function ensureTodayModeTasbih(mode) {
         if (mode === 'quran') { currentQuranTasbihRef = refDoc; currentQuranTasbihData = data; }
         else if (mode === 'doa')   { currentDoaTasbihRef = refDoc; currentDoaTasbihData = data; }
         else if (mode === 'hadis') { currentHadisTasbihRef = refDoc; currentHadisTasbihData = data; }
+        else if (mode === 'solat') { currentSolatTasbihRef = refDoc; currentSolatTasbihData = data; }
         updateTasbihUI();
       }, (err) => {
         console.warn('ensureTodayModeTasbih onSnapshot error:', err);
       });
     }
     function getModeLabel(src) {
-      return {rutin:'Rutin', quran:'📖 Quran', doa:'🤲 Doa', hadis:'📚 Hadis'}[src] || src;
+      return {rutin:'Rutin', quran:'📖 Quran', doa:'🤲 Doa', hadis:'📚 Hadis', solat:'🕌 Solat'}[src] || src;
     }
 
 function getRoutineSrc() {
@@ -6087,7 +6125,7 @@ function showSection(section) {
       sectionPrompterEditor.classList.remove("active"); 
       if (sectionMyLaw) sectionMyLaw.classList.remove("active");
       document.getElementById('section-sr-queue')?.classList.remove("active");
-['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-mode-history','section-progress-log','section-countdown-mini','section-cm-history','section-other-motivation','section-main-motivation'].forEach(id => {  
+['section-quran-times','section-quran-drawers','section-doa-times','section-doa-drawers','section-hadis-times','section-hadis-drawers','section-solat-times','section-solat-drawers','section-mode-history','section-progress-log','section-countdown-mini','section-cm-history','section-other-motivation','section-main-motivation'].forEach(id => {  
         const el = document.getElementById(id); if(el) el.classList.remove("active");
       });
   
@@ -12939,6 +12977,7 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
     });    
     document.getElementById('btn-toggle-doa').addEventListener('click',   () => activateRoutineMode('doa'));
     document.getElementById('btn-toggle-hadis').addEventListener('click', () => activateRoutineMode('hadis'));
+    document.getElementById('btn-toggle-solat').addEventListener('click', () => activateRoutineMode('solat'));
 
     // ── NAV QURAN ──
 document.getElementById('btn-go-quran-times').addEventListener('click', () => {
@@ -13321,6 +13360,23 @@ addDoc(collection(db,"users",currentUser.uid,"doa_drawers"),{title:"~",zikir:"",
 });
 
     // ── NAV HADIS ──
+    document.getElementById('btn-go-solat-times').addEventListener('click', () => {
+      showSection(document.getElementById('section-solat-times'));
+      renderGenericTimes('solat');
+    });
+    document.getElementById('btn-back-tasbih-solat').addEventListener('click', () => showSection(sectionTasbih));
+    document.getElementById('btn-back-solat-drawer').addEventListener('click', () => {
+      showSection(document.getElementById('section-solat-times')); renderGenericTimes('solat');
+    });
+    document.getElementById('btn-add-solat-time').addEventListener('click', () => {
+      if(currentUser) addDoc(collection(db,"users",currentUser.uid,"solat_times"),{name:"",isActive:false,createdAt:Date.now()});
+    });
+    document.getElementById('btn-add-solat-drawer').addEventListener('click', () => {
+      if(currentSolatTimeId) {
+        addDoc(collection(db,"users",currentUser.uid,"solat_drawers"),{title:"~",zikir:"",target:"",maksud:"",timeId:currentSolatTimeId,createdAt:Date.now()});
+        showToast("✅ Laci berjaya ditambah di bahagian bawah sekali");
+      }
+    });
     document.getElementById('btn-go-hadis-times').addEventListener('click', () => {
       showSection(document.getElementById('section-hadis-times'));
       renderGenericTimes('hadis');
@@ -13345,6 +13401,7 @@ addDoc(collection(db,"users",currentUser.uid,"hadis_drawers"),{title:"~",zikir:"
         quran: {arr:allQuranTimes, listId:'quran-times-list', coll:'quran_times', drawersSection:'section-quran-drawers', setCurrent:(id)=>{currentQuranTimeId=id;}, parentEl:'parent-quran-time-name'},
         doa:   {arr:allDoaTimes, listId:'doa-times-list', coll:'doa_times', drawersSection:'section-doa-drawers', setCurrent:(id)=>{currentDoaTimeId=id;}, parentEl:'parent-doa-time-name'},
         hadis: {arr:allHadisTimes, listId:'hadis-times-list', coll:'hadis_times', drawersSection:'section-hadis-drawers', setCurrent:(id)=>{currentHadisTimeId=id;}, parentEl:'parent-hadis-time-name'},
+        solat: {arr:allSolatTimes, listId:'solat-times-list', coll:'solat_times', drawersSection:'section-solat-drawers', setCurrent:(id)=>{currentSolatTimeId=id;}, parentEl:'parent-solat-time-name'},
       }[mode];
       if(!cfg) return;
 
@@ -13425,6 +13482,7 @@ div.querySelectorAll('button')[1].addEventListener("click", async () => {
         quran: {drawers:allQuranDrawers, timeId:()=>currentQuranSurahNum, listId:'quran-drawers-list', coll:'quran_drawers'},
         doa:   {drawers:allDoaDrawers, timeId:()=>currentDoaTimeId, listId:'doa-drawers-list', coll:'doa_drawers'},
         hadis: {drawers:allHadisDrawers, timeId:()=>currentHadisTimeId, listId:'hadis-drawers-list', coll:'hadis_drawers'},
+        solat: {drawers:allSolatDrawers, timeId:()=>currentSolatTimeId, listId:'solat-drawers-list', coll:'solat_drawers'},
       }[mode];
       if(!cfg) return;
 
@@ -13801,10 +13859,46 @@ list.appendChild(div);
         {coll:'doa_drawers', arr:(d)=>{allDoaDrawers=d; if(document.getElementById('section-doa-drawers')?.classList.contains('active')) renderGenericDrawers('doa'); rebuildIfActive('doa');} },
         {coll:'hadis_times', arr:(d)=>{allHadisTimes=d; if(document.getElementById('section-hadis-times')?.classList.contains('active')) renderGenericTimes('hadis'); rebuildIfActive('hadis');} },
         {coll:'hadis_drawers', arr:(d)=>{allHadisDrawers=d; if(document.getElementById('section-hadis-drawers')?.classList.contains('active')) renderGenericDrawers('hadis'); rebuildIfActive('hadis');} },
+        {coll:'solat_times', arr:(d)=>{allSolatTimes=d; if(document.getElementById('section-solat-times')?.classList.contains('active')) renderGenericTimes('solat'); rebuildIfActive('solat');} },
+        {coll:'solat_drawers', arr:(d)=>{allSolatDrawers=d; if(document.getElementById('section-solat-drawers')?.classList.contains('active')) renderGenericDrawers('solat'); rebuildIfActive('solat');} },
       ];
       modes.forEach(m => onSnapshot(query(collection(db,"users",currentUser.uid,m.coll)), snap => {
         m.arr(snap.docs.map(d=>({id:d.id,...d.data()})));
       }));
+      setTimeout(seedHadisDanSolatJikaKosong, 1200);
+    }
+
+    async function seedHadisDanSolatJikaKosong() {
+      if (!currentUser || _seedHadisSolatDone) return;
+      _seedHadisSolatDone = true;
+      const uid = currentUser.uid;
+      async function addTime(coll, name) {
+        const ref = await addDoc(collection(db,'users',uid,coll), { name: name, isActive: false, createdAt: Date.now() });
+        return ref.id;
+      }
+      async function addLaci(coll, timeId, title, zikir, maksud, target) {
+        await addDoc(collection(db,'users',uid,coll), { title: title, zikir: zikir, maksud: maksud, target: target || '', timeId: timeId, createdAt: Date.now() });
+      }
+      if (!allHadisTimes.length) {
+        const h1 = await addTime('hadis_times', 'Hadis Pilihan');
+        await addLaci('hadis_drawers', h1, '1. Niat', 'إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ', 'Setiap amalan dinilai dengan niat. Betulkan niat sebelum solat.', '1');
+        await addLaci('hadis_drawers', h1, '2. Solat tiang agama', 'رَأْسُ الْأَمْرِ الْإِسْلَامُ وَعَمُودُهُ الصَّلَاةُ', 'Islam adalah pokok urusan, dan tiangnya ialah solat.', '1');
+        await addLaci('hadis_drawers', h1, '3. Solat pada waktunya', 'الصَّلَاةُ عَلَى وَقْتِهَا', 'Amalan paling dikasihi: solat pada waktunya.', '1');
+        await addLaci('hadis_drawers', h1, '4. Khusyuk', 'قَدْ أَفْلَحَ الْمُؤْمِنُونَ الَّذِينَ هُمْ فِي صَلَاتِهِمْ خَاشِعُونَ', 'Berjayalah orang beriman yang khusyuk dalam solat mereka.', '1');
+      }
+      if (!allSolatTimes.length) {
+        const s1 = await addTime('solat_times', 'Kesalahan Ketika Solat');
+        const s2 = await addTime('solat_times', 'Cara Solat Khusyuk');
+        await addLaci('solat_drawers', s1, '1. Cepat tanpa thuma\'ninah', 'Thuma\'ninah', 'Jangan buru-buru. Berhenti sejenak setiap rukun sampai badan tenang.', '');
+        await addLaci('solat_drawers', s1, '2. Pandangan merayau', 'Khusyuk mata', 'Tumpukan pandangan ke tempat sujud. Jangan tengok kiri kanan.', '');
+        await addLaci('solat_drawers', s1, '3. Fikiran terbang', 'Hadirkan hati', 'Bila terfikir kerja dunia, patahkan balik kepada bacaan dan makna.', '');
+        await addLaci('solat_drawers', s1, '4. Gerak berlebihan', 'Tenang', 'Kurangkan gerak tangan, pakaian dan kepala yang tidak perlu.', '');
+        await addLaci('solat_drawers', s2, '1. Niat ikhlas', 'Niat', 'Sebelum takbir, niat solat kerana Allah semata, bukan kerana orang nampak.', '');
+        await addLaci('solat_drawers', s2, '2. Faham bacaan', 'Tadabbur', 'Baca perlahan. Faham maksud Al-Fatihah dan tasbih rukuk/sujud.', '');
+        await addLaci('solat_drawers', s2, '3. Bayangkan berdiri di hadapan Allah', 'Muraqabah', 'Ingat Allah melihat. Ini menenangkan gerak dan suara.', '');
+        await addLaci('solat_drawers', s2, '4. Thuma\'ninah setiap rukun', 'Tenang', 'Rukuk, iktidal, sujud dan duduk — berhenti sampai tulang tenang.', '');
+        await addLaci('solat_drawers', s2, '5. Doa dalam sujud', 'Sujud', 'Sujud tempat terdekat. Mohon khusyuk dan ampunan.', '');
+      }
     }
 
 document.getElementById('hadis-read-all-toggle').addEventListener('change', async (e) => {
@@ -21587,6 +21681,7 @@ bahasa_list: 'Bahasa', jenis_kata: 'Jenis Kata', bahasa_drawers: 'Laci Bahasa',
     document.getElementById('btn-trash-rutin').addEventListener('click', () => bukaTrashUniversal('rutin'));
     document.getElementById('btn-trash-doa').addEventListener('click',   () => bukaTrashUniversal('doa'));
     document.getElementById('btn-trash-hadis').addEventListener('click', () => bukaTrashUniversal('hadis'));
+    document.getElementById('btn-trash-solat')?.addEventListener('click', () => bukaTrashUniversal('solat'));
     document.getElementById('btn-trash-bahasa')?.addEventListener('click', () => bukaTrashUniversal('bahasa'));
     document.getElementById('btn-trash-journal')?.addEventListener('click', () => bukaTrashUniversal('journal'));
     document.getElementById('btn-trash-contact')?.addEventListener('click', () => bukaTrashUniversal('journal'));
@@ -26344,7 +26439,7 @@ mifRefreshKeyStatus();
     // ══════════════════════════════════════════
     (function() {
       const sectionChampion = document.getElementById('section-champion');
-      const CHAMP_SOURCES = ['motivasi', 'perjanjian', 'rutin', 'supplement', 'water', 'mainMotivation', 'otherMotivation'];
+      const CHAMP_SOURCES = ['motivasi', 'perjanjian', 'rutin', 'solat', 'supplement', 'water', 'mainMotivation', 'otherMotivation'];
       let champSetting = { sources: [], lastSourceIndex: 0 };
 
       function champTickEl(id) { return document.getElementById('champ-tick-' + id); }
