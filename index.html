@@ -26750,7 +26750,7 @@ mifRefreshKeyStatus();
 
     if ("serviceWorker" in navigator) {    
       window.addEventListener("load", () => { 
-Worker.register("./service-worker.js").catch(console.error); 
+        navigator.serviceWorker.register("./service-worker.js").catch(console.error);
       });
     }
 
