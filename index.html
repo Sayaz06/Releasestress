@@ -27704,10 +27704,16 @@ mifRefreshKeyStatus();
           mulaAhadLockCheck();
           return;
         }
-        // Bukan Ahad — clear Firestore lock supaya tak terkunci
+        // Bukan tempoh lock (bukan Ahad 12am-5pm) — clear Firestore
         setDoc(doc(db, 'users', currentUser.uid, 'settings', 'assignment_lock'), {
           aktif: false, updatedAt: Date.now()
         }).catch(() => {});
+        // Juga deactivate overlay kalau tersangkut
+        if (lockOverlay.classList.contains('active')) {
+          lockOverlay.className = '';
+          lockFasaCd.className = '';
+          if (_lockCdTimer) { clearInterval(_lockCdTimer); _lockCdTimer = null; }
+        }
         mulaAhadLockCheck();
       }
 
