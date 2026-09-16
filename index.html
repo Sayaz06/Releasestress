@@ -2311,6 +2311,9 @@ body.dark-mode {
             ⏰ Reminder
           </button>
         </div>
+        <button id="btn-go-assignment-belly" style="width:100%;padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#92400e,#b45309);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;box-shadow:0 4px 12px rgba(180,83,9,0.35);margin-bottom:8px;transition:background 0.3s,box-shadow 0.3s;letter-spacing:0.03em;">
+          ⏳ Assignment Belly Release
+        </button>
 
 <div class="topbar" style="margin-top:4px;">
           <div style="display: flex; gap: 4px; flex-wrap: wrap;">
@@ -3314,6 +3317,37 @@ body.dark-mode {
 
         </div>
         <div id="champion-save-status" style="text-align:center;font-size:0.75rem;color:#34d399;min-height:1.2em;padding:4px 0;flex-shrink:0;"></div>
+      </section>
+
+      <!-- ══ ASSIGNMENT BELLY RELEASE ══ -->
+      <section id="section-assignment-belly" class="section">
+        <div class="topbar" style="flex-shrink:0;">
+          <button id="btn-back-home-assignment" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title" style="color:#f59e0b;">⏳ Assignment Belly Release</div>
+            <div class="topbar-sub" id="assignment-belly-sub">Dokumen berkala — Admin sahaja</div>
+          </div>
+        </div>
+
+        <!-- INFO BAR -->
+        <div id="assignment-ahad-bar" style="display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.5);border-radius:10px;padding:10px 14px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.82rem;font-weight:700;color:#34d399;margin-bottom:2px;">🟢 Hari Ahad — Download Dibuka!</div>
+          <div style="font-size:0.72rem;color:var(--subtext);">Semua PDF boleh dimuat turun hari ini.</div>
+        </div>
+        <div id="assignment-locked-bar" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;flex-shrink:0;">
+          <div style="font-size:0.82rem;font-weight:700;color:#f59e0b;margin-bottom:2px;">🔒 Download hanya pada hari Ahad</div>
+          <div style="font-size:0.72rem;color:var(--subtext);" id="assignment-countdown-label">Mengira masa...</div>
+        </div>
+
+        <!-- SENARAI PDF -->
+        <div class="list" id="assignment-belly-list" style="padding:10px;"></div>
+
+        <!-- BUTANG TAMBAH — admin sahaja -->
+        <div id="assignment-admin-panel" style="display:none;flex-shrink:0;margin-top:10px;">
+          <button id="btn-add-assignment" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#92400e,#b45309);border:none;color:white;">
+            + Tambah PDF Baru
+          </button>
+        </div>
       </section>
 
       <!-- ══ WATER TRACKER ══ -->
@@ -10402,6 +10436,9 @@ showSection(secToShow);
           if (btnQuran) { btnQuran.disabled = false; btnQuran.style.opacity = ''; btnQuran.title = ''; }
         });
         subscribeKindleCommand(); // Kindle remote control
+        if (window._ablLoadLockState) window._ablLoadLockState();
+        if (window._ablSubscribeLockState) window._ablSubscribeLockState();
+        if (window._ablCheckLockFloat) window._ablCheckLockFloat();
         
       } else {
         homeUserEmail.textContent = "";
@@ -26929,6 +26966,329 @@ mifRefreshKeyStatus();
         waterSubscribe();
         showSection(sectionWater);
       });
+
+    // ══════════════════════════════════════════
+    // ASSIGNMENT BELLY RELEASE — NAVIGATION
+    // ══════════════════════════════════════════
+    const sectionAssignmentBelly = document.getElementById('section-assignment-belly');
+
+    function isHariAhad() {
+      return new Date().getDay() === 0;
+    }
+
+    function assignmentCountdownLabel() {
+      const now = new Date();
+      const hari = now.getDay();
+      const daysToSunday = hari === 0 ? 0 : 7 - hari;
+      const nextSunday = new Date(now);
+      nextSunday.setDate(now.getDate() + daysToSunday);
+      nextSunday.setHours(0, 0, 0, 0);
+      const diff = nextSunday - now;
+      if (diff <= 0) return 'Hari ini Ahad — download dibuka!';
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      if (d > 0) return `Baki ${d} hari ${h} jam ${m} minit hingga Ahad`;
+      if (h > 0) return `Baki ${h} jam ${m} minit hingga Ahad`;
+      return `Baki ${m} minit hingga Ahad`;
+    }
+
+    function updateAssignmentBellyUI() {
+      const ahad = isHariAhad();
+      const btn = document.getElementById('btn-go-assignment-belly');
+      const ahadBar = document.getElementById('assignment-ahad-bar');
+      const lockedBar = document.getElementById('assignment-locked-bar');
+      const countdownLabel = document.getElementById('assignment-countdown-label');
+
+      if (btn) {
+        if (ahad) {
+          btn.style.background = 'linear-gradient(135deg,#059669,#10b981)';
+          btn.style.boxShadow = '0 4px 16px rgba(16,185,129,0.5)';
+        } else {
+          btn.style.background = 'linear-gradient(135deg,#92400e,#b45309)';
+          btn.style.boxShadow = '0 4px 12px rgba(180,83,9,0.35)';
+        }
+      }
+      if (ahadBar) ahadBar.style.display = ahad ? 'block' : 'none';
+      if (lockedBar) lockedBar.style.display = ahad ? 'none' : 'block';
+      if (countdownLabel) countdownLabel.textContent = assignmentCountdownLabel();
+    }
+
+    document.getElementById('btn-go-assignment-belly').addEventListener('click', function() {
+      if (!currentUser) return;
+      const isAdmin = currentUser.email === 'adha86614@gmail.com';
+      const adminPanel = document.getElementById('assignment-admin-panel');
+      if (adminPanel) adminPanel.style.display = isAdmin ? 'block' : 'none';
+      updateAssignmentBellyUI();
+      showSection(sectionAssignmentBelly);
+    });
+
+    document.getElementById('btn-back-home-assignment').addEventListener('click', function() {
+      showSection(sectionTasbih);
+    });
+
+    // Update countdown setiap minit bila dalam section
+    setInterval(function() {
+      if (sectionAssignmentBelly && sectionAssignmentBelly.classList.contains('active')) {
+        updateAssignmentBellyUI();
+      }
+    }, 60000);
+
+    // ══════════════════════════════════════════
+    // ASSIGNMENT BELLY — FIRESTORE + RENDER
+    // ══════════════════════════════════════════
+    let allAssignments = [];
+    let _assignmentUnsub = null;
+
+    function assignmentSubscribe() {
+      if (!currentUser) return;
+      if (_assignmentUnsub) return;
+      _assignmentUnsub = onSnapshot(
+        query(collection(db, 'users', currentUser.uid, 'assignment_belly'), orderBy('order', 'asc')),
+        (snap) => {
+          allAssignments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (sectionAssignmentBelly.classList.contains('active')) renderAssignmentList();
+        }
+      );
+    }
+
+    function assignmentUnsubscribe() {
+      if (_assignmentUnsub) { _assignmentUnsub(); _assignmentUnsub = null; }
+    }
+
+    function renderAssignmentList() {
+      const list = document.getElementById('assignment-belly-list');
+      if (!list) return;
+      const isAdmin = currentUser && currentUser.email === 'adha86614@gmail.com';
+      const ahad = isHariAhad();
+
+      if (!allAssignments.length) {
+        list.innerHTML = '<div class="empty-state">Tiada assignment lagi.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      allAssignments.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:rgba(30,41,59,0.7);border:1px solid var(--border-soft);border-radius:14px;padding:14px;margin-bottom:12px;';
+
+        // STATUS BADGE
+        const statusColor = item.status === 'done' ? '#34d399' : item.status === 'active' ? '#f59e0b' : '#9ca3af';
+        const statusLabel = item.status === 'done' ? '✅ Selesai' : item.status === 'active' ? '🔓 Aktif' : '⏳ Queue';
+
+        // DOWNLOAD BUTTON
+        const downloadHtml = ahad && item.pdfUrl
+          ? `<a href="${item.pdfUrl}" target="_blank" style="display:block;width:100%;padding:10px;border-radius:999px;background:linear-gradient(135deg,#059669,#10b981);border:none;color:white;font-weight:700;font-size:0.85rem;text-align:center;text-decoration:none;margin-top:10px;box-shadow:0 4px 14px rgba(16,185,129,0.4);">📥 Download PDF</a>`
+          : item.pdfUrl
+          ? `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(107,114,128,0.2);border:1px solid var(--border-mid);color:var(--subtext);font-size:0.82rem;text-align:center;margin-top:10px;">🔒 Download hanya hari Ahad</div>`
+          : `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.4);color:#f59e0b;font-size:0.82rem;text-align:center;margin-top:10px;">⏳ PDF belum diupload</div>`;
+
+        // BRAIN DUMP — toggle buka/tutup
+        const dumpId = `dump-${item.id}`;
+        const brainDumpHtml = `
+          <div style="margin-top:10px;border-top:1px solid var(--border-soft);padding-top:10px;">
+            <button class="btn-dump-toggle" data-id="${item.id}" style="width:100%;padding:7px;border-radius:8px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;font-size:0.75rem;font-weight:700;cursor:pointer;text-align:left;">
+              🧠 Brain Dump Station ▾
+            </button>
+            <div id="${dumpId}" style="display:none;margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+              <div>
+                <div style="font-size:0.7rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">✅ Apa yang dah siap hari ini?</div>
+                <textarea class="dump-siap" data-id="${item.id}" rows="3" placeholder="Tulis apa yang dah selesai..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:var(--text);padding:8px;font-size:0.85rem;resize:none;outline:none;">${item.dumpSiap || ''}</textarea>
+              </div>
+              <div>
+                <div style="font-size:0.7rem;color:#f59e0b;font-weight:700;margin-bottom:4px;">🧠 Brain Dump — kosongkan otak sekarang</div>
+                <textarea class="dump-otak" data-id="${item.id}" rows="4" placeholder="Buang semua yang ada dalam kepala — idea, risau, next step, apa saja..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.3);border-radius:8px;color:var(--text);padding:8px;font-size:0.85rem;resize:none;outline:none;">${item.dumpOtak || ''}</textarea>
+              </div>
+              <div>
+                <div style="font-size:0.7rem;color:#34d399;font-weight:700;margin-bottom:4px;">👣 Next step bila buka semula</div>
+                <textarea class="dump-next" data-id="${item.id}" rows="3" placeholder="Apa first thing nak buat bila bukak balik projek ni..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(52,211,153,0.3);border-radius:8px;color:var(--text);padding:8px;font-size:0.85rem;resize:none;outline:none;">${item.dumpNext || ''}</textarea>
+              </div>
+              <div>
+                <div style="font-size:0.7rem;color:#f87171;font-weight:700;margin-bottom:4px;">💌 Peringatan untuk diri masa depan</div>
+                <textarea class="dump-peringatan" data-id="${item.id}" rows="3" placeholder="Apa yang nak cakap kepada diri sendiri masa buka nanti..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(248,113,113,0.3);border-radius:8px;color:var(--text);padding:8px;font-size:0.85rem;resize:none;outline:none;">${item.dumpPeringatan || ''}</textarea>
+              </div>
+              <div>
+                <div style="font-size:0.7rem;color:var(--subtext);font-weight:700;margin-bottom:6px;">😰 Tahap stress sekarang</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="btn-stress" data-id="${item.id}" data-val="${n}" style="flex:1;min-width:28px;padding:6px 4px;border-radius:6px;border:1px solid var(--border-mid);background:${(item.dumpStress||0)===n?'var(--grad1)':'rgba(0,0,0,0.3)'};color:${(item.dumpStress||0)===n?'white':'var(--subtext)'};font-size:0.75rem;font-weight:700;cursor:pointer;">${n}</button>`).join('')}
+                </div>
+              </div>
+              <button class="btn-dump-save" data-id="${item.id}" style="width:100%;padding:9px;border-radius:999px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;">💾 Simpan Brain Dump</button>
+              <div class="dump-save-status" data-id="${item.id}" style="font-size:0.7rem;color:#34d399;text-align:center;min-height:1em;"></div>
+            </div>
+          </div>`;
+
+        // ADMIN CONTROLS
+        const adminHtml = isAdmin ? `
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+            <button class="btn-assignment-upload" data-id="${item.id}" style="flex:1;padding:7px;border-radius:999px;background:rgba(99,102,241,0.15);border:1px solid var(--grad1);color:#a5b4fc;font-size:0.75rem;font-weight:600;cursor:pointer;">📎 Upload PDF</button>
+            <button class="btn-assignment-status" data-id="${item.id}" data-status="${item.status||'queue'}" style="flex:1;padding:7px;border-radius:999px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;color:#fcd34d;font-size:0.75rem;font-weight:600;cursor:pointer;">🔄 Tukar Status</button>
+            <button class="btn-assignment-up" data-idx="${idx}" style="padding:7px 10px;border-radius:999px;background:rgba(15,23,42,0.9);border:1px solid var(--border-mid);color:var(--subtext);font-size:0.75rem;cursor:pointer;">↑</button>
+            <button class="btn-assignment-down" data-idx="${idx}" style="padding:7px 10px;border-radius:999px;background:rgba(15,23,42,0.9);border:1px solid var(--border-mid);color:var(--subtext);font-size:0.75rem;cursor:pointer;">↓</button>
+            <button class="btn-assignment-delete" data-id="${item.id}" style="padding:7px 10px;border-radius:999px;background:rgba(127,29,29,0.5);border:1px solid rgba(248,113,113,0.4);color:#f87171;font-size:0.75rem;cursor:pointer;">🗑️</button>
+          </div>` : '';
+
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:0.95rem;font-weight:700;color:var(--text);flex:1;">${item.title || '(Tanpa tajuk)'}</div>
+            <span style="font-size:0.72rem;font-weight:700;color:${statusColor};padding:2px 10px;border-radius:999px;border:1px solid ${statusColor};background:rgba(0,0,0,0.2);margin-left:8px;">${statusLabel}</span>
+          </div>
+          ${item.nota ? `<div style="font-size:0.8rem;color:var(--subtext);line-height:1.6;margin-bottom:6px;">${item.nota}</div>` : ''}
+          ${downloadHtml}
+          ${brainDumpHtml}
+          ${adminHtml}`;
+
+        // EVENT: toggle brain dump
+        div.querySelector('.btn-dump-toggle').addEventListener('click', function() {
+          const dumpEl = document.getElementById(dumpId);
+          if (!dumpEl) return;
+          const isOpen = dumpEl.style.display !== 'none';
+          dumpEl.style.display = isOpen ? 'none' : 'flex';
+          this.textContent = isOpen ? '🧠 Brain Dump Station ▾' : '🧠 Brain Dump Station ▴';
+        });
+
+        // EVENT: stress buttons
+        div.querySelectorAll('.btn-stress').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const val = parseInt(this.getAttribute('data-val'));
+            div.querySelectorAll('.btn-stress').forEach(b => {
+              b.style.background = 'rgba(0,0,0,0.3)';
+              b.style.color = 'var(--subtext)';
+            });
+            this.style.background = 'var(--grad1)';
+            this.style.color = 'white';
+            this._stressVal = val;
+          });
+        });
+
+        // EVENT: simpan brain dump
+        div.querySelector('.btn-dump-save').addEventListener('click', async function() {
+          const id = this.getAttribute('data-id');
+          const statusEl = div.querySelector(`.dump-save-status[data-id="${id}"]`);
+          const stressBtn = [...div.querySelectorAll('.btn-stress')].find(b => b.style.background === 'var(--grad1)' || b.style.background.includes('var(--grad1)'));
+          const stressVal = stressBtn ? parseInt(stressBtn.getAttribute('data-val')) : (allAssignments.find(a => a.id === id)?.dumpStress || 0);
+          const payload = {
+            dumpSiap: div.querySelector(`.dump-siap[data-id="${id}"]`).value,
+            dumpOtak: div.querySelector(`.dump-otak[data-id="${id}"]`).value,
+            dumpNext: div.querySelector(`.dump-next[data-id="${id}"]`).value,
+            dumpPeringatan: div.querySelector(`.dump-peringatan[data-id="${id}"]`).value,
+            dumpStress: stressVal,
+            dumpUpdatedAt: Date.now()
+          };
+          try {
+            if (statusEl) statusEl.textContent = '⏳ Menyimpan...';
+            await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id), payload, { merge: true });
+            if (statusEl) statusEl.textContent = '✅ Tersimpan!';
+            setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+          } catch(e) {
+            if (statusEl) statusEl.textContent = '❌ Gagal: ' + e.message;
+          }
+        });
+
+        // ADMIN: upload PDF
+        if (isAdmin) {
+          div.querySelector('.btn-assignment-upload').addEventListener('click', async function() {
+            const id = this.getAttribute('data-id');
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = 'application/pdf';
+            input.onchange = async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              if (file.size > 50 * 1024 * 1024) { showToast('❌ PDF terlalu besar (max 50MB)'); return; }
+              showToast('⏳ Mengupload PDF...', 0);
+              try {
+                const storageRef = ref(storage, `users/${currentUser.uid}/assignment_belly/${id}.pdf`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+                uploadTask.on('state_changed', (snap) => {
+                  const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+                  showToast(`⏳ Upload ${pct}%...`, 0);
+                }, (err) => {
+                  showToast('❌ Gagal upload: ' + err.message);
+                }, async () => {
+                  const url = await getDownloadURL(uploadTask.snapshot.ref);
+                  await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id), { pdfUrl: url, pdfName: file.name, pdfUpdatedAt: Date.now() }, { merge: true });
+                  showToast('✅ PDF berjaya diupload!');
+                });
+              } catch(e) {
+                showToast('❌ ' + e.message);
+              }
+            };
+            input.click();
+          });
+
+          // ADMIN: tukar status
+          div.querySelector('.btn-assignment-status').addEventListener('click', async function() {
+            const id = this.getAttribute('data-id');
+            const current = this.getAttribute('data-status');
+            const next = current === 'queue' ? 'active' : current === 'active' ? 'done' : 'queue';
+            const label = next === 'done' ? '✅ Selesai' : next === 'active' ? '🔓 Aktif' : '⏳ Queue';
+            if (!confirm(`Tukar status kepada "${label}"?`)) return;
+            await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id), { status: next, statusUpdatedAt: Date.now() }, { merge: true });
+            showToast(`✅ Status ditukar: ${label}`);
+          });
+
+          // ADMIN: susun naik
+          div.querySelector('.btn-assignment-up').addEventListener('click', async function() {
+            const i = parseInt(this.getAttribute('data-idx'));
+            if (i === 0) return;
+            const a = allAssignments[i]; const b = allAssignments[i-1];
+            await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', a.id), { order: b.order ?? i-1 }, { merge: true });
+            await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', b.id), { order: a.order ?? i }, { merge: true });
+          });
+
+          // ADMIN: susun turun
+          div.querySelector('.btn-assignment-down').addEventListener('click', async function() {
+            const i = parseInt(this.getAttribute('data-idx'));
+            if (i >= allAssignments.length - 1) return;
+            const a = allAssignments[i]; const b = allAssignments[i+1];
+            await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', a.id), { order: b.order ?? i+1 }, { merge: true });
+            await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', b.id), { order: a.order ?? i }, { merge: true });
+          });
+
+          // ADMIN: padam
+          div.querySelector('.btn-assignment-delete').addEventListener('click', async function() {
+            const id = this.getAttribute('data-id');
+            const item = allAssignments.find(a => a.id === id);
+            if (!confirm(`Padam "${item?.title || 'assignment ini'}"? Tindakan tidak boleh dibatalkan.`)) return;
+            await deleteDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id));
+            showToast('🗑️ Assignment dipadam.');
+          });
+        }
+
+        list.appendChild(div);
+      });
+    }
+
+    // TAMBAH ASSIGNMENT BARU
+    document.getElementById('btn-add-assignment').addEventListener('click', async function() {
+      if (!currentUser) return;
+      const title = prompt('Nama/Tajuk Assignment:');
+      if (!title || !title.trim()) return;
+      const nota = prompt('Nota ringkas (boleh kosong):') || '';
+      const maxOrder = allAssignments.reduce((m, a) => Math.max(m, a.order ?? 0), 0);
+      try {
+        await addDoc(collection(db, 'users', currentUser.uid, 'assignment_belly'), {
+          title: title.trim(), nota: nota.trim(),
+          status: 'queue', order: maxOrder + 1,
+          pdfUrl: '', pdfName: '',
+          dumpSiap: '', dumpOtak: '', dumpNext: '', dumpPeringatan: '', dumpStress: 0,
+          createdAt: Date.now()
+        });
+        showToast('✅ Assignment berjaya ditambah!');
+      } catch(e) {
+        showToast('❌ Gagal: ' + e.message);
+      }
+    });
+
+    // Subscribe bila masuk section
+    document.getElementById('btn-go-assignment-belly').addEventListener('click', function() {
+      assignmentSubscribe();
+    });
+
+    // Unsubscribe bila keluar
+    document.getElementById('btn-back-home-assignment').addEventListener('click', function() {
+      assignmentUnsubscribe();
+    });
       document.getElementById('btn-back-home-water').addEventListener('click', function() {
         if (_waterUnsub) { _waterUnsub(); _waterUnsub = null; }
         showSection(sectionHome);
@@ -26969,6 +27329,334 @@ mifRefreshKeyStatus();
         navigator.serviceWorker.register("./service-worker.js").catch(console.error);
       });
     }
+
+    // ══════════════════════════════════════════
+    // ASSIGNMENT BELLY — LOCK SYSTEM
+    // ══════════════════════════════════════════
+    (function() {
+      // ── CSS LOCK OVERLAY ──
+      const lockStyle = document.createElement('style');
+      lockStyle.textContent = `
+        #assignment-lock-overlay {
+          display: none;
+          position: fixed;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          background: #000;
+          z-index: 999999;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          text-align: center;
+        }
+        #assignment-lock-overlay.active { display: flex; }
+        #assignment-lock-fasa-cd {
+          display: none;
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          background: #000;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+        }
+        #assignment-lock-fasa-cd.active { display: flex; }
+        .abl-countdown-num {
+          font-size: 5rem;
+          font-weight: bold;
+          color: #fff;
+          line-height: 1;
+          margin: 10px 0;
+          text-shadow: 0 0 40px rgba(52,211,153,0.4);
+          transition: all 0.3s;
+        }
+        .abl-countdown-label {
+          font-size: 1rem;
+          color: #9ca3af;
+          margin-bottom: 24px;
+          min-height: 1.5em;
+          letter-spacing: 0.05em;
+        }
+        .abl-nafas-label {
+          font-size: 0.85rem;
+          color: #6366f1;
+          letter-spacing: 0.08em;
+          margin-bottom: 8px;
+          min-height: 1.2em;
+        }
+        .abl-nafas-bar-wrap {
+          width: 200px; height: 6px;
+          background: #1f2937;
+          border-radius: 999px;
+          margin: 0 auto 20px;
+          overflow: hidden;
+        }
+        .abl-nafas-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #6366f1, #8b5cf6);
+          border-radius: 999px;
+          width: 0%;
+          transition: width linear;
+        }
+        #btn-assignment-lock-float {
+          position: fixed;
+          bottom: 80px;
+          right: 18px;
+          width: 42px; height: 42px;
+          border-radius: 50%;
+          border: 2px solid var(--grad1);
+          background: rgba(15,23,42,0.95);
+          color: var(--grad2);
+          font-size: 1.1rem;
+          cursor: pointer;
+          z-index: 9998;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+        }
+        #btn-assignment-lock-float.show { display: flex; }
+      `;
+      document.head.appendChild(lockStyle);
+
+      // ── HTML LOCK OVERLAY ──
+      const lockHtml = document.createElement('div');
+      lockHtml.innerHTML = `
+        <div id="assignment-lock-overlay">
+          <div style="color:#fff;font-size:1.1rem;font-weight:bold;letter-spacing:0.15em;margin-bottom:8px;opacity:0.5;">🔒 LOCKED</div>
+          <div style="font-size:0.75rem;color:#6b7280;margin-bottom:24px;letter-spacing:0.08em;">ASSIGNMENT BELLY RELEASE</div>
+          <input id="abl-pin-input" type="password" inputmode="numeric" maxlength="6"
+            placeholder="PIN" autocomplete="off"
+            style="display:block;width:100%;max-width:200px;padding:12px;font-size:1.4rem;text-align:center;letter-spacing:0.4em;background:#111;color:#fff;border:1px solid #334155;border-radius:8px;margin:0 auto 10px;outline:none;">
+          <button id="abl-pin-ok"
+            style="display:block;width:100%;max-width:200px;margin:0 auto 8px;padding:13px;font-size:0.9rem;font-weight:bold;border:none;border-radius:999px;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#e5e7eb;">
+            Unlock
+          </button>
+          <div id="abl-pin-msg" style="color:#f87171;font-size:0.8rem;margin-top:4px;min-height:1.2em;"></div>
+          <button id="abl-cd-start"
+            style="display:block;width:100%;max-width:200px;margin:16px auto 0;padding:13px;font-size:0.9rem;font-weight:bold;border:none;border-radius:999px;cursor:pointer;background:linear-gradient(135deg,#059669,#34d399);color:#fff;">
+            ▶ Mula Countdown
+          </button>
+          <div id="assignment-lock-fasa-cd">
+            <div class="abl-countdown-num" id="abl-cd-num">5</div>
+            <div class="abl-countdown-label" id="abl-cd-label"></div>
+            <div class="abl-nafas-label" id="abl-nafas-label"></div>
+            <div class="abl-nafas-bar-wrap" id="abl-nafas-bar-wrap" style="display:none;">
+              <div class="abl-nafas-bar" id="abl-nafas-bar"></div>
+            </div>
+          </div>
+        </div>
+        <button id="btn-assignment-lock-float" title="Lock Assignment Belly">🔒</button>
+      `;
+      document.body.appendChild(lockHtml);
+
+      // ── VARIABLES ──
+      const lockOverlay   = document.getElementById('assignment-lock-overlay');
+      const lockPinInput  = document.getElementById('abl-pin-input');
+      const lockPinOk     = document.getElementById('abl-pin-ok');
+      const lockPinMsg    = document.getElementById('abl-pin-msg');
+      const lockFasaCd    = document.getElementById('assignment-lock-fasa-cd');
+      const btnLockFloat  = document.getElementById('btn-assignment-lock-float');
+      const btnCdStart    = document.getElementById('abl-cd-start');
+      let _lockCdTimer    = null;
+      let _ablLockUnsub   = null;
+
+      // ── SIMPAN STATE KE FIRESTORE ──
+      function simpanLockState(aktif) {
+        if (!currentUser) return;
+        setDoc(doc(db, 'users', currentUser.uid, 'settings', 'assignment_lock'), {
+          aktif: aktif,
+          updatedAt: Date.now()
+        }).catch(() => {});
+      }
+
+      // ── ACTIVATE LOCK ──
+      function activateLock() {
+        lockFasaCd.className = '';
+        lockOverlay.className = 'active';
+        lockPinInput.value = '';
+        lockPinMsg.textContent = '';
+        simpanLockState(true);
+        setTimeout(() => { lockPinInput.focus(); }, 100);
+      }
+
+      // ── DEACTIVATE LOCK ──
+      function deactivateLock() {
+        lockOverlay.className = '';
+        lockFasaCd.className = '';
+        if (_lockCdTimer) { clearInterval(_lockCdTimer); _lockCdTimer = null; }
+        lockPinInput.value = '';
+        lockPinMsg.textContent = '';
+        simpanLockState(false);
+      }
+
+      // ── CUBA UNLOCK ──
+      function cubaUnlock() {
+        const pin = lockPinInput.value.trim();
+        if (!pin || !/^\d{4,6}$/.test(pin)) {
+          lockPinMsg.textContent = 'PIN mesti 4-6 digit';
+          return;
+        }
+        lockPinMsg.textContent = 'Mengesahkan...';
+        lockPinOk.disabled = true;
+        const { signInWithEmailAndPassword } = window._firebaseAuth || {};
+        auth.signInWithEmailAndPassword
+          ? auth.signInWithEmailAndPassword('adha86614@gmail.com', pin)
+              .then(() => {
+                lockPinOk.disabled = false;
+                deactivateLock();
+              })
+              .catch((e) => {
+                lockPinOk.disabled = false;
+                lockPinMsg.textContent =
+                  (e.code === 'auth/wrong-password' ||
+                   e.code === 'auth/invalid-credential' ||
+                   e.code === 'auth/invalid-login-credentials')
+                  ? 'PIN salah' : (e.message || e.code);
+              })
+          : import('https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js')
+              .then(({ signInWithEmailAndPassword: siw }) => {
+                return siw(auth, 'adha86614@gmail.com', pin);
+              })
+              .then(() => {
+                lockPinOk.disabled = false;
+                deactivateLock();
+              })
+              .catch((e) => {
+                lockPinOk.disabled = false;
+                lockPinMsg.textContent =
+                  (e.code === 'auth/wrong-password' ||
+                   e.code === 'auth/invalid-credential' ||
+                   e.code === 'auth/invalid-login-credentials')
+                  ? 'PIN salah' : (e.message || e.code);
+              });
+      }
+
+      // ── COUNTDOWN FASA 1 ──
+      function mulaCountdown() {
+        lockFasaCd.className = 'active';
+        jalanCd1();
+      }
+
+      function jalanCd1() {
+        let n = 5;
+        document.getElementById('abl-cd-num').textContent = n;
+        document.getElementById('abl-cd-label').textContent = '';
+        document.getElementById('abl-nafas-label').textContent = '';
+        document.getElementById('abl-nafas-bar-wrap').style.display = 'none';
+        _lockCdTimer = setInterval(() => {
+          n--;
+          if (n > 0) {
+            document.getElementById('abl-cd-num').textContent = n;
+          } else {
+            clearInterval(_lockCdTimer);
+            document.getElementById('abl-cd-num').textContent = '';
+            document.getElementById('abl-cd-label').textContent = 'Duduk';
+            setTimeout(() => { jalanNafas(3, () => { jalanCd2(); }); }, 800);
+          }
+        }, 1000);
+      }
+
+      // ── ANIMASI NAFAS ──
+      function jalanNafas(pusingan, selepas) {
+        if (pusingan <= 0) { selepas(); return; }
+        document.getElementById('abl-cd-label').textContent = `Pusingan ${4 - pusingan}/3`;
+        document.getElementById('abl-nafas-bar-wrap').style.display = 'block';
+        document.getElementById('abl-nafas-label').textContent = 'Tarik Nafas...';
+        animasiBar(5000, '#6366f1, #8b5cf6', () => {
+          document.getElementById('abl-nafas-label').textContent = 'Hempus Nafas...';
+          animasiBar(5000, '#059669, #34d399', () => {
+            jalanNafas(pusingan - 1, selepas);
+          });
+        });
+      }
+
+      function animasiBar(durasi, gradient, selepas) {
+        const bar = document.getElementById('abl-nafas-bar');
+        bar.style.transition = 'none';
+        bar.style.width = '0%';
+        bar.style.background = `linear-gradient(90deg,${gradient})`;
+        setTimeout(() => {
+          bar.style.transition = `width ${durasi}ms linear`;
+          bar.style.width = '100%';
+          setTimeout(selepas, durasi);
+        }, 50);
+      }
+
+      // ── COUNTDOWN FASA 2 ──
+      function jalanCd2() {
+        document.getElementById('abl-nafas-bar-wrap').style.display = 'none';
+        document.getElementById('abl-nafas-label').textContent = '';
+        let n = 5;
+        document.getElementById('abl-cd-num').textContent = n;
+        document.getElementById('abl-cd-label').textContent = '';
+        _lockCdTimer = setInterval(() => {
+          n--;
+          if (n > 0) {
+            document.getElementById('abl-cd-num').textContent = n;
+          } else {
+            clearInterval(_lockCdTimer);
+            document.getElementById('abl-cd-num').textContent = 'GO!';
+            document.getElementById('abl-cd-label').textContent = 'Sentiasa Maju Ke Hadapan!';
+            setTimeout(() => {
+              lockFasaCd.className = '';
+              lockPinInput.value = '';
+              lockPinMsg.textContent = '';
+            }, 3000);
+          }
+        }, 1000);
+      }
+
+      // ── LOAD STATE DARI FIRESTORE ──
+      function loadLockState() {
+        if (!currentUser) return;
+        getDoc(doc(db, 'users', currentUser.uid, 'settings', 'assignment_lock'))
+          .then((snap) => {
+            if (snap.exists() && snap.data().aktif) activateLock();
+          }).catch(() => {});
+      }
+
+      // ── SUBSCRIBE REALTIME — untuk sync dengan Kindle apps ──
+      function subscribeLockState() {
+        if (!currentUser || _ablLockUnsub) return;
+        _ablLockUnsub = onSnapshot(
+          doc(db, 'users', currentUser.uid, 'settings', 'assignment_lock'),
+          (snap) => {
+            if (!snap.exists()) return;
+            const data = snap.data();
+            if (data.aktif && !lockOverlay.classList.contains('active')) {
+              activateLock();
+            } else if (!data.aktif && lockOverlay.classList.contains('active')) {
+              deactivateLock();
+            }
+          }
+        );
+      }
+
+      // ── TUNJUK BUTANG LOCK FLOAT BILA LOGIN ──
+      function checkShowLockFloat() {
+        if (!currentUser) return;
+        const isAdmin = currentUser.email === 'adha86614@gmail.com';
+        if (btnLockFloat) btnLockFloat.className = isAdmin ? 'show' : '';
+      }
+
+      // ── HALANG EVENT BUBBLE ──
+      lockOverlay.addEventListener('click', (e) => { e.stopPropagation(); });
+
+      // ── WIRE BUTTONS ──
+      lockPinOk.addEventListener('click', cubaUnlock);
+      lockPinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') cubaUnlock(); });
+      btnCdStart.addEventListener('click', mulaCountdown);
+      if (btnLockFloat) btnLockFloat.addEventListener('click', activateLock);
+
+      // ── EXPOSE UNTUK AUTH STATE ──
+      window._ablLoadLockState = loadLockState;
+      window._ablSubscribeLockState = subscribeLockState;
+      window._ablCheckLockFloat = checkShowLockFloat;
+
+    })();
 
   // ── JANA PUKAL FAKTA ──
   function parseKamusFakta(text) {
