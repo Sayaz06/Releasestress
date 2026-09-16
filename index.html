@@ -27448,18 +27448,27 @@ mifRefreshKeyStatus();
       const lockHtml = document.createElement('div');
       lockHtml.innerHTML = `
         <div id="assignment-lock-overlay">
-          <div style="color:#fff;font-size:1.1rem;font-weight:bold;letter-spacing:0.15em;margin-bottom:8px;opacity:0.5;">🔒 LOCKED</div>
-          <div style="font-size:0.75rem;color:#6b7280;margin-bottom:24px;letter-spacing:0.08em;">ASSIGNMENT BELLY RELEASE</div>
-          <input id="abl-pin-input" type="password" inputmode="numeric" maxlength="6"
-            placeholder="PIN" autocomplete="off"
-            style="display:block;width:100%;max-width:200px;padding:12px;font-size:1.4rem;text-align:center;letter-spacing:0.4em;background:#111;color:#fff;border:1px solid #334155;border-radius:8px;margin:0 auto 10px;outline:none;">
+          <div style="color:#fff;font-size:1.1rem;font-weight:bold;letter-spacing:0.15em;margin-bottom:6px;">🔒 APP DIKUNCI</div>
+          <div style="font-size:0.78rem;color:#f59e0b;font-weight:700;margin-bottom:4px;">⏳ Assignment Belly Release</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-bottom:4px;">Tempoh khas: Ahad 12:00 pagi — 5:00 petang</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-bottom:20px;">Gunakan masa ini sepenuhnya untuk menyiapkan tugasan anda</div>
+          <div id="abl-masa-info" style="font-size:0.72rem;color:#34d399;margin-bottom:16px;min-height:1.2em;"></div>
+          <div style="font-size:0.72rem;color:#9ca3af;margin-bottom:8px;max-width:280px;text-align:center;line-height:1.6;">
+            Taip frasa di bawah untuk membuka app:
+          </div>
+          <div style="font-size:0.7rem;color:#6366f1;font-weight:700;margin-bottom:10px;letter-spacing:0.03em;">
+            "saya akan laksanakan projeck belly release"
+          </div>
+          <input id="abl-pin-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off"
+            placeholder="Taip frasa di sini..."
+            style="display:block;width:100%;max-width:280px;padding:12px;font-size:0.9rem;text-align:center;background:#111;color:#fff;border:1px solid #334155;border-radius:8px;margin:0 auto 10px;outline:none;">
           <button id="abl-pin-ok"
-            style="display:block;width:100%;max-width:200px;margin:0 auto 8px;padding:13px;font-size:0.9rem;font-weight:bold;border:none;border-radius:999px;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#e5e7eb;">
-            Unlock
+            style="display:block;width:100%;max-width:280px;margin:0 auto 8px;padding:13px;font-size:0.9rem;font-weight:bold;border:none;border-radius:999px;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#e5e7eb;">
+            Buka App
           </button>
           <div id="abl-pin-msg" style="color:#f87171;font-size:0.8rem;margin-top:4px;min-height:1.2em;"></div>
           <button id="abl-cd-start"
-            style="display:block;width:100%;max-width:200px;margin:16px auto 0;padding:13px;font-size:0.9rem;font-weight:bold;border:none;border-radius:999px;cursor:pointer;background:linear-gradient(135deg,#059669,#34d399);color:#fff;">
+            style="display:block;width:100%;max-width:280px;margin:16px auto 0;padding:13px;font-size:0.9rem;font-weight:bold;border:none;border-radius:999px;cursor:pointer;background:linear-gradient(135deg,#059669,#34d399);color:#fff;">
             ▶ Mula Countdown
           </button>
           <div id="assignment-lock-fasa-cd">
@@ -27486,6 +27495,41 @@ mifRefreshKeyStatus();
       let _lockCdTimer    = null;
       let _ablLockUnsub   = null;
 
+      // ── SEMAK MASA MALAYSIA UTC+8 ──
+      function getMasaMY() {
+        const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
+        return {
+          hari: now.getUTCDay(),   // 0=Ahad
+          jam:  now.getUTCHours(), // 0-23
+          minit: now.getUTCMinutes()
+        };
+      }
+
+      function isLockAhad() {
+        const { hari, jam } = getMasaMY();
+        return hari === 0 && jam >= 0 && jam < 17;
+      }
+
+      function isExpiredAhad() {
+        const { hari, jam } = getMasaMY();
+        return hari === 0 && jam >= 17;
+      }
+
+      function labelMasaAhad() {
+        const { jam, minit } = getMasaMY();
+        const bakinya = 17 * 60 - (jam * 60 + minit);
+        if (bakinya <= 0) return '';
+        const j = Math.floor(bakinya / 60);
+        const m = bakinya % 60;
+        if (j > 0) return `⏳ Baki ${j} jam ${m} minit sebelum 5:00 petang`;
+        return `⏳ Baki ${m} minit sebelum 5:00 petang`;
+      }
+
+      function updateMasaInfo() {
+        const el = document.getElementById('abl-masa-info');
+        if (el) el.textContent = labelMasaAhad();
+      }
+
       // ── SIMPAN STATE KE FIRESTORE ──
       function simpanLockState(aktif) {
         if (!currentUser) return;
@@ -27501,61 +27545,46 @@ mifRefreshKeyStatus();
         lockOverlay.className = 'active';
         lockPinInput.value = '';
         lockPinMsg.textContent = '';
+        updateMasaInfo();
         simpanLockState(true);
         setTimeout(() => { lockPinInput.focus(); }, 100);
       }
 
-      // ── DEACTIVATE LOCK ──
+      // ── DEACTIVATE LOCK — SESI SAHAJA, TIDAK SIMPAN KE FIRESTORE ──
       function deactivateLock() {
         lockOverlay.className = '';
         lockFasaCd.className = '';
         if (_lockCdTimer) { clearInterval(_lockCdTimer); _lockCdTimer = null; }
         lockPinInput.value = '';
         lockPinMsg.textContent = '';
-        simpanLockState(false);
+        // TIDAK simpan ke Firestore — lock Ahad kekal aktif, hanya sesi ini dibuka
       }
 
-      // ── CUBA UNLOCK ──
+      // ── CUBA UNLOCK DENGAN FRASA ──
       function cubaUnlock() {
-        const pin = lockPinInput.value.trim();
-        if (!pin || !/^\d{4,6}$/.test(pin)) {
-          lockPinMsg.textContent = 'PIN mesti 4-6 digit';
-          return;
+        const input = lockPinInput.value.trim().toLowerCase();
+        const frasa = 'saya akan laksanakan projeck belly release';
+        if (input === frasa) {
+          lockPinMsg.textContent = '';
+          deactivateLock();
+        } else {
+          lockPinMsg.textContent = '❌ Frasa tidak tepat. Cuba semula.';
+          lockPinInput.select();
         }
-        lockPinMsg.textContent = 'Mengesahkan...';
-        lockPinOk.disabled = true;
-        const { signInWithEmailAndPassword } = window._firebaseAuth || {};
-        auth.signInWithEmailAndPassword
-          ? auth.signInWithEmailAndPassword('adha86614@gmail.com', pin)
-              .then(() => {
-                lockPinOk.disabled = false;
-                deactivateLock();
-              })
-              .catch((e) => {
-                lockPinOk.disabled = false;
-                lockPinMsg.textContent =
-                  (e.code === 'auth/wrong-password' ||
-                   e.code === 'auth/invalid-credential' ||
-                   e.code === 'auth/invalid-login-credentials')
-                  ? 'PIN salah' : (e.message || e.code);
-              })
-          : import('https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js')
-              .then(({ signInWithEmailAndPassword: siw }) => {
-                return siw(auth, 'adha86614@gmail.com', pin);
-              })
-              .then(() => {
-                lockPinOk.disabled = false;
-                deactivateLock();
-              })
-              .catch((e) => {
-                lockPinOk.disabled = false;
-                lockPinMsg.textContent =
-                  (e.code === 'auth/wrong-password' ||
-                   e.code === 'auth/invalid-credential' ||
-                   e.code === 'auth/invalid-login-credentials')
-                  ? 'PIN salah' : (e.message || e.code);
-              });
       }
+
+      // ── AUTO-LOCK SEMAK SETIAP MINIT ──
+      let _ahadLockInterval = null;
+      function mulaAhadLockCheck() {
+        if (_ahadLockInterval) clearInterval(_ahadLockInterval);
+        _ahadLockInterval = setInterval(() => {
+          if (!currentUser) return;
+          if (isLockAhad() && !lockOverlay.classList.contains('active')) {
+            activateLock();
+          }
+        }, 60 * 1000);
+      }
+      window._ablMulaAhadCheck = mulaAhadLockCheck;
 
       // ── COUNTDOWN FASA 1 ──
       function mulaCountdown() {
@@ -27632,13 +27661,20 @@ mifRefreshKeyStatus();
         }, 1000);
       }
 
-      // ── LOAD STATE DARI FIRESTORE ──
+      // ── LOAD STATE — SEMAK MASA AHAD DULU ──
       function loadLockState() {
         if (!currentUser) return;
+        if (isLockAhad()) {
+          activateLock();
+          mulaAhadLockCheck();
+          return;
+        }
+        // Bukan Ahad — semak Firestore (manual lock)
         getDoc(doc(db, 'users', currentUser.uid, 'settings', 'assignment_lock'))
           .then((snap) => {
             if (snap.exists() && snap.data().aktif) activateLock();
           }).catch(() => {});
+        mulaAhadLockCheck();
       }
 
       // ── SUBSCRIBE REALTIME — untuk sync dengan Kindle apps ──
@@ -27673,6 +27709,11 @@ mifRefreshKeyStatus();
       lockPinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') cubaUnlock(); });
       btnCdStart.addEventListener('click', mulaCountdown);
       if (btnLockFloat) btnLockFloat.addEventListener('click', activateLock);
+
+      // ── UPDATE MASA INFO SETIAP MINIT BILA LOCK AKTIF ──
+      setInterval(() => {
+        if (lockOverlay.classList.contains('active')) updateMasaInfo();
+      }, 60 * 1000);
 
       // ── EXPOSE UNTUK AUTH STATE ──
       window._ablLoadLockState = loadLockState;
