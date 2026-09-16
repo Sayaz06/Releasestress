@@ -27077,12 +27077,16 @@ mifRefreshKeyStatus();
         const statusColor = item.status === 'done' ? '#34d399' : item.status === 'active' ? '#f59e0b' : '#9ca3af';
         const statusLabel = item.status === 'done' ? '✅ Selesai' : item.status === 'active' ? '🔓 Aktif' : '⏳ Queue';
 
-        // DOWNLOAD BUTTON
-        const downloadHtml = ahad && item.pdfUrl
-          ? `<a href="${item.pdfUrl}" target="_blank" style="display:block;width:100%;padding:10px;border-radius:999px;background:linear-gradient(135deg,#059669,#10b981);border:none;color:white;font-weight:700;font-size:0.85rem;text-align:center;text-decoration:none;margin-top:10px;box-shadow:0 4px 14px rgba(16,185,129,0.4);">📥 Download PDF</a>`
+        // DOWNLOAD BUTTON — semak masa Malaysia
+        const expired = isExpiredAhad();
+        const ahadAktif = isHariAhad() && !expired;
+        const downloadHtml = expired && item.pdfUrl
+          ? `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(127,29,29,0.2);border:1px solid rgba(248,113,113,0.3);color:#f87171;font-size:0.82rem;text-align:center;margin-top:10px;">⛔ Masa muat turun telah tamat (selepas 5:00 petang)</div>`
+          : ahadAktif && item.pdfUrl
+          ? `<a href="${item.pdfUrl}" target="_blank" style="display:block;width:100%;padding:10px;border-radius:999px;background:linear-gradient(135deg,#059669,#10b981);border:none;color:white;font-weight:700;font-size:0.85rem;text-align:center;text-decoration:none;margin-top:10px;box-shadow:0 4px 14px rgba(16,185,129,0.4);">📥 Muat Turun PDF</a>`
           : item.pdfUrl
-          ? `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(107,114,128,0.2);border:1px solid var(--border-mid);color:var(--subtext);font-size:0.82rem;text-align:center;margin-top:10px;">🔒 Download hanya hari Ahad</div>`
-          : `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.4);color:#f59e0b;font-size:0.82rem;text-align:center;margin-top:10px;">⏳ PDF belum diupload</div>`;
+          ? `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(107,114,128,0.2);border:1px solid var(--border-mid);color:var(--subtext);font-size:0.82rem;text-align:center;margin-top:10px;">🔒 Muat turun hanya pada hari Ahad (12:00 pagi — 5:00 petang)</div>`
+          : `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.4);color:#f59e0b;font-size:0.82rem;text-align:center;margin-top:10px;">⏳ PDF belum dimuat naik</div>`;
 
         // BRAIN DUMP — toggle buka/tutup
         const dumpId = `dump-${item.id}`;
@@ -27118,10 +27122,14 @@ mifRefreshKeyStatus();
             </div>
           </div>`;
 
-        // ADMIN CONTROLS
+        // ADMIN CONTROLS — expired tunjuk butang khas
         const adminHtml = isAdmin ? `
           <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-            <button class="btn-assignment-upload" data-id="${item.id}" style="flex:1;padding:7px;border-radius:999px;background:rgba(99,102,241,0.15);border:1px solid var(--grad1);color:#a5b4fc;font-size:0.75rem;font-weight:600;cursor:pointer;">📎 Upload PDF</button>
+            ${expired && item.pdfUrl
+              ? `<button class="btn-assignment-buang-pdf" data-id="${item.id}" data-pdfpath="users/${currentUser.uid}/assignment_belly/${item.id}.pdf" style="flex:1;padding:7px;border-radius:999px;background:rgba(127,29,29,0.4);border:1px solid rgba(248,113,113,0.5);color:#f87171;font-size:0.75rem;font-weight:600;cursor:pointer;">🗑️ Buang PDF Lama</button>
+               <button class="btn-assignment-upload" data-id="${item.id}" style="flex:1;padding:7px;border-radius:999px;background:rgba(16,185,129,0.15);border:1px solid #10b981;color:#34d399;font-size:0.75rem;font-weight:600;cursor:pointer;">📎 Muat Naik PDF Baru</button>`
+              : `<button class="btn-assignment-upload" data-id="${item.id}" style="flex:1;padding:7px;border-radius:999px;background:rgba(99,102,241,0.15);border:1px solid var(--grad1);color:#a5b4fc;font-size:0.75rem;font-weight:600;cursor:pointer;">📎 Muat Naik PDF</button>`
+            }
             <button class="btn-assignment-status" data-id="${item.id}" data-status="${item.status||'queue'}" style="flex:1;padding:7px;border-radius:999px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;color:#fcd34d;font-size:0.75rem;font-weight:600;cursor:pointer;">🔄 Tukar Status</button>
             <button class="btn-assignment-up" data-idx="${idx}" style="padding:7px 10px;border-radius:999px;background:rgba(15,23,42,0.9);border:1px solid var(--border-mid);color:var(--subtext);font-size:0.75rem;cursor:pointer;">↑</button>
             <button class="btn-assignment-down" data-idx="${idx}" style="padding:7px 10px;border-radius:999px;background:rgba(15,23,42,0.9);border:1px solid var(--border-mid);color:var(--subtext);font-size:0.75rem;cursor:pointer;">↓</button>
@@ -27210,6 +27218,25 @@ mifRefreshKeyStatus();
 
         // ADMIN: upload PDF
         if (isAdmin) {
+          // ADMIN: buang PDF lama
+          const btnBuang = div.querySelector('.btn-assignment-buang-pdf');
+          if (btnBuang) {
+            btnBuang.addEventListener('click', async function() {
+              const id = this.getAttribute('data-id');
+              if (!confirm('Buang PDF lama ini? Tindakan tidak boleh dibatalkan.')) return;
+              try {
+                showToast('⏳ Membuang PDF lama...');
+                const oldRef = ref(storage, `users/${currentUser.uid}/assignment_belly/${id}.pdf`);
+                await deleteObject(oldRef).catch(() => {});
+                await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id), { pdfUrl: '', pdfName: '', pdfUpdatedAt: Date.now() }, { merge: true });
+                showToast('✅ PDF lama telah dibuang. Sila muat naik PDF baru.');
+              } catch(e) {
+                showToast('❌ Gagal: ' + e.message);
+              }
+            });
+          }
+
+          // ADMIN: muat naik PDF — auto-padam lama dulu
           div.querySelector('.btn-assignment-upload').addEventListener('click', async function() {
             const id = this.getAttribute('data-id');
             const input = document.createElement('input');
@@ -27218,19 +27245,26 @@ mifRefreshKeyStatus();
               const file = e.target.files[0];
               if (!file) return;
               if (file.size > 50 * 1024 * 1024) { showToast('❌ PDF terlalu besar (max 50MB)'); return; }
-              showToast('⏳ Mengupload PDF...', 0);
               try {
+                // Padam PDF lama dulu jika ada
+                const currentItem = allAssignments.find(a => a.id === id);
+                if (currentItem && currentItem.pdfUrl) {
+                  showToast('⏳ Membuang PDF lama...', 0);
+                  const oldRef = ref(storage, `users/${currentUser.uid}/assignment_belly/${id}.pdf`);
+                  await deleteObject(oldRef).catch(() => {});
+                }
+                showToast('⏳ Memuat naik PDF baru...', 0);
                 const storageRef = ref(storage, `users/${currentUser.uid}/assignment_belly/${id}.pdf`);
                 const uploadTask = uploadBytesResumable(storageRef, file);
                 uploadTask.on('state_changed', (snap) => {
                   const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
-                  showToast(`⏳ Upload ${pct}%...`, 0);
+                  showToast(`⏳ Memuat naik ${pct}%...`, 0);
                 }, (err) => {
-                  showToast('❌ Gagal upload: ' + err.message);
+                  showToast('❌ Gagal muat naik: ' + err.message);
                 }, async () => {
                   const url = await getDownloadURL(uploadTask.snapshot.ref);
                   await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id), { pdfUrl: url, pdfName: file.name, pdfUpdatedAt: Date.now() }, { merge: true });
-                  showToast('✅ PDF berjaya diupload!');
+                  showToast('✅ PDF berjaya dimuat naik!');
                 });
               } catch(e) {
                 showToast('❌ ' + e.message);
@@ -27450,8 +27484,9 @@ mifRefreshKeyStatus();
         <div id="assignment-lock-overlay">
           <div style="color:#fff;font-size:1.1rem;font-weight:bold;letter-spacing:0.15em;margin-bottom:6px;">🔒 APP DIKUNCI</div>
           <div style="font-size:0.78rem;color:#f59e0b;font-weight:700;margin-bottom:4px;">⏳ Assignment Belly Release</div>
-          <div style="font-size:0.72rem;color:#6b7280;margin-bottom:4px;">Tempoh khas: Ahad 12:00 pagi — 5:00 petang</div>
-          <div style="font-size:0.72rem;color:#6b7280;margin-bottom:20px;">Gunakan masa ini sepenuhnya untuk menyiapkan tugasan anda</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-bottom:4px;">App dikunci dari 12:00 pagi hingga 5:00 petang (Ahad)</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-bottom:4px;">Fail tidak boleh dimuat turun selepas 5:00 petang</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-bottom:20px;">Selepas 5:00 petang, admin perlu memuat naik fail baru</div>
           <div id="abl-masa-info" style="font-size:0.72rem;color:#34d399;margin-bottom:16px;min-height:1.2em;"></div>
           <div style="font-size:0.72rem;color:#9ca3af;margin-bottom:8px;max-width:280px;text-align:center;line-height:1.6;">
             Taip frasa di bawah untuk membuka app:
