@@ -27704,11 +27704,10 @@ mifRefreshKeyStatus();
           mulaAhadLockCheck();
           return;
         }
-        // Bukan Ahad — semak Firestore (manual lock)
-        getDoc(doc(db, 'users', currentUser.uid, 'settings', 'assignment_lock'))
-          .then((snap) => {
-            if (snap.exists() && snap.data().aktif) activateLock();
-          }).catch(() => {});
+        // Bukan Ahad — clear Firestore lock supaya tak terkunci
+        setDoc(doc(db, 'users', currentUser.uid, 'settings', 'assignment_lock'), {
+          aktif: false, updatedAt: Date.now()
+        }).catch(() => {});
         mulaAhadLockCheck();
       }
 
