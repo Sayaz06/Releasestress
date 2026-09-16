@@ -27078,8 +27078,8 @@ mifRefreshKeyStatus();
         const statusLabel = item.status === 'done' ? '✅ Selesai' : item.status === 'active' ? '🔓 Aktif' : '⏳ Queue';
 
         // DOWNLOAD BUTTON — semak masa Malaysia
-        const expired = isExpiredAhad();
-        const ahadAktif = isHariAhad() && !expired;
+        const expired = window.isExpiredAhad ? window.isExpiredAhad() : false;
+        const ahadAktif = window.isHariAhad ? window.isHariAhad() : false;
         const downloadHtml = expired && item.pdfUrl
           ? `<div style="width:100%;padding:10px;border-radius:999px;background:rgba(127,29,29,0.2);border:1px solid rgba(248,113,113,0.3);color:#f87171;font-size:0.82rem;text-align:center;margin-top:10px;">⛔ Masa muat turun telah tamat (selepas 5:00 petang)</div>`
           : ahadAktif && item.pdfUrl
@@ -27549,6 +27549,14 @@ mifRefreshKeyStatus();
         const { hari, jam } = getMasaMY();
         return hari === 0 && jam >= 17;
       }
+
+      // Expose ke global supaya renderAssignmentList boleh akses
+      window.isHariAhad = function() {
+        const { hari, jam } = getMasaMY();
+        return hari === 0 && jam < 17;
+      };
+      window.isExpiredAhad = isExpiredAhad;
+      window.isLockAhad = isLockAhad;
 
       function labelMasaAhad() {
         const { jam, minit } = getMasaMY();
