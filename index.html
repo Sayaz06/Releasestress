@@ -27113,7 +27113,6 @@ mifRefreshKeyStatus();
                   ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="btn-stress" data-id="${item.id}" data-val="${n}" style="flex:1;min-width:28px;padding:6px 4px;border-radius:6px;border:1px solid var(--border-mid);background:${(item.dumpStress||0)===n?'var(--grad1)':'rgba(0,0,0,0.3)'};color:${(item.dumpStress||0)===n?'white':'var(--subtext)'};font-size:0.75rem;font-weight:700;cursor:pointer;">${n}</button>`).join('')}
                 </div>
               </div>
-              <button class="btn-dump-save" data-id="${item.id}" style="width:100%;padding:9px;border-radius:999px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;">💾 Simpan Brain Dump</button>
               <div class="dump-save-status" data-id="${item.id}" style="font-size:0.7rem;color:#34d399;text-align:center;min-height:1em;"></div>
             </div>
           </div>`;
@@ -27161,28 +27160,51 @@ mifRefreshKeyStatus();
           });
         });
 
-        // EVENT: simpan brain dump
-        div.querySelector('.btn-dump-save').addEventListener('click', async function() {
-          const id = this.getAttribute('data-id');
+        // AUTO-SAVE brain dump bila blur textarea
+        const _dumpSaveTimers = {};
+        function autosaveDump(id) {
           const statusEl = div.querySelector(`.dump-save-status[data-id="${id}"]`);
-          const stressBtn = [...div.querySelectorAll('.btn-stress')].find(b => b.style.background === 'var(--grad1)' || b.style.background.includes('var(--grad1)'));
-          const stressVal = stressBtn ? parseInt(stressBtn.getAttribute('data-val')) : (allAssignments.find(a => a.id === id)?.dumpStress || 0);
-          const payload = {
-            dumpSiap: div.querySelector(`.dump-siap[data-id="${id}"]`).value,
-            dumpOtak: div.querySelector(`.dump-otak[data-id="${id}"]`).value,
-            dumpNext: div.querySelector(`.dump-next[data-id="${id}"]`).value,
-            dumpPeringatan: div.querySelector(`.dump-peringatan[data-id="${id}"]`).value,
-            dumpStress: stressVal,
-            dumpUpdatedAt: Date.now()
-          };
-          try {
-            if (statusEl) statusEl.textContent = '⏳ Menyimpan...';
-            await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id), payload, { merge: true });
-            if (statusEl) statusEl.textContent = '✅ Tersimpan!';
-            setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
-          } catch(e) {
-            if (statusEl) statusEl.textContent = '❌ Gagal: ' + e.message;
+          if (statusEl) { statusEl.textContent = '⏳ Menyimpan...'; statusEl.style.color = '#fcd34d'; }
+          if (_dumpSaveTimers[id]) clearTimeout(_dumpSaveTimers[id]);
+          _dumpSaveTimers[id] = setTimeout(async () => {
+            if (!currentUser) return;
+            const stressBtn = [...div.querySelectorAll('.btn-stress')].find(b => b.style.background.includes('99, 102, 241') || b.style.background === 'var(--grad1)');
+            const stressVal = stressBtn ? parseInt(stressBtn.getAttribute('data-val')) : (allAssignments.find(a => a.id === id)?.dumpStress || 0);
+            const payload = {
+              dumpSiap: div.querySelector(`.dump-siap[data-id="${id}"]`).value,
+              dumpOtak: div.querySelector(`.dump-otak[data-id="${id}"]`).value,
+              dumpNext: div.querySelector(`.dump-next[data-id="${id}"]`).value,
+              dumpPeringatan: div.querySelector(`.dump-peringatan[data-id="${id}"]`).value,
+              dumpStress: stressVal,
+              dumpUpdatedAt: Date.now()
+            };
+            try {
+              await setDoc(doc(db, 'users', currentUser.uid, 'assignment_belly', id), payload, { merge: true });
+              if (statusEl) { statusEl.textContent = '✓ Auto-saved'; statusEl.style.color = '#34d399'; }
+              setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2500);
+            } catch(e) {
+              if (statusEl) { statusEl.textContent = '❌ Gagal: ' + e.message; statusEl.style.color = '#f87171'; }
+            }
+          }, 1500);
+        }
+
+        // Wire auto-save ke semua textarea brain dump
+        ['dump-siap','dump-otak','dump-next','dump-peringatan'].forEach(cls => {
+          const el = div.querySelector(`.${cls}[data-id="${item.id}"]`);
+          if (el) {
+            el.addEventListener('blur', () => autosaveDump(item.id));
+            el.addEventListener('input', () => {
+              const statusEl = div.querySelector(`.dump-save-status[data-id="${item.id}"]`);
+              if (statusEl) { statusEl.textContent = '✏️ Ada perubahan...'; statusEl.style.color = '#9ca3af'; }
+            });
           }
+        });
+
+        // Wire auto-save ke stress buttons juga
+        div.querySelectorAll('.btn-stress').forEach(btn => {
+          btn.addEventListener('click', function() {
+            autosaveDump(item.id);
+          });
         });
 
         // ADMIN: upload PDF
