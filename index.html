@@ -16884,13 +16884,35 @@ function renderJenisKata() {
         return;
       }
       sorted.forEach(data => {
+        // Kira status: Perkataan, Tips, Imej untuk jenis kata ini
+        const perkataanDlmJenis = allBahasaPerkataan.filter(p => p.jenisId === data.id);
+        const jumlahPerkataan = perkataanDlmJenis.length;
+        let jumlahLaci = 0, jumlahTips = 0, jumlahImej = 0;
+        perkataanDlmJenis.forEach(p => {
+          const drawers = allBahasaDrawers.filter(d => d.perkataanId === p.id);
+          jumlahLaci += drawers.length;
+          jumlahTips += drawers.filter(d => (d.tips || '').trim() || (d.tipsFasa0 || '').trim()).length;
+          jumlahImej += drawers.filter(d => (d.imageUrl || '').trim()).length;
+        });
+        const tipsWarna = jumlahLaci > 0 && jumlahTips >= jumlahLaci ? '#34d399' : jumlahTips > 0 ? '#fcd34d' : '#6b7280';
+        const imejWarna = jumlahLaci > 0 && jumlahImej >= jumlahLaci ? '#34d399' : jumlahImej > 0 ? '#fcd34d' : '#6b7280';
+        const statusHtml = jumlahPerkataan > 0 ? `
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+            <span style="font-size:0.68rem;color:#7dd3fc;background:rgba(125,211,252,0.1);border:1px solid rgba(125,211,252,0.3);padding:2px 8px;border-radius:999px;">Perkataan: ${jumlahPerkataan}</span>
+            <span style="font-size:0.68rem;color:${tipsWarna};background:rgba(255,255,255,0.05);border:1px solid ${tipsWarna}40;padding:2px 8px;border-radius:999px;">Tips: ${jumlahTips}/${jumlahLaci}</span>
+            <span style="font-size:0.68rem;color:${imejWarna};background:rgba(255,255,255,0.05);border:1px solid ${imejWarna}40;padding:2px 8px;border-radius:999px;">Imej: ${jumlahImej}/${jumlahLaci}</span>
+          </div>` : '';
+
         const div = document.createElement("div");
         div.className = "drawer-card";
-        div.style.cssText = "display:flex; gap:8px; align-items:center;";
+        div.style.cssText = "display:flex; flex-direction:column; gap:4px;";
 div.innerHTML = `
-          <input value="${data.name||''}" placeholder="Cth: Kata Kerja, Kata Nama..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
-          <button class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
-          <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input value="${data.name||''}" placeholder="Cth: Kata Kerja, Kata Nama..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
+            <button class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
+            <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
+          </div>
+          ${statusHtml}
         `;
 
         div.querySelectorAll('input')[0].addEventListener('change', e =>
