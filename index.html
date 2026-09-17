@@ -2088,7 +2088,10 @@ body.dark-mode {
 <div style="font-size: 0.75rem; color: var(--subtext); text-align: center; margin-bottom: 8px;">
           Tanda (tick) SATU kotak sahaja untuk aktifkan.
         </div>
-<button id="btn-add-jenis-kata" class="btn btn-sm">Tambah Topik</button>
+<div style="display:flex;gap:8px;">
+  <button id="btn-add-jenis-kata" class="btn btn-sm" style="flex:1;">Tambah Topik</button>
+  <button id="btn-refresh-jenis-kata" class="btn btn-secondary btn-sm" style="border-color:#22d3ee;color:#22d3ee;">🔄 Refresh</button>
+</div>
 <div class="list mt-8" id="jenis-kata-list" style="padding: 10px;"></div>
       </section>
 
@@ -16917,6 +16920,11 @@ div.innerHTML = `
 
         div.querySelectorAll('input')[0].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"jenis_kata",data.id), {name: e.target.value}));
+
+    document.getElementById('btn-refresh-jenis-kata')?.addEventListener('click', () => {
+      renderJenisKata();
+      showToast('🔄 Status dikemas kini.');
+    });
 div.querySelectorAll('button')[0].addEventListener('click', () => {
           currentJenisKataId = data.id;
           document.getElementById('parent-perkataan-jenis-name').textContent = data.name || '';
