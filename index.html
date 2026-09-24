@@ -1703,6 +1703,7 @@ body.dark-mode {
             <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
               • Tambah perjanjian mengikut susunan yang anda nak<br>
               • Guna <strong>↑ ↓</strong> untuk susun semula<br>
+              • Tekan nombor <strong>#</strong> untuk terus pindah ke kedudukan lain<br>
               • Guna <strong>=</strong> dalam teks untuk bahagian flip<br>
               • Contoh: <em>Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya</em>
             </div>
@@ -12976,7 +12977,7 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
               <button class="btn-perjanjian-up btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.7rem;" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''}>↑</button>
               <button class="btn-perjanjian-down btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.7rem;" ${idx === allPerjanjian.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>↓</button>
             </div>
-            <span style="font-size:0.75rem;background:rgba(56,189,248,0.2);color:#7dd3fc;padding:2px 8px;border-radius:999px;font-weight:700;">#${idx + 1}</span>
+            <button class="btn-perjanjian-pos" title="Tekan untuk pindah ke kedudukan lain" style="font-size:0.75rem;background:rgba(56,189,248,0.2);color:#7dd3fc;padding:4px 10px;border-radius:999px;font-weight:700;border:1px dashed rgba(56,189,248,0.6);cursor:pointer;flex-shrink:0;">#${idx + 1} ⇅</button>
             <input class="perjanjian-title" value="${data.title || ''}" placeholder="Tajuk perjanjian..." style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:0.9rem;">
             <button class="btn-del-perjanjian btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">X</button>
           </div>
@@ -13008,6 +13009,33 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
           batch.update(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { order: next.order });
           batch.update(doc(db, "users", currentUser.uid, "jogging_perjanjian", next.id), { order: data.order });
           await batch.commit();
+        });
+
+        // ── PINDAH TERUS KE KEDUDUKAN (tanpa tekan ↑↓ berkali-kali) ──
+        div.querySelector('.btn-perjanjian-pos').addEventListener('click', async () => {
+          const jumlah = allPerjanjian.length;
+          if (jumlah < 2 || !currentUser) return;
+          const nama = data.title || ('Perjanjian #' + (idx + 1));
+          const jawapan = prompt(`Pindah "${nama}" ke kedudukan berapa? (1 - ${jumlah})\n\n1 = paling atas · ${jumlah} = paling bawah`, String(idx + 1));
+          if (jawapan === null) return;
+          const ke = parseInt(jawapan, 10) - 1;
+          if (isNaN(ke) || ke < 0 || ke >= jumlah) {
+            showToast(`⚠️ Masukkan nombor 1 hingga ${jumlah}.`, 3000); return;
+          }
+          if (ke === idx) return;
+          const susunan = allPerjanjian.slice();
+          const [item] = susunan.splice(idx, 1);
+          susunan.splice(ke, 0, item);
+          const batch = writeBatch(db);
+          susunan.forEach((p, i) => {
+            if (p.order !== i) batch.update(doc(db, "users", currentUser.uid, "jogging_perjanjian", p.id), { order: i });
+          });
+          try {
+            await batch.commit();
+            showToast(`✅ Dipindah ke kedudukan #${ke + 1}`, 2000);
+          } catch(e) {
+            showToast('❌ Gagal pindah: ' + e.message, 3000);
+          }
         });
 
         div.querySelector('.btn-del-perjanjian').addEventListener('click', async () => {
