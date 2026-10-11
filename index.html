@@ -8104,7 +8104,7 @@ async function checkFaktaSRQueue() {
         const data = d.data();
         const drawer = allDrawers.find(dr => dr.id === data.drawerId);
         if (!drawer) {
-          deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
+          // 🛡️ SR SELAMAT: laci tak dijumpai dalam memori — langkau sahaja, JANGAN padam rekod SR
           return;
         }
         if (data.nextDueAt <= now) overdue.push({ id: d.id, ...data });
@@ -8147,7 +8147,8 @@ async function checkFaktaSRQueue() {
       if (!currentUser || !srData) return;
       const drawer = allDrawers.find(d => d.id === srData.drawerId);
       if (!drawer) {
-        await deleteFaktaSRRekod(srData.drawerId);
+        // 🛡️ SR SELAMAT: laci tak dijumpai dalam memori — JANGAN padam rekod SR, terus ke SR lain
+        console.warn('SR fakta dilangkau (laci tak dijumpai, TIDAK dipadam):', srData.drawerId);
         const adaSR = await checkFaktaSRQueue();
         if (adaSR && muatFaktaSRLaciSeterusnya()) {
           tunjukPopupSR(faktaSRLaciSemasa);
@@ -17219,8 +17220,10 @@ document.getElementById('btn-ai-jana-tips')?.addEventListener('click', async () 
       // Cari laci dalam bahasa_drawers
       const drawer = allBahasaDrawers.find(d => d.id === srData.drawerId);
       if (!drawer) {
-        // Laci dah dipadam — buang dari SR queue dan teruskan
-        await deleteSRRekod(srData.drawerId);
+        // 🛡️ SR SELAMAT: laci tak dijumpai dalam memori (mungkin belum habis dimuat) — JANGAN padam SR.
+        // Langkau untuk sesi ini sahaja. SR hanya dipadam bila user sendiri padam laci/perkataan/jenis kata/bahasa.
+        _srLangkauBahasa.add(srData.drawerId);
+        console.warn('SR dilangkau (laci tak dijumpai, TIDAK dipadam):', srData.drawerId);
         const adaSR = await checkSRQueue();
         if (adaSR && muatSRLaciSeterusnya()) {
           tunjukPopupSR(srLaciSemasa);
@@ -19247,6 +19250,9 @@ async function daftarSRBaru(drawerId, mode = 'bahasa', itemIndex = null, barisTe
     }
 
     // Load semua SR overdue untuk user ini
+// 🛡️ SR SELAMAT — laci SR yang tak dijumpai dilangkau untuk sesi ini sahaja (rekod SR TIDAK dipadam)
+const _srLangkauBahasa = new Set();
+
 async function loadSROverdue() {
       if (!currentUser) return [];
       const now = Date.now();
@@ -19262,6 +19268,7 @@ async function loadSROverdue() {
         const data = d.data();
         // JANGAN padam SR berdasarkan memory cache — biarkan je kalau tak jumpa dalam memory
         // SR hanya dipadam bila user padam laci secara explicit (btn-del-bd)
+        if (_srLangkauBahasa.has(data.drawerId)) return; // dilangkau sesi ini (laci tak dijumpai) — rekod kekal
         if (data.nextDueAt <= now) {
           overdue.push({ id: d.id, ...data });
         }
@@ -23119,6 +23126,7 @@ async function renderSRQueuePage() {
 
       // ── LOAD SR FAKTA dulu sebelum apa-apa ──
       let faktaSRItems = [];
+      let srTakJumpaF = 0, srTakJumpaB = 0; // 🛡️ rekod SR yang laci tak dijumpai — TIDAK dipadam
       const now = Date.now();
       try {
         const faktaSnap = await getDocs(
@@ -23128,7 +23136,8 @@ async function renderSRQueuePage() {
           const data = d.data();
           const drawer = allDrawers.find(dr => dr.id === data.drawerId);
           if (!drawer) {
-            deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
+            // 🛡️ SR SELAMAT: tak dipadam — hanya dikira & tidak dipaparkan
+            srTakJumpaF++;
             return;
           }
           faktaSRItems.push({ id: d.id, ...data, laciData: drawer, isFakta: true });
@@ -23163,7 +23172,8 @@ async function renderSRQueuePage() {
           const data = d.data();
           const laciWujud = laciMap.get(data.drawerId);
           if (!laciWujud) {
-            await deleteDoc(doc(db, "users", currentUser.uid, "bahasa_sr_queue", d.id));
+            // 🛡️ SR SELAMAT: laci tak dijumpai (mungkin bacaan cache/offline) — JANGAN padam, kira sahaja
+            srTakJumpaB++;
             continue;
           }
           semua.push({ id: d.id, ...data, laciData: laciWujud });
@@ -23184,6 +23194,7 @@ async function renderSRQueuePage() {
             <div class="chip" style="border-color:#f59e0b;color:#fcd34d;">⚠️ Overdue: ${overdueB + overdueF} <span style="font-size:0.6rem;opacity:0.7;">(B:${overdueB} F:${overdueF})</span></div>
             <div class="chip" style="border-color:#34d399;color:#6ee7b7;">📅 Upcoming: ${upcomingB + upcomingF}</div>
             <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📋 Jumlah: ${semua.length + faktaSRItems.length}</div>
+            ${(srTakJumpaB + srTakJumpaF) ? `<div class="chip" style="border-color:#f87171;color:#fca5a5;">🛡️ ${srTakJumpaB + srTakJumpaF} rekod SR laci tak dijumpai — disimpan, tidak dipadam</div>` : ''}
           `;
         }
 
