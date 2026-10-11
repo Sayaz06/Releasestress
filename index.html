@@ -2188,7 +2188,15 @@ body.dark-mode {
             </div>
           </div>
           <!-- 📝 PROMPT AI — disimpan di settings/aiPrompts, dibaca worker setiap kali jana (kosong = prompt asal SAYAZ dalam worker) -->
-          <div id="ai-prompt-panel" style="display:none;margin-bottom:8px;padding:10px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(167,139,250,0.3);">
+          <div id="ai-prompt-panel" style="display:none;margin-bottom:8px;padding:0 10px 10px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(167,139,250,0.3);max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+            <!-- Butang simpan sentiasa kelihatan di atas (melekat semasa skrol) -->
+            <div style="position:sticky;top:0;z-index:2;background:#140f2a;padding:10px 0 8px;margin-bottom:6px;border-bottom:1px solid rgba(167,139,250,0.3);">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                <button id="btn-ai-prompt-simpan" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">💾 Simpan Prompt</button>
+                <button id="btn-ai-prompt-asal" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#c4b5fd;">📥 Muat Prompt Asal</button>
+              </div>
+              <div id="ai-prompt-status" style="font-size:0.7rem;color:var(--subtext);">Status: …</div>
+            </div>
             <div style="font-size:0.72rem;color:#c4b5fd;font-weight:700;margin-bottom:4px;">📝 Prompt Jana Laci (Step 1 · Terjemahan)</div>
             <textarea id="ai-prompt-terjemahan" rows="7" placeholder="Kosong = guna prompt Terjemahan SAYAZ asal dalam worker.&#10;Tekan 📥 Muat Prompt Asal untuk edit dari prompt asal." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(167,139,250,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.78rem;outline:none;resize:vertical;min-height:140px;"></textarea>
             <div style="font-size:0.66rem;color:#94a3b8;line-height:1.55;margin:4px 0 10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.25);border:1px dashed rgba(167,139,250,0.3);">
@@ -2227,12 +2235,7 @@ They immortalized the hero in a statue.
 ...</pre>
               Baris <b>→ english</b> mesti SAMA PERSIS dengan input. Teks sebelum "→ Ayat" masuk Tips F0, selepasnya masuk Tips F1&amp;2.
             </div>
-            <div style="font-size:0.66rem;color:#fbbf24;margin-bottom:8px;line-height:1.5;">ℹ️ Worker tambah sendiri satu perenggan "MOD AUTOMATIK" di hujung prompt (supaya AI terus jana tanpa bertanya / tanpa skrip penutup). Tak perlu tulis dalam prompt.</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-              <button id="btn-ai-prompt-simpan" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">💾 Simpan Prompt</button>
-              <button id="btn-ai-prompt-asal" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#c4b5fd;">📥 Muat Prompt Asal</button>
-            </div>
-            <div id="ai-prompt-status" style="font-size:0.7rem;color:var(--subtext);">Status: …</div>
+            <div style="font-size:0.66rem;color:#fbbf24;margin-bottom:4px;line-height:1.5;">ℹ️ Worker tambah sendiri satu perenggan "MOD AUTOMATIK" di hujung prompt (supaya AI terus jana tanpa bertanya / tanpa skrip penutup). Tak perlu tulis dalam prompt.</div>
           </div>
           <div id="ai-key-panel" style="display:none;margin-bottom:8px;padding:10px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(167,139,250,0.3);">
             <div style="font-size:0.7rem;color:#c4b5fd;font-weight:700;margin-bottom:6px;">🔑 Anthropic API Key (untuk worker AI)</div>
