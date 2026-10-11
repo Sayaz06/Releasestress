@@ -16689,27 +16689,67 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
             return;
           }
 
-          setProgress(95, '💾 Menyimpan fail...');
+          setProgress(100, `✅ ${nomborLaci} laci sedia`);
+          setTimeout(() => removeLoadBar(), 800);
 
           const jenisData = allJenisKata.find(j => j.id === currentJenisKataId);
           const sufiksSkop = skop === 'semua' ? '' : '-tiada-tips';
           const namaFail = `export-${(jenisData?.name || 'bahasa').replace(/\s+/g, '-')}${sufiksSkop}-${dateKeyQ(Date.now())}.txt`;
-
-          const blob = new Blob([finalText], { type: 'text/plain;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = namaFail;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-
-          setProgress(100, '✅ Fail berjaya dimuat turun!');
-          setTimeout(() => removeLoadBar(), 2000);
-
           const labelSkopFinal = skop === 'semua' ? 'semua laci' : 'laci belum lengkap tips';
-          showToast(`✅ ${nomborLaci} laci (${labelSkopFinal}) diexport ke "${namaFail}"`, 5000);
+
+          // 💾 Muat turun sebagai fail .txt (cara lama)
+          const muatTurunFail = () => {
+            const blob = new Blob([finalText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = namaFail;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`✅ ${nomborLaci} laci (${labelSkopFinal}) diexport ke "${namaFail}"`, 5000);
+          };
+
+          // 📋 Papar teks + butang Copy (untuk tampal terus ke Claude chat)
+          const paparTeks = () => {
+            const pp = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📤 ${_aiEsc(jenisData?.name || 'Export')}</div>
+              <div style="font-size:0.7rem;color:#94a3b8;margin-bottom:8px;">${nomborLaci} laci · ${labelSkopFinal}</div>
+              <button data-ex-salin style="width:100%;margin-bottom:8px;padding:10px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;">📋 Copy Teks</button>
+              <pre style="white-space:pre-wrap;font-size:0.75rem;color:#e5e7eb;background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;max-height:55vh;overflow-y:auto;">${_aiEsc(finalText)}</pre>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <button data-ex-fail style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #a78bfa;color:#c4b5fd;">💾 Muat Turun Fail</button>
+                <button data-ai-popup-batal style="flex:1;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Tutup</button>
+              </div>`);
+            pp.querySelector('[data-ai-popup-batal]').addEventListener('click', () => pp.remove());
+            pp.querySelector('[data-ex-fail]').addEventListener('click', muatTurunFail);
+            pp.querySelector('[data-ex-salin]').addEventListener('click', async (ev) => {
+              const btn = ev.currentTarget;
+              let ok = false;
+              try { await navigator.clipboard.writeText(finalText); ok = true; } catch (err) {}
+              if (!ok) {
+                const ta = document.createElement('textarea');
+                ta.value = finalText;
+                ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+                document.body.appendChild(ta);
+                ta.select();
+                try { ok = document.execCommand('copy'); } catch (err) {}
+                ta.remove();
+              }
+              btn.textContent = ok ? `✅ Disalin (${nomborLaci} laci)` : '❌ Gagal salin — tekan lama pada teks';
+              setTimeout(() => { btn.textContent = '📋 Copy Teks'; }, 2500);
+            });
+          };
+
+          // Tanya: salin teks atau muat turun fail
+          const pilih = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📤 Export siap — ${nomborLaci} laci</div>
+            <div style="font-size:0.74rem;color:#9ca3af;margin-bottom:14px;line-height:1.6;">${_aiEsc(jenisData?.name || '')} · ${labelSkopFinal}<br>Pilih cara untuk dapatkan teks:</div>
+            <button data-ex-papar style="width:100%;padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;margin-bottom:8px;">📋 Papar &amp; Copy Teks</button>
+            <button data-ex-fail style="width:100%;padding:12px;border-radius:999px;background:transparent;border:1px solid #a78bfa;color:#c4b5fd;font-weight:600;font-size:0.9rem;cursor:pointer;margin-bottom:8px;">💾 Muat Turun Fail .txt</button>
+            <button data-ai-popup-batal style="width:100%;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Batal</button>`);
+          pilih.querySelector('[data-ai-popup-batal]').addEventListener('click', () => pilih.remove());
+          pilih.querySelector('[data-ex-papar]').addEventListener('click', () => { pilih.remove(); paparTeks(); });
+          pilih.querySelector('[data-ex-fail]').addEventListener('click', () => { pilih.remove(); muatTurunFail(); });
 
         } catch(e) {
           removeLoadBar();
