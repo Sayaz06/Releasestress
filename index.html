@@ -16888,6 +16888,7 @@ function _aiKadHtml(j) {
   const tajuk = j.jenis === 'jana_pukal' ? '🤖 AI Jana Pukal (Step 1)'
     : j.jenis === 'jana_kindle' ? `🤖 AI dari Kindle — ${_aiEsc(j.failNama || 'Tips')}`
     : j.jenis === 'jana_ms' ? `🤖 AI Jana — Pukal → Tips${j.imej === false ? '' : ' → Gambar G1'}${j.failNama ? ' · ' + _aiEsc(j.failNama) : ''}`
+    : j.jenis === 'jana_imej' ? '🖼️ Jana Gambar G1 sahaja (dari Kindle)'
     : '🤖 AI Jana Tips (Step 2 + 3)';
   const masa = j.createdAt ? new Date(j.createdAt).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   const h = j.hasil || {};
@@ -16903,7 +16904,10 @@ function _aiKadHtml(j) {
     warna = '#f87171'; badan = '❌ Gagal: ' + _aiEsc(j.ralat || 'Ralat tidak diketahui');
   } else if (j.status === 'siap') {
     const b = [];
-    if (j.jenis === 'jana_ms') {
+    if (j.jenis === 'jana_imej') {
+      b.push(`🖼️ Gambar G1: ${h.laciAdaImej ?? 0}/${h.laci ?? '?'} laci${h.imejDijana ? ` (${h.imejDijana} baru)` : ''}`);
+      if (h.lengkap) b.push('✅ Muka surat LENGKAP');
+    } else if (j.jenis === 'jana_ms') {
       if (h.diterima) b.push(`📥 ${h.diterima} perkataan dalam fail · 💾 ${h.perkataanBaru ?? 0} baru${h.perkataanSedia ? ` · ${h.perkataanSedia} sedia ada diskip` : ''} · 🗂️ ${h.laciDijana ?? 0} laci dijana`);
       b.push(`💡 Tips: ${h.laciAdaTips ?? 0}/${h.laci ?? '?'} laci${h.laciDapatTips ? ` (${h.laciDapatTips} baru)` : ''}`);
       b.push(h.imej === false ? '🖼️ Gambar dilangkau' : `🖼️ Gambar G1: ${h.laciAdaImej ?? 0}/${h.laci ?? '?'} laci${h.imejDijana ? ` (${h.imejDijana} baru)` : ''}`);
@@ -16933,7 +16937,8 @@ function _aiKadHtml(j) {
       warna = '#34d399';
       b.push('✅ Tiada yang tertinggal');
     }
-    if (typeof h.kosUSD === 'number') b.push(`💰 Kos lebih kurang US$${h.kosUSD.toFixed(3)}`);
+    if (j.jenis === 'jana_imej') b.push('💰 Kos Claude: RM0 (gambar dicaj oleh xAI)');
+    else if (typeof h.kosUSD === 'number') b.push(`💰 Kos lebih kurang US$${h.kosUSD.toFixed(3)} ≈ ${_aiRM(h.kosUSD)}`);
     badan = b.join('<br>');
   }
   const bolehBatal = j.status === 'menunggu' || j.status === 'diproses';
@@ -16955,7 +16960,7 @@ function _aiRenderStatus() {
   if (!box) return;
   const jobs = _aiJobsTerkini.filter(j => j.jenisKataId === currentJenisKataId && !j.disembunyi);
   const pilih = [];
-  ['jana_ms', 'jana_pukal', 'jana_tips', 'jana_kindle'].forEach(t => { const j = jobs.find(x => x.jenis === t); if (j) pilih.push(j); });
+  ['jana_ms', 'jana_imej', 'jana_pukal', 'jana_tips', 'jana_kindle'].forEach(t => { const j = jobs.find(x => x.jenis === t); if (j) pilih.push(j); });
   if (!pilih.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
   pilih.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   box.style.display = 'flex';
@@ -17206,6 +17211,63 @@ function _aiBinaItemTips(skop) {
   return items;
 }
 
+
+// ── ⚠️ AMARAN KOS (2 kali) + PIN sebelum guna Claude API ──
+// Data sebenar: 1 MS (33 perkataan → 81 laci) = US$1.12 dengan Sonnet 5.5. Opus 5.5 ≈ 2x.
+const AI_KOS_PER_PERKATAAN = 0.034; // USD (Sonnet) — Pukal + Audit + Tips
+const AI_KOS_PER_LACI_TIPS = 0.011; // USD (Sonnet) — Tips sahaja
+const AI_USD_KE_RM = 4.5;           // anggaran kadar tukaran
+function _aiRM(usd) { return 'RM' + (usd * AI_USD_KE_RM).toFixed(2); }
+function _aiAmaranKos({ nama, perkataan = 0, laciTips = 0, model }) {
+  const kali = model === 'claude-opus-5-5' ? 2 : 1;
+  const usd = (perkataan * AI_KOS_PER_PERKATAAN + laciTips * AI_KOS_PER_LACI_TIPS) * kali;
+  const anggaran = `US$${usd.toFixed(2)} ≈ ${_aiRM(usd)}`;
+  const kotak = (warna, isi) => `<div style="padding:10px 12px;border-radius:10px;background:${warna}14;border:1px solid ${warna}66;font-size:0.78rem;color:#e5e7eb;line-height:1.65;margin-bottom:10px;">${isi}</div>`;
+  return new Promise((selesai) => {
+    // ── AMARAN 1/2 ──
+    const p1 = _aiBukaPopup(`
+      <div style="font-size:1.05rem;font-weight:800;color:#f87171;margin-bottom:8px;">⚠️ AMARAN KOS (1/2)</div>
+      ${kotak('#f87171', `<b>AI Jana guna Claude API</b> — dicaj ikut setiap token yang dijana.<br>Ini <b>BUKAN</b> langganan Claude chat biasa. Kredit ditolak terus dari akaun Anthropic anda.`)}
+      ${kotak('#fbbf24', `📊 <b>Kos sebenar yang pernah diukur:</b><br>1 muka surat (33 perkataan → 81 laci)<br>= <b>US$1.12 ≈ RM5</b> dengan Sonnet 5.5<br>= lebih kurang <b>RM10</b> dengan Opus 5.5`)}
+      ${kotak('#a78bfa', `🧮 <b>Anggaran "${_aiEsc(nama)}":</b><br>${perkataan ? `${perkataan} perkataan baru (Pukal + Audit + Tips)` : ''}${perkataan && laciTips ? '<br>' : ''}${laciTips ? `${laciTips} laci perlu Tips` : ''}${!perkataan && !laciTips ? 'Tiada kerja Claude dijangka' : ''}<br>≈ <b>${anggaran}</b>${kali > 1 ? ' (Opus)' : ''}<br><span style="font-size:0.7rem;color:#94a3b8;">+ kos gambar Grok (dicaj berasingan oleh xAI) jika Gambar G1 ditanda.</span>`)}
+      ${kotak('#94a3b8', `• Bahagian paling mahal ialah <b>Tips</b> (sebutan setiap perkataan dalam ayat).<br>• Kredit yang sudah dipakai <b>TIDAK dipulangkan</b> walaupun laci dipadam kemudian.<br>• Lebih banyak padanan BI = lebih banyak laci = lebih mahal.`)}
+      ${kotak('#34d399', `💡 <b>Cara lebih murah:</b> guna Claude chat biasa + butang manual <b>Step 1 / Step 2 / Step 3</b> — hampir <b>RM0</b> kerana termasuk dalam langganan.`)}
+      <div style="display:flex;gap:8px;">
+        <button data-a1-batal style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#059669,#047857);border:none;color:white;font-weight:700;">✋ Batal (disyorkan)</button>
+        <button data-a1-ok style="flex:1;padding:12px;border-radius:999px;background:transparent;border:1px solid #f87171;color:#fca5a5;font-weight:600;">Saya faham →</button>
+      </div>`);
+    p1.querySelector('[data-a1-batal]').addEventListener('click', () => { p1.remove(); selesai(false); });
+    p1.querySelector('[data-a1-ok]').addEventListener('click', () => {
+      p1.remove();
+      // ── AMARAN 2/2 + PIN ──
+      const p2 = _aiBukaPopup(`
+        <div style="font-size:1.05rem;font-weight:800;color:#f87171;margin-bottom:8px;">🛑 AMARAN TERAKHIR (2/2)</div>
+        ${kotak('#f87171', `Anda akan membelanjakan lebih kurang <b>${anggaran}</b> untuk <b>"${_aiEsc(nama)}"</b>.<br><br>Kalau diulang untuk banyak muka surat:<br>• 10 MS ≈ <b>RM50</b><br>• 100 MS ≈ <b>RM500</b><br>• 800 MS ≈ <b>RM4,000</b>`)}
+        <div style="font-size:0.78rem;color:#e5e7eb;margin-bottom:6px;">🔒 Masukkan <b>PIN</b> untuk sahkan perbelanjaan ini:</div>
+        <input data-a2-pin type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #f87171;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:1rem;outline:none;letter-spacing:0.3em;">
+        <div data-a2-msg style="font-size:0.75rem;color:#fca5a5;min-height:1.2em;margin:6px 0 10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button data-a2-batal style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#059669,#047857);border:none;color:white;font-weight:700;">✋ Batal</button>
+          <button data-a2-ok style="flex:1;padding:12px;border-radius:999px;background:transparent;border:1px solid #f87171;color:#fca5a5;font-weight:600;">💸 Sahkan &amp; Jana</button>
+        </div>`);
+      const inp = p2.querySelector('[data-a2-pin]'), msg = p2.querySelector('[data-a2-msg]'), ok = p2.querySelector('[data-a2-ok]');
+      setTimeout(() => inp.focus(), 80);
+      p2.querySelector('[data-a2-batal]').addEventListener('click', () => { p2.remove(); selesai(false); });
+      ok.addEventListener('click', async () => {
+        const pin = inp.value.trim();
+        if (!/^\d{4,6}$/.test(pin)) { msg.textContent = '⚠️ PIN mesti 4-6 digit angka.'; return; }
+        ok.disabled = true; msg.style.color = '#94a3b8'; msg.textContent = 'Mengesahkan...';
+        try {
+          await reauthenticateWithCredential(currentUser, EmailAuthProvider.credential(ADMIN_EMAIL, pin));
+          p2.remove(); selesai(true);
+        } catch (e) {
+          ok.disabled = false; msg.style.color = '#fca5a5'; msg.textContent = '❌ PIN salah.';
+        }
+      });
+    });
+  });
+}
+
 // ── 🤖 AI JANA — satu muka surat, ikut step: Pukal (Step 1) → Tips (Step 2 + 3) → Gambar G1 ──
 // Fail kamus diambil dari muka_surat_fail/{jenisId} (upload di page Golongan → 📄 Fail).
 // Muka surat yang ditambah manual (tiada fail) → user pilih fail dari senarai fail golongan.
@@ -17295,6 +17357,14 @@ document.getElementById('btn-ai-jana-ms')?.addEventListener('click', async () =>
       }
     }
     const model = popup.querySelector('input[name="ai-model"]:checked')?.value || _aiModelAkhir();
+    // ⚠️ Anggaran kos → amaran 2 kali + PIN
+    const fSumber = pilihan === '__tiada__' ? null : (pilihan ? allJenisKata.find(x => x.id === pilihan) : j);
+    const bilFail = fSumber ? (fSumber.bilFail || 0) : 0;
+    const bilSedia = allBahasaPerkataan.filter(p => p.jenisId === j.id).length;
+    const perkataanBaru = Math.max(0, bilFail - bilSedia);
+    const idPerkataan = new Set(allBahasaPerkataan.filter(p => p.jenisId === j.id).map(p => p.id));
+    const laciTips = allBahasaDrawers.filter(d => idPerkataan.has(d.perkataanId) && !String(d.tips || '').trim() && !String(d.tipsFasa0 || '').trim()).length;
+    if (!(await _aiAmaranKos({ nama: j.name || '', perkataan: perkataanBaru, laciTips, model }))) return;
     _aiModelSimpan(model);
     btnHantar.disabled = true;
     try {
