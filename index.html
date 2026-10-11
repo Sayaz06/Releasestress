@@ -2154,6 +2154,10 @@ body.dark-mode {
           </div>
           <button id="btn-ai-jana-pukal" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#6d28d9,#4c1d95);border:none;color:white;">🤖 AI Jana Pukal (Step 1)</button>
           <button id="btn-ai-jana-tips" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#6d28d9,#4c1d95);border:none;color:white;">🤖 AI Jana Tips (Step 2 + 3)</button>
+          <!-- 📚 BANK KAMUS — fail MS001_KATA_KERJA.txt dll, digunakan oleh butang WORKER AI di Kindle -->
+          <button id="btn-ai-bank-kamus" class="btn btn-sm mt-8" style="width:100%;background:transparent;border:1px solid rgba(167,139,250,0.6);color:#c4b5fd;">📚 Bank Kamus — Upload Fail .txt</button>
+          <input id="ai-bank-kamus-fail" type="file" accept=".txt,text/plain" multiple style="display:none;">
+          <div id="ai-bank-ringkasan" style="font-size:0.68rem;color:#94a3b8;margin-top:6px;line-height:1.6;"></div>
           <div id="ai-job-status" style="display:none;flex-direction:column;gap:8px;margin-top:8px;"></div>
         </div>
 
@@ -16715,6 +16719,7 @@ document.getElementById('btn-padam-ai-key')?.addEventListener('click', async () 
 function _aiPantauMula() {
   if (_aiUnsub || !currentUser) return;
   _aiSemakKey();
+  if (window._aiMuatRingkasanBank) window._aiMuatRingkasanBank();
   _aiUnsub = onSnapshot(
     query(collection(db, 'users', currentUser.uid, 'ai_jobs'), orderBy('createdAt', 'desc'), limit(20)),
     snap => {
@@ -16728,7 +16733,9 @@ function _aiPantauMula() {
 window._aiPantauMula = _aiPantauMula;
 
 function _aiKadHtml(j) {
-  const tajuk = j.jenis === 'jana_pukal' ? '🤖 AI Jana Pukal (Step 1)' : '🤖 AI Jana Tips (Step 2 + 3)';
+  const tajuk = j.jenis === 'jana_pukal' ? '🤖 AI Jana Pukal (Step 1)'
+    : j.jenis === 'jana_ms' ? `🤖 AI Jana MS${j.ms ? ' ' + j.ms : ''} (Kindle · Pukal + Tips)`
+    : '🤖 AI Jana Tips (Step 2 + 3)';
   const masa = j.createdAt ? new Date(j.createdAt).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   const h = j.hasil || {};
   let warna = '#a78bfa';
@@ -16743,7 +16750,12 @@ function _aiKadHtml(j) {
     warna = '#f87171'; badan = '❌ Gagal: ' + _aiEsc(j.ralat || 'Ralat tidak diketahui');
   } else if (j.status === 'siap') {
     const b = [];
-    if (j.jenis === 'jana_pukal') {
+    if (j.jenis === 'jana_ms') {
+      b.push(`📘 ${_aiEsc(h.jenisKataNama || j.jenisKataNama || '')} · fail ${_aiEsc(j.failKamus || '')}`);
+      b.push(`📥 ${h.diterima ?? '?'} perkataan diterima oleh AI · 📝 ${h.dijanaAI ?? '?'} dijana`);
+      b.push(`💾 ${h.perkataanBaru ?? 0} perkataan baru · 🗂️ ${h.laciDijana ?? 0} laci dijana`);
+      b.push(`💡 ${h.laciDapatTips ?? 0}/${h.laciDihantar ?? '?'} laci dapat tips`);
+    } else if (j.jenis === 'jana_pukal') {
       b.push(`📥 ${h.diterima ?? j.bilInput ?? '?'} perkataan diterima oleh AI`);
       b.push(`📝 ${h.dijanaAI ?? '?'} perkataan dijana oleh AI`);
       let simpan = `💾 ${h.perkataanBaru ?? 0} perkataan baru disimpan`;
@@ -16784,7 +16796,7 @@ function _aiRenderStatus() {
   if (!box) return;
   const jobs = _aiJobsTerkini.filter(j => j.jenisKataId === currentJenisKataId && !j.disembunyi);
   const pilih = [];
-  ['jana_pukal', 'jana_tips'].forEach(t => { const j = jobs.find(x => x.jenis === t); if (j) pilih.push(j); });
+  ['jana_pukal', 'jana_tips', 'jana_ms'].forEach(t => { const j = jobs.find(x => x.jenis === t); if (j) pilih.push(j); });
   if (!pilih.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
   pilih.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   box.style.display = 'flex';
@@ -16802,6 +16814,74 @@ function _aiRenderStatus() {
   });
 }
 window._aiRenderStatus = _aiRenderStatus;
+
+// ── 📚 BANK KAMUS — simpan fail MS###_KATA_xxx.txt ke Firestore (kamus_bank) untuk butang WORKER AI di Kindle ──
+// Ringkasan (kamus_bank_info/ringkasan) dibaca oleh Kindle & worker: golongan → { fail: { "16": "MS016_KATA_KERJA" } }
+async function _aiMuatRingkasanBank() {
+  const el = document.getElementById('ai-bank-ringkasan');
+  if (!el || !currentUser) return;
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid, 'kamus_bank_info', 'ringkasan'));
+    const g = (snap.exists() && snap.data().golongan) || {};
+    const baris = Object.keys(g).sort().map(nama => {
+      const ms = Object.keys(g[nama].fail || {}).map(Number).sort((a, b) => a - b);
+      return ms.length ? `${_aiEsc(nama)}: ${ms.length} fail (MS${ms[0]}–MS${ms[ms.length - 1]})` : '';
+    }).filter(Boolean);
+    el.innerHTML = baris.length ? '📚 ' + baris.join('<br>📚 ') : '📚 Bank Kamus kosong — upload fail seperti MS001_KATA_KERJA.txt';
+  } catch (e) {
+    el.textContent = '📚 Gagal baca Bank Kamus: ' + e.message;
+  }
+}
+window._aiMuatRingkasanBank = _aiMuatRingkasanBank;
+
+document.getElementById('btn-ai-bank-kamus')?.addEventListener('click', () => {
+  if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
+  document.getElementById('ai-bank-kamus-fail')?.click();
+});
+document.getElementById('ai-bank-kamus-fail')?.addEventListener('change', async (e) => {
+  const input = e.currentTarget;
+  const fail = Array.from(input.files || []);
+  input.value = '';
+  if (!fail.length || !currentUser) return;
+  const sah = [], langkau = [];
+  for (const f of fail) {
+    const m = f.name.match(/^MS0*(\d+)_(KATA_[A-Z_]+?)\.txt$/i);
+    if (!m) { langkau.push(f.name); continue; }
+    const ms = parseInt(m[1], 10);
+    const golKod = m[2].toUpperCase();
+    sah.push({ f, ms, golongan: golKod.replace(/_/g, ' '), docId: `MS${String(ms).padStart(3, '0')}_${golKod}` });
+  }
+  if (!sah.length) { showToast(`⚠️ Tiada fail sah. Nama mesti seperti MS001_KATA_KERJA.txt (${langkau.length} dilangkau)`, 5000); return; }
+  showToast(`⏳ Memuat naik ${sah.length} fail ke Bank Kamus...`, 0);
+  try {
+    const ringkasan = {};
+    let kosong = 0;
+    for (let i = 0; i < sah.length; i += 100) {
+      const batch = writeBatch(db);
+      for (const x of sah.slice(i, i + 100)) {
+        const teks = await x.f.text();
+        const bil = _aiKiraPerkataanKamus(teks);
+        if (!bil) kosong++;
+        batch.set(doc(db, 'users', currentUser.uid, 'kamus_bank', x.docId), {
+          ms: x.ms, golongan: x.golongan, namaFail: x.f.name, teks, bilPerkataan: bil, uploadedAt: Date.now()
+        });
+        if (bil) {
+          ringkasan[x.golongan] = ringkasan[x.golongan] || { fail: {} };
+          ringkasan[x.golongan].fail[String(x.ms)] = x.docId;
+        }
+      }
+      await batch.commit();
+    }
+    await setDoc(doc(db, 'users', currentUser.uid, 'kamus_bank_info', 'ringkasan'), { golongan: ringkasan, updatedAt: Date.now() }, { merge: true });
+    let msg = `✅ ${sah.length} fail disimpan ke Bank Kamus`;
+    if (kosong) msg += ` · ${kosong} fail tiada perkataan`;
+    if (langkau.length) msg += ` · ${langkau.length} fail dilangkau (nama tak sepadan)`;
+    showToast(msg, 5000);
+    _aiMuatRingkasanBank();
+  } catch (err) {
+    showToast('❌ Gagal upload Bank Kamus: ' + err.message, 5000);
+  }
+});
 
 function _aiBukaPopup(isi) {
   const p = document.createElement('div');
