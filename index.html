@@ -17655,7 +17655,7 @@ function renderGolongan() {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <span style="font-size:0.68rem;color:#7dd3fc;background:rgba(125,211,252,0.1);border:1px solid rgba(125,211,252,0.3);padding:2px 8px;border-radius:999px;">Muka surat: ${ms}</span>
-        ${bolehUbah ? `<span style="font-size:0.68rem;color:#c4b5fd;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);padding:2px 8px;border-radius:999px;">📄 Fail: ${adaFail}</span>` : ''}
+        ${bolehUbah ? `<span data-gol-lihat-fail style="cursor:pointer;font-size:0.68rem;color:#c4b5fd;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);padding:2px 8px;border-radius:999px;">📄 Fail: ${adaFail} ›</span>` : ''}
         <span style="font-size:0.68rem;color:${lengkap && lengkap === ms ? '#34d399' : '#fcd34d'};background:rgba(255,255,255,0.05);border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:999px;">✅ Lengkap: ${lengkap}/${ms}</span>
       </div>`;
     div.querySelector('[data-gol-buka]').addEventListener('click', () => {
@@ -17672,6 +17672,7 @@ function renderGolongan() {
         _golUploadId = id;
         document.getElementById('gol-upload-input').click();
       });
+      div.querySelector('[data-gol-lihat-fail]')?.addEventListener('click', () => senaraiFailGolongan(id, nama));
       div.querySelector('[data-gol-padam]').addEventListener('click', () => {
         if (jenis.length) {
           showToast(`⚠️ "${nama}" masih ada ${jenis.length} muka surat. Padam muka surat dahulu — golongan hanya boleh dipadam bila kosong.`, 5000);
@@ -17685,6 +17686,55 @@ function renderGolongan() {
   };
   golBahasa.forEach(g => kad(g.id, g.name || '(tiada nama)', jenisBahasa.filter(j => j.golonganId === g.id), true));
   if (tanpa.length) kad(_GOL_TANPA, 'Tanpa Golongan', tanpa, false);
+}
+
+// ── 📄 Lihat fail kamus satu muka surat ──
+async function lihatFailMukaSurat(jenisId) {
+  const j = allJenisKata.find(x => x.id === jenisId) || {};
+  const s = await getDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', jenisId));
+  const teks = s.exists() ? (s.data().teks || '') : '';
+  const p = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📄 ${_aiEsc(j.name || '')}</div>
+    <div style="font-size:0.7rem;color:#94a3b8;margin-bottom:8px;word-break:break-all;">${_aiEsc(j.namaFail || '')} · ${j.bilFail || 0} perkataan</div>
+    <pre style="white-space:pre-wrap;font-size:0.75rem;color:#e5e7eb;background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;max-height:55vh;overflow-y:auto;">${teks ? _aiEsc(teks) : '(tiada fail)'}</pre>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button data-ms-buang style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #f87171;color:#f87171;">🗑️ Buang Fail</button>
+      <button data-ai-popup-batal style="flex:1;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Tutup</button>
+    </div>`);
+  p.querySelector('[data-ai-popup-batal]').addEventListener('click', () => p.remove());
+  p.querySelector('[data-ms-buang]').addEventListener('click', async () => {
+    if (!confirm('Buang fail kamus dari muka surat ini?\n(Perkataan, laci & SR TIDAK diusik.)')) return;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', jenisId)).catch(() => {});
+    await updateDoc(doc(db, 'users', currentUser.uid, 'jenis_kata', jenisId), { bilFail: deleteField(), namaFail: deleteField() });
+    p.remove();
+    showToast('🗑️ Fail dibuang.');
+  });
+}
+window.lihatFailMukaSurat = lihatFailMukaSurat;
+
+// ── 📄 Senarai fail dalam satu golongan (dengan carian) ──
+function senaraiFailGolongan(golId, nama) {
+  const jenis = allJenisKata.filter(j => j.golonganId === golId && j.bilFail)
+    .sort((a, b) => (a.ms ?? 1e9) - (b.ms ?? 1e9) || _golCmp(a.name, b.name));
+  const p = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:8px;">📄 Fail — ${_aiEsc(nama)} (${jenis.length})</div>
+    <input data-cari type="text" placeholder="🔍 Cari (cth: 846)" autocomplete="off" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.85rem;outline:none;margin-bottom:8px;">
+    <div data-senarai style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto;"></div>
+    <button data-ai-popup-batal style="width:100%;margin-top:10px;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Tutup</button>`);
+  const box = p.querySelector('[data-senarai]');
+  const lukis = () => {
+    const c = (p.querySelector('[data-cari]').value || '').trim().toLowerCase();
+    const t = jenis.filter(j => !c || String(j.name || '').toLowerCase().includes(c) || String(j.namaFail || '').toLowerCase().includes(c));
+    box.innerHTML = t.length ? '' : '<div style="color:#94a3b8;font-size:0.8rem;">Tiada fail.</div>';
+    t.slice(0, 200).forEach(j => {
+      const b = document.createElement('button');
+      b.style.cssText = 'text-align:left;padding:8px 10px;border-radius:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.3);color:#e5e7eb;font-size:0.8rem;';
+      b.innerHTML = `📄 <b>${_aiEsc(j.name || '')}</b><br><span style="font-size:0.68rem;color:#94a3b8;">${_aiEsc(j.namaFail || '')} · ${j.bilFail} perkataan</span>`;
+      b.addEventListener('click', () => lihatFailMukaSurat(j.id));
+      box.appendChild(b);
+    });
+  };
+  p.querySelector('[data-cari]').addEventListener('input', lukis);
+  p.querySelector('[data-ai-popup-batal]').addEventListener('click', () => p.remove());
+  lukis();
 }
 
 // ── Tukar ke format baharu (tambah golonganId & ms sahaja — tiada apa dipindah/dipadam) ──
@@ -17717,6 +17767,28 @@ async function tukarFormatGolongan() {
       });
       await batch.commit();
     }
+    // Pendua: muka surat yang dicipta dari upload fail (KOSONG, tiada perkataan) + jenis kata lama MS sama
+    // → fail dipindah ke jenis kata lama, muka surat kosong dibuang. Jenis kata lama (laci/SR) tidak diusik.
+    let digabung = 0;
+    const adaPerkataan = new Set(allBahasaPerkataan.map(p => p.jenisId));
+    for (const x of calon) {
+      const gid = petaGol[x.p.golongan];
+      const pendua = allJenisKata.find(j => j.id !== x.j.id && j.golonganId === gid && j.ms === x.p.ms && !adaPerkataan.has(j.id));
+      if (!pendua) continue;
+      try {
+        if (pendua.bilFail && !x.j.bilFail) {
+          const f = await getDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', pendua.id));
+          if (f.exists()) {
+            await setDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', x.j.id), { ...f.data(), golonganId: gid, ms: x.p.ms });
+            await updateDoc(doc(db, 'users', currentUser.uid, 'jenis_kata', x.j.id), { bilFail: pendua.bilFail, namaFail: pendua.namaFail || '' });
+          }
+        }
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', pendua.id)).catch(() => {});
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'jenis_kata', pendua.id));
+        digabung++;
+      } catch (e) { console.log('Gagal gabung pendua:', e); }
+    }
+    if (digabung) showToast(`🔗 ${digabung} muka surat pendua (kosong) digabung ke jenis kata lama.`, 4000);
     showToast(`✅ ${calon.length} jenis kata dimasukkan ke ${Object.keys(kumpulan).length} golongan. SR & laci tidak berubah.`, 5000);
     renderGolongan();
   } catch (e) {
@@ -17733,6 +17805,12 @@ async function uploadFailGolongan(fail) {
   jenisGol.forEach(j => {
     const ms = j.ms != null ? j.ms : (_golParseNama(j.name) || {}).ms;
     if (ms != null && !petaMs[ms]) petaMs[ms] = j.id;
+  });
+  // Jenis kata format lama (belum bergolongan) dengan nama golongan sama — guna yang sedia ada, JANGAN cipta pendua
+  const golIdsBahasa = allGolongan.filter(g => g.bahasaId === gol.bahasaId).map(g => g.id);
+  allJenisKata.filter(j => j.bahasaId === gol.bahasaId && (!j.golonganId || !golIdsBahasa.includes(j.golonganId))).forEach(j => {
+    const p = _golParseNama(j.name);
+    if (p && p.golongan === String(gol.name || '').trim().toUpperCase() && !petaMs[p.ms]) petaMs[p.ms] = j.id;
   });
   const sah = [], langkau = [];
   fail.forEach(f => { const ms = _golMsDariFail(f.name); if (ms == null) langkau.push(f.name); else sah.push({ f, ms }); });
@@ -17835,7 +17913,7 @@ div.innerHTML = `
             <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
           </div>
           ${statusHtml}
-          ${data.bilFail ? `<div style="font-size:0.66rem;color:#c4b5fd;margin-top:2px;">📄 ${_aiEsc(data.namaFail || 'fail kamus')} · ${data.bilFail} perkataan dalam fail</div>` : ''}
+          ${data.bilFail ? `<div onclick="window.lihatFailMukaSurat && window.lihatFailMukaSurat('${data.id}')" style="cursor:pointer;font-size:0.66rem;color:#c4b5fd;margin-top:2px;text-decoration:underline;">📄 ${_aiEsc(data.namaFail || 'fail kamus')} · ${data.bilFail} perkataan dalam fail — tekan untuk lihat</div>` : ''}
         `;
 
         div.querySelectorAll('input')[0].addEventListener('change', e =>
