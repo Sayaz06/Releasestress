@@ -2180,9 +2180,59 @@ body.dark-mode {
 
         <!-- 🤖 AI WORKER (automatik) — butang manual di atas kekal -->
         <div id="ai-worker-panel" class="mt-8" style="width:100%;padding:10px;border:1px dashed rgba(167,139,250,0.5);border-radius:12px;background:rgba(124,58,237,0.06);">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:6px;">
             <div style="font-size:0.7rem;color:#a78bfa;font-weight:700;">🤖 AUTOMATIK — WORKER AI</div>
-            <button id="btn-ai-key-toggle" style="padding:3px 10px;border-radius:999px;background:transparent;border:1px solid rgba(167,139,250,0.5);color:#c4b5fd;font-size:0.68rem;cursor:pointer;">🔑 API Key</button>
+            <div style="display:flex;gap:6px;">
+              <button id="btn-ai-prompt-toggle" style="padding:3px 10px;border-radius:999px;background:transparent;border:1px solid rgba(167,139,250,0.5);color:#c4b5fd;font-size:0.68rem;cursor:pointer;">📝 Prompt</button>
+              <button id="btn-ai-key-toggle" style="padding:3px 10px;border-radius:999px;background:transparent;border:1px solid rgba(167,139,250,0.5);color:#c4b5fd;font-size:0.68rem;cursor:pointer;">🔑 API Key</button>
+            </div>
+          </div>
+          <!-- 📝 PROMPT AI — disimpan di settings/aiPrompts, dibaca worker setiap kali jana (kosong = prompt asal SAYAZ dalam worker) -->
+          <div id="ai-prompt-panel" style="display:none;margin-bottom:8px;padding:10px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(167,139,250,0.3);">
+            <div style="font-size:0.72rem;color:#c4b5fd;font-weight:700;margin-bottom:4px;">📝 Prompt Jana Laci (Step 1 · Terjemahan)</div>
+            <textarea id="ai-prompt-terjemahan" rows="7" placeholder="Kosong = guna prompt Terjemahan SAYAZ asal dalam worker.&#10;Tekan 📥 Muat Prompt Asal untuk edit dari prompt asal." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(167,139,250,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.78rem;outline:none;resize:vertical;min-height:140px;"></textarea>
+            <div style="font-size:0.66rem;color:#94a3b8;line-height:1.55;margin:4px 0 10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.25);border:1px dashed rgba(167,139,250,0.3);">
+              <b style="color:#c4b5fd;">📥 Worker hantar ke AI</b> (25 perkataan sekali hantar, dari fail kamus muka surat):
+              <pre style="margin:4px 0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.35);color:#e5e7eb;font-size:0.66rem;white-space:pre-wrap;">Golongan Kata: KATA KERJA
+
+1. mengabadikan = [kk] menjadikan kekal
+2. terabadi = [kk] dpt dikekalkan</pre>
+              <b style="color:#c4b5fd;">📤 AI MESTI balas format ini</b> (sama dengan input Jana Pukal manual):
+              <pre style="margin:4px 0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.35);color:#e5e7eb;font-size:0.66rem;white-space:pre-wrap;">1. mengabadikan = [kk] menjadikan kekal
+→ immortalize
+   Ayat: They immortalized the hero in a statue.
+   Terjemahan: Mereka mengabadikan wira itu dalam patung.
+→ perpetuate
+   Ayat: ...
+   Terjemahan: ...</pre>
+              Setiap <b>→</b> = 1 laci (tajuk "1.mengabadikan → immortalize", nota "Ayat = Terjemahan"). Nombor asal mesti dikekalkan. Worker buat audit Fasa 4 selepas itu.
+            </div>
+            <div style="font-size:0.72rem;color:#c4b5fd;font-weight:700;margin-bottom:4px;">📝 Prompt Jana Tips (Step 2 + 3 · Sebutan)</div>
+            <textarea id="ai-prompt-sebutan" rows="7" placeholder="Kosong = guna prompt Sebutan SAYAZ asal dalam worker.&#10;Tekan 📥 Muat Prompt Asal untuk edit dari prompt asal." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(167,139,250,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.78rem;outline:none;resize:vertical;min-height:140px;"></textarea>
+            <div style="font-size:0.66rem;color:#94a3b8;line-height:1.55;margin:4px 0 10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.25);border:1px dashed rgba(167,139,250,0.3);">
+              <b style="color:#c4b5fd;">📥 Worker hantar ke AI</b> (8 laci sekali hantar — sama macam fail Export Step 2):
+              <pre style="margin:4px 0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.35);color:#e5e7eb;font-size:0.66rem;white-space:pre-wrap;">→ immortalize
+They immortalized the hero in a statue.
+
+→ perpetuate
+...</pre>
+              <b style="color:#c4b5fd;">📤 AI MESTI balas format ini</b> (sama dengan fail Import Step 3):
+              <pre style="margin:4px 0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.35);color:#e5e7eb;font-size:0.66rem;white-space:pre-wrap;">→ immortalize
+(Tips F0 — sebutan perkataan)
+
+→ Ayat
+(Tips F1&amp;2 — sebutan ayat)
+---
+→ perpetuate
+...</pre>
+              Baris <b>→ english</b> mesti SAMA PERSIS dengan input. Teks sebelum "→ Ayat" masuk Tips F0, selepasnya masuk Tips F1&amp;2.
+            </div>
+            <div style="font-size:0.66rem;color:#fbbf24;margin-bottom:8px;line-height:1.5;">ℹ️ Worker tambah sendiri satu perenggan "MOD AUTOMATIK" di hujung prompt (supaya AI terus jana tanpa bertanya / tanpa skrip penutup). Tak perlu tulis dalam prompt.</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+              <button id="btn-ai-prompt-simpan" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">💾 Simpan Prompt</button>
+              <button id="btn-ai-prompt-asal" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#c4b5fd;">📥 Muat Prompt Asal</button>
+            </div>
+            <div id="ai-prompt-status" style="font-size:0.7rem;color:var(--subtext);">Status: …</div>
           </div>
           <div id="ai-key-panel" style="display:none;margin-bottom:8px;padding:10px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(167,139,250,0.3);">
             <div style="font-size:0.7rem;color:#c4b5fd;font-weight:700;margin-bottom:6px;">🔑 Anthropic API Key (untuk worker AI)</div>
@@ -16731,6 +16781,62 @@ document.getElementById('btn-ai-key-toggle')?.addEventListener('click', () => {
   const buka = panel.style.display === 'none' || !panel.style.display;
   panel.style.display = buka ? 'block' : 'none';
   if (buka) _aiSemakKey();
+});
+
+// ── 📝 PROMPT AI (Jana Laci & Jana Tips) — users/{uid}/settings/aiPrompts { terjemahan, sebutan } ──
+// Kosong = worker guna prompt asal SAYAZ. Prompt asal disalin worker ke settings/aiPromptsLalai (untuk butang 📥).
+function _aiPromptStatus(d) {
+  const el = document.getElementById('ai-prompt-status');
+  if (!el) return;
+  const t = (d.terjemahan || '').trim(), s = (d.sebutan || '').trim();
+  const lbl = (x) => x ? `✏️ prompt anda (${x.length} aksara)` : '📦 prompt asal worker';
+  el.innerHTML = `Laci: ${lbl(t)}<br>Tips: ${lbl(s)}${d.updatedAt ? `<br>Disimpan: ${new Date(d.updatedAt).toLocaleString('ms-MY')}` : ''}`;
+}
+async function _aiPromptMuat() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid, 'settings', 'aiPrompts'));
+    const d = snap.exists() ? snap.data() : {};
+    document.getElementById('ai-prompt-terjemahan').value = d.terjemahan || '';
+    document.getElementById('ai-prompt-sebutan').value = d.sebutan || '';
+    _aiPromptStatus(d);
+  } catch (e) {
+    const el = document.getElementById('ai-prompt-status');
+    if (el) el.textContent = 'Status: ⚠️ Gagal baca — ' + e.message;
+  }
+}
+document.getElementById('btn-ai-prompt-toggle')?.addEventListener('click', () => {
+  const panel = document.getElementById('ai-prompt-panel');
+  if (!panel) return;
+  const buka = panel.style.display === 'none' || !panel.style.display;
+  panel.style.display = buka ? 'block' : 'none';
+  if (buka) _aiPromptMuat();
+});
+document.getElementById('btn-ai-prompt-simpan')?.addEventListener('click', async () => {
+  if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
+  const d = {
+    terjemahan: (document.getElementById('ai-prompt-terjemahan')?.value || '').trim(),
+    sebutan: (document.getElementById('ai-prompt-sebutan')?.value || '').trim(),
+    updatedAt: Date.now()
+  };
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'aiPrompts'), d, { merge: true });
+    _aiPromptStatus(d);
+    showToast('✅ Prompt AI disimpan. Worker guna prompt ini untuk kerja seterusnya.');
+  } catch (e) { showToast('❌ Gagal simpan prompt: ' + e.message); }
+});
+document.getElementById('btn-ai-prompt-asal')?.addEventListener('click', async () => {
+  if (!currentUser) return;
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid, 'settings', 'aiPromptsLalai'));
+    if (!snap.exists()) { showToast('⚠️ Prompt asal belum ada — pastikan worker AI versi terbaru sudah dideploy & berjalan.', 5000); return; }
+    const d = snap.data();
+    const taT = document.getElementById('ai-prompt-terjemahan'), taS = document.getElementById('ai-prompt-sebutan');
+    if ((taT.value.trim() || taS.value.trim()) && !confirm('Ganti isi kedua-dua kotak dengan prompt asal SAYAZ?\n(Belum disimpan sehingga tekan 💾 Simpan Prompt.)')) return;
+    taT.value = d.terjemahan || '';
+    taS.value = d.sebutan || '';
+    showToast('📥 Prompt asal dimuat. Edit, kemudian tekan 💾 Simpan Prompt.');
+  } catch (e) { showToast('❌ Gagal muat: ' + e.message); }
 });
 document.getElementById('btn-simpan-ai-key')?.addEventListener('click', async () => {
   if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
