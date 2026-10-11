@@ -17871,12 +17871,31 @@ async function lihatFailMukaSurat(jenisId) {
   const teks = s.exists() ? (s.data().teks || '') : '';
   const p = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📄 ${_aiEsc(j.name || '')}</div>
     <div style="font-size:0.7rem;color:#94a3b8;margin-bottom:8px;word-break:break-all;">${_aiEsc(j.namaFail || '')} · ${j.bilFail || 0} perkataan</div>
+    <button data-ms-salin ${teks ? '' : 'disabled'} style="width:100%;margin-bottom:8px;padding:10px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;${teks ? '' : 'opacity:0.4;'}">📋 Copy Teks Fail</button>
     <pre style="white-space:pre-wrap;font-size:0.75rem;color:#e5e7eb;background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;max-height:55vh;overflow-y:auto;">${teks ? _aiEsc(teks) : '(tiada fail)'}</pre>
     <div style="display:flex;gap:8px;margin-top:10px;">
       <button data-ms-buang style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #f87171;color:#f87171;">🗑️ Buang Fail</button>
       <button data-ai-popup-batal style="flex:1;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Tutup</button>
     </div>`);
   p.querySelector('[data-ai-popup-batal]').addEventListener('click', () => p.remove());
+  p.querySelector('[data-ms-salin]').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (!teks) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(teks); ok = true; } catch (err) {}
+    if (!ok) {
+      // Sandaran untuk browser yang tak benarkan clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = teks;
+      ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand('copy'); } catch (err) {}
+      ta.remove();
+    }
+    btn.textContent = ok ? `✅ Disalin (${j.bilFail || 0} perkataan)` : '❌ Gagal salin — tekan lama pada teks';
+    setTimeout(() => { btn.textContent = '📋 Copy Teks Fail'; }, 2500);
+  });
   p.querySelector('[data-ms-buang]').addEventListener('click', async () => {
     if (!confirm('Buang fail kamus dari muka surat ini?\n(Perkataan, laci & SR TIDAK diusik.)')) return;
     await deleteDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', jenisId)).catch(() => {});
