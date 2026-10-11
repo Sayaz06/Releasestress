@@ -2078,11 +2078,30 @@ body.dark-mode {
         <div class="list mt-8" id="bahasa-list" style="padding: 10px;"></div>
       </section>
 
+<!-- 🏷️ GOLONGAN (format baharu): Bahasa → Golongan → Muka Surat → Perkataan → Laci -->
+<section id="section-golongan" class="section">
+        <div class="topbar">
+          <button id="btn-back-bahasa-golongan" class="btn btn-secondary btn-sm">← Bahasa</button>
+          <div style="text-align: right;">
+            <div class="topbar-title" style="color: #22d3ee;">🏷️ Golongan</div>
+            <div class="topbar-sub" id="parent-golongan-bahasa" style="color:#06b6d4; font-weight:bold;"></div>
+          </div>
+        </div>
+        <div id="gol-tukar-box" style="display:none;margin-bottom:8px;padding:10px 12px;border-radius:10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.4);">
+          <div style="font-size:0.78rem;font-weight:700;color:#fcd34d;margin-bottom:4px;">🔄 Format lama dikesan</div>
+          <div id="gol-tukar-info" style="font-size:0.72rem;color:#e5e7eb;line-height:1.6;margin-bottom:8px;"></div>
+          <button id="btn-gol-tukar" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">🔄 Tukar ke Format Baharu</button>
+        </div>
+        <button id="btn-add-golongan" class="btn btn-sm" style="width:100%;">+ Tambah Golongan</button>
+        <input id="gol-upload-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
+        <div class="list mt-8" id="golongan-list" style="padding: 10px;"></div>
+      </section>
+
 <section id="section-jenis-kata" class="section">
         <div class="topbar">
-          <button id="btn-back-bahasa-jenis" class="btn btn-secondary btn-sm">← Bahasa</button>
+          <button id="btn-back-bahasa-jenis" class="btn btn-secondary btn-sm">← Golongan</button>
           <div style="text-align: right;">
-            <div class="topbar-title" style="color: #22d3ee;">📝 Jenis Kata</div>
+            <div class="topbar-title" style="color: #22d3ee;">📝 Muka Surat</div>
             <div class="topbar-sub" id="parent-bahasa-name" style="color:#06b6d4; font-weight:bold;"></div>
           </div>
         </div>
@@ -2090,7 +2109,7 @@ body.dark-mode {
           Tanda (tick) SATU kotak sahaja untuk aktifkan.
         </div>
 <div style="display:flex;gap:8px;">
-  <button id="btn-add-jenis-kata" class="btn btn-sm" style="flex:1;">Tambah Topik</button>
+  <button id="btn-add-jenis-kata" class="btn btn-sm" style="flex:1;">+ Tambah Muka Surat</button>
   <button id="btn-refresh-jenis-kata" class="btn btn-secondary btn-sm" style="border-color:#22d3ee;color:#22d3ee;">🔄 Refresh</button>
 </div>
 <div class="list mt-8" id="jenis-kata-list" style="padding: 10px;"></div>
@@ -6284,6 +6303,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-water')?.classList.remove("active");
       document.getElementById('section-assignment-belly')?.classList.remove("active");
       document.getElementById('section-kamus-bank')?.classList.remove("active");
+      document.getElementById('section-golongan')?.classList.remove("active");
           section.classList.add("active");
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
@@ -14799,8 +14819,8 @@ document.getElementById('btn-back-home-bahasa')?.addEventListener('click', () =>
       showSection(sectionTasbih);
     });
 document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () => { 
-      const sec = document.getElementById('section-bahasa');
-      if (sec) { showSection(sec); renderBahasaList(); }
+      const sec = document.getElementById('section-golongan');
+      if (sec) { showSection(sec); renderGolongan(); }
     });
 // btn-back-jenis-drawer dibuang dari HTML
     document.getElementById('btn-back-jenis-perkataan')?.addEventListener('click', () => {
@@ -14821,13 +14841,17 @@ document.getElementById('btn-back-bahasa-jenis')?.addEventListener('click', () =
 
 document.getElementById('btn-add-jenis-kata')?.addEventListener('click', () => {
       if (!currentUser || !currentBahasaId) return;
-      addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
+      const dataBaru = { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() };
+      if (currentGolonganId && currentGolonganId !== '__tanpa__') dataBaru.golonganId = currentGolonganId;
+      addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), dataBaru);
     });
 
     // btn-add-topic dalam section-jenis-kata (bahasa) — ini sepatutnya tambah jenis_kata
     document.getElementById('btn-add-topic')?.addEventListener('click', () => {
       if (!currentUser || !currentBahasaId) return;
-      addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() });
+      const dataBaru = { name: "", bahasaId: currentBahasaId, isActive: false, createdAt: Date.now() };
+      if (currentGolonganId && currentGolonganId !== '__tanpa__') dataBaru.golonganId = currentGolonganId;
+      addDoc(collection(db, "users", currentUser.uid, "jenis_kata"), dataBaru);
     });
 
     // Listener bahasa → jenis kata navigation
@@ -17470,12 +17494,8 @@ srModeAktif = false;
         div.querySelectorAll('input')[0].addEventListener('change', e =>
           updateDoc(doc(db,"users",currentUser.uid,"bahasa_list",data.id), {name: e.target.value}));
 div.querySelectorAll('button')[0].addEventListener('click', () => {
-          currentBahasaId = data.id;
-          document.getElementById('parent-bahasa-name').textContent = data.name || '';
-          if (sectionJenisKata) {
-            showSection(sectionJenisKata);
-            renderJenisKata();
-          }
+          // Format baharu: Bahasa → Golongan → Muka Surat
+          bukaGolongan(data.id, data.name || '');
         });
 div.querySelectorAll('button')[1].addEventListener('click', async () => {
           if (!confirm(`Padam "${data.name}"?\n\nData akan disimpan dalam Tong Sampah 30 hari.`)) return;
@@ -17498,6 +17518,13 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
               await batch.commit(); i = end;
             }
             await deleteDoc(doc(db,"users",currentUser.uid,"jenis_kata",j.id));
+          }
+          // ── Golongan bahasa ini juga ke Tong Sampah ──
+          for (const g of allGolongan.filter(g => g.bahasaId === data.id)) {
+            try {
+              await hantarKeTrashUniversal('bahasa_golongan', g.id, g, g.name || 'Golongan');
+              await deleteDoc(doc(db,"users",currentUser.uid,"bahasa_golongan",g.id));
+            } catch (e) { console.log('Gagal padam golongan:', e); }
           }
           // ── Padam SR queue untuk semua laci bawah bahasa ini ──
           try {
@@ -17522,11 +17549,257 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
       });
     }
 
+// ══════════════════════════════════════════
+// 🏷️ GOLONGAN (format baharu): Bahasa → Golongan → Muka Surat (= jenis_kata) → Perkataan → Laci
+// bahasa_golongan/{gid}      { name, bahasaId, createdAt }
+// jenis_kata/{jid}           + golonganId, ms, bilFail, namaFail   (ID & data lain TIDAK berubah → SR selamat)
+// muka_surat_fail/{jenisId}  { teks, bil, namaFail, golonganId, ms, uploadedAt }  ← dibaca worker AI
+// ══════════════════════════════════════════
+let allGolongan = [];
+let currentGolonganId = '';          // '' = belum pilih, '__tanpa__' = jenis kata tanpa golongan
+let _golUnsub = null;
+let _golUploadId = null;
+const _GOL_TANPA = '__tanpa__';
+const _golCmp = (a, b) => String(a || '').localeCompare(String(b || ''), undefined, { numeric: true });
+
+// "KATA KERJA MS13 -" → { golongan: "KATA KERJA", ms: 13 }
+function _golParseNama(nama) {
+  const m = String(nama || '').match(/^(.*?)[\s\-–—_]*\bms\s*0*(\d+)/i);
+  if (!m) return null;
+  const golongan = m[1].replace(/[\s\-–—_]+$/g, '').trim().toUpperCase();
+  return golongan ? { golongan, ms: parseInt(m[2], 10) } : null;
+}
+// Nombor MS dari nama fail: "MS846_KATA_KERJA.txt" / "katakerjams846.txt" → 846
+function _golMsDariFail(nama) {
+  const m = String(nama || '').match(/ms\s*0*(\d+)/i);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+// Statistik setiap jenis kata (perkataan, laci, tips, imej, lengkap)
+function _golStatJenis() {
+  const pkKeJenis = new Map();
+  allBahasaPerkataan.forEach(p => pkKeJenis.set(p.id, p.jenisId));
+  const st = new Map();
+  const ambil = (jid) => { if (!st.has(jid)) st.set(jid, { perkataan: 0, laci: 0, tips: 0, imej: 0 }); return st.get(jid); };
+  allBahasaPerkataan.forEach(p => { if (p.jenisId) ambil(p.jenisId).perkataan++; });
+  allBahasaDrawers.forEach(d => {
+    const jid = pkKeJenis.get(d.perkataanId);
+    if (!jid) return;
+    const s = ambil(jid);
+    s.laci++;
+    if ((d.tips || '').trim() || (d.tipsFasa0 || '').trim()) s.tips++;
+    if ((d.imageUrl || '').trim()) s.imej++;
+  });
+  st.forEach(s => { s.lengkap = s.laci > 0 && s.tips >= s.laci && s.imej >= s.laci; });
+  return st;
+}
+
+function _golPantau() {
+  if (_golUnsub || !currentUser) return;
+  _golUnsub = onSnapshot(query(collection(db, 'users', currentUser.uid, 'bahasa_golongan')), snap => {
+    allGolongan = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const sec = document.getElementById('section-golongan');
+    if (sec && sec.classList.contains('active')) renderGolongan();
+  }, err => console.warn('bahasa_golongan:', err));
+}
+
+function bukaGolongan(bahasaId, namaBahasa) {
+  currentBahasaId = bahasaId;
+  currentGolonganId = '';
+  const el = document.getElementById('parent-golongan-bahasa');
+  if (el) el.textContent = namaBahasa || '';
+  _golPantau();
+  showSection(document.getElementById('section-golongan'));
+  renderGolongan();
+}
+
+function renderGolongan() {
+  const list = document.getElementById('golongan-list');
+  if (!list) return;
+  const jenisBahasa = allJenisKata.filter(j => j.bahasaId === currentBahasaId);
+  const golBahasa = allGolongan.filter(g => g.bahasaId === currentBahasaId).sort((a, b) => _golCmp(a.name, b.name));
+  const tanpa = jenisBahasa.filter(j => !j.golonganId || !golBahasa.some(g => g.id === j.golonganId));
+  const bolehTukar = tanpa.filter(j => _golParseNama(j.name));
+
+  // Kotak tukar format
+  const kotak = document.getElementById('gol-tukar-box');
+  if (kotak) {
+    if (bolehTukar.length) {
+      kotak.style.display = 'block';
+      document.getElementById('gol-tukar-info').textContent =
+        `${bolehTukar.length} jenis kata format lama boleh dimasukkan ke golongan (contoh: "${bolehTukar[0].name}"). Laci, tips, gambar & SR tidak diusik.`;
+    } else kotak.style.display = 'none';
+  }
+
+  const stat = _golStatJenis();
+  list.innerHTML = '';
+  if (!golBahasa.length && !tanpa.length) {
+    list.innerHTML = '<div class="empty-state">Belum ada golongan. Tekan "+ Tambah Golongan" (cth: KATA KERJA).</div>';
+    return;
+  }
+  const kad = (id, nama, jenis, bolehUbah) => {
+    const ms = jenis.length;
+    const adaFail = jenis.filter(j => j.bilFail).length;
+    const lengkap = jenis.filter(j => (stat.get(j.id) || {}).lengkap).length;
+    const div = document.createElement('div');
+    div.className = 'drawer-card';
+    div.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+    div.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${bolehUbah
+          ? `<input value="${_aiEsc(nama)}" placeholder="Cth: KATA KERJA" style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;font-size:0.95rem;padding:4px 0;">`
+          : `<div style="flex:1;color:#94a3b8;font-size:0.95rem;font-style:italic;">${_aiEsc(nama)}</div>`}
+        <button class="btn btn-secondary btn-sm" data-gol-buka style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
+        ${bolehUbah ? `<button class="btn btn-secondary btn-sm" data-gol-fail style="border-color:#a78bfa;color:#c4b5fd;">📄 Fail</button>
+        <button class="btn btn-secondary btn-sm" data-gol-padam style="color:var(--danger);border-color:var(--danger);">X</button>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:0.68rem;color:#7dd3fc;background:rgba(125,211,252,0.1);border:1px solid rgba(125,211,252,0.3);padding:2px 8px;border-radius:999px;">Muka surat: ${ms}</span>
+        ${bolehUbah ? `<span style="font-size:0.68rem;color:#c4b5fd;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);padding:2px 8px;border-radius:999px;">📄 Fail: ${adaFail}</span>` : ''}
+        <span style="font-size:0.68rem;color:${lengkap && lengkap === ms ? '#34d399' : '#fcd34d'};background:rgba(255,255,255,0.05);border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:999px;">✅ Lengkap: ${lengkap}/${ms}</span>
+      </div>`;
+    div.querySelector('[data-gol-buka]').addEventListener('click', () => {
+      currentGolonganId = id;
+      document.getElementById('parent-bahasa-name').textContent = `${document.getElementById('parent-golongan-bahasa').textContent} › ${nama}`;
+      showSection(sectionJenisKata);
+      renderJenisKata();
+    });
+    if (bolehUbah) {
+      div.querySelector('input').addEventListener('change', e => {
+        updateDoc(doc(db, 'users', currentUser.uid, 'bahasa_golongan', id), { name: e.target.value.trim().toUpperCase() });
+      });
+      div.querySelector('[data-gol-fail]').addEventListener('click', () => {
+        _golUploadId = id;
+        document.getElementById('gol-upload-input').click();
+      });
+      div.querySelector('[data-gol-padam]').addEventListener('click', () => {
+        if (jenis.length) {
+          showToast(`⚠️ "${nama}" masih ada ${jenis.length} muka surat. Padam muka surat dahulu — golongan hanya boleh dipadam bila kosong.`, 5000);
+          return;
+        }
+        if (!confirm(`Padam golongan "${nama}"?`)) return;
+        deleteDoc(doc(db, 'users', currentUser.uid, 'bahasa_golongan', id)).catch(e => showToast('❌ ' + e.message));
+      });
+    }
+    list.appendChild(div);
+  };
+  golBahasa.forEach(g => kad(g.id, g.name || '(tiada nama)', jenisBahasa.filter(j => j.golonganId === g.id), true));
+  if (tanpa.length) kad(_GOL_TANPA, 'Tanpa Golongan', tanpa, false);
+}
+
+// ── Tukar ke format baharu (tambah golonganId & ms sahaja — tiada apa dipindah/dipadam) ──
+async function tukarFormatGolongan() {
+  if (!currentUser || !currentBahasaId) return;
+  const golBahasa = allGolongan.filter(g => g.bahasaId === currentBahasaId);
+  const calon = allJenisKata
+    .filter(j => j.bahasaId === currentBahasaId && (!j.golonganId || !golBahasa.some(g => g.id === j.golonganId)))
+    .map(j => ({ j, p: _golParseNama(j.name) }))
+    .filter(x => x.p);
+  if (!calon.length) { showToast('✅ Tiada jenis kata format lama.'); return; }
+  const kumpulan = {};
+  calon.forEach(x => { (kumpulan[x.p.golongan] = kumpulan[x.p.golongan] || []).push(x); });
+  const ringkas = Object.keys(kumpulan).sort(_golCmp).map(g => `• ${g}: ${kumpulan[g].length} muka surat`).join('\n');
+  if (!confirm(`Tukar ke format baharu?\n\n${ringkas}\n\nHanya tag golongan & nombor MS ditambah.\nLaci, tips, gambar dan SR TIDAK diusik.`)) return;
+  showToast('⏳ Menukar format...', 0);
+  try {
+    const petaGol = {};
+    golBahasa.forEach(g => { petaGol[String(g.name || '').trim().toUpperCase()] = g.id; });
+    for (const g of Object.keys(kumpulan)) {
+      if (!petaGol[g]) {
+        const ref = await addDoc(collection(db, 'users', currentUser.uid, 'bahasa_golongan'), { name: g, bahasaId: currentBahasaId, createdAt: Date.now() });
+        petaGol[g] = ref.id;
+      }
+    }
+    for (let i = 0; i < calon.length; i += 400) {
+      const batch = writeBatch(db);
+      calon.slice(i, i + 400).forEach(x => {
+        batch.update(doc(db, 'users', currentUser.uid, 'jenis_kata', x.j.id), { golonganId: petaGol[x.p.golongan], ms: x.p.ms });
+      });
+      await batch.commit();
+    }
+    showToast(`✅ ${calon.length} jenis kata dimasukkan ke ${Object.keys(kumpulan).length} golongan. SR & laci tidak berubah.`, 5000);
+    renderGolongan();
+  } catch (e) {
+    showToast('❌ Gagal tukar: ' + e.message, 5000);
+  }
+}
+
+// ── Upload fail .txt ke golongan → setiap fail = satu muka surat (ikut nombor MS) ──
+async function uploadFailGolongan(fail) {
+  const gol = allGolongan.find(g => g.id === _golUploadId);
+  if (!gol || !fail.length || !currentUser) return;
+  const jenisGol = allJenisKata.filter(j => j.golonganId === gol.id);
+  const petaMs = {};
+  jenisGol.forEach(j => {
+    const ms = j.ms != null ? j.ms : (_golParseNama(j.name) || {}).ms;
+    if (ms != null && !petaMs[ms]) petaMs[ms] = j.id;
+  });
+  const sah = [], langkau = [];
+  fail.forEach(f => { const ms = _golMsDariFail(f.name); if (ms == null) langkau.push(f.name); else sah.push({ f, ms }); });
+  if (!sah.length) { showToast(`⚠️ Tiada nombor MS dalam nama fail (cth: MS846_KATA_KERJA.txt). ${langkau.length} dilangkau.`, 5000); return; }
+  showToast(`⏳ Memuat naik ${sah.length} fail ke "${gol.name}"...`, 0);
+  let baru = 0, ganti = 0, kosong = 0;
+  try {
+    for (let i = 0; i < sah.length; i += 100) {
+      const batch = writeBatch(db);
+      for (const x of sah.slice(i, i + 100)) {
+        const teks = await x.f.text();
+        const bil = _aiKiraPerkataanKamus(teks);
+        if (!bil) kosong++;
+        let jid = petaMs[x.ms];
+        if (!jid) {
+          const ref = doc(collection(db, 'users', currentUser.uid, 'jenis_kata'));
+          jid = ref.id;
+          batch.set(ref, { name: `${gol.name} MS${x.ms}`, bahasaId: gol.bahasaId, golonganId: gol.id, ms: x.ms, isActive: false, createdAt: Date.now() + x.ms });
+          petaMs[x.ms] = jid;
+          baru++;
+        } else {
+          batch.update(doc(db, 'users', currentUser.uid, 'jenis_kata', jid), { golonganId: gol.id, ms: x.ms });
+          ganti++;
+        }
+        batch.set(doc(db, 'users', currentUser.uid, 'muka_surat_fail', jid), {
+          teks, bil, namaFail: x.f.name, golonganId: gol.id, ms: x.ms, uploadedAt: Date.now()
+        });
+        batch.update(doc(db, 'users', currentUser.uid, 'jenis_kata', jid), { bilFail: bil, namaFail: x.f.name });
+      }
+      await batch.commit();
+    }
+    let msg = `✅ ${sah.length} fail → "${gol.name}": ${baru} muka surat baru, ${ganti} muka surat sedia ada dikemas kini`;
+    if (kosong) msg += ` · ⚠️ ${kosong} fail tiada baris "1.perkataan = maksud"`;
+    if (langkau.length) msg += ` · ${langkau.length} fail tiada nombor MS (dilangkau)`;
+    showToast(msg, 6000);
+  } catch (e) {
+    showToast('❌ Gagal upload: ' + e.message, 5000);
+  }
+}
+
+document.getElementById('btn-back-bahasa-golongan')?.addEventListener('click', () => {
+  const sec = document.getElementById('section-bahasa');
+  if (sec) { showSection(sec); renderBahasaList(); }
+});
+document.getElementById('btn-add-golongan')?.addEventListener('click', async () => {
+  if (!currentUser || !currentBahasaId) return;
+  const nama = prompt('Nama golongan (cth: KATA KERJA, KATA NAMA):');
+  if (!nama || !nama.trim()) return;
+  await addDoc(collection(db, 'users', currentUser.uid, 'bahasa_golongan'), { name: nama.trim().toUpperCase(), bahasaId: currentBahasaId, createdAt: Date.now() });
+});
+document.getElementById('btn-gol-tukar')?.addEventListener('click', tukarFormatGolongan);
+document.getElementById('gol-upload-input')?.addEventListener('change', async (e) => {
+  const input = e.currentTarget;
+  const fail = Array.from(input.files || []);
+  input.value = '';
+  await uploadFailGolongan(fail);
+});
+
 function renderJenisKata() {
       const list = document.getElementById('topics-list') || document.getElementById('jenis-kata-list');
       if (!list) return;
       list.innerHTML = "";
-      const filtered = allJenisKata.filter(j => j.bahasaId === currentBahasaId);
+      const golIdsBahasa = allGolongan.filter(g => g.bahasaId === currentBahasaId).map(g => g.id);
+      const filtered = allJenisKata.filter(j => j.bahasaId === currentBahasaId && (
+        !currentGolonganId ? true
+        : currentGolonganId === '__tanpa__' ? (!j.golonganId || !golIdsBahasa.includes(j.golonganId))
+        : j.golonganId === currentGolonganId));
       const sorted = [...filtered].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
       if (!sorted.length) {
         list.innerHTML = '<div class="empty-state">Belum ada jenis kata. Tekan Tambah.</div>';
@@ -17562,6 +17835,7 @@ div.innerHTML = `
             <button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:var(--danger);">X</button>
           </div>
           ${statusHtml}
+          ${data.bilFail ? `<div style="font-size:0.66rem;color:#c4b5fd;margin-top:2px;">📄 ${_aiEsc(data.namaFail || 'fail kamus')} · ${data.bilFail} perkataan dalam fail</div>` : ''}
         `;
 
         div.querySelectorAll('input')[0].addEventListener('change', e =>
@@ -19455,6 +19729,7 @@ function subscribeBahasa() {
 onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         allJenisKata = snap.docs.map(d => ({id:d.id,...d.data()}));
         if (sectionJenisKata && sectionJenisKata.classList.contains('active')) renderJenisKata();
+        if (document.getElementById('section-golongan')?.classList.contains('active') && typeof renderGolongan === 'function') renderGolongan();
         if (bahasaMode) rebuildBahasa();
       });
 
