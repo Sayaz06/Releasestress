@@ -2176,8 +2176,10 @@ body.dark-mode {
           </div>
         </div>
         <button id="btn-add-perkataan" class="btn btn-sm mt-8" style="width:100%;border-color:#06b6d4;">+ Tambah Perkataan</button>
-        <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export To Pengajar Sebutan AI (Step 2)</button>
-        <button id="btn-open-jana-tips-pukal" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Import from Pengajar Sebutan For Jana Tips Pukal (Step 3)</button>
+        <!-- 📋 Step 1: salin fail kamus muka surat semasa → tampal ke Claude chat (Terjemahan) -->
+        <button id="btn-copy-fail-ms" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">📋 Copy Fail Muka Surat (Step 1)</button>
+        <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export To Pengajar Sebutan AI (Step 3)</button>
+        <button id="btn-open-jana-tips-pukal" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Import from Pengajar Sebutan For Jana Tips Pukal (Step 4)</button>
 
         <!-- 🤖 AI WORKER (automatik) — butang manual di atas kekal -->
         <div id="ai-worker-panel" class="mt-8" style="width:100%;padding:10px;border:1px dashed rgba(167,139,250,0.5);border-radius:12px;background:rgba(124,58,237,0.06);">
@@ -2198,7 +2200,7 @@ body.dark-mode {
               </div>
               <div id="ai-prompt-status" style="font-size:0.7rem;color:var(--subtext);">Status: …</div>
             </div>
-            <div style="font-size:0.72rem;color:#c4b5fd;font-weight:700;margin-bottom:4px;">📝 Prompt Jana Laci (Step 1 · Terjemahan)</div>
+            <div style="font-size:0.72rem;color:#c4b5fd;font-weight:700;margin-bottom:4px;">📝 Prompt Jana Laci (Step 2 · Terjemahan)</div>
             <textarea id="ai-prompt-terjemahan" rows="7" placeholder="Kosong = guna prompt Terjemahan SAYAZ asal dalam worker.&#10;Tekan 📥 Muat Prompt Asal untuk edit dari prompt asal." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(167,139,250,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.78rem;outline:none;resize:vertical;min-height:140px;"></textarea>
             <div style="font-size:0.66rem;color:#94a3b8;line-height:1.55;margin:4px 0 10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.25);border:1px dashed rgba(167,139,250,0.3);">
               <b style="color:#c4b5fd;">📥 Worker hantar ke AI</b> (25 perkataan sekali hantar, dari fail kamus muka surat):
@@ -2216,16 +2218,16 @@ body.dark-mode {
    Terjemahan: ...</pre>
               Setiap <b>→</b> = 1 laci (tajuk "1.mengabadikan → immortalize", nota "Ayat = Terjemahan"). Nombor asal mesti dikekalkan. Worker buat audit Fasa 4 selepas itu.
             </div>
-            <div style="font-size:0.72rem;color:#c4b5fd;font-weight:700;margin-bottom:4px;">📝 Prompt Jana Tips (Step 2 + 3 · Sebutan)</div>
+            <div style="font-size:0.72rem;color:#c4b5fd;font-weight:700;margin-bottom:4px;">📝 Prompt Jana Tips (Step 3 + 4 · Sebutan)</div>
             <textarea id="ai-prompt-sebutan" rows="7" placeholder="Kosong = guna prompt Sebutan SAYAZ asal dalam worker.&#10;Tekan 📥 Muat Prompt Asal untuk edit dari prompt asal." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(167,139,250,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.78rem;outline:none;resize:vertical;min-height:140px;"></textarea>
             <div style="font-size:0.66rem;color:#94a3b8;line-height:1.55;margin:4px 0 10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.25);border:1px dashed rgba(167,139,250,0.3);">
-              <b style="color:#c4b5fd;">📥 Worker hantar ke AI</b> (8 laci sekali hantar — sama macam fail Export Step 2):
+              <b style="color:#c4b5fd;">📥 Worker hantar ke AI</b> (8 laci sekali hantar — sama macam fail Export Step 3):
               <pre style="margin:4px 0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.35);color:#e5e7eb;font-size:0.66rem;white-space:pre-wrap;">→ immortalize
 They immortalized the hero in a statue.
 
 → perpetuate
 ...</pre>
-              <b style="color:#c4b5fd;">📤 AI MESTI balas format ini</b> (sama dengan fail Import Step 3):
+              <b style="color:#c4b5fd;">📤 AI MESTI balas format ini</b> (sama dengan fail Import Step 4):
               <pre style="margin:4px 0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.35);color:#e5e7eb;font-size:0.66rem;white-space:pre-wrap;">→ immortalize
 (Tips F0 — sebutan perkataan)
 
@@ -16926,11 +16928,11 @@ function _aiPantauMula() {
 window._aiPantauMula = _aiPantauMula;
 
 function _aiKadHtml(j) {
-  const tajuk = j.jenis === 'jana_pukal' ? '🤖 AI Jana Pukal (Step 1)'
+  const tajuk = j.jenis === 'jana_pukal' ? '🤖 AI Jana Pukal (Step 2)'
     : j.jenis === 'jana_kindle' ? `🤖 AI dari Kindle — ${_aiEsc(j.failNama || 'Tips')}`
     : j.jenis === 'jana_ms' ? `🤖 AI Jana — Pukal → Tips${j.imej === false ? '' : ' → Gambar G1'}${j.failNama ? ' · ' + _aiEsc(j.failNama) : ''}`
     : j.jenis === 'jana_imej' ? '🖼️ Jana Gambar G1 sahaja (dari Kindle)'
-    : '🤖 AI Jana Tips (Step 2 + 3)';
+    : '🤖 AI Jana Tips (Step 3 + 4)';
   const masa = j.createdAt ? new Date(j.createdAt).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   const h = j.hasil || {};
   let warna = '#a78bfa';
@@ -17105,7 +17107,7 @@ function _aiAmaranKos({ nama, perkataan = 0, laciTips = 0, model }) {
       ${kotak('#fbbf24', `📊 <b>Kos sebenar yang pernah diukur:</b><br>1 muka surat (33 perkataan → 81 laci)<br>= <b>US$1.12 ≈ RM5</b> dengan Sonnet 5.5<br>= lebih kurang <b>RM10</b> dengan Opus 5.5`)}
       ${kotak('#a78bfa', `🧮 <b>Anggaran "${_aiEsc(nama)}":</b><br>${perkataan ? `${perkataan} perkataan baru (Pukal + Audit + Tips)` : ''}${perkataan && laciTips ? '<br>' : ''}${laciTips ? `${laciTips} laci perlu Tips` : ''}${!perkataan && !laciTips ? 'Tiada kerja Claude dijangka' : ''}<br>≈ <b>${anggaran}</b>${kali > 1 ? ' (Opus)' : ''}<br><span style="font-size:0.7rem;color:#94a3b8;">+ kos gambar Grok (dicaj berasingan oleh xAI) jika Gambar G1 ditanda.</span>`)}
       ${kotak('#94a3b8', `• Bahagian paling mahal ialah <b>Tips</b> (sebutan setiap perkataan dalam ayat).<br>• Kredit yang sudah dipakai <b>TIDAK dipulangkan</b> walaupun laci dipadam kemudian.<br>• Lebih banyak padanan BI = lebih banyak laci = lebih mahal.`)}
-      ${kotak('#34d399', `💡 <b>Cara lebih murah:</b> guna Claude chat biasa + butang manual <b>Step 1 / Step 2 / Step 3</b> — hampir <b>RM0</b> kerana termasuk dalam langganan.`)}
+      ${kotak('#34d399', `💡 <b>Cara lebih murah:</b> guna Claude chat biasa + butang manual <b>Step 1 → Step 4</b> — hampir <b>RM0</b> kerana termasuk dalam langganan.`)}
       <div style="display:flex;gap:8px;">
         <button data-a1-batal style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#059669,#047857);border:none;color:white;font-weight:700;">✋ Batal (disyorkan)</button>
         <button data-a1-ok style="flex:1;padding:12px;border-radius:999px;background:transparent;border:1px solid #f87171;color:#fca5a5;font-weight:600;">Saya faham →</button>
@@ -18434,6 +18436,38 @@ document.getElementById('btn-bank-folder')?.addEventListener('click', () => docu
   });
 });
 
+// 📋 Step 1 — Copy fail kamus muka surat semasa (muka_surat_fail → Bank Kamus). Tiada AI, tiada kos.
+document.getElementById('btn-copy-fail-ms')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const label = '📋 Copy Fail Muka Surat (Step 1)';
+  if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka muka surat dahulu.'); return; }
+  const j = allJenisKata.find(x => x.id === currentJenisKataId);
+  if (!j) { showToast('⚠️ Muka surat tidak dijumpai.'); return; }
+  btn.disabled = true;
+  btn.textContent = '⏳ Mengambil fail...';
+  try {
+    _bankPantau();
+    const f = await _bankTeksJenis(j);
+    const teks = f ? String(f.teks || '') : '';
+    if (!teks.trim()) {
+      btn.textContent = label;
+      showToast(`⚠️ "${j.name}" belum ada fail kamus. Upload di 📚 Bank Kamus (page Bahasa).`, 5000);
+      return;
+    }
+    await _bankSalin(teks, btn, label);
+    if (btn.textContent.startsWith('✅')) {
+      showToast(`📋 ${f.namaFail || j.name} disalin (${f.bil || _aiKiraPerkataanKamus(teks)} perkataan) — tampal ke Claude chat.`, 4000);
+    } else if (typeof lihatFailMukaSurat === 'function') {
+      lihatFailMukaSurat(j.id); // telefon sekat salin automatik → buka paparan fail, tekan 📋 Copy di situ
+    }
+  } catch (err) {
+    btn.textContent = label;
+    showToast('❌ Gagal salin: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 function renderJenisKata() {
       const list = document.getElementById('topics-list') || document.getElementById('jenis-kata-list');
       if (!list) return;
@@ -18568,11 +18602,11 @@ function renderPerkataan() {
         const btnJanaPukal = document.getElementById('btn-open-jana-pukal-bahasa');
         const btnExport = document.getElementById('btn-export-format-ai');
         const btnImport = document.getElementById('btn-open-jana-tips-pukal');
-        if (btnJanaPukal) btnJanaPukal.textContent = '🗂️ Jana Pukal Bahasa (Step 1)';
-        if (btnExport) btnExport.textContent = '📤 Export To Pengajar Sebutan AI (Step 2)' + labelBadge;
-        if (btnImport) btnImport.textContent = '📝 Import from Pengajar Sebutan For Jana Tips Pukal (Step 3)' + labelBadge;
+        if (btnJanaPukal) btnJanaPukal.textContent = '🗂️ Jana Pukal Bahasa (Step 2)';
+        if (btnExport) btnExport.textContent = '📤 Export To Pengajar Sebutan AI (Step 3)' + labelBadge;
+        if (btnImport) btnImport.textContent = '📝 Import from Pengajar Sebutan For Jana Tips Pukal (Step 4)' + labelBadge;
         const btnAiTips = document.getElementById('btn-ai-jana-tips');
-        if (btnAiTips) btnAiTips.textContent = '🤖 AI Jana Tips (Step 2 + 3)' + labelBadge;
+        if (btnAiTips) btnAiTips.textContent = '🤖 AI Jana Tips (Step 3 + 4)' + labelBadge;
         if (window._aiPantauMula) window._aiPantauMula();
         if (window._aiRenderStatus) window._aiRenderStatus();
       }
@@ -18614,14 +18648,14 @@ function renderPerkataan() {
         btnJanaPukal.id = 'btn-open-jana-pukal-bahasa';
         btnJanaPukal.className = 'btn btn-sm';
         btnJanaPukal.style.cssText = 'width:100%;margin-top:8px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;box-shadow:0 6px 18px rgba(8,145,178,.3);';
-        btnJanaPukal.textContent = '🗂️ Jana Pukal Bahasa (Step 1)';
+        btnJanaPukal.textContent = '🗂️ Jana Pukal Bahasa (Step 2)';
         btnJanaPukal.addEventListener('click', () => {
           document.getElementById('jana-bahasa-input').value = '';
           document.getElementById('jana-bahasa-preview').textContent = '';
           document.getElementById('jana-pukal-bahasa-modal').style.display = 'flex';
           setTimeout(() => document.getElementById('jana-bahasa-input').focus(), 80);
         });
-        const addBtn = document.getElementById('btn-add-perkataan');
+        const addBtn = document.getElementById('btn-copy-fail-ms') || document.getElementById('btn-add-perkataan');
         if (addBtn && addBtn.parentNode) {
           addBtn.parentNode.insertBefore(btnJanaPukal, addBtn.nextSibling);
         } else {
