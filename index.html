@@ -17842,6 +17842,9 @@ function renderGolongan() {
   const list = document.getElementById('golongan-list');
   if (!list) return;
   _bankMayaBuka = false; _bankCariMs = ''; // 📚 senarai Bank kembali tersorok
+  window._jkSkrolGol = null; // masuk golongan semula → skrol ke muka surat semasa sekali lagi
+  const _pkSemasaG = allBahasaPerkataan.find(p => p.isActive) || null;
+  const _jSemasaG = _pkSemasaG ? allJenisKata.find(j => j.id === _pkSemasaG.jenisId) : null;
   const jenisBahasa = allJenisKata.filter(j => j.bahasaId === currentBahasaId);
   // Kategori tetap dahulu (ikut urutan kamus), kemudian golongan manual ikut nama
   const golBahasa = allGolongan.filter(g => g.bahasaId === currentBahasaId)
@@ -17888,6 +17891,7 @@ function renderGolongan() {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <span style="font-size:0.68rem;color:#7dd3fc;background:rgba(125,211,252,0.1);border:1px solid rgba(125,211,252,0.3);padding:2px 8px;border-radius:999px;">Muka surat: ${ms}</span>
+        ${_jSemasaG && _jSemasaG.golonganId === id ? `<span style="font-size:0.68rem;font-weight:700;color:#34d399;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.5);padding:2px 8px;border-radius:999px;">📍 Semasa: ${_aiEsc(_jSemasaG.ms != null ? 'MS' + _jSemasaG.ms : (_jSemasaG.name || ''))}</span>` : ''}
         ${bolehUbah ? `<span data-gol-lihat-fail style="cursor:pointer;font-size:0.68rem;color:#c4b5fd;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);padding:2px 8px;border-radius:999px;">📄 Fail: ${adaFail} ›</span>` : ''}
         <span style="font-size:0.68rem;color:${lengkap && lengkap === ms ? '#34d399' : '#fcd34d'};background:rgba(255,255,255,0.05);border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:999px;">✅ Lengkap: ${lengkap}/${ms}</span>
       </div>
@@ -18634,6 +18638,9 @@ function renderJenisKata() {
         list.innerHTML = '<div class="empty-state">Belum ada jenis kata. Tekan Tambah.</div>';
         return;
       }
+      // 📍 Perkataan SEMASA (tick aktif — sama di phone & Kindle) → tanda muka surat yang mengandunginya
+      const _pkSemasa = allBahasaPerkataan.find(p => p.isActive) || null;
+      let _kadSemasa = null;
       sorted.forEach(data => {
         // Kira status: Perkataan, Tips, Imej untuk jenis kata ini
         const perkataanDlmJenis = allBahasaPerkataan.filter(p => p.jenisId === data.id);
@@ -18657,7 +18664,10 @@ function renderJenisKata() {
         const div = document.createElement("div");
         div.className = "drawer-card";
         div.style.cssText = "display:flex; flex-direction:column; gap:4px;";
+        const _semasa = !!(_pkSemasa && _pkSemasa.jenisId === data.id);
+        if (_semasa) { div.style.border = '2px solid #34d399'; div.style.boxShadow = '0 0 0 3px rgba(52,211,153,0.15)'; _kadSemasa = div; }
 div.innerHTML = `
+          ${_semasa ? `<div style="display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;color:#34d399;"><span style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.5);border-radius:999px;padding:2px 9px;">📍 SEMASA</span><span style="color:#a7f3d0;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${_aiEsc(_pkSemasa.name || '')}</span></div>` : ''}
           <div style="display:flex;gap:8px;align-items:center;">
             <input value="${data.name||''}" placeholder="Cth: Kata Kerja, Kata Nama..." style="flex:1; border:none; background:transparent; color:white; border-bottom:1px solid var(--border-mid); outline:none; padding:4px;">
             <button class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
@@ -18720,6 +18730,11 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
         list.appendChild(div);
       });
       _bankRenderMaya(list, _maya);
+      // Skrol terus ke muka surat SEMASA bila baru masuk golongan ini (bukan setiap kali data berubah)
+      if (_kadSemasa && window._jkSkrolGol !== currentGolonganId) {
+        window._jkSkrolGol = currentGolonganId;
+        setTimeout(() => { try { _kadSemasa.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} }, 120);
+      }
     }
 
 function renderPerkataan() {
