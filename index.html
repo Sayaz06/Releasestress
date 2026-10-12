@@ -23767,6 +23767,18 @@ list.innerHTML = '';
       renderPerkataan();
     });
 
+    // 🔧 Pulihkan butang Batal (rupa & teks) + tutup popup bila tekan luar kotak / Esc
+    (() => {
+      const modal = document.getElementById('jana-pukal-bahasa-modal');
+      const batal = document.getElementById('btn-jana-bahasa-cancel');
+      if (batal) {
+        batal.setAttribute('style', 'padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;');
+        batal.textContent = 'Batal';
+      }
+      modal?.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal && modal.style.display !== 'none') modal.style.display = 'none'; });
+    })();
+
     // Parse teks format kamus
     function parseKamusBahasa(text) {
       const lines = text.split('\n');
