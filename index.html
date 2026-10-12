@@ -17851,6 +17851,70 @@ function _golParseFail(nama) {
   const m = asas.match(/^\s*ms\s*0*(\d+)[\s\-_]+(.+)$/i);
   return m ? { ms: parseInt(m[1], 10), kunci: _golKunci(m[2]) } : null;
 }
+
+// Label paparan: kategori tetap → "1.KATA KERJA" (nombor ikut kepentingan) · golongan manual → nama asal
+function _golLabel(g) {
+  if (!g) return '';
+  if (!g.tetapKunci) return g.name || '(tiada nama)';
+  const t = _golTetapIkutKunci(g.tetapKunci);
+  return `${(t && t.urutan) || g.urutan || ''}.${(t && t.nama) || g.name || ''}`;
+}
+// Golongan manual "1.KATA KERJA" / "Kata-Kerja" → kategori tetap padanan dalam bahasa sama
+function _golSasaranTetap(g) {
+  if (!g || g.tetapKunci) return null;
+  const k = _golKunci(String(g.name || '').replace(/^\s*\d+\s*[.)\-:]?\s*/, ''));
+  return allGolongan.find(x => x.bahasaId === g.bahasaId && x.tetapKunci === k) || null;
+}
+
+// 🔗 Gabung golongan manual → kategori tetap. HANYA golonganId (dan ms jika tiada) ditukar.
+// ID muka surat KEKAL → perkataan, laci, tips, gambar & SR TIDAK diusik.
+async function gabungKeTetap(dariId) {
+  const dari = allGolongan.find(g => g.id === dariId);
+  const ke = _golSasaranTetap(dari);
+  if (!currentUser || !dari || !ke) return;
+  const label = _golLabel(ke);
+  const msOf = j => j.ms != null ? j.ms : ((_golParseNama(j.name) || {}).ms ?? _golMsDariFail(j.namaFail));
+  const jenisDari = allJenisKata.filter(j => j.golonganId === dari.id);
+  const adaPk = new Set(allBahasaPerkataan.map(p => p.jenisId));
+  const msDari = new Set(jenisDari.map(msOf).filter(x => x != null));
+  const jenisKe = allJenisKata.filter(j => j.golonganId === ke.id && msDari.has(msOf(j)));
+  const pendua = jenisKe.filter(j => !adaPk.has(j.id));      // MS sama dalam kategori tetap, KOSONG (cth: dibuka dari Bank) → dibuang
+  const bertembung = jenisKe.filter(j => adaPk.has(j.id)).length;
+  if (!confirm(`Gabung "${dari.name}" ke kategori tetap "🔒 ${label}"?\n\n` +
+    `• ${jenisDari.length} muka surat dipindah (ID sama — perkataan, laci, tips, gambar & SR TIDAK diusik)` +
+    (pendua.length ? `\n• ${pendua.length} muka surat KOSONG (pendua MS sama) dalam ${label} dibuang` : '') +
+    (bertembung ? `\n⚠️ ${bertembung} MS sudah ada perkataan di kedua-dua tempat — kedua-duanya dikekalkan` : '') +
+    `\n• Tetapan imej golongan disalin jika ${label} belum ada`)) return;
+  showToast('⏳ Menggabung...', 0);
+  try {
+    for (let i = 0; i < jenisDari.length; i += 400) {
+      const batch = writeBatch(db);
+      jenisDari.slice(i, i + 400).forEach(j => {
+        const kemas = { golonganId: ke.id };
+        const m = msOf(j);
+        if (j.ms == null && m != null) kemas.ms = m;
+        batch.update(doc(db, 'users', currentUser.uid, 'jenis_kata', j.id), kemas);
+      });
+      await batch.commit();
+    }
+    const salin = {};
+    ['arahanImej', 'arahanImej2', 'delaySec', 'imageModel', 'imageAspect'].forEach(f => {
+      if (dari[f] != null && String(dari[f]).trim() !== '' && (ke[f] == null || String(ke[f]).trim() === '')) salin[f] = dari[f];
+    });
+    if (Object.keys(salin).length) await updateDoc(doc(db, 'users', currentUser.uid, 'bahasa_golongan', ke.id), salin);
+    for (const j of pendua) {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', j.id)).catch(() => {});
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'jenis_kata', j.id)).catch(() => {});
+    }
+    showToast(`✅ ${jenisDari.length} muka surat kini dalam 🔒 ${label}. SR & laci tidak berubah.`, 5000);
+    if (confirm(`Golongan manual "${dari.name}" kini kosong.\nPadam golongan manual ini sekarang?`)) {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'bahasa_golongan', dari.id));
+    }
+    renderGolongan();
+  } catch (e) {
+    showToast('❌ Gagal gabung: ' + e.message, 5000);
+  }
+}
 // Pastikan semua kategori tetap wujud dalam bahasa ini (golongan sedia ada dengan nama sama → ditanda tetap, ID KEKAL → SR selamat)
 const _golTetapProses = new Set();
 async function _golPastikanTetap(bahasaId) {
@@ -17968,6 +18032,7 @@ function renderGolongan() {
   }
   const kad = (id, nama, jenis, bolehUbah, tetap) => {
     const gObj = allGolongan.find(x => x.id === id);
+    const sasaran = (bolehUbah && !tetap) ? _golSasaranTetap(gObj) : null; // golongan manual → kategori tetap padanan
     const bankMs = _bankMsBelumDibuka(gObj, jenis); // MS dalam Bank Kamus yang belum jadi muka surat
     const ms = jenis.length + bankMs.length;
     const adaFail = jenis.filter(j => j.bilFail).length + bankMs.length;
@@ -17990,7 +18055,9 @@ function renderGolongan() {
         <span style="font-size:0.68rem;color:#7dd3fc;background:rgba(125,211,252,0.1);border:1px solid rgba(125,211,252,0.3);padding:2px 8px;border-radius:999px;">Muka surat: ${ms}</span>
         ${bolehUbah ? `<span data-gol-lihat-fail style="cursor:pointer;font-size:0.68rem;color:#c4b5fd;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);padding:2px 8px;border-radius:999px;">📄 Fail: ${adaFail} ›</span>` : ''}
         <span style="font-size:0.68rem;color:${lengkap && lengkap === ms ? '#34d399' : '#fcd34d'};background:rgba(255,255,255,0.05);border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:999px;">✅ Lengkap: ${lengkap}/${ms}</span>
-      </div>`;
+      </div>
+      ${sasaran && jenis.length ? `<button data-gol-gabung style="padding:7px 10px;border-radius:10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.5);color:#fcd34d;font-size:0.75rem;font-weight:700;cursor:pointer;">🔗 Gabung ${jenis.length} muka surat ke 🔒 ${_aiEsc(_golLabel(sasaran))} (SR selamat)</button>` : ''}`;
+    div.querySelector('[data-gol-gabung]')?.addEventListener('click', () => gabungKeTetap(id));
     div.querySelector('[data-gol-buka]').addEventListener('click', () => {
       currentGolonganId = id;
       document.getElementById('parent-bahasa-name').textContent = `${document.getElementById('parent-golongan-bahasa').textContent} › ${nama}`;
@@ -18017,7 +18084,7 @@ function renderGolongan() {
     }
     list.appendChild(div);
   };
-  golBahasa.forEach(g => kad(g.id, g.name || '(tiada nama)', jenisBahasa.filter(j => j.golonganId === g.id), true, !!g.tetapKunci));
+  golBahasa.forEach(g => kad(g.id, _golLabel(g), jenisBahasa.filter(j => j.golonganId === g.id), true, !!g.tetapKunci));
   if (tanpa.length) kad(_GOL_TANPA, 'Tanpa Golongan', tanpa, false);
 }
 
@@ -18417,7 +18484,7 @@ function renderBank() {
     div.style.cssText = 'display:flex;align-items:center;gap:8px;';
     div.innerHTML = `
       <div style="flex:1;min-width:0;">
-        <div style="font-size:0.92rem;font-weight:700;color:var(--text);">${t.urutan}. ${_aiEsc(t.nama)}</div>
+        <div style="font-size:0.92rem;font-weight:700;color:var(--text);">${t.urutan}.${_aiEsc(t.nama)}</div>
         <div style="font-size:0.7rem;color:${msList.length ? '#94a3b8' : '#64748b'};margin-top:2px;">${msList.length ? `${msList.length} fail · MS${msList[0]}–MS${msList[msList.length - 1]}` : 'Belum ada fail'}</div>
       </div>
       ${msList.length ? '<button class="btn btn-secondary btn-sm" data-lihat style="border-color:#a78bfa;color:#c4b5fd;">Lihat</button>' : ''}`;
