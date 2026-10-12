@@ -2092,6 +2092,13 @@ body.dark-mode {
           <div id="gol-tukar-info" style="font-size:0.72rem;color:#e5e7eb;line-height:1.6;margin-bottom:8px;"></div>
           <button id="btn-gol-tukar" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">🔄 Tukar ke Format Baharu</button>
         </div>
+        <!-- 📤 Upload fail kamus pelbagai kategori sekaligus — kategori & MS dibaca dari nama fail (MS746_KATA_PENEGAS.txt) -->
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <button id="btn-gol-upload-semua" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Upload Semua Fail</button>
+          <button id="btn-gol-upload-folder" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#c4b5fd;">📁 Folder</button>
+        </div>
+        <input id="gol-upload-semua-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
+        <input id="gol-upload-folder-input" type="file" webkitdirectory directory multiple style="display:none;">
         <button id="btn-add-golongan" class="btn btn-sm" style="width:100%;">+ Tambah Golongan</button>
         <input id="gol-upload-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
         <div class="list mt-8" id="golongan-list" style="padding: 10px;"></div>
@@ -17778,12 +17785,81 @@ let _golUploadId = null;
 const _GOL_TANPA = '__tanpa__';
 const _golCmp = (a, b) => String(a || '').localeCompare(String(b || ''), undefined, { numeric: true });
 
-// "KATA KERJA MS13 -" → { golongan: "KATA KERJA", ms: 13 }
+// ── 🔒 KATEGORI TETAP (dari kamus) — dicipta automatik untuk setiap bahasa, TIDAK boleh dipadam / tukar nama ──
+// Nama fail: MSxxx_<KUNCI>.txt  (cth: MS746_KATA_PENEGAS.txt)
+const GOL_TETAP = [
+  { urutan: 1,  kunci: 'KATA_KERJA',      nama: 'KATA KERJA' },
+  { urutan: 2,  kunci: 'KATA_PENEGAS',    nama: 'KATA PENEGAS' },
+  { urutan: 3,  kunci: 'KATA_PEMERI',     nama: 'KATA PEMERI' },
+  { urutan: 4,  kunci: 'KATA_TUGAS',      nama: 'KATA TUGAS' },
+  { urutan: 5,  kunci: 'KATA_PENGUAT',    nama: 'KATA PENGUAT' },
+  { urutan: 6,  kunci: 'KATA_TANYA',      nama: 'KATA TANYA' },
+  { urutan: 7,  kunci: 'KATA_NAFI',       nama: 'KATA NAFI' },
+  { urutan: 8,  kunci: 'AWALAN',          nama: 'AWALAN' },
+  { urutan: 9,  kunci: 'KATA_SERU',       nama: 'KATA SERU' },
+  { urutan: 10, kunci: 'KATA_BANTU',      nama: 'KATA BANTU' },
+  { urutan: 11, kunci: 'KATA_BILANGAN',   nama: 'KATA BILANGAN' },
+  { urutan: 12, kunci: 'KATA_SENDI_NAMA', nama: 'KATA SENDI NAMA' },
+  { urutan: 13, kunci: 'KATA_HUBUNG',     nama: 'KATA HUBUNG' },
+  { urutan: 14, kunci: 'LAIN_LAIN',       nama: 'LAIN-LAIN' },
+  { urutan: 15, kunci: 'KATA_ADVERBA',    nama: 'KATA ADVERBA' },
+  { urutan: 16, kunci: 'KATA_ADJEKTIF',   nama: 'KATA ADJEKTIF' },
+  { urutan: 17, kunci: 'KATA_NAMA',       nama: 'KATA NAMA' }
+];
+// "Kata Sendi-Nama" / "KATA_SENDI_NAMA" → "KATA_SENDI_NAMA"
+function _golKunci(nama) {
+  return String(nama || '').trim().toUpperCase().replace(/[\s\-–—_]+/g, '_').replace(/^_+|_+$/g, '');
+}
+function _golTetapIkutKunci(kunci) { return GOL_TETAP.find(t => t.kunci === kunci) || null; }
+// Nama golongan → nama rasmi kategori tetap (jika sepadan), selain itu kekal
+function _golKanonik(nama) {
+  const t = _golTetapIkutKunci(_golKunci(nama));
+  return t ? t.nama : String(nama || '').trim().toUpperCase();
+}
+// "MS746_KATA_PENEGAS.txt" → { ms: 746, kunci: "KATA_PENEGAS" }  (STATUS.txt → null)
+function _golParseFail(nama) {
+  const asas = String(nama || '').replace(/\.[a-z0-9]+$/i, '').replace(/\s*\(\d+\)$/, '');
+  const m = asas.match(/^\s*ms\s*0*(\d+)[\s\-_]+(.+)$/i);
+  return m ? { ms: parseInt(m[1], 10), kunci: _golKunci(m[2]) } : null;
+}
+// Pastikan semua kategori tetap wujud dalam bahasa ini (golongan sedia ada dengan nama sama → ditanda tetap, ID KEKAL → SR selamat)
+const _golTetapProses = new Set();
+async function _golPastikanTetap(bahasaId) {
+  if (!currentUser || !bahasaId || _golTetapProses.has(bahasaId)) return;
+  _golTetapProses.add(bahasaId);
+  try {
+    const golB = allGolongan.filter(g => g.bahasaId === bahasaId);
+    const batch = writeBatch(db);
+    let ubah = 0;
+    for (const t of GOL_TETAP) {
+      const ada = golB.find(g => g.tetapKunci === t.kunci) || golB.find(g => !g.tetapKunci && _golKunci(g.name) === t.kunci);
+      if (ada) {
+        if (ada.tetapKunci !== t.kunci || ada.urutan !== t.urutan || ada.name !== t.nama) {
+          batch.update(doc(db, 'users', currentUser.uid, 'bahasa_golongan', ada.id), { tetapKunci: t.kunci, urutan: t.urutan, name: t.nama });
+          ubah++;
+        }
+      } else {
+        batch.set(doc(collection(db, 'users', currentUser.uid, 'bahasa_golongan')), {
+          name: t.nama, bahasaId, tetapKunci: t.kunci, urutan: t.urutan, createdAt: Date.now() + t.urutan
+        });
+        ubah++;
+      }
+    }
+    if (ubah) await batch.commit();
+  } catch (e) {
+    console.warn('Kategori tetap:', e);
+    _golTetapProses.delete(bahasaId); // cuba lagi kemudian
+    return;
+  }
+  setTimeout(() => _golTetapProses.delete(bahasaId), 4000);
+}
+
+// "KATA KERJA MS13 -" → { golongan: "KATA KERJA", ms: 13 }  (nama dipadankan dengan kategori tetap)
 function _golParseNama(nama) {
   const m = String(nama || '').match(/^(.*?)[\s\-–—_]*\bms\s*0*(\d+)/i);
   if (!m) return null;
   const golongan = m[1].replace(/[\s\-–—_]+$/g, '').trim().toUpperCase();
-  return golongan ? { golongan, ms: parseInt(m[2], 10) } : null;
+  return golongan ? { golongan: _golKanonik(golongan), ms: parseInt(m[2], 10) } : null;
 }
 // Nombor MS dari nama fail: "MS846_KATA_KERJA.txt" / "katakerjams846.txt" → 846
 function _golMsDariFail(nama) {
@@ -17814,8 +17890,12 @@ function _golPantau() {
   if (_golUnsub || !currentUser) return;
   _golUnsub = onSnapshot(query(collection(db, 'users', currentUser.uid, 'bahasa_golongan')), snap => {
     allGolongan = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    window._golDimuat = true;
     const sec = document.getElementById('section-golongan');
-    if (sec && sec.classList.contains('active')) renderGolongan();
+    if (sec && sec.classList.contains('active')) {
+      _golPastikanTetap(currentBahasaId);
+      renderGolongan();
+    }
   }, err => console.warn('bahasa_golongan:', err));
 }
 
@@ -17826,6 +17906,7 @@ function bukaGolongan(bahasaId, namaBahasa) {
   if (el) el.textContent = namaBahasa || '';
   _golPantau();
   showSection(document.getElementById('section-golongan'));
+  if (window._golDimuat) _golPastikanTetap(bahasaId); // jika belum dimuat, snapshot pertama akan buat
   renderGolongan();
 }
 
@@ -17833,7 +17914,9 @@ function renderGolongan() {
   const list = document.getElementById('golongan-list');
   if (!list) return;
   const jenisBahasa = allJenisKata.filter(j => j.bahasaId === currentBahasaId);
-  const golBahasa = allGolongan.filter(g => g.bahasaId === currentBahasaId).sort((a, b) => _golCmp(a.name, b.name));
+  // Kategori tetap dahulu (ikut urutan kamus), kemudian golongan manual ikut nama
+  const golBahasa = allGolongan.filter(g => g.bahasaId === currentBahasaId)
+    .sort((a, b) => ((a.tetapKunci ? a.urutan || 0 : 1e9) - (b.tetapKunci ? b.urutan || 0 : 1e9)) || _golCmp(a.name, b.name));
   const tanpa = jenisBahasa.filter(j => !j.golonganId || !golBahasa.some(g => g.id === j.golonganId));
   const bolehTukar = tanpa.filter(j => _golParseNama(j.name));
 
@@ -17850,10 +17933,10 @@ function renderGolongan() {
   const stat = _golStatJenis();
   list.innerHTML = '';
   if (!golBahasa.length && !tanpa.length) {
-    list.innerHTML = '<div class="empty-state">Belum ada golongan. Tekan "+ Tambah Golongan" (cth: KATA KERJA).</div>';
+    list.innerHTML = '<div class="empty-state">Menyediakan kategori kamus...</div>';
     return;
   }
-  const kad = (id, nama, jenis, bolehUbah) => {
+  const kad = (id, nama, jenis, bolehUbah, tetap) => {
     const ms = jenis.length;
     const adaFail = jenis.filter(j => j.bilFail).length;
     const lengkap = jenis.filter(j => (stat.get(j.id) || {}).lengkap).length;
@@ -17863,11 +17946,13 @@ function renderGolongan() {
     div.innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;">
         ${bolehUbah
-          ? `<input value="${_aiEsc(nama)}" placeholder="Cth: KATA KERJA" style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;font-size:0.95rem;padding:4px 0;">`
+          ? (tetap
+            ? `<div style="flex:1;color:white;font-size:0.95rem;padding:4px 0;">🔒 ${_aiEsc(nama)}</div>`
+            : `<input value="${_aiEsc(nama)}" placeholder="Cth: KATA KERJA" style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;font-size:0.95rem;padding:4px 0;">`)
           : `<div style="flex:1;color:#94a3b8;font-size:0.95rem;font-style:italic;">${_aiEsc(nama)}</div>`}
         <button class="btn btn-secondary btn-sm" data-gol-buka style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
         ${bolehUbah ? `<button class="btn btn-secondary btn-sm" data-gol-fail style="border-color:#a78bfa;color:#c4b5fd;">📄 Fail</button>
-        <button class="btn btn-secondary btn-sm" data-gol-padam style="color:var(--danger);border-color:var(--danger);">X</button>` : ''}
+        ${tetap ? '' : `<button class="btn btn-secondary btn-sm" data-gol-padam style="color:var(--danger);border-color:var(--danger);">X</button>`}` : ''}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <span style="font-size:0.68rem;color:#7dd3fc;background:rgba(125,211,252,0.1);border:1px solid rgba(125,211,252,0.3);padding:2px 8px;border-radius:999px;">Muka surat: ${ms}</span>
@@ -17881,7 +17966,7 @@ function renderGolongan() {
       renderJenisKata();
     });
     if (bolehUbah) {
-      div.querySelector('input').addEventListener('change', e => {
+      div.querySelector('input')?.addEventListener('change', e => {
         updateDoc(doc(db, 'users', currentUser.uid, 'bahasa_golongan', id), { name: e.target.value.trim().toUpperCase() });
       });
       div.querySelector('[data-gol-fail]').addEventListener('click', () => {
@@ -17889,7 +17974,7 @@ function renderGolongan() {
         document.getElementById('gol-upload-input').click();
       });
       div.querySelector('[data-gol-lihat-fail]')?.addEventListener('click', () => senaraiFailGolongan(id, nama));
-      div.querySelector('[data-gol-padam]').addEventListener('click', () => {
+      div.querySelector('[data-gol-padam]')?.addEventListener('click', () => {
         if (jenis.length) {
           showToast(`⚠️ "${nama}" masih ada ${jenis.length} muka surat. Padam muka surat dahulu — golongan hanya boleh dipadam bila kosong.`, 5000);
           return;
@@ -17900,7 +17985,7 @@ function renderGolongan() {
     }
     list.appendChild(div);
   };
-  golBahasa.forEach(g => kad(g.id, g.name || '(tiada nama)', jenisBahasa.filter(j => j.golonganId === g.id), true));
+  golBahasa.forEach(g => kad(g.id, g.name || '(tiada nama)', jenisBahasa.filter(j => j.golonganId === g.id), true, !!g.tetapKunci));
   if (tanpa.length) kad(_GOL_TANPA, 'Tanpa Golongan', tanpa, false);
 }
 
@@ -18032,9 +18117,9 @@ async function tukarFormatGolongan() {
 }
 
 // ── Upload fail .txt ke golongan → setiap fail = satu muka surat (ikut nombor MS) ──
-async function uploadFailGolongan(fail) {
-  const gol = allGolongan.find(g => g.id === _golUploadId);
-  if (!gol || !fail.length || !currentUser) return;
+async function uploadFailGolongan(fail, golId, senyap) {
+  const gol = allGolongan.find(g => g.id === (golId || _golUploadId));
+  if (!gol || !fail.length || !currentUser) return null;
   const jenisGol = allJenisKata.filter(j => j.golonganId === gol.id);
   const petaMs = {};
   jenisGol.forEach(j => {
@@ -18045,12 +18130,12 @@ async function uploadFailGolongan(fail) {
   const golIdsBahasa = allGolongan.filter(g => g.bahasaId === gol.bahasaId).map(g => g.id);
   allJenisKata.filter(j => j.bahasaId === gol.bahasaId && (!j.golonganId || !golIdsBahasa.includes(j.golonganId))).forEach(j => {
     const p = _golParseNama(j.name);
-    if (p && p.golongan === String(gol.name || '').trim().toUpperCase() && !petaMs[p.ms]) petaMs[p.ms] = j.id;
+    if (p && _golKunci(p.golongan) === _golKunci(gol.name) && !petaMs[p.ms]) petaMs[p.ms] = j.id;
   });
   const sah = [], langkau = [];
   fail.forEach(f => { const ms = _golMsDariFail(f.name); if (ms == null) langkau.push(f.name); else sah.push({ f, ms }); });
-  if (!sah.length) { showToast(`⚠️ Tiada nombor MS dalam nama fail (cth: MS846_KATA_KERJA.txt). ${langkau.length} dilangkau.`, 5000); return; }
-  showToast(`⏳ Memuat naik ${sah.length} fail ke "${gol.name}"...`, 0);
+  if (!sah.length) { if (!senyap) showToast(`⚠️ Tiada nombor MS dalam nama fail (cth: MS846_KATA_KERJA.txt). ${langkau.length} dilangkau.`, 5000); return { baru: 0, ganti: 0, kosong: 0, langkau: langkau.length }; }
+  if (!senyap) showToast(`⏳ Memuat naik ${sah.length} fail ke "${gol.name}"...`, 0);
   let baru = 0, ganti = 0, kosong = 0;
   try {
     for (let i = 0; i < sah.length; i += 100) {
@@ -18080,10 +18165,51 @@ async function uploadFailGolongan(fail) {
     let msg = `✅ ${sah.length} fail → "${gol.name}": ${baru} muka surat baru, ${ganti} muka surat sedia ada dikemas kini`;
     if (kosong) msg += ` · ⚠️ ${kosong} fail tiada baris "1.perkataan = maksud"`;
     if (langkau.length) msg += ` · ${langkau.length} fail tiada nombor MS (dilangkau)`;
-    showToast(msg, 6000);
+    if (!senyap) showToast(msg, 6000);
+    return { baru, ganti, kosong, langkau: langkau.length };
   } catch (e) {
     showToast('❌ Gagal upload: ' + e.message, 5000);
+    return null;
   }
+}
+
+// ── 📤 UPLOAD SEMUA FAIL (pelbagai kategori sekaligus) — kategori & MS dibaca dari nama fail ──
+async function uploadSemuaFailKamus(fail) {
+  if (!currentUser || !currentBahasaId || !fail.length) return;
+  if (!window._golDimuat) { showToast('⏳ Kategori belum dimuat. Cuba lagi sebentar.'); return; }
+  await _golPastikanTetap(currentBahasaId);
+  const golB = allGolongan.filter(g => g.bahasaId === currentBahasaId);
+  const kumpulan = new Map(); // golId → [fail]
+  const tiadaKategori = [], diabaikan = [];
+  fail.forEach(f => {
+    const x = _golParseFail(f.name);
+    if (!x) { diabaikan.push(f.name); return; } // cth: STATUS.txt
+    const g = golB.find(g => g.tetapKunci === x.kunci) || golB.find(g => _golKunci(g.name) === x.kunci);
+    if (!g) { tiadaKategori.push(f.name); return; }
+    if (!kumpulan.has(g.id)) kumpulan.set(g.id, []);
+    kumpulan.get(g.id).push(f);
+  });
+  if (!kumpulan.size) {
+    showToast(`⚠️ Tiada fail sepadan kategori. Format nama: MS001_KATA_KERJA.txt${tiadaKategori.length ? ` · ${tiadaKategori.length} kategori tak dikenali` : ''}`, 6000);
+    return;
+  }
+  const jumlah = [...kumpulan.values()].reduce((a, x) => a + x.length, 0);
+  if (!confirm(`Upload ${jumlah} fail ke ${kumpulan.size} kategori?\n\n` +
+    [...kumpulan.entries()].map(([gid, f]) => `• ${(golB.find(g => g.id === gid) || {}).name}: ${f.length} fail`).join('\n') +
+    (diabaikan.length ? `\n\n${diabaikan.length} fail diabaikan (tiada nombor MS, cth: STATUS)` : '') +
+    (tiadaKategori.length ? `\n${tiadaKategori.length} fail kategori tak dikenali (dilangkau)` : ''))) return;
+  let baru = 0, ganti = 0, kosong = 0, siap = 0;
+  for (const [gid, f] of kumpulan) {
+    const nama = (golB.find(g => g.id === gid) || {}).name || '';
+    showToast(`⏳ ${nama}: ${f.length} fail... (${siap}/${jumlah} siap)`, 0);
+    const h = await uploadFailGolongan(f, gid, true);
+    if (h) { baru += h.baru; ganti += h.ganti; kosong += h.kosong; }
+    siap += f.length;
+  }
+  let msg = `✅ ${siap} fail → ${kumpulan.size} kategori: ${baru} muka surat baru, ${ganti} dikemas kini`;
+  if (kosong) msg += ` · ⚠️ ${kosong} fail tiada baris "1.perkataan = maksud"`;
+  if (tiadaKategori.length) msg += ` · ${tiadaKategori.length} fail kategori tak dikenali`;
+  showToast(msg, 7000);
 }
 
 document.getElementById('btn-back-bahasa-golongan')?.addEventListener('click', () => {
@@ -18102,6 +18228,16 @@ document.getElementById('gol-upload-input')?.addEventListener('change', async (e
   const fail = Array.from(input.files || []);
   input.value = '';
   await uploadFailGolongan(fail);
+});
+document.getElementById('btn-gol-upload-semua')?.addEventListener('click', () => document.getElementById('gol-upload-semua-input')?.click());
+document.getElementById('btn-gol-upload-folder')?.addEventListener('click', () => document.getElementById('gol-upload-folder-input')?.click());
+['gol-upload-semua-input', 'gol-upload-folder-input'].forEach(idInput => {
+  document.getElementById(idInput)?.addEventListener('change', async (e) => {
+    const input = e.currentTarget;
+    const fail = Array.from(input.files || []); // fail tanpa nombor MS (cth: STATUS) diabaikan sendiri
+    input.value = '';
+    await uploadSemuaFailKamus(fail);
+  });
 });
 
 function renderJenisKata() {
