@@ -18488,7 +18488,9 @@ function _stepKini() {
     return v >= 0 && v < _STEP_ID.length ? v : 0;
   } catch (e) { return 0; }
 }
+const _stepG1Tolak = new Set(); // "Tidak, terima kasih" → sorok sehingga user tukar step lagi (bukan selama-lamanya)
 function _stepSet(i) {
+  _stepG1Tolak.clear();
   try { localStorage.setItem('step_ms_' + currentJenisKataId, String(Math.max(0, Math.min(_STEP_ID.length - 1, i)))); } catch (e) {}
   _stepRender();
 }
@@ -18539,28 +18541,33 @@ function _stepRender() {
 window._stepRender = _stepRender;
 
 // 🖼️ Step 4: Tips dijana di Claude chat (ambil masa) → tawarkan Jana G1 di latar oleh worker serentak
+// Kad muncul SETIAP kali masuk Step 4 selagi ada laci tanpa gambar & tiada kerja worker berjalan.
 function _stepKadG1(i) {
   const kad = document.getElementById('step-g1-kad');
   if (!kad) return;
   const sorok = () => { kad.style.display = 'none'; kad.innerHTML = ''; };
   if (i !== 3 || !currentJenisKataId) return sorok();
-  const kunciTolak = 'step_g1_tolak_' + currentJenisKataId;
   const aktif = typeof _aiJobAktif === 'function' ? _aiJobAktif(currentJenisKataId) : null;
   const kotak = 'padding:12px 14px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.4);';
-  if (aktif && aktif.jenis === 'jana_imej') {
+  if (aktif) {
     kad.style.display = 'block';
-    kad.innerHTML = `<div style="${kotak}font-size:0.76rem;color:#c7d2fe;line-height:1.6;">⚙️ <b>Gambar G1 sedang dijana di latar</b><br>
+    kad.innerHTML = `<div style="${kotak}font-size:0.76rem;color:#c7d2fe;line-height:1.6;">⚙️ <b>${aktif.jenis === 'jana_imej' ? 'Gambar G1 sedang dijana di latar' : 'Worker sedang memproses muka surat ini'}</b><br>
       <span style="color:#94a3b8;">${_aiEsc(aktif.status === 'menunggu' ? 'Menunggu giliran worker...' : (aktif.progress || 'Sedang diproses...'))} · App boleh ditutup.</span></div>`;
     return;
   }
-  let tolak = false;
-  try { tolak = localStorage.getItem(kunciTolak) === '1'; } catch (e) {}
-  const bil = (typeof getDrawersForCurrentJenis === 'function' ? getDrawersForCurrentJenis().drawers : [])
-    .filter(d => !String(d.imageUrl || '').trim()).length;
-  if (tolak || aktif || !bil) return sorok();
+  const semua = typeof getDrawersForCurrentJenis === 'function' ? getDrawersForCurrentJenis().drawers : [];
+  const bil = semua.filter(d => !String(d.imageUrl || '').trim()).length;
+  if (_stepG1Tolak.has(currentJenisKataId) || !bil) return sorok();
+  // Keputusan kerja gambar terakhir untuk muka surat ini (jika gagal → tunjuk sebab)
+  const akhir = (typeof _aiJobsTerkini !== 'undefined' ? _aiJobsTerkini : [])
+    .find(x => x.jenisKataId === currentJenisKataId && x.jenis === 'jana_imej');
+  let nota = '';
+  if (akhir && akhir.status === 'gagal') nota = `<div style="font-size:0.72rem;color:#fca5a5;line-height:1.5;margin-bottom:8px;padding:6px 8px;border-radius:8px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.35);">❌ Percubaan lepas gagal: ${_aiEsc(akhir.ralat || 'ralat tidak diketahui')}</div>`;
+  else if (akhir && akhir.status === 'siap' && (akhir.hasil?.tertinggal || []).length) nota = `<div style="font-size:0.72rem;color:#fcd34d;margin-bottom:8px;">⚠️ Percubaan lepas: ${(akhir.hasil.tertinggal || []).length} laci gagal dapat gambar.</div>`;
   kad.style.display = 'block';
   kad.innerHTML = `<div style="${kotak}">
     <div style="font-size:0.84rem;font-weight:700;color:#c7d2fe;margin-bottom:4px;">🖼️ Jana Gambar G1 sementara menunggu Tips?</div>
+    ${nota}
     <div style="font-size:0.74rem;color:#cbd5e1;line-height:1.6;margin-bottom:8px;">
       Penjanaan Tips di Claude chat memerlukan sedikit masa. Sementara itu, sistem boleh menjana Gambar G1 untuk
       <b>${bil} laci</b> yang belum bergambar secara automatik di latar belakang.</div>
@@ -18573,7 +18580,7 @@ function _stepKadG1(i) {
       <button data-g1-tidak style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #475569;color:#cbd5e1;font-size:0.78rem;cursor:pointer;">Tidak, terima kasih</button>
     </div></div>`;
   kad.querySelector('[data-g1-tidak]').addEventListener('click', () => {
-    try { localStorage.setItem(kunciTolak, '1'); } catch (e) {}
+    _stepG1Tolak.add(currentJenisKataId);
     sorok();
   });
   kad.querySelector('[data-g1-ya]').addEventListener('click', async (e) => {
