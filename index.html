@@ -2065,6 +2065,8 @@ body.dark-mode {
 <section id="section-bahasa" class="section">
         <div class="topbar">
           <button id="btn-back-home-bahasa" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <!-- 📚 Bank Kamus — fail kamus dikongsi SEMUA bahasa (upload sekali sahaja) -->
+          <button id="btn-buka-bank-kamus" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">📚 Bank Kamus</button>
           <div style="text-align: right;">
             <div class="topbar-title" style="color: #22d3ee;">📝 Laci Bahasa</div>
             <div class="topbar-sub">Koleksi kamus bahasa anda</div>
@@ -2076,6 +2078,26 @@ body.dark-mode {
           <button id="btn-trash-bahasa" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
         </div>
         <div class="list mt-8" id="bahasa-list" style="padding: 10px;"></div>
+      </section>
+
+<section id="section-bank-kamus" class="section">
+        <div class="topbar">
+          <button id="btn-back-bank-kamus" class="btn btn-secondary btn-sm">← Bahasa</button>
+          <div style="text-align: right;">
+            <div class="topbar-title" style="color: #c4b5fd;">📚 Bank Kamus</div>
+            <div class="topbar-sub">Fail kamus dikongsi semua bahasa</div>
+          </div>
+        </div>
+        <div style="font-size:0.72rem;color:#94a3b8;line-height:1.6;margin:8px 0;padding:8px 10px;border-radius:10px;background:rgba(124,58,237,0.06);border:1px dashed rgba(167,139,250,0.4);">
+          Upload sekali sahaja — setiap bahasa terus nampak semua muka surat. Nama fail: <b>MS001_KATA_KERJA.txt</b>. Fail tanpa nombor MS (cth: STATUS) diabaikan.
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button id="btn-bank-upload" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Upload Fail</button>
+          <button id="btn-bank-folder" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#c4b5fd;">📁 Folder</button>
+        </div>
+        <input id="bank-upload-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
+        <input id="bank-folder-input" type="file" webkitdirectory directory multiple style="display:none;">
+        <div class="list mt-8" id="bank-kategori-list" style="padding: 10px;"></div>
       </section>
 
 <!-- 🏷️ GOLONGAN (format baharu): Bahasa → Golongan → Muka Surat → Perkataan → Laci -->
@@ -2092,13 +2114,7 @@ body.dark-mode {
           <div id="gol-tukar-info" style="font-size:0.72rem;color:#e5e7eb;line-height:1.6;margin-bottom:8px;"></div>
           <button id="btn-gol-tukar" class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">🔄 Tukar ke Format Baharu</button>
         </div>
-        <!-- 📤 Upload fail kamus pelbagai kategori sekaligus — kategori & MS dibaca dari nama fail (MS746_KATA_PENEGAS.txt) -->
-        <div style="display:flex;gap:6px;margin-bottom:6px;">
-          <button id="btn-gol-upload-semua" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Upload Semua Fail</button>
-          <button id="btn-gol-upload-folder" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#c4b5fd;">📁 Folder</button>
-        </div>
-        <input id="gol-upload-semua-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
-        <input id="gol-upload-folder-input" type="file" webkitdirectory directory multiple style="display:none;">
+        <div style="font-size:0.7rem;color:#94a3b8;margin-bottom:6px;">📚 Fail kamus diurus di <b>Bank Kamus</b> (page Bahasa) — dikongsi semua bahasa.</div>
         <button id="btn-add-golongan" class="btn btn-sm" style="width:100%;">+ Tambah Golongan</button>
         <input id="gol-upload-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
         <div class="list mt-8" id="golongan-list" style="padding: 10px;"></div>
@@ -17319,9 +17335,13 @@ function _aiAmaranKos({ nama, perkataan = 0, laciTips = 0, model }) {
 // Fail kamus diambil dari muka_surat_fail/{jenisId} (upload di page Golongan → 📄 Fail).
 // Muka surat yang ditambah manual (tiada fail) → user pilih fail dari senarai fail golongan.
 function _aiCalonFail(j) {
-  return allJenisKata
-    .filter(x => x.id !== j.id && x.bilFail && (j.golonganId ? x.golonganId === j.golonganId : x.bahasaId === j.bahasaId))
-    .sort((a, b) => (a.ms ?? 1e9) - (b.ms ?? 1e9) || _golCmp(a.name, b.name));
+  const nyata = allJenisKata
+    .filter(x => x.id !== j.id && x.bilFail && (j.golonganId ? x.golonganId === j.golonganId : x.bahasaId === j.bahasaId));
+  // + fail Bank Kamus (kategori sama) yang belum jadi muka surat
+  const g = allGolongan.find(x => x.id === j.golonganId);
+  const maya = _bankMsBelumDibuka(g, allJenisKata.filter(x => x.golonganId === j.golonganId))
+    .map(b => ({ id: `bank:${b.ms}`, bank: true, ms: b.ms, name: `${g.name} MS${b.ms}`, bilFail: b.bil, namaFail: b.namaFail }));
+  return [...nyata, ...maya].sort((a, b) => (a.ms ?? 1e9) - (b.ms ?? 1e9) || _golCmp(a.name, b.name));
 }
 
 document.getElementById('btn-ai-jana-ms')?.addEventListener('click', async () => {
@@ -17405,7 +17425,7 @@ document.getElementById('btn-ai-jana-ms')?.addEventListener('click', async () =>
     }
     const model = popup.querySelector('input[name="ai-model"]:checked')?.value || _aiModelAkhir();
     // ⚠️ Anggaran kos → amaran 2 kali + PIN
-    const fSumber = pilihan === '__tiada__' ? null : (pilihan ? allJenisKata.find(x => x.id === pilihan) : j);
+    const fSumber = pilihan === '__tiada__' ? null : (pilihan ? calon.find(x => x.id === pilihan) : j);
     const bilFail = fSumber ? (fSumber.bilFail || 0) : 0;
     const bilSedia = allBahasaPerkataan.filter(p => p.jenisId === j.id).length;
     const perkataanBaru = Math.max(0, bilFail - bilSedia);
@@ -17417,7 +17437,16 @@ document.getElementById('btn-ai-jana-ms')?.addEventListener('click', async () =>
     try {
       let namaFail = j.namaFail || '';
       // Fail dari muka surat lain → salin ke muka surat ini (muka surat sumber yang KOSONG digabung & dibuang)
-      if (pilihan && pilihan !== '__tiada__') {
+      // Fail dari Bank Kamus → hanya tetapkan nombor MS (teks dibaca terus dari Bank oleh worker)
+      const pilihBank = pilihan && pilihan !== '__tiada__' ? calon.find(x => x.id === pilihan && x.bank) : null;
+      if (pilihBank) {
+        if (!confirm(`Guna fail Bank Kamus "${pilihBank.namaFail || pilihBank.name}" untuk "${j.name}"?\n(${pilihBank.bilFail} perkataan · MS${pilihBank.ms})`)) { btnHantar.disabled = false; return; }
+        const kemas = { ms: pilihBank.ms, bilFail: pilihBank.bilFail || 0, namaFail: pilihBank.namaFail || '' };
+        await updateDoc(doc(db, 'users', currentUser.uid, 'jenis_kata', j.id), kemas);
+        Object.assign(j, kemas);
+        namaFail = kemas.namaFail;
+      }
+      if (pilihan && pilihan !== '__tiada__' && !pilihBank) {
         const src = allJenisKata.find(x => x.id === pilihan);
         const s = await getDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', pilihan));
         if (!src || !s.exists()) throw new Error('Fail tidak dijumpai lagi.');
@@ -17905,6 +17934,7 @@ function bukaGolongan(bahasaId, namaBahasa) {
   const el = document.getElementById('parent-golongan-bahasa');
   if (el) el.textContent = namaBahasa || '';
   _golPantau();
+  _bankPantau();
   showSection(document.getElementById('section-golongan'));
   if (window._golDimuat) _golPastikanTetap(bahasaId); // jika belum dimuat, snapshot pertama akan buat
   renderGolongan();
@@ -17937,8 +17967,10 @@ function renderGolongan() {
     return;
   }
   const kad = (id, nama, jenis, bolehUbah, tetap) => {
-    const ms = jenis.length;
-    const adaFail = jenis.filter(j => j.bilFail).length;
+    const gObj = allGolongan.find(x => x.id === id);
+    const bankMs = _bankMsBelumDibuka(gObj, jenis); // MS dalam Bank Kamus yang belum jadi muka surat
+    const ms = jenis.length + bankMs.length;
+    const adaFail = jenis.filter(j => j.bilFail).length + bankMs.length;
     const lengkap = jenis.filter(j => (stat.get(j.id) || {}).lengkap).length;
     const div = document.createElement('div');
     div.className = 'drawer-card';
@@ -17951,7 +17983,7 @@ function renderGolongan() {
             : `<input value="${_aiEsc(nama)}" placeholder="Cth: KATA KERJA" style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;font-size:0.95rem;padding:4px 0;">`)
           : `<div style="flex:1;color:#94a3b8;font-size:0.95rem;font-style:italic;">${_aiEsc(nama)}</div>`}
         <button class="btn btn-secondary btn-sm" data-gol-buka style="border-color:#06b6d4;color:#22d3ee;">Buka</button>
-        ${bolehUbah ? `<button class="btn btn-secondary btn-sm" data-gol-fail style="border-color:#a78bfa;color:#c4b5fd;">📄 Fail</button>
+        ${bolehUbah ? `${tetap ? '' : `<button class="btn btn-secondary btn-sm" data-gol-fail style="border-color:#a78bfa;color:#c4b5fd;">📄 Fail</button>`}
         ${tetap ? '' : `<button class="btn btn-secondary btn-sm" data-gol-padam style="color:var(--danger);border-color:var(--danger);">X</button>`}` : ''}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -17969,11 +18001,11 @@ function renderGolongan() {
       div.querySelector('input')?.addEventListener('change', e => {
         updateDoc(doc(db, 'users', currentUser.uid, 'bahasa_golongan', id), { name: e.target.value.trim().toUpperCase() });
       });
-      div.querySelector('[data-gol-fail]').addEventListener('click', () => {
+      div.querySelector('[data-gol-fail]')?.addEventListener('click', () => {
         _golUploadId = id;
         document.getElementById('gol-upload-input').click();
       });
-      div.querySelector('[data-gol-lihat-fail]')?.addEventListener('click', () => senaraiFailGolongan(id, nama));
+      div.querySelector('[data-gol-lihat-fail]')?.addEventListener('click', () => (gObj && gObj.tetapKunci) ? bukaBankKategori(gObj.tetapKunci) : senaraiFailGolongan(id, nama));
       div.querySelector('[data-gol-padam]')?.addEventListener('click', () => {
         if (jenis.length) {
           showToast(`⚠️ "${nama}" masih ada ${jenis.length} muka surat. Padam muka surat dahulu — golongan hanya boleh dipadam bila kosong.`, 5000);
@@ -17992,8 +18024,8 @@ function renderGolongan() {
 // ── 📄 Lihat fail kamus satu muka surat ──
 async function lihatFailMukaSurat(jenisId) {
   const j = allJenisKata.find(x => x.id === jenisId) || {};
-  const s = await getDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', jenisId));
-  const teks = s.exists() ? (s.data().teks || '') : '';
+  const fBank = await _bankTeksJenis(j.id ? j : { id: jenisId }); // muka_surat_fail ATAU Bank Kamus
+  const teks = fBank ? (fBank.teks || '') : '';
   const p = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📄 ${_aiEsc(j.name || '')}</div>
     <div style="font-size:0.7rem;color:#94a3b8;margin-bottom:8px;word-break:break-all;">${_aiEsc(j.namaFail || '')} · ${j.bilFail || 0} perkataan</div>
     <button data-ms-salin ${teks ? '' : 'disabled'} style="width:100%;margin-bottom:8px;padding:10px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;${teks ? '' : 'opacity:0.4;'}">📋 Copy Teks Fail</button>
@@ -18240,6 +18272,290 @@ document.getElementById('btn-gol-upload-folder')?.addEventListener('click', () =
   });
 });
 
+// ══════════════════════════════════════════
+// 📚 BANK KAMUS — fail kamus DIKONGSI semua bahasa (upload sekali sahaja)
+// kamus_bank/{KUNCI}            { kunci, nama, urutan, ms: { "746": { bil, namaFail } } }   ← indeks ringan (1 bacaan / kategori)
+// kamus_bank_fail/{KUNCI}_{ms}  { kunci, ms, teks, bil, namaFail }                          ← teks penuh (dibaca bila perlu)
+// Muka surat (jenis_kata) hanya dicipta bila dibuka / dijana → Firestore tidak penuh dengan ribuan dokumen.
+// ══════════════════════════════════════════
+let _bankIndeks = {};      // KUNCI → { "746": { bil, namaFail } }
+let _bankUnsub = null;
+let _bankCariMs = '';
+
+function _bankPantau() {
+  if (_bankUnsub || !currentUser) return;
+  _bankUnsub = onSnapshot(collection(db, 'users', currentUser.uid, 'kamus_bank'), snap => {
+    _bankIndeks = {};
+    snap.docs.forEach(d => { _bankIndeks[d.id] = (d.data() || {}).ms || {}; });
+    const aktif = (id) => document.getElementById(id)?.classList.contains('active');
+    if (aktif('section-golongan')) renderGolongan();
+    if (aktif('section-jenis-kata')) renderJenisKata();
+    if (aktif('section-bank-kamus')) renderBank();
+  }, err => console.warn('kamus_bank:', err));
+}
+
+const _bankMsJenis = (j) => (j.ms != null ? j.ms : (_golParseNama(j.name) || {}).ms);
+
+// MS dalam Bank (kategori golongan ini) yang BELUM jadi muka surat
+function _bankMsBelumDibuka(g, jenis) {
+  if (!g || !g.tetapKunci) return [];
+  const peta = _bankIndeks[g.tetapKunci] || {};
+  const ada = new Set((jenis || []).map(_bankMsJenis).filter(x => x != null));
+  return Object.entries(peta)
+    .map(([k, v]) => ({ ms: parseInt(k, 10), bil: (v && v.bil) || 0, namaFail: (v && v.namaFail) || '' }))
+    .filter(x => !isNaN(x.ms) && !ada.has(x.ms))
+    .sort((a, b) => a.ms - b.ms);
+}
+
+function _bankMayaUntukSenarai(jenisDalamGolongan) {
+  if (!currentGolonganId || currentGolonganId === '__tanpa__') return [];
+  _bankPantau();
+  return _bankMsBelumDibuka(allGolongan.find(x => x.id === currentGolonganId), jenisDalamGolongan);
+}
+
+// Teks fail untuk satu muka surat: muka_surat_fail (lama) → Bank Kamus
+async function _bankTeksJenis(j) {
+  if (!currentUser || !j || !j.id) return null;
+  try {
+    const s = await getDoc(doc(db, 'users', currentUser.uid, 'muka_surat_fail', j.id));
+    if (s.exists() && String(s.data().teks || '').trim()) return s.data();
+  } catch (e) {}
+  const g = allGolongan.find(x => x.id === j.golonganId);
+  const ms = _bankMsJenis(j);
+  if (!g || !g.tetapKunci || ms == null) return null;
+  try {
+    const b = await getDoc(doc(db, 'users', currentUser.uid, 'kamus_bank_fail', `${g.tetapKunci}_${ms}`));
+    return b.exists() ? b.data() : null;
+  } catch (e) { return null; }
+}
+
+async function _bankSalin(teks, btn, label) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(teks); ok = true; } catch (err) {}
+  if (!ok) {
+    const ta = document.createElement('textarea');
+    ta.value = teks;
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    try { ok = document.execCommand('copy'); } catch (err) {}
+    ta.remove();
+  }
+  btn.textContent = ok ? '✅ Disalin' : '❌ Gagal salin — tekan lama pada teks';
+  setTimeout(() => { btn.textContent = label; }, 2500);
+}
+
+// Papar satu fail Bank (dengan Copy & Buang)
+async function _bankLihatFail(kunci, ms) {
+  if (!currentUser) return;
+  const t = _golTetapIkutKunci(kunci) || { nama: kunci };
+  const s = await getDoc(doc(db, 'users', currentUser.uid, 'kamus_bank_fail', `${kunci}_${ms}`));
+  const d = s.exists() ? s.data() : {};
+  const teks = d.teks || '';
+  const p = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📄 ${_aiEsc(t.nama)} MS${ms}</div>
+    <div style="font-size:0.7rem;color:#94a3b8;margin-bottom:8px;word-break:break-all;">${_aiEsc(d.namaFail || '')} · ${d.bil || 0} perkataan · 📚 Bank Kamus</div>
+    <button data-salin ${teks ? '' : 'disabled'} style="width:100%;margin-bottom:8px;padding:10px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;${teks ? '' : 'opacity:0.4;'}">📋 Copy Teks Fail</button>
+    <pre style="white-space:pre-wrap;font-size:0.75rem;color:#e5e7eb;background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;max-height:55vh;overflow-y:auto;">${teks ? _aiEsc(teks) : '(tiada fail)'}</pre>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button data-buang style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #f87171;color:#f87171;">🗑️ Buang dari Bank</button>
+      <button data-ai-popup-batal style="flex:1;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Tutup</button>
+    </div>`);
+  p.querySelector('[data-ai-popup-batal]').addEventListener('click', () => p.remove());
+  p.querySelector('[data-salin]').addEventListener('click', (e) => _bankSalin(teks, e.currentTarget, '📋 Copy Teks Fail'));
+  p.querySelector('[data-buang]').addEventListener('click', async () => {
+    if (!confirm(`Buang fail ${t.nama} MS${ms} dari Bank Kamus?\n\n(Muka surat, perkataan, laci & SR yang sudah ada TIDAK diusik.)`)) return;
+    try {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'kamus_bank_fail', `${kunci}_${ms}`));
+      await updateDoc(doc(db, 'users', currentUser.uid, 'kamus_bank', kunci), { [`ms.${ms}`]: deleteField() });
+      p.remove();
+      showToast('🗑️ Fail dibuang dari Bank.');
+    } catch (e) { showToast('❌ ' + e.message); }
+  });
+}
+
+// Senarai fail satu kategori dalam Bank (dengan carian)
+function bukaBankKategori(kunci) {
+  _bankPantau();
+  const t = _golTetapIkutKunci(kunci) || { nama: kunci };
+  const semua = Object.entries(_bankIndeks[kunci] || {})
+    .map(([k, v]) => ({ ms: parseInt(k, 10), bil: (v && v.bil) || 0, namaFail: (v && v.namaFail) || '' }))
+    .filter(x => !isNaN(x.ms)).sort((a, b) => a.ms - b.ms);
+  const p = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:8px;">📚 ${_aiEsc(t.nama)} — ${semua.length} fail</div>
+    <input data-cari type="text" placeholder="🔍 Cari nombor MS (cth: 746)" autocomplete="off" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.85rem;outline:none;margin-bottom:8px;">
+    <div data-senarai style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto;"></div>
+    <button data-ai-popup-batal style="width:100%;margin-top:10px;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Tutup</button>`);
+  const box = p.querySelector('[data-senarai]');
+  const lukis = () => {
+    const c = (p.querySelector('[data-cari]').value || '').trim();
+    const tapis = semua.filter(x => !c || String(x.ms).includes(c) || x.namaFail.toLowerCase().includes(c.toLowerCase()));
+    box.innerHTML = tapis.length ? '' : '<div style="color:#94a3b8;font-size:0.8rem;">Tiada fail.</div>';
+    tapis.slice(0, 200).forEach(x => {
+      const b = document.createElement('button');
+      b.style.cssText = 'text-align:left;padding:8px 10px;border-radius:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.3);color:#e5e7eb;font-size:0.8rem;';
+      b.innerHTML = `📄 <b>MS${x.ms}</b> <span style="font-size:0.68rem;color:#94a3b8;">· ${x.bil} perkataan · ${_aiEsc(x.namaFail)}</span>`;
+      b.addEventListener('click', () => _bankLihatFail(kunci, x.ms));
+      box.appendChild(b);
+    });
+    if (tapis.length > 200) box.insertAdjacentHTML('beforeend', `<div style="font-size:0.7rem;color:#94a3b8;">+${tapis.length - 200} lagi — taip nombor MS</div>`);
+  };
+  p.querySelector('[data-cari]').addEventListener('input', lukis);
+  p.querySelector('[data-ai-popup-batal]').addEventListener('click', () => p.remove());
+  lukis();
+}
+
+// Page Bank Kamus — ringkasan setiap kategori
+function renderBank() {
+  const list = document.getElementById('bank-kategori-list');
+  if (!list) return;
+  list.innerHTML = '';
+  let jumlah = 0;
+  GOL_TETAP.forEach(t => {
+    const msList = Object.keys(_bankIndeks[t.kunci] || {}).map(k => parseInt(k, 10)).filter(x => !isNaN(x)).sort((a, b) => a - b);
+    jumlah += msList.length;
+    const div = document.createElement('div');
+    div.className = 'drawer-card';
+    div.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    div.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.92rem;font-weight:700;color:var(--text);">${t.urutan}. ${_aiEsc(t.nama)}</div>
+        <div style="font-size:0.7rem;color:${msList.length ? '#94a3b8' : '#64748b'};margin-top:2px;">${msList.length ? `${msList.length} fail · MS${msList[0]}–MS${msList[msList.length - 1]}` : 'Belum ada fail'}</div>
+      </div>
+      ${msList.length ? '<button class="btn btn-secondary btn-sm" data-lihat style="border-color:#a78bfa;color:#c4b5fd;">Lihat</button>' : ''}`;
+    div.querySelector('[data-lihat]')?.addEventListener('click', () => bukaBankKategori(t.kunci));
+    list.appendChild(div);
+  });
+  list.insertAdjacentHTML('afterbegin', `<div style="font-size:0.75rem;color:#c4b5fd;margin-bottom:4px;">Jumlah: <b>${jumlah}</b> fail dalam ${GOL_TETAP.length} kategori</div>`);
+}
+
+// 📤 Upload ke Bank — kategori & MS dibaca dari nama fail
+async function bankUpload(fail) {
+  if (!currentUser || !fail.length) return;
+  const kump = new Map();
+  const abai = [], takKenal = [];
+  fail.forEach(f => {
+    const x = _golParseFail(f.name);
+    if (!x) { abai.push(f.name); return; }            // cth: STATUS
+    if (!_golTetapIkutKunci(x.kunci)) { takKenal.push(f.name); return; }
+    if (!kump.has(x.kunci)) kump.set(x.kunci, []);
+    kump.get(x.kunci).push({ f, ms: x.ms });
+  });
+  if (!kump.size) {
+    showToast(`⚠️ Tiada fail sepadan. Format nama: MS001_KATA_KERJA.txt${takKenal.length ? ` · ${takKenal.length} kategori tak dikenali` : ''}`, 6000);
+    return;
+  }
+  const jumlah = [...kump.values()].reduce((a, x) => a + x.length, 0);
+  const ringkas = [...kump.entries()].sort((a, b) => _golTetapIkutKunci(a[0]).urutan - _golTetapIkutKunci(b[0]).urutan)
+    .map(([k, x]) => `• ${_golTetapIkutKunci(k).nama}: ${x.length} fail`).join('\n');
+  if (!confirm(`Upload ${jumlah} fail ke Bank Kamus?\n\n${ringkas}` +
+    (abai.length ? `\n\n${abai.length} fail diabaikan (tiada nombor MS, cth: STATUS)` : '') +
+    (takKenal.length ? `\n${takKenal.length} fail kategori tak dikenali (dilangkau)` : '') +
+    `\n\nFail dengan MS sama akan DIGANTI.`)) return;
+  let siap = 0, kosong = 0;
+  try {
+    for (const [k, senarai] of kump) {
+      const t = _golTetapIkutKunci(k);
+      for (let i = 0; i < senarai.length; i += 100) {
+        const chunk = senarai.slice(i, i + 100);
+        const batch = writeBatch(db);
+        const msPeta = {};
+        for (const x of chunk) {
+          const teks = await x.f.text();
+          const bil = _aiKiraPerkataanKamus(teks);
+          if (!bil) kosong++;
+          batch.set(doc(db, 'users', currentUser.uid, 'kamus_bank_fail', `${k}_${x.ms}`), {
+            kunci: k, ms: x.ms, teks, bil, namaFail: x.f.name, uploadedAt: Date.now()
+          });
+          msPeta[String(x.ms)] = { bil, namaFail: x.f.name };
+        }
+        batch.set(doc(db, 'users', currentUser.uid, 'kamus_bank', k), {
+          kunci: k, nama: t.nama, urutan: t.urutan, ms: msPeta, updatedAt: Date.now()
+        }, { merge: true });
+        await batch.commit();
+        siap += chunk.length;
+        showToast(`⏳ Upload ke Bank: ${siap}/${jumlah} fail...`, 0);
+      }
+    }
+    let msg = `✅ ${siap} fail disimpan dalam Bank Kamus — semua bahasa boleh guna.`;
+    if (kosong) msg += ` · ⚠️ ${kosong} fail tiada baris "1.perkataan = maksud"`;
+    showToast(msg, 7000);
+  } catch (e) {
+    showToast(`❌ Gagal upload (${siap}/${jumlah} siap): ` + e.message, 6000);
+  }
+}
+
+// MS maya dalam page Muka Surat (belum dibuka) — tekan Buka untuk cipta muka surat
+function _bankRenderMaya(list, maya) {
+  if (!maya || !maya.length) return;
+  const g = allGolongan.find(x => x.id === currentGolonganId);
+  if (!g) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'margin-top:10px;padding:10px;border-radius:12px;border:1px dashed rgba(167,139,250,0.5);background:rgba(124,58,237,0.05);';
+  box.innerHTML = `<div style="font-size:0.78rem;font-weight:700;color:#c4b5fd;margin-bottom:6px;">📚 Dari Bank Kamus — ${maya.length} muka surat belum dibuka</div>
+    <input data-bank-cari type="text" value="${_aiEsc(_bankCariMs)}" placeholder="🔍 Cari nombor MS (cth: 746)" autocomplete="off" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;">
+    <div data-bank-senarai style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>`;
+  list.appendChild(box);
+  const sen = box.querySelector('[data-bank-senarai]');
+  const lukis = () => {
+    const c = _bankCariMs.trim();
+    const t = maya.filter(x => !c || String(x.ms).includes(c));
+    sen.innerHTML = t.length ? '' : '<div style="font-size:0.75rem;color:#94a3b8;">Tiada MS sepadan.</div>';
+    t.slice(0, 40).forEach(x => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid #334155;';
+      row.innerHTML = `<div style="flex:1;font-size:0.85rem;color:#e5e7eb;">${_aiEsc(g.name)} MS${x.ms} <span style="font-size:0.68rem;color:#94a3b8;">· ${x.bil} perkataan</span></div>
+        <button data-l class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">📄</button>
+        <button data-b class="btn btn-secondary btn-sm" style="border-color:#06b6d4;color:#22d3ee;">Buka</button>`;
+      row.querySelector('[data-l]').addEventListener('click', () => _bankLihatFail(g.tetapKunci, x.ms));
+      row.querySelector('[data-b]').addEventListener('click', (e) => { e.currentTarget.disabled = true; _bankBukaMs(g, x); });
+      sen.appendChild(row);
+    });
+    if (t.length > 40) sen.insertAdjacentHTML('beforeend', `<div style="font-size:0.7rem;color:#94a3b8;">+${t.length - 40} lagi — taip nombor MS untuk cari</div>`);
+  };
+  box.querySelector('[data-bank-cari]').addEventListener('input', (e) => { _bankCariMs = e.target.value; lukis(); });
+  lukis();
+}
+
+// Cipta muka surat dari Bank (sekali sahaja) & terus buka
+async function _bankBukaMs(g, x) {
+  if (!currentUser || !g) return;
+  try {
+    let j = allJenisKata.find(j => j.golonganId === g.id && _bankMsJenis(j) === x.ms);
+    let id = j && j.id;
+    if (!id) {
+      const ref = doc(collection(db, 'users', currentUser.uid, 'jenis_kata'));
+      await setDoc(ref, {
+        name: `${g.name} MS${x.ms}`, bahasaId: g.bahasaId, golonganId: g.id, ms: x.ms,
+        bilFail: x.bil || 0, namaFail: x.namaFail || '', isActive: false, dariBank: true, createdAt: Date.now() + x.ms
+      });
+      id = ref.id;
+    }
+    currentJenisKataId = id;
+    document.getElementById('parent-perkataan-jenis-name').textContent = `${g.name} MS${x.ms}`;
+    if (sectionBahasaPerkataan) { showSection(sectionBahasaPerkataan); renderPerkataan(); }
+  } catch (e) { showToast('❌ Gagal buka: ' + e.message); }
+}
+
+document.getElementById('btn-buka-bank-kamus')?.addEventListener('click', () => {
+  if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
+  _bankPantau();
+  showSection(document.getElementById('section-bank-kamus'));
+  renderBank();
+});
+document.getElementById('btn-back-bank-kamus')?.addEventListener('click', () => {
+  const sec = document.getElementById('section-bahasa');
+  if (sec) { showSection(sec); renderBahasaList(); }
+});
+document.getElementById('btn-bank-upload')?.addEventListener('click', () => document.getElementById('bank-upload-input')?.click());
+document.getElementById('btn-bank-folder')?.addEventListener('click', () => document.getElementById('bank-folder-input')?.click());
+['bank-upload-input', 'bank-folder-input'].forEach(idInput => {
+  document.getElementById(idInput)?.addEventListener('change', async (e) => {
+    const input = e.currentTarget;
+    const fail = Array.from(input.files || []);
+    input.value = '';
+    await bankUpload(fail);
+  });
+});
+
 function renderJenisKata() {
       const list = document.getElementById('topics-list') || document.getElementById('jenis-kata-list');
       if (!list) return;
@@ -18250,7 +18566,8 @@ function renderJenisKata() {
         : currentGolonganId === '__tanpa__' ? (!j.golonganId || !golIdsBahasa.includes(j.golonganId))
         : j.golonganId === currentGolonganId));
       const sorted = [...filtered].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
-      if (!sorted.length) {
+      const _maya = _bankMayaUntukSenarai(filtered); // MS dalam Bank Kamus yang belum dibuka
+      if (!sorted.length && !_maya.length) {
         list.innerHTML = '<div class="empty-state">Belum ada jenis kata. Tekan Tambah.</div>';
         return;
       }
@@ -18339,6 +18656,7 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
         });
         list.appendChild(div);
       });
+      _bankRenderMaya(list, _maya);
     }
 
 function renderPerkataan() {
