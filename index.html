@@ -2167,28 +2167,6 @@ body.dark-mode {
         <div class="list mt-8" id="bahasa-drawer-list" style="padding: 10px;"></div>
       </section>
 
-<!-- 📚 BANK KAMUS — Parent (KATA KERJA...) → fail .txt -->
-<section id="section-kamus-bank" class="section">
-        <div class="topbar">
-          <button id="btn-kmb-back" class="btn btn-secondary btn-sm">← Kembali</button>
-          <div style="text-align: right;">
-            <div class="topbar-title" style="color:#a78bfa;">📚 Bank Kamus</div>
-            <div class="topbar-sub" id="kmb-sub" style="color:#c4b5fd; font-weight:bold;">Parent</div>
-          </div>
-        </div>
-        <div id="kmb-mod-parent">
-          <button id="btn-kmb-tambah-parent" class="btn btn-sm mt-8" style="width:100%;border-color:#a78bfa;">+ Tambah Parent (cth: KATA KERJA)</button>
-          <div class="list mt-8" id="kmb-parent-list" style="padding: 10px;"></div>
-        </div>
-        <div id="kmb-mod-fail" style="display:none;">
-          <button id="btn-kmb-upload" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Upload Fail .txt (boleh pilih banyak)</button>
-          <input id="kmb-upload-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
-          <input id="kmb-cari" type="text" placeholder="🔍 Cari fail..." autocomplete="off" style="width:100%;margin-top:8px;background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.85rem;outline:none;">
-          <div id="kmb-fail-info" style="font-size:0.72rem;color:#94a3b8;margin-top:6px;"></div>
-          <div class="list mt-8" id="kmb-fail-list" style="padding: 10px;"></div>
-        </div>
-      </section>
-
 <section id="section-bahasa-perkataan" class="section">
         <div class="topbar">
           <button id="btn-back-jenis-perkataan" class="btn btn-secondary btn-sm">← Jenis Kata</button>
@@ -6377,7 +6355,6 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-supplement')?.classList.remove("active");
       document.getElementById('section-water')?.classList.remove("active");
       document.getElementById('section-assignment-belly')?.classList.remove("active");
-      document.getElementById('section-kamus-bank')?.classList.remove("active");
       document.getElementById('section-bank-kamus')?.classList.remove("active");
       document.getElementById('section-golongan')?.classList.remove("active");
           section.classList.add("active");
@@ -17043,174 +17020,7 @@ function _aiRenderStatus() {
 }
 window._aiRenderStatus = _aiRenderStatus;
 
-// ══════════════════════════════════════════
-// 📚 BANK KAMUS — page khas simpan fail kamus (.txt) ikut Parent (KATA KERJA, KATA NAMA, ...)
-// kamus_parent/{pid} { nama, fail: { fid: { nama, bil, at, dijanaKe? } } }  ← dibaca Kindle (ringan)
-// kamus_fail/{fid}   { parentId, nama, teks, bil }                          ← dibaca worker AI sahaja
-// ══════════════════════════════════════════
-let _kmbParents = [];
-let _kmbUnsub = null;
-let _kmbParentId = null;
-let _kmbBalikKe = null;
-const _kmbCmp = (a, b) => String(a || '').localeCompare(String(b || ''), undefined, { numeric: true });
-
-function _kmbPantau() {
-  if (_kmbUnsub || !currentUser) return;
-  _kmbUnsub = onSnapshot(query(collection(db, 'users', currentUser.uid, 'kamus_parent')), snap => {
-    _kmbParents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    _kmbRender();
-  }, err => showToast('❌ Bank Kamus: ' + err.message));
-}
-
-function _kmbBuka() {
-  if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
-  const aktif = document.querySelector('.section.active');
-  if (aktif && aktif.id !== 'section-kamus-bank') _kmbBalikKe = aktif;
-  _kmbParentId = null;
-  _kmbPantau();
-  showSection(document.getElementById('section-kamus-bank'));
-  _kmbRender();
-}
-
-function _kmbRender() {
-  const sec = document.getElementById('section-kamus-bank');
-  if (!sec) return;
-  const parent = _kmbParents.find(p => p.id === _kmbParentId) || null;
-  if (_kmbParentId && !parent) _kmbParentId = null;
-  document.getElementById('kmb-mod-parent').style.display = _kmbParentId ? 'none' : 'block';
-  document.getElementById('kmb-mod-fail').style.display = _kmbParentId ? 'block' : 'none';
-  document.getElementById('kmb-sub').textContent = parent ? parent.nama : 'Parent';
-  if (!_kmbParentId) _kmbRenderParent(); else _kmbRenderFail(parent);
-}
-
-function _kmbRenderParent() {
-  const list = document.getElementById('kmb-parent-list');
-  if (!list) return;
-  const sorted = [..._kmbParents].sort((a, b) => _kmbCmp(a.nama, b.nama));
-  if (!sorted.length) { list.innerHTML = '<div class="empty-state">Belum ada parent. Tekan "+ Tambah Parent".</div>'; return; }
-  list.innerHTML = '';
-  sorted.forEach(p => {
-    const fail = Object.values(p.fail || {});
-    const dijana = fail.filter(f => f.dijanaKe).length;
-    const div = document.createElement('div');
-    div.className = 'drawer-card';
-    div.style.cssText = 'display:flex;align-items:center;gap:8px;';
-    div.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:0.95rem;font-weight:700;color:var(--text);">📁 ${_aiEsc(p.nama || '(tiada nama)')}</div>
-        <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">${fail.length} fail · ${dijana} sudah dijana</div>
-      </div>
-      <button class="btn btn-secondary btn-sm" data-kmb-buka style="border-color:#a78bfa;color:#c4b5fd;">Buka</button>
-      <button class="btn btn-secondary btn-sm" data-kmb-nama>✏️</button>
-      <button class="btn btn-secondary btn-sm" data-kmb-padam style="border-color:#f87171;color:#f87171;">X</button>`;
-    div.querySelector('[data-kmb-buka]').addEventListener('click', () => { _kmbParentId = p.id; document.getElementById('kmb-cari').value = ''; _kmbRender(); });
-    div.querySelector('[data-kmb-nama]').addEventListener('click', async () => {
-      const baru = prompt('Nama parent:', p.nama || '');
-      if (!baru || !baru.trim()) return;
-      await updateDoc(doc(db, 'users', currentUser.uid, 'kamus_parent', p.id), { nama: baru.trim().toUpperCase() });
-    });
-    div.querySelector('[data-kmb-padam]').addEventListener('click', async () => {
-      if (!confirm(`Padam parent "${p.nama}" dan ${fail.length} fail di dalamnya?`)) return;
-      try {
-        const ids = Object.keys(p.fail || {});
-        for (let i = 0; i < ids.length; i += 400) {
-          const batch = writeBatch(db);
-          ids.slice(i, i + 400).forEach(fid => batch.delete(doc(db, 'users', currentUser.uid, 'kamus_fail', fid)));
-          await batch.commit();
-        }
-        await deleteDoc(doc(db, 'users', currentUser.uid, 'kamus_parent', p.id));
-        showToast('🗑️ Parent dipadam.');
-      } catch (e) { showToast('❌ Gagal padam: ' + e.message); }
-    });
-    list.appendChild(div);
-  });
-}
-
-function _kmbRenderFail(parent) {
-  const list = document.getElementById('kmb-fail-list');
-  const info = document.getElementById('kmb-fail-info');
-  if (!list) return;
-  const cari = (document.getElementById('kmb-cari').value || '').trim().toLowerCase();
-  const semua = Object.entries(parent.fail || {}).map(([fid, f]) => ({ fid, ...f })).sort((a, b) => _kmbCmp(a.nama, b.nama));
-  const tapis = cari ? semua.filter(f => String(f.nama || '').toLowerCase().includes(cari)) : semua;
-  if (info) info.textContent = `${semua.length} fail · ${semua.filter(f => f.dijanaKe).length} sudah dijana${cari ? ` · ${tapis.length} sepadan carian` : ''}`;
-  if (!tapis.length) { list.innerHTML = `<div class="empty-state">${semua.length ? 'Tiada fail sepadan carian.' : 'Belum ada fail. Tekan 📤 Upload.'}</div>`; return; }
-  list.innerHTML = '';
-  tapis.slice(0, 300).forEach(f => {
-    const div = document.createElement('div');
-    div.className = 'drawer-card';
-    div.style.cssText = 'display:flex;align-items:center;gap:8px;';
-    div.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);word-break:break-all;">📄 ${_aiEsc(f.nama)}</div>
-        <div style="font-size:0.7rem;color:#94a3b8;margin-top:2px;">${f.bil || 0} perkataan${f.dijanaKe ? ` · <span style="color:#34d399;">✅ dijana → ${_aiEsc(f.dijanaKe)}</span>` : ''}</div>
-      </div>
-      <button class="btn btn-secondary btn-sm" data-kmb-lihat>👁</button>
-      <button class="btn btn-secondary btn-sm" data-kmb-padam style="border-color:#f87171;color:#f87171;">X</button>`;
-    div.querySelector('[data-kmb-lihat]').addEventListener('click', async () => {
-      const s = await getDoc(doc(db, 'users', currentUser.uid, 'kamus_fail', f.fid));
-      const teks = s.exists() ? (s.data().teks || '') : '(fail tiada)';
-      const p = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:8px;word-break:break-all;">📄 ${_aiEsc(f.nama)}</div>
-        <pre style="white-space:pre-wrap;font-size:0.75rem;color:#e5e7eb;background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;max-height:60vh;overflow-y:auto;">${_aiEsc(teks)}</pre>
-        <button data-ai-popup-batal style="width:100%;margin-top:10px;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Tutup</button>`);
-      p.querySelector('[data-ai-popup-batal]').addEventListener('click', () => p.remove());
-    });
-    div.querySelector('[data-kmb-padam]').addEventListener('click', async () => {
-      if (!confirm(`Padam fail "${f.nama}"?`)) return;
-      try {
-        await deleteDoc(doc(db, 'users', currentUser.uid, 'kamus_fail', f.fid));
-        await updateDoc(doc(db, 'users', currentUser.uid, 'kamus_parent', parent.id), { [`fail.${f.fid}`]: deleteField() });
-      } catch (e) { showToast('❌ Gagal padam: ' + e.message); }
-    });
-    list.appendChild(div);
-  });
-}
-
-document.getElementById('btn-ai-bank-kamus')?.addEventListener('click', _kmbBuka);
-document.getElementById('btn-kmb-back')?.addEventListener('click', () => {
-  if (_kmbParentId) { _kmbParentId = null; _kmbRender(); return; }
-  showSection(_kmbBalikKe || sectionBahasaPerkataan);
-});
-document.getElementById('btn-kmb-tambah-parent')?.addEventListener('click', async () => {
-  if (!currentUser) return;
-  const nama = prompt('Nama parent (cth: KATA KERJA, KATA NAMA):');
-  if (!nama || !nama.trim()) return;
-  await addDoc(collection(db, 'users', currentUser.uid, 'kamus_parent'), { nama: nama.trim().toUpperCase(), fail: {}, createdAt: Date.now() });
-});
-document.getElementById('kmb-cari')?.addEventListener('input', () => _kmbRender());
-document.getElementById('btn-kmb-upload')?.addEventListener('click', () => document.getElementById('kmb-upload-input')?.click());
-document.getElementById('kmb-upload-input')?.addEventListener('change', async (e) => {
-  const input = e.currentTarget;
-  const fail = Array.from(input.files || []);
-  input.value = '';
-  const parent = _kmbParents.find(p => p.id === _kmbParentId);
-  if (!fail.length || !parent || !currentUser) return;
-  showToast(`⏳ Memuat naik ${fail.length} fail ke "${parent.nama}"...`, 0);
-  try {
-    const sedia = {};
-    Object.entries(parent.fail || {}).forEach(([fid, f]) => { sedia[String(f.nama || '').toLowerCase()] = fid; });
-    const kemaskiniParent = {};
-    let kosong = 0;
-    for (let i = 0; i < fail.length; i += 100) {
-      const batch = writeBatch(db);
-      for (const f of fail.slice(i, i + 100)) {
-        const nama = f.name.replace(/\.txt$/i, '');
-        const fid = sedia[nama.toLowerCase()] || doc(collection(db, 'users', currentUser.uid, 'kamus_fail')).id;
-        const teks = await f.text();
-        const bil = _aiKiraPerkataanKamus(teks);
-        if (!bil) kosong++;
-        batch.set(doc(db, 'users', currentUser.uid, 'kamus_fail', fid), { parentId: parent.id, nama, teks, bil, uploadedAt: Date.now() });
-        const lama = (parent.fail || {})[fid] || {};
-        kemaskiniParent[`fail.${fid}`] = { ...lama, nama, bil, at: Date.now() };
-      }
-      await batch.commit();
-    }
-    await updateDoc(doc(db, 'users', currentUser.uid, 'kamus_parent', parent.id), kemaskiniParent);
-    showToast(`✅ ${fail.length} fail disimpan ke "${parent.nama}"${kosong ? ` · ⚠️ ${kosong} fail tiada baris "1.perkataan = maksud"` : ''}`, 5000);
-  } catch (err) {
-    showToast('❌ Gagal upload: ' + err.message, 5000);
-  }
-});
+// (Bank Kamus lama — kamus_parent / kamus_fail — telah dibuang. Guna 📚 Bank Kamus di page Bahasa.)
 
 function _aiBukaPopup(isi) {
   const p = document.createElement('div');
