@@ -2177,9 +2177,9 @@ body.dark-mode {
         </div>
         <button id="btn-add-perkataan" class="btn btn-sm mt-8" style="width:100%;border-color:#06b6d4;">+ Tambah Perkataan</button>
         <!-- 📋 Step 1: salin fail kamus muka surat semasa → tampal ke Claude chat (Terjemahan) -->
-        <button id="btn-copy-fail-ms" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">📋 Copy Fail Muka Surat (Step 1)</button>
-        <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Export To Pengajar Sebutan AI (Step 3)</button>
-        <button id="btn-open-jana-tips-pukal" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">📝 Import from Pengajar Sebutan For Jana Tips Pukal (Step 4)</button>
+        <button id="btn-copy-fail-ms" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">Step 1 : 📋 Salin Fail Kamus</button>
+        <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">Step 3 : 📤 Export ke AI Sebutan</button>
+        <button id="btn-open-jana-tips-pukal" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">Step 4 : 📝 Import Tips Sebutan</button>
 
         <!-- 🤖 AI WORKER (automatik) — butang manual di atas kekal -->
         <div id="ai-worker-panel" class="mt-8" style="width:100%;padding:10px;border:1px dashed rgba(167,139,250,0.5);border-radius:12px;background:rgba(124,58,237,0.06);">
@@ -18443,7 +18443,7 @@ document.getElementById('btn-bank-folder')?.addEventListener('click', () => docu
 // 📋 Step 1 — Copy fail kamus muka surat semasa (muka_surat_fail → Bank Kamus). Tiada AI, tiada kos.
 document.getElementById('btn-copy-fail-ms')?.addEventListener('click', async (e) => {
   const btn = e.currentTarget;
-  const label = '📋 Copy Fail Muka Surat (Step 1)';
+  const label = 'Step 1 : 📋 Salin Fail Kamus';
   if (!currentUser || !currentJenisKataId) { showToast('⚠️ Sila buka muka surat dahulu.'); return; }
   const j = allJenisKata.find(x => x.id === currentJenisKataId);
   if (!j) { showToast('⚠️ Muka surat tidak dijumpai.'); return; }
@@ -18606,9 +18606,9 @@ function renderPerkataan() {
         const btnJanaPukal = document.getElementById('btn-open-jana-pukal-bahasa');
         const btnExport = document.getElementById('btn-export-format-ai');
         const btnImport = document.getElementById('btn-open-jana-tips-pukal');
-        if (btnJanaPukal) btnJanaPukal.textContent = '🗂️ Jana Pukal Bahasa (Step 2)';
-        if (btnExport) btnExport.textContent = '📤 Export To Pengajar Sebutan AI (Step 3)' + labelBadge;
-        if (btnImport) btnImport.textContent = '📝 Import from Pengajar Sebutan For Jana Tips Pukal (Step 4)' + labelBadge;
+        if (btnJanaPukal) btnJanaPukal.textContent = 'Step 2 : 🗂️ Tampal Jana Laci';
+        if (btnExport) btnExport.textContent = 'Step 3 : 📤 Export ke AI Sebutan' + labelBadge;
+        if (btnImport) btnImport.textContent = 'Step 4 : 📝 Import Tips Sebutan' + labelBadge;
         const btnAiTips = document.getElementById('btn-ai-jana-tips');
         if (btnAiTips) btnAiTips.textContent = '🤖 AI Jana Tips (Step 3 + 4)' + labelBadge;
         if (window._aiPantauMula) window._aiPantauMula();
@@ -18652,7 +18652,7 @@ function renderPerkataan() {
         btnJanaPukal.id = 'btn-open-jana-pukal-bahasa';
         btnJanaPukal.className = 'btn btn-sm';
         btnJanaPukal.style.cssText = 'width:100%;margin-top:8px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;box-shadow:0 6px 18px rgba(8,145,178,.3);';
-        btnJanaPukal.textContent = '🗂️ Jana Pukal Bahasa (Step 2)';
+        btnJanaPukal.textContent = 'Step 2 : 🗂️ Tampal Jana Laci';
         btnJanaPukal.addEventListener('click', () => {
           document.getElementById('jana-bahasa-input').value = '';
           document.getElementById('jana-bahasa-preview').textContent = '';
