@@ -2182,6 +2182,8 @@ body.dark-mode {
         <button id="btn-open-jana-tips-pukal" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">Step 4 : 📝 Import Tips Sebutan</button>
         <!-- 🪜 Navigasi step: satu butang step dipapar pada satu masa -->
         <div id="step-nav" style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;"></div>
+        <!-- 🖼️ Cadangan Jana G1 di latar semasa Step 4 (Tips di Claude chat) -->
+        <div id="step-g1-kad" style="display:none;margin-top:8px;"></div>
 
         <!-- 🤖 AI WORKER (automatik) — butang manual di atas kekal -->
         <div id="ai-worker-panel" class="mt-8" style="width:100%;padding:10px;border:1px dashed rgba(167,139,250,0.5);border-radius:12px;background:rgba(124,58,237,0.06);">
@@ -17005,6 +17007,7 @@ function _aiKadHtml(j) {
 
 function _aiRenderStatus() {
   if (window._imejWorkerRender) { try { window._imejWorkerRender(); } catch (e) {} }
+  if (typeof _stepKadG1 === 'function' && typeof _stepKini === 'function') { try { _stepKadG1(_stepKini()); } catch (e) {} }
   const box = document.getElementById('ai-job-status');
   if (!box) return;
   const jobs = _aiJobsTerkini.filter(j => j.jenisKataId === currentJenisKataId && !j.disembunyi);
@@ -18531,8 +18534,55 @@ function _stepRender() {
     <span style="font-size:0.72rem;color:#94a3b8;">Step ${i + 1} / ${_STEP_ID.length}</span>
     <button data-step-nav="${akhir ? 0 : i + 1}" style="${gaya}">${akhir ? '↺ Ke Step 1' : 'Langkau ▶'}</button>`;
   nav.querySelectorAll('[data-step-nav]').forEach(x => x.addEventListener('click', () => _stepSet(parseInt(x.getAttribute('data-step-nav'), 10))));
+  _stepKadG1(i);
 }
 window._stepRender = _stepRender;
+
+// 🖼️ Step 4: Tips dijana di Claude chat (ambil masa) → tawarkan Jana G1 di latar oleh worker serentak
+function _stepKadG1(i) {
+  const kad = document.getElementById('step-g1-kad');
+  if (!kad) return;
+  const sorok = () => { kad.style.display = 'none'; kad.innerHTML = ''; };
+  if (i !== 3 || !currentJenisKataId) return sorok();
+  const kunciTolak = 'step_g1_tolak_' + currentJenisKataId;
+  const aktif = typeof _aiJobAktif === 'function' ? _aiJobAktif(currentJenisKataId) : null;
+  const kotak = 'padding:12px 14px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.4);';
+  if (aktif && aktif.jenis === 'jana_imej') {
+    kad.style.display = 'block';
+    kad.innerHTML = `<div style="${kotak}font-size:0.76rem;color:#c7d2fe;line-height:1.6;">⚙️ <b>Gambar G1 sedang dijana di latar</b><br>
+      <span style="color:#94a3b8;">${_aiEsc(aktif.status === 'menunggu' ? 'Menunggu giliran worker...' : (aktif.progress || 'Sedang diproses...'))} · App boleh ditutup.</span></div>`;
+    return;
+  }
+  let tolak = false;
+  try { tolak = localStorage.getItem(kunciTolak) === '1'; } catch (e) {}
+  const bil = (typeof getDrawersForCurrentJenis === 'function' ? getDrawersForCurrentJenis().drawers : [])
+    .filter(d => !String(d.imageUrl || '').trim()).length;
+  if (tolak || aktif || !bil) return sorok();
+  kad.style.display = 'block';
+  kad.innerHTML = `<div style="${kotak}">
+    <div style="font-size:0.84rem;font-weight:700;color:#c7d2fe;margin-bottom:4px;">🖼️ Jana Gambar G1 sementara menunggu Tips?</div>
+    <div style="font-size:0.74rem;color:#cbd5e1;line-height:1.6;margin-bottom:8px;">
+      Penjanaan Tips di Claude chat memerlukan sedikit masa. Sementara itu, sistem boleh menjana Gambar G1 untuk
+      <b>${bil} laci</b> yang belum bergambar secara automatik di latar belakang.</div>
+    <div style="font-size:0.7rem;color:#94a3b8;line-height:1.7;margin-bottom:10px;">
+      • Diproses oleh pelayan — app boleh ditutup sebaik sahaja ia bermula<br>
+      • Status boleh dipantau di phone &amp; Kindle<br>
+      • Dicaj oleh xAI (Grok) · Kos Claude: RM0</div>
+    <div style="display:flex;gap:8px;">
+      <button data-g1-ya style="flex:1;padding:10px;border-radius:999px;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;color:white;font-weight:700;font-size:0.8rem;cursor:pointer;">Ya, mulakan G1</button>
+      <button data-g1-tidak style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #475569;color:#cbd5e1;font-size:0.78rem;cursor:pointer;">Tidak, terima kasih</button>
+    </div></div>`;
+  kad.querySelector('[data-g1-tidak]').addEventListener('click', () => {
+    try { localStorage.setItem(kunciTolak, '1'); } catch (e) {}
+    sorok();
+  });
+  kad.querySelector('[data-g1-ya]').addEventListener('click', async (e) => {
+    e.currentTarget.disabled = true;
+    e.currentTarget.textContent = '⏳ Menghantar...';
+    await hantarImejWorker({ terus: true });
+    _stepKadG1(_stepKini());
+  });
+}
 
 function renderJenisKata() {
       const list = document.getElementById('topics-list') || document.getElementById('jenis-kata-list');
@@ -27055,7 +27105,7 @@ async function uploadBlobToBahasaDrawer(drawerId, blob, ratioW, ratioH, isGambar
 // Phone & Kindle baca ai_jobs yang sama → kedua-duanya tahu worker sedang jana (tak boleh hantar dua kali).
 // Worker semak semula setiap laci sebelum jana → tiada gambar berganda / bayar dua kali.
 // ══════════════════════════════════════════
-async function hantarImejWorker() {
+async function hantarImejWorker(opt = {}) { // opt.terus = sudah disahkan (kad Step 4) → tiada confirm kedua
   if (!currentUser || !currentJenisKataId) { showToast('Buka satu muka surat (page Perkataan) dulu.'); return; }
   if (window._aiPantauMula) window._aiPantauMula();
   const j = (typeof allJenisKata !== 'undefined' ? allJenisKata : []).find(x => x.id === currentJenisKataId) || {};
@@ -27092,7 +27142,7 @@ async function hantarImejWorker() {
   const tajuk = gantiSemua
     ? `⚠️ GANTI SEMUA ${bil} Gambar G1 (gambar lama ditimpa)`
     : `🖼️ Jana ${bil} Gambar G1 (laci tanpa gambar)`;
-  if (!confirm(`${tajuk}\n${j.name || ''}\n\nWorker (Railway) jana guna Grok (xAI) — dicaj oleh xAI. Kos Claude: RM0.\nApp boleh DITUTUP selepas hantar. Status nampak di phone & Kindle.\n\nTeruskan?`)) return;
+  if (!opt.terus && !confirm(`${tajuk}\n${j.name || ''}\n\nWorker (Railway) jana guna Grok (xAI) — dicaj oleh xAI. Kos Claude: RM0.\nApp boleh DITUTUP selepas hantar. Status nampak di phone & Kindle.\n\nTeruskan?`)) return;
   try {
     await addDoc(collection(db, 'users', currentUser.uid, 'ai_jobs'), {
       jenis: 'jana_imej', jenisKataId: currentJenisKataId, jenisKataNama: j.name || '', imej: true,
