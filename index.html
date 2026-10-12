@@ -2180,6 +2180,8 @@ body.dark-mode {
         <button id="btn-copy-fail-ms" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">Step 1 : 📋 Salin Fail Kamus</button>
         <button id="btn-export-format-ai" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">Step 3 : 📤 Export ke AI Sebutan</button>
         <button id="btn-open-jana-tips-pukal" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">Step 4 : 📝 Import Tips Sebutan</button>
+        <!-- 🪜 Navigasi step: satu butang step dipapar pada satu masa -->
+        <div id="step-nav" style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;"></div>
 
         <!-- 🤖 AI WORKER (automatik) — butang manual di atas kekal -->
         <div id="ai-worker-panel" class="mt-8" style="width:100%;padding:10px;border:1px dashed rgba(167,139,250,0.5);border-radius:12px;background:rgba(124,58,237,0.06);">
@@ -18472,6 +18474,66 @@ document.getElementById('btn-copy-fail-ms')?.addEventListener('click', async (e)
   }
 });
 
+// ══════════════════════════════════════════
+// 🪜 STEP WIZARD — hanya SATU butang step dipapar. Tekan step → butang step seterusnya muncul.
+// ◀ Kembali / Langkau ▶ untuk ulang atau skip. Step diingat untuk setiap muka surat.
+// ══════════════════════════════════════════
+const _STEP_ID = ['btn-copy-fail-ms', 'btn-open-jana-pukal-bahasa', 'btn-export-format-ai', 'btn-open-jana-tips-pukal'];
+function _stepKini() {
+  try {
+    const v = parseInt(localStorage.getItem('step_ms_' + currentJenisKataId) || '0', 10);
+    return v >= 0 && v < _STEP_ID.length ? v : 0;
+  } catch (e) { return 0; }
+}
+function _stepSet(i) {
+  try { localStorage.setItem('step_ms_' + currentJenisKataId, String(Math.max(0, Math.min(_STEP_ID.length - 1, i)))); } catch (e) {}
+  _stepRender();
+}
+function _stepRender() {
+  const nav = document.getElementById('step-nav');
+  if (!nav) return;
+  // Butang Step 2 (Jana Pukal) — cipta jika belum ada (cth: muka surat baru tanpa perkataan)
+  if (!document.getElementById('btn-open-jana-pukal-bahasa')) {
+    const cp = document.getElementById('btn-copy-fail-ms');
+    if (cp && cp.parentNode) {
+      const bj = document.createElement('button');
+      bj.id = 'btn-open-jana-pukal-bahasa';
+      bj.className = 'btn btn-sm';
+      bj.style.cssText = 'width:100%;margin-top:8px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;box-shadow:0 6px 18px rgba(8,145,178,.3);';
+      bj.textContent = 'Step 2 : 🗂️ Tampal Jana Laci';
+      bj.addEventListener('click', () => {
+        document.getElementById('jana-bahasa-input').value = '';
+        document.getElementById('jana-bahasa-preview').textContent = '';
+        document.getElementById('jana-pukal-bahasa-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('jana-bahasa-input').focus(), 80);
+      });
+      cp.parentNode.insertBefore(bj, cp.nextSibling);
+    }
+  }
+  const i = _stepKini();
+  _STEP_ID.forEach((id, k) => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    b.style.display = k === i ? '' : 'none';
+    if (!b._stepIkat) {
+      b._stepIkat = true;
+      // Selepas butang step ditekan → tunjuk step seterusnya (butang asal tetap jalan seperti biasa)
+      b.addEventListener('click', () => {
+        const s = _STEP_ID.indexOf(b.id);
+        if (s >= 0 && s < _STEP_ID.length - 1 && s === _stepKini()) setTimeout(() => _stepSet(s + 1), 400);
+      });
+    }
+  });
+  const gaya = 'padding:6px 12px;border-radius:999px;background:transparent;border:1px solid #475569;color:#cbd5e1;font-size:0.72rem;cursor:pointer;';
+  const akhir = i === _STEP_ID.length - 1;
+  nav.innerHTML = `
+    <button data-step-nav="${i - 1}" style="${gaya}${i === 0 ? 'opacity:0.35;' : ''}" ${i === 0 ? 'disabled' : ''}>◀ Kembali</button>
+    <span style="font-size:0.72rem;color:#94a3b8;">Step ${i + 1} / ${_STEP_ID.length}</span>
+    <button data-step-nav="${akhir ? 0 : i + 1}" style="${gaya}">${akhir ? '↺ Ke Step 1' : 'Langkau ▶'}</button>`;
+  nav.querySelectorAll('[data-step-nav]').forEach(x => x.addEventListener('click', () => _stepSet(parseInt(x.getAttribute('data-step-nav'), 10))));
+}
+window._stepRender = _stepRender;
+
 function renderJenisKata() {
       const list = document.getElementById('topics-list') || document.getElementById('jenis-kata-list');
       if (!list) return;
@@ -18582,6 +18644,7 @@ function renderPerkataan() {
       const sorted = [...filtered].sort((a,b) => (a.name||"").localeCompare(b.name||"", undefined, {numeric:true}));
       if (!sorted.length) {
         list.innerHTML = '<div class="empty-state">Belum ada perkataan. Tekan Tambah.</div>';
+        if (window._stepRender) window._stepRender(); // 🪜 muka surat baru → tetap tunjuk Step 1 / 2
         return;
       }
 
@@ -18667,6 +18730,7 @@ function renderPerkataan() {
         }
       }
       kemaskiniBadgeTips();
+      if (window._stepRender) window._stepRender(); // 🪜 papar satu step sahaja
 
       // Butang Lain-lain
       if (!document.getElementById('btn-lain-lain-perkataan-listener-set')) {
