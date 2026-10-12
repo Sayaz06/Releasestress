@@ -16763,14 +16763,30 @@ document.getElementById('btn-export-format-ai')?.addEventListener('click', async
             });
           };
 
-          // Tanya: salin teks atau muat turun fail
+          // Tanya: salin terus atau muat turun fail
           const pilih = _aiBukaPopup(`<div style="font-size:0.95rem;font-weight:700;color:#a78bfa;margin-bottom:4px;">📤 Export siap — ${nomborLaci} laci</div>
             <div style="font-size:0.74rem;color:#9ca3af;margin-bottom:14px;line-height:1.6;">${_aiEsc(jenisData?.name || '')} · ${labelSkopFinal}<br>Pilih cara untuk dapatkan teks:</div>
-            <button data-ex-papar style="width:100%;padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;margin-bottom:8px;">📋 Papar &amp; Copy Teks</button>
+            <button data-ex-salin style="width:100%;padding:12px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;margin-bottom:8px;">📋 Copy Teks</button>
             <button data-ex-fail style="width:100%;padding:12px;border-radius:999px;background:transparent;border:1px solid #a78bfa;color:#c4b5fd;font-weight:600;font-size:0.9rem;cursor:pointer;margin-bottom:8px;">💾 Muat Turun Fail .txt</button>
             <button data-ai-popup-batal style="width:100%;padding:10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid #4b5563;color:#e5e7eb;">Batal</button>`);
           pilih.querySelector('[data-ai-popup-batal]').addEventListener('click', () => pilih.remove());
-          pilih.querySelector('[data-ex-papar]').addEventListener('click', () => { pilih.remove(); paparTeks(); });
+          // 📋 Copy terus ke clipboard (tiada paparan teks). Jika telefon sekat salin → papar teks untuk salin manual.
+          pilih.querySelector('[data-ex-salin]').addEventListener('click', async () => {
+            let ok = false;
+            try { await navigator.clipboard.writeText(finalText); ok = true; } catch (err) {}
+            if (!ok) {
+              const ta = document.createElement('textarea');
+              ta.value = finalText;
+              ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+              document.body.appendChild(ta);
+              ta.select();
+              try { ok = document.execCommand('copy'); } catch (err) {}
+              ta.remove();
+            }
+            pilih.remove();
+            if (ok) showToast(`📋 ${nomborLaci} laci disalin — tampal ke Claude chat.`, 3500);
+            else { showToast('⚠️ Telefon sekat salin automatik — tekan 📋 Copy Teks dalam paparan.', 4500); paparTeks(); }
+          });
           pilih.querySelector('[data-ex-fail]').addEventListener('click', () => { pilih.remove(); muatTurunFail(); });
 
         } catch(e) {
