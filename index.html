@@ -27195,7 +27195,10 @@ function _xaiBakiHtml() {
   let isi;
   if (!b.at && !menunggu) isi = '💳 Baki xAI: belum disemak';
   else if (b.ralat) isi = `⚠️ Baki xAI: ${_aiEsc(b.ralat)}`;
-  else if (typeof b.usd === 'number') isi = `💳 Baki xAI: <b style="color:${b.usd < 1 ? '#f87171' : '#e5e7eb'};">US$${b.usd.toFixed(2)}</b> (≈${_aiRM(b.usd)}) <span style="color:#64748b;">· ${masa}</span>`;
+  else if (typeof b.usd === 'number') {
+    isi = `💳 Baki xAI: <b style="color:${b.usd < 1 ? '#f87171' : '#e5e7eb'};">US$${b.usd.toFixed(2)}</b> (≈${_aiRM(b.usd)}) <span style="color:#64748b;">· ${masa}</span>`;
+    if (typeof b.beliUSD === 'number') isi += `<br><span style="color:#64748b;font-size:0.66rem;">Dibeli US$${b.beliUSD.toFixed(2)} − diguna bulan ini US$${(b.gunaUSD || 0).toFixed(2)}${b.previewOk === false ? ' (data penggunaan tiada — angka mungkin terlebih)' : ''}</span>`;
+  }
   else isi = '💳 Baki xAI: —';
   return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(148,163,184,0.3);font-size:0.72rem;color:#cbd5e1;line-height:1.5;">
     <span>${isi}</span>
