@@ -2348,9 +2348,11 @@ They immortalized the hero in a statue.
               Langkau laci yang sudah ada gambar
             </label>
 
+            <div style="font-size:0.68rem;color:#94a3b8;line-height:1.5;margin-bottom:6px;">⚡ Jana G1 dihantar ke <b>worker</b> — app boleh ditutup. Status dikongsi dengan Kindle (tak boleh tekan dua kali).</div>
+            <div id="mesin-imej-worker" style="display:none;font-size:0.74rem;color:#e5e7eb;line-height:1.5;margin-bottom:6px;padding:8px 10px;border-radius:8px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.45);"></div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;">
               <button id="btn-simpan-arahan-imej" type="button" class="btn btn-secondary btn-sm" style="border-color:#6366f1;color:#a5b4fc;">💾 Simpan Arahan</button>
-              <button id="btn-mesin-imej-mula" type="button" class="btn btn-sm" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;">⚡ Jana G1</button>
+              <button id="btn-mesin-imej-mula" type="button" class="btn btn-sm" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;">⚡ Jana G1 (Worker)</button>
               <button id="btn-mesin-imej-jeda" type="button" class="btn btn-secondary btn-sm" style="display:none;border-color:#fbbf24;color:#fbbf24;">⏸ Jeda</button>
               <button id="btn-mesin-imej-sambung" type="button" class="btn btn-sm" style="display:none;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;color:white;">▶ Sambung</button>
               <button id="btn-mesin-imej-henti" type="button" class="btn btn-secondary btn-sm" style="display:none;border-color:#f87171;color:#f87171;">⏹ Henti</button>
@@ -3831,7 +3833,7 @@ They immortalized the hero in a statue.
     <div id="jana-bahasa-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:10px;font-style:italic;min-height:18px;"></div>
     <div style="display:flex;gap:8px;">
       <button id="btn-jana-bahasa-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
-      <button id="btn-jana-bahasa-cancel"
+      <button id="btn-jana-bahasa-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
     </div>
   </div>
 </div>
@@ -16932,7 +16934,7 @@ function _aiKadHtml(j) {
   const tajuk = j.jenis === 'jana_pukal' ? '🤖 AI Jana Pukal (Step 2)'
     : j.jenis === 'jana_kindle' ? `🤖 AI dari Kindle — ${_aiEsc(j.failNama || 'Tips')}`
     : j.jenis === 'jana_ms' ? `🤖 AI Jana — Pukal → Tips${j.imej === false ? '' : ' → Gambar G1'}${j.failNama ? ' · ' + _aiEsc(j.failNama) : ''}`
-    : j.jenis === 'jana_imej' ? '🖼️ Jana Gambar G1 sahaja (dari Kindle)'
+    : j.jenis === 'jana_imej' ? `🖼️ Jana Gambar G1${j.gantiSemua ? ' (ganti semua)' : ''}${j.sumber === 'phone' ? ' · dari phone' : ' · dari Kindle'}`
     : '🤖 AI Jana Tips (Step 3 + 4)';
   const masa = j.createdAt ? new Date(j.createdAt).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   const h = j.hasil || {};
@@ -17000,6 +17002,7 @@ function _aiKadHtml(j) {
 }
 
 function _aiRenderStatus() {
+  if (window._imejWorkerRender) { try { window._imejWorkerRender(); } catch (e) {} }
   const box = document.getElementById('ai-job-status');
   if (!box) return;
   const jobs = _aiJobsTerkini.filter(j => j.jenisKataId === currentJenisKataId && !j.disembunyi);
@@ -26983,6 +26986,80 @@ async function uploadBlobToBahasaDrawer(drawerId, blob, ratioW, ratioH, isGambar
   return url;
 }
 
+// ══════════════════════════════════════════
+// ⚡ JANA G1 MELALUI WORKER — kerja dihantar ke ai_jobs (jana_imej). App boleh ditutup.
+// Phone & Kindle baca ai_jobs yang sama → kedua-duanya tahu worker sedang jana (tak boleh hantar dua kali).
+// Worker semak semula setiap laci sebelum jana → tiada gambar berganda / bayar dua kali.
+// ══════════════════════════════════════════
+async function hantarImejWorker() {
+  if (!currentUser || !currentJenisKataId) { showToast('Buka satu muka surat (page Perkataan) dulu.'); return; }
+  if (window._aiPantauMula) window._aiPantauMula();
+  const j = (typeof allJenisKata !== 'undefined' ? allJenisKata : []).find(x => x.id === currentJenisKataId) || {};
+  const aktif = _aiJobAktif(currentJenisKataId);
+  if (aktif) {
+    showToast(`⏳ Worker sedang ${aktif.jenis === 'jana_imej' ? 'jana gambar' : 'memproses'} muka surat ini${aktif.sumber === 'kindle' ? ' (dihantar dari Kindle)' : ''}. Tunggu siap dahulu.`, 5000);
+    return;
+  }
+  if (j.golonganId) {
+    try {
+      const ps = await getDoc(doc(db, 'users', currentUser.uid, 'ai_penjana', j.golonganId));
+      const p = ps.exists() ? ps.data() : null;
+      if (p && p.arahan === 'jalan' && (p.status === 'berjalan' || p.status === 'menunggu')) {
+        showToast('⏳ Penjana Kindle sedang berjalan untuk golongan ini (ia jana gambar juga). Tekan PAUSE di Kindle dahulu jika mahu jana dari sini.', 6500);
+        return;
+      }
+    } catch (e) {}
+  }
+  if (mesinImejState.running) { showToast('⏳ Mesin Imej (browser) masih berjalan — tekan Henti dahulu.'); return; }
+  const xai = await loadXaiApiKey();
+  if (!xai) { showToast('❌ Tiada xAI API key. Simpan key dalam panel Mesin Imej.'); return; }
+  await simpanArahanImej();
+  const arahan = (document.getElementById('arahan-imej-textarea')?.value || '').trim();
+  if (!arahan) {
+    alert('⚠️ Sila isikan Arahan Gambar 1 dahulu sebelum jana.');
+    document.getElementById('arahan-imej-textarea')?.focus();
+    return;
+  }
+  const { drawers } = getDrawersForCurrentJenis();
+  if (!drawers.length) { showToast('Tiada laci dalam muka surat ini.'); return; }
+  const gantiSemua = document.getElementById('mesin-imej-skip-existing')?.checked === false;
+  const bil = gantiSemua ? drawers.length : drawers.filter(d => !String(d.imageUrl || '').trim()).length;
+  if (!bil) { showToast('✅ Semua laci sudah ada Gambar 1.'); return; }
+  const tajuk = gantiSemua
+    ? `⚠️ GANTI SEMUA ${bil} Gambar G1 (gambar lama ditimpa)`
+    : `🖼️ Jana ${bil} Gambar G1 (laci tanpa gambar)`;
+  if (!confirm(`${tajuk}\n${j.name || ''}\n\nWorker (Railway) jana guna Grok (xAI) — dicaj oleh xAI. Kos Claude: RM0.\nApp boleh DITUTUP selepas hantar. Status nampak di phone & Kindle.\n\nTeruskan?`)) return;
+  try {
+    await addDoc(collection(db, 'users', currentUser.uid, 'ai_jobs'), {
+      jenis: 'jana_imej', jenisKataId: currentJenisKataId, jenisKataNama: j.name || '', imej: true,
+      gantiSemua, status: 'menunggu', createdAt: Date.now(), sumber: 'phone'
+    });
+    showToast('🖼️ Dihantar ke worker. App boleh ditutup.', 4500);
+  } catch (e) {
+    showToast('❌ Gagal hantar: ' + e.message);
+  }
+}
+
+// Kotak status worker dalam Mesin Imej + kunci butang bila worker sedang proses muka surat ini
+function _imejWorkerRender() {
+  const box = document.getElementById('mesin-imej-worker');
+  const btn = document.getElementById('btn-mesin-imej-mula');
+  const aktif = (currentUser && currentJenisKataId) ? _aiJobAktif(currentJenisKataId) : null;
+  if (btn) {
+    btn.disabled = !!aktif;
+    btn.style.opacity = aktif ? '0.5' : '';
+    btn.textContent = aktif ? '⏳ Worker sedang berjalan' : '⚡ Jana G1 (Worker)';
+  }
+  if (!box) return;
+  if (!aktif) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const dari = aktif.sumber === 'kindle' ? ' · dari Kindle' : (aktif.sumber === 'phone' ? ' · dari phone' : '');
+  const apa = aktif.jenis === 'jana_imej' ? 'Jana Gambar G1' : 'AI Jana';
+  const teks = aktif.status === 'menunggu' ? 'Menunggu giliran worker...' : (aktif.progress || 'Sedang diproses...');
+  box.style.display = 'block';
+  box.innerHTML = `⚙️ <b>${apa}${dari}</b><br>${_aiEsc(teks)}`;
+}
+window._imejWorkerRender = _imejWorkerRender;
+
 function updateMesinImejUI() {
   const prog = document.getElementById('mesin-imej-progress');
   const list = document.getElementById('mesin-imej-status-list');
@@ -27294,7 +27371,7 @@ function initMesinImejUI() {
   btnMula._mesinBound = true;
 
   btnSimpan?.addEventListener('click', () => simpanArahanImej());
-  btnMula.addEventListener('click', () => runMesinImejQueue({ gambar: 1 }));
+  btnMula.addEventListener('click', () => hantarImejWorker()); // ⚡ G1 → worker (app boleh ditutup)
   btnJeda?.addEventListener('click', () => {
     mesinImejState.paused = true;
     updateMesinImejUI();
