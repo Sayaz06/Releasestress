@@ -2321,6 +2321,16 @@ They immortalized the hero in a statue.
             </div>
             <div id="openai-key-status" style="font-size:0.7rem;color:var(--subtext);margin-bottom:10px;">Status: …</div>
 
+            <div style="font-size:0.72rem;color:#fbbf24;font-weight:700;margin-bottom:4px;">💳 xAI Management Key — semak baki kredit (Billing: Read sahaja)</div>
+            <input id="xai-mgmt-key-input" type="password" autocomplete="off" placeholder="tampal Management Key di sini..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(251,191,36,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.8rem;outline:none;margin-bottom:6px;">
+            <input id="xai-mgmt-team-input" type="text" autocomplete="off" placeholder="Team ID (pilihan — kosongkan, worker cari sendiri)" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:#e5e7eb;padding:7px 10px;font-size:0.74rem;outline:none;margin-bottom:6px;">
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <button id="btn-simpan-xai-mgmt" type="button" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);border:none;color:white;">Simpan Key</button>
+              <button id="btn-padam-xai-mgmt" type="button" class="btn btn-secondary btn-sm" style="flex:1;border-color:#f87171;color:#f87171;">Padam Key</button>
+            </div>
+            <div id="xai-mgmt-status" style="font-size:0.7rem;color:var(--subtext);">Status: …</div>
+            <div id="xai-baki-mesin" style="margin-bottom:10px;"></div>
+
             <div style="font-size:0.72rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 1 (konsep utama)</div>            
             <textarea id="arahan-imej-textarea" rows="4" placeholder="Preset untuk Gambar 1 — panduan visual utama berdasarkan ayat/perkataan..." style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(99,102,241,0.35);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.82rem;outline:none;resize:vertical;min-height:90px;margin-bottom:8px;"></textarea>
             <div style="font-size:0.72rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">📝 Arahan Gambar 2 (rujuk Gambar 1)</div>
@@ -18549,10 +18559,12 @@ function _stepKadG1(i) {
   if (i !== 3 || !currentJenisKataId) return sorok();
   const aktif = typeof _aiJobAktif === 'function' ? _aiJobAktif(currentJenisKataId) : null;
   const kotak = 'padding:12px 14px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.4);';
+  _xaiBakiPantau();
   if (aktif) {
     kad.style.display = 'block';
     kad.innerHTML = `<div style="${kotak}font-size:0.76rem;color:#c7d2fe;line-height:1.6;">⚙️ <b>${aktif.jenis === 'jana_imej' ? 'Gambar G1 sedang dijana di latar' : 'Worker sedang memproses muka surat ini'}</b><br>
-      <span style="color:#94a3b8;">${_aiEsc(aktif.status === 'menunggu' ? 'Menunggu giliran worker...' : (aktif.progress || 'Sedang diproses...'))} · App boleh ditutup.</span></div>`;
+      <span style="color:#94a3b8;">${_aiEsc(aktif.status === 'menunggu' ? 'Menunggu giliran worker...' : (aktif.progress || 'Sedang diproses...'))} · App boleh ditutup.</span>${_xaiBakiHtml()}</div>`;
+    _xaiBakiIkat(kad);
     return;
   }
   const semua = typeof getDrawersForCurrentJenis === 'function' ? getDrawersForCurrentJenis().drawers : [];
@@ -18578,7 +18590,8 @@ function _stepKadG1(i) {
     <div style="display:flex;gap:8px;">
       <button data-g1-ya style="flex:1;padding:10px;border-radius:999px;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;color:white;font-weight:700;font-size:0.8rem;cursor:pointer;">Ya, mulakan G1</button>
       <button data-g1-tidak style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #475569;color:#cbd5e1;font-size:0.78rem;cursor:pointer;">Tidak, terima kasih</button>
-    </div></div>`;
+    </div>${_xaiBakiHtml()}</div>`;
+  _xaiBakiIkat(kad);
   kad.querySelector('[data-g1-tidak]').addEventListener('click', () => {
     _stepG1Tolak.add(currentJenisKataId);
     sorok();
@@ -27161,11 +27174,96 @@ async function hantarImejWorker(opt = {}) { // opt.terus = sudah disahkan (kad S
   }
 }
 
+// ══════════════════════════════════════════
+// 💳 BAKI KREDIT xAI — worker baca melalui Management API (key Billing: Read) → settings/xaiBaki
+// App hanya MINTA semakan (mintaAt) & papar hasil. Management Key tidak dipanggil terus dari telefon.
+// ══════════════════════════════════════════
+let _xaiBaki = null;
+let _xaiBakiUnsub = null;
+function _xaiBakiPantau() {
+  if (_xaiBakiUnsub || !currentUser) return;
+  _xaiBakiUnsub = onSnapshot(doc(db, 'users', currentUser.uid, 'settings', 'xaiBaki'), s => {
+    _xaiBaki = s.exists() ? s.data() : null;
+    if (typeof _stepKadG1 === 'function' && typeof _stepKini === 'function') { try { _stepKadG1(_stepKini()); } catch (e) {} }
+    _xaiBakiMesin();
+  }, e => console.warn('xaiBaki:', e));
+}
+function _xaiBakiHtml() {
+  const b = _xaiBaki || {};
+  const menunggu = b.mintaAt && b.mintaAt > (b.at || 0);
+  const masa = b.at ? new Date(b.at).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  let isi;
+  if (!b.at && !menunggu) isi = '💳 Baki xAI: belum disemak';
+  else if (b.ralat) isi = `⚠️ Baki xAI: ${_aiEsc(b.ralat)}`;
+  else if (typeof b.usd === 'number') isi = `💳 Baki xAI: <b style="color:${b.usd < 1 ? '#f87171' : '#e5e7eb'};">US$${b.usd.toFixed(2)}</b> (≈${_aiRM(b.usd)}) <span style="color:#64748b;">· ${masa}</span>`;
+  else isi = '💳 Baki xAI: —';
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(148,163,184,0.3);font-size:0.72rem;color:#cbd5e1;line-height:1.5;">
+    <span>${isi}</span>
+    <button data-xai-semak ${menunggu ? 'disabled' : ''} style="flex-shrink:0;padding:4px 10px;border-radius:999px;background:transparent;border:1px solid #475569;color:#cbd5e1;font-size:0.68rem;cursor:pointer;">${menunggu ? '⏳ Menyemak' : '↻ Semak'}</button></div>`;
+}
+function _xaiBakiIkat(root) {
+  root?.querySelectorAll('[data-xai-semak]').forEach(b => b.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    e.currentTarget.disabled = true;
+    e.currentTarget.textContent = '⏳ Menyemak';
+    try { await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'xaiBaki'), { mintaAt: Date.now() }, { merge: true }); }
+    catch (err) { showToast('❌ ' + err.message); }
+  }));
+}
+function _xaiBakiMesin() {
+  const el = document.getElementById('xai-baki-mesin');
+  if (!el) return;
+  el.innerHTML = _xaiBakiHtml();
+  _xaiBakiIkat(el);
+}
+async function _xaiMgmtStatus() {
+  const el = document.getElementById('xai-mgmt-status');
+  if (!el || !currentUser) return;
+  try {
+    const s = await getDoc(doc(db, 'users', currentUser.uid, 'settings', 'xaiManagementKey'));
+    const d = s.exists() ? s.data() : {};
+    const k = String(d.key || '');
+    el.textContent = k ? `Status: ✅ Key ada (…${k.slice(-4)})${d.teamId ? ' · Team ID ✅' : ' · Team ID: dicari oleh worker'}` : 'Status: ❌ Tiada key';
+    el.style.color = k ? '#22c55e' : '#f87171';
+  } catch (e) { el.textContent = 'Status: ⚠️ ' + e.message; }
+  _xaiBakiPantau();
+  _xaiBakiMesin();
+}
+document.getElementById('btn-simpan-xai-mgmt')?.addEventListener('click', async () => {
+  if (!currentUser) { showToast('⚠️ Sila login dahulu.'); return; }
+  const kIn = document.getElementById('xai-mgmt-key-input');
+  const tIn = document.getElementById('xai-mgmt-team-input');
+  const key = (kIn?.value || '').trim();
+  const teamId = (tIn?.value || '').trim();
+  if (!key && !teamId) { showToast('Sila tampal Management Key.'); return; }
+  try {
+    const data = { updatedAt: Date.now() };
+    if (key) { data.key = key; data.teamId = teamId; } else data.teamId = teamId;
+    await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'xaiManagementKey'), data, { merge: true });
+    await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'xaiBaki'), { mintaAt: Date.now() }, { merge: true });
+    if (kIn) kIn.value = '';
+    if (tIn) tIn.value = '';
+    showToast('✅ Management Key disimpan. Worker sedang menyemak baki...');
+    _xaiMgmtStatus();
+  } catch (e) { showToast('❌ Gagal simpan: ' + e.message); }
+});
+document.getElementById('btn-padam-xai-mgmt')?.addEventListener('click', async () => {
+  if (!currentUser) return;
+  if (!confirm('Padam xAI Management Key?\nBaki kredit tidak akan dipapar lagi.')) return;
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'xaiManagementKey'), { key: '', teamId: '', updatedAt: Date.now() }, { merge: true });
+    showToast('🗑️ Management Key dipadam.');
+    _xaiMgmtStatus();
+  } catch (e) { showToast('❌ ' + e.message); }
+});
+
 // Kotak status worker dalam Mesin Imej + kunci butang bila worker sedang proses muka surat ini
 function _imejWorkerRender() {
   const box = document.getElementById('mesin-imej-worker');
   const btn = document.getElementById('btn-mesin-imej-mula');
   const aktif = (currentUser && currentJenisKataId) ? _aiJobAktif(currentJenisKataId) : null;
+  if (!_xaiBakiUnsub && currentUser) _xaiMgmtStatus();
   if (btn) {
     btn.disabled = !!aktif;
     btn.style.opacity = aktif ? '0.5' : '';
