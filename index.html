@@ -2194,6 +2194,8 @@ body.dark-mode {
               <button id="btn-ai-key-toggle" style="padding:3px 10px;border-radius:999px;background:transparent;border:1px solid rgba(167,139,250,0.5);color:#c4b5fd;font-size:0.68rem;cursor:pointer;">🔑 API Key</button>
             </div>
           </div>
+          <!-- 💳 Baki kredit Grok (xAI) — sentiasa dipapar dalam panel worker -->
+          <div id="ai-worker-baki"></div>
           <!-- 📝 PROMPT AI — disimpan di settings/aiPrompts, dibaca worker setiap kali jana (kosong = prompt asal SAYAZ dalam worker) -->
           <div id="ai-prompt-panel" style="display:none;margin-bottom:8px;padding:0 10px 10px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(167,139,250,0.3);max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
             <!-- Butang simpan sentiasa kelihatan di atas (melekat semasa skrol) -->
@@ -18563,8 +18565,7 @@ function _stepKadG1(i) {
   if (aktif) {
     kad.style.display = 'block';
     kad.innerHTML = `<div style="${kotak}font-size:0.76rem;color:#c7d2fe;line-height:1.6;">⚙️ <b>${aktif.jenis === 'jana_imej' ? 'Gambar G1 sedang dijana di latar' : 'Worker sedang memproses muka surat ini'}</b><br>
-      <span style="color:#94a3b8;">${_aiEsc(aktif.status === 'menunggu' ? 'Menunggu giliran worker...' : (aktif.progress || 'Sedang diproses...'))} · App boleh ditutup.</span>${_xaiBakiHtml()}</div>`;
-    _xaiBakiIkat(kad);
+      <span style="color:#94a3b8;">${_aiEsc(aktif.status === 'menunggu' ? 'Menunggu giliran worker...' : (aktif.progress || 'Sedang diproses...'))} · App boleh ditutup.</span></div>`;
     return;
   }
   const semua = typeof getDrawersForCurrentJenis === 'function' ? getDrawersForCurrentJenis().drawers : [];
@@ -18590,8 +18591,7 @@ function _stepKadG1(i) {
     <div style="display:flex;gap:8px;">
       <button data-g1-ya style="flex:1;padding:10px;border-radius:999px;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;color:white;font-weight:700;font-size:0.8rem;cursor:pointer;">Ya, mulakan G1</button>
       <button data-g1-tidak style="padding:10px 14px;border-radius:999px;background:transparent;border:1px solid #475569;color:#cbd5e1;font-size:0.78rem;cursor:pointer;">Tidak, terima kasih</button>
-    </div>${_xaiBakiHtml()}</div>`;
-  _xaiBakiIkat(kad);
+    </div></div>`;
   kad.querySelector('[data-g1-tidak]').addEventListener('click', () => {
     _stepG1Tolak.add(currentJenisKataId);
     sorok();
@@ -27216,8 +27216,39 @@ function _xaiBakiIkat(root) {
 }
 function _xaiBakiMesin() {
   const el = document.getElementById('xai-baki-mesin');
+  if (el) { el.innerHTML = _xaiBakiHtml(); _xaiBakiIkat(el); }
+  _xaiBakiPanel();
+}
+// Kotak baki yang JELAS dalam panel 🤖 AUTOMATIK — WORKER AI
+function _xaiBakiPanel() {
+  const el = document.getElementById('ai-worker-baki');
   if (!el) return;
-  el.innerHTML = _xaiBakiHtml();
+  const b = _xaiBaki || {};
+  const menunggu = b.mintaAt && b.mintaAt > (b.at || 0);
+  const masa = b.at ? new Date(b.at).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  let utama, kecil = '', warna = '#e5e7eb';
+  if (b.ralat && /Tiada Management Key/i.test(b.ralat)) {
+    utama = 'Belum disediakan'; warna = '#94a3b8';
+    kecil = 'Simpan xAI Management Key di panel 🎨 Mesin Imej untuk papar baki.';
+  } else if (b.ralat) {
+    utama = 'Gagal semak'; warna = '#fca5a5'; kecil = _aiEsc(b.ralat);
+  } else if (typeof b.usd === 'number') {
+    utama = `US$${b.usd.toFixed(2)}`;
+    warna = b.usd < 1 ? '#f87171' : (b.usd < 3 ? '#fbbf24' : '#34d399');
+    kecil = `≈ ${_aiRM(b.usd)}`;
+    if (typeof b.beliUSD === 'number') kecil += ` · Dibeli US$${b.beliUSD.toFixed(2)} − diguna bulan ini US$${(b.gunaUSD || 0).toFixed(2)}`;
+    kecil += `<br>Dikemas kini ${masa}${b.usd < 1 ? ' · <b style="color:#f87171;">Baki rendah — tambah kredit di console.x.ai</b>' : ''}`;
+  } else {
+    utama = menunggu ? 'Menyemak...' : 'Belum disemak'; warna = '#94a3b8';
+  }
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,0.28);border:1px solid rgba(167,139,250,0.35);">
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:0.62rem;color:#a78bfa;font-weight:700;letter-spacing:0.05em;">💳 BAKI KREDIT GROK (xAI) — UNTUK GAMBAR</div>
+      <div style="font-size:1.3rem;font-weight:800;color:${warna};line-height:1.3;">${utama}</div>
+      ${kecil ? `<div style="font-size:0.66rem;color:#94a3b8;line-height:1.5;">${kecil}</div>` : ''}
+    </div>
+    <button data-xai-semak ${menunggu ? 'disabled' : ''} style="flex-shrink:0;padding:6px 12px;border-radius:999px;background:transparent;border:1px solid rgba(167,139,250,0.5);color:#c4b5fd;font-size:0.7rem;cursor:pointer;">${menunggu ? '⏳ Menyemak' : '↻ Semak'}</button>
+  </div>`;
   _xaiBakiIkat(el);
 }
 async function _xaiMgmtStatus() {
