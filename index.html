@@ -3826,11 +3826,12 @@ They immortalized the hero in a statue.
       </div>
     </div>
 
+    <button id="btn-gabung-pk-pendua" style="width:100%;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.4);border-radius:8px;color:#fcd34d;padding:8px;font-size:0.76rem;font-weight:600;cursor:pointer;margin-bottom:10px;">🔗 Gabung Perkataan Pendua (muka surat ini)</button>
     <textarea id="jana-bahasa-input" placeholder="Tampal teks format kamus di sini..." style="flex:1;min-height:200px;background:rgba(0,0,0,.3);border:1px solid #06b6d4;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-size:.85rem;outline:none;resize:none;margin-bottom:10px;"></textarea>
     <div id="jana-bahasa-preview" style="font-size:.72rem;color:#9ca3af;margin-bottom:10px;font-style:italic;min-height:18px;"></div>
     <div style="display:flex;gap:8px;">
       <button id="btn-jana-bahasa-execute" style="flex:1;padding:12px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;font-weight:700;font-size:.9rem;cursor:pointer;">⚡ Jana Sekarang</button>
-      <button id="btn-jana-bahasa-cancel" style="padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid #4b5563;color:#e5e7eb;font-weight:600;font-size:.9rem;cursor:pointer;">Batal</button>
+      <button id="btn-jana-bahasa-cancel"
     </div>
   </div>
 </div>
@@ -23697,6 +23698,75 @@ list.innerHTML = '';
       document.getElementById('jana-pukal-bahasa-modal').style.display = 'none';
     });
 
+    // ── Kunci perkataan = nombor + kata (maksud kamus DIABAIKAN) ──
+    // "1. mengamankan = [kk] menjaga..." dan "1. mengamankan = menjaga..." → "1|mengamankan"
+    function _pkKunci(nombor, teks) {
+      const kata = String(teks || '').split('=')[0].trim().toLowerCase().replace(/\s+/g, ' ');
+      return `${nombor}|${kata}`;
+    }
+    function _pkKunciNama(nama) {
+      const m = String(nama || '').trim().match(/^(\d+)\.\s*(.+)$/);
+      return m ? _pkKunci(m[1], m[2]) : _pkKunci('', nama);
+    }
+    // Nombor laci terbesar bawah satu perkataan ("3.mengamankan → secure" → 3)
+    function _pkNoLaciMaks(perkataanId) {
+      return allBahasaDrawers.filter(d => d.perkataanId === perkataanId)
+        .reduce((mx, d) => { const m = String(d.title || '').match(/^\s*(\d+)\./); return m ? Math.max(mx, parseInt(m[1], 10)) : mx; }, 0);
+    }
+    function _pkTajukNombor(tajuk, no) {
+      const m = String(tajuk || '').match(/^\s*\d+\.\s*(.*)$/);
+      return m ? `${no}.${m[1]}` : tajuk;
+    }
+
+    // 🔗 Gabung perkataan pendua (nombor + kata sama) → semua laci pindah ke perkataan ASAL.
+    // ID laci KEKAL → gambar, tips & SR TIDAK hilang. Perkataan pendua yang kosong dibuang.
+    async function gabungPerkataanPendua(jenisId, senyap) {
+      if (!currentUser || !jenisId) return 0;
+      const kump = new Map();
+      allBahasaPerkataan.filter(p => p.jenisId === jenisId).forEach(p => {
+        const k = _pkKunciNama(p.name);
+        if (!kump.has(k)) kump.set(k, []);
+        kump.get(k).push(p);
+      });
+      const kiraImej = (p) => allBahasaDrawers.filter(d => d.perkataanId === p.id && d.imageUrl).length;
+      const grup = [...kump.values()].filter(a => a.length > 1).map(a => {
+        a.sort((x, y) => kiraImej(y) - kiraImej(x) || (x.createdAt || 0) - (y.createdAt || 0));
+        return { utama: a[0], lain: a.slice(1) };
+      });
+      if (!grup.length) { if (!senyap) showToast('✅ Tiada perkataan pendua dalam muka surat ini.'); return 0; }
+      const bilLaci = grup.reduce((n, g) => n + g.lain.reduce((m, p) => m + allBahasaDrawers.filter(d => d.perkataanId === p.id).length, 0), 0);
+      if (!confirm(`${grup.length} perkataan ada pendua (nombor & kata sama, maksud berbeza).\n\n` +
+        grup.slice(0, 8).map(g => `• ${g.utama.name}`).join('\n') + (grup.length > 8 ? `\n+${grup.length - 8} lagi` : '') +
+        `\n\n${bilLaci} laci akan dipindah ke perkataan ASAL (yang ada gambar).\nGambar, tips & SR TIDAK hilang. Perkataan pendua yang kosong dibuang.\n\nGabung sekarang?`)) return 0;
+      showToast('⏳ Menggabung perkataan pendua...', 0);
+      let pindah = 0;
+      for (const g of grup) {
+        let no = _pkNoLaciMaks(g.utama.id);
+        for (const p of g.lain) {
+          const laci = allBahasaDrawers.filter(d => d.perkataanId === p.id)
+            .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { numeric: true }) || (a.createdAt || 0) - (b.createdAt || 0));
+          for (let i = 0; i < laci.length; i += 400) {
+            const batch = writeBatch(db);
+            laci.slice(i, i + 400).forEach(d => {
+              no++;
+              batch.update(doc(db, 'users', currentUser.uid, 'bahasa_drawers', d.id), { perkataanId: g.utama.id, title: _pkTajukNombor(d.title, no) });
+              pindah++;
+            });
+            await batch.commit();
+          }
+          await deleteDoc(doc(db, 'users', currentUser.uid, 'bahasa_perkataan', p.id)).catch(() => {});
+        }
+      }
+      showToast(`✅ ${pindah} laci digabung ke ${grup.length} perkataan asal. Gambar, tips & SR selamat.`, 5000);
+      return pindah;
+    }
+    document.getElementById('btn-gabung-pk-pendua')?.addEventListener('click', async () => {
+      if (!currentJenisKataId) { showToast('⚠️ Sila buka muka surat dahulu.'); return; }
+      document.getElementById('jana-pukal-bahasa-modal').style.display = 'none';
+      await gabungPerkataanPendua(currentJenisKataId);
+      renderPerkataan();
+    });
+
     // Parse teks format kamus
     function parseKamusBahasa(text) {
       const lines = text.split('\n');
@@ -23792,27 +23862,28 @@ list.innerHTML = '';
       let perkataaanDijana = 0;
       let laciDijana = 0;
       let perkataaanSkip = 0;
+      let laciSama = 0;
+
+      // Padan perkataan sedia ada ikut NOMBOR + KATA sahaja (maksud kamus boleh berbeza antara tampalan)
+      const petaSedia = new Map();
+      allBahasaPerkataan.filter(p => p.jenisId === currentJenisKataId)
+        .sort((a, b) => allBahasaDrawers.filter(d => d.perkataanId === b.id && d.imageUrl).length - allBahasaDrawers.filter(d => d.perkataanId === a.id && d.imageUrl).length || (a.createdAt || 0) - (b.createdAt || 0))
+        .forEach(p => { const k = _pkKunciNama(p.name); if (!petaSedia.has(k)) petaSedia.set(k, p); });
+      const bilSedia = parsed.filter(item => petaSedia.has(_pkKunci(item.number, item.fullText))).length;
+      if (bilSedia) {
+        const ok = confirm(`${bilSedia} daripada ${parsed.length} perkataan sudah wujud.\n\nLaci baru akan DITAMBAH di bawah perkataan lama (nombor laci disambung).\nLaci lama, gambar, tips & SR TIDAK diusik.\nLaci yang sama persis (padanan + ayat sama) dilangkau.\n\nOK = Teruskan · Batal = Batal semua`);
+        if (!ok) { showToast('Dibatalkan.'); return; }
+      }
 
       for (const item of parsed) {
         const namaPerkataan = `${item.number}. ${item.fullText}`;
 
-        // Semak sama ada perkataan dah wujud
-        const existing = allBahasaPerkataan.find(p =>
-          p.jenisId === currentJenisKataId &&
-          p.name && p.name.trim().toLowerCase() === namaPerkataan.trim().toLowerCase()
-        );
+        // Semak sama ada perkataan dah wujud (nombor + kata)
+        const existing = petaSedia.get(_pkKunci(item.number, item.fullText));
 
         let perkataanId = null;
 
         if (existing) {
-          // Tanya user
-          const jawab = confirm(
-            `Perkataan ini sudah wujud:\n\n"${namaPerkataan}"\n\nTekan OK untuk tambah laci baru di bawahnya.\nTekan Batal untuk skip perkataan ini.`
-          );
-          if (!jawab) {
-            perkataaanSkip++;
-            continue;
-          }
           perkataanId = existing.id;
         } else {
           // Cipta perkataan baru
@@ -23826,6 +23897,7 @@ list.innerHTML = '';
             }
           );
           perkataanId = newPerkataanRef.id;
+          petaSedia.set(_pkKunci(item.number, item.fullText), { id: perkataanId, name: namaPerkataan });
           perkataaanDijana++;
         }
 
@@ -23833,18 +23905,16 @@ list.innerHTML = '';
         if (item.sinonims.length > 0 && perkataanId) {
           // Ambil nama perkataan sahaja (sebelum " = ")
           const namaSahaja = item.fullText.split('=')[0].trim();
-          // Ambil nombor perkataan
-          const nomorPerkataan = item.number;
+          // Laci sedia ada → sambung nombor & elak pendua persis
+          const laciSedia = allBahasaDrawers.filter(d => d.perkataanId === perkataanId);
+          const sudahAda = new Set(laciSedia.map(d => `${String(d.title || '').split('→').slice(1).join('→').trim().toLowerCase()}||${String(d.notes || '').trim()}`));
+          let noLaci = _pkNoLaciMaks(perkataanId);
 
           let batch = writeBatch(db);
           let batchCount = 0;
 
           for (let s = 0; s < item.sinonims.length; s++) {
             const sin = item.sinonims[s];
-            const noLaci = s + 1;
-
-            // Tajuk laci: "1.mengabadikan → immortalise"
-            const tajukLaci = `${noLaci}.${namaSahaja} → ${sin.english}`;
 
             // Textarea: "Ayat English. = Terjemahan BM."
             let notaLaci = '';
@@ -23855,6 +23925,14 @@ list.innerHTML = '';
             } else if (sin.terjemahan) {
               notaLaci = sin.terjemahan;
             }
+
+            const kunciLaci = `${sin.english.trim().toLowerCase()}||${notaLaci.trim()}`;
+            if (sudahAda.has(kunciLaci)) { laciSama++; continue; }
+            sudahAda.add(kunciLaci);
+
+            // Tajuk laci: "1.mengabadikan → immortalise" (nombor disambung selepas laci lama)
+            noLaci++;
+            const tajukLaci = `${noLaci}.${namaSahaja} → ${sin.english}`;
 
             const laciRef = doc(collection(db, "users", currentUser.uid, "bahasa_drawers"));
             batch.set(laciRef, {
@@ -23881,7 +23959,7 @@ list.innerHTML = '';
         }
       }
 
-      const skipMsg = perkataaanSkip > 0 ? ` | ${perkataaanSkip} perkataan diskip` : '';
+      const skipMsg = (perkataaanSkip > 0 ? ` | ${perkataaanSkip} perkataan diskip` : '') + (laciSama > 0 ? ` | ${laciSama} laci sama persis dilangkau` : '');
       showToast(`✅ Selesai! ${perkataaanDijana} perkataan & ${laciDijana} laci dijana${skipMsg}`, 5000);
 
       // Popup notice
