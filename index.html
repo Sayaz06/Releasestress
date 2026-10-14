@@ -6308,6 +6308,9 @@ document.getElementById('peraturan-taip-input').addEventListener('keydown', (e) 
        
        let secId = activeSection.id;
        if (secId === 'section-jogging' || secId === 'section-memanah') secId = 'section-drawer'; 
+       // Page anak Bahasa perlukan bahasa/golongan/MS/perkataan semasa yang TIDAK disimpan →
+       // bila app dibuka semula, mula di senarai Bahasa (elak page kosong / "format lama" palsu / tiada butang back)
+       if (['section-golongan', 'section-jenis-kata', 'section-bahasa-perkataan', 'section-bahasa-drawer', 'section-bank-kamus'].includes(secId)) secId = 'section-bahasa';
        
        const state = {
            section: secId,
@@ -17877,6 +17880,14 @@ function bukaGolongan(bahasaId, namaBahasa) {
 function renderGolongan() {
   const list = document.getElementById('golongan-list');
   if (!list) return;
+  // Data golongan / muka surat belum siap dimuat → JANGAN papar "Format lama dikesan" & "Tanpa Golongan" palsu
+  if (!window._golDimuat || !window._jkDimuat) {
+    const kotakT = document.getElementById('gol-tukar-box');
+    if (kotakT) kotakT.style.display = 'none';
+    list.innerHTML = '<div class="empty-state">⏳ Memuatkan golongan...</div>';
+    _golPantau();
+    return; // snapshot golongan / jenis_kata akan panggil renderGolongan() semula bila siap
+  }
   _bankMayaBuka = false; _bankCariMs = ''; // 📚 senarai Bank kembali tersorok
   window._jkSkrolGol = null; // masuk golongan semula → skrol ke muka surat semasa sekali lagi
   const _pkSemasaG = allBahasaPerkataan.find(p => p.isActive) || null;
@@ -20618,10 +20629,13 @@ function subscribeBahasa() {
 
 onSnapshot(query(collection(db,"users",currentUser.uid,"jenis_kata")), snap => {
         allJenisKata = snap.docs.map(d => ({id:d.id,...d.data()}));
+        window._jkDimuat = true; // muka surat sudah dimuat (renderGolongan tunggu ini)
         if (sectionJenisKata && sectionJenisKata.classList.contains('active')) renderJenisKata();
         if (document.getElementById('section-golongan')?.classList.contains('active') && typeof renderGolongan === 'function') renderGolongan();
         if (bahasaMode) rebuildBahasa();
       });
+      // Mula dengar golongan SEJAK app dibuka (dulu hanya bila page Golongan dibuka → sempat papar "format lama" palsu)
+      if (typeof _golPantau === 'function') _golPantau();
 
       onSnapshot(query(collection(db,"users",currentUser.uid,"bahasa_perkataan")), snap => {
         allBahasaPerkataan = snap.docs.map(d => ({id:d.id,...d.data()}));
