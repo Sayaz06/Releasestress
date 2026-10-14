@@ -6379,6 +6379,26 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-bank-kamus')?.classList.remove("active");
       document.getElementById('section-golongan')?.classList.remove("active");
           section.classList.add("active");
+      // Pastikan bar atas (butang ← back) sentiasa nampak: reset skrol bekas utama.
+      // scrollIntoView / fokus input boleh tertolak bekas .card (overflow:hidden) → pengguna tak boleh skrol balik.
+      try {
+        document.querySelectorAll('.app-shell, .app-shell > .card').forEach(el => { el.scrollTop = 0; });
+        document.documentElement.scrollTop = 0; document.body.scrollTop = 0;
+        // Pengawal tetap (dipasang sekali): bila bekas utama tertolak, kembalikan ke atas
+        // — kecuali semasa sedang menaip (supaya kotak input tak tersorok di belakang keyboard)
+        if (!window._cardSkrolJaga) {
+          window._cardSkrolJaga = true;
+          document.querySelectorAll('.app-shell > .card').forEach(c => {
+            const kembaliAtas = () => {
+              const ae = document.activeElement;
+              const sedangTaip = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+              if (c.scrollTop && !sedangTaip) c.scrollTop = 0;
+            };
+            c.addEventListener('scroll', kembaliAtas);
+            document.addEventListener('focusout', () => setTimeout(kembaliAtas, 300));
+          });
+        }
+      } catch (e) {}
       if(section.id === "section-tasbih" && isTasbihMemanahActive) {
           setTimeout(() => {
               tm_canvas.width = tm_canvas.parentElement.clientWidth;
@@ -18747,9 +18767,15 @@ div.querySelectorAll('button')[1].addEventListener('click', async () => {
       });
       _bankRenderMaya(list, _maya);
       // Skrol terus ke muka surat SEMASA bila baru masuk golongan ini (bukan setiap kali data berubah)
+      // Skrol dalam SENARAI sahaja — scrollIntoView turut menolak bekas utama & menyorok butang ← back
       if (_kadSemasa && window._jkSkrolGol !== currentGolonganId) {
         window._jkSkrolGol = currentGolonganId;
-        setTimeout(() => { try { _kadSemasa.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} }, 120);
+        setTimeout(() => {
+          try {
+            const rL = list.getBoundingClientRect(), rK = _kadSemasa.getBoundingClientRect();
+            list.scrollTop += (rK.top - rL.top) - (list.clientHeight - _kadSemasa.offsetHeight) / 2;
+          } catch (e) {}
+        }, 120);
       }
     }
 
