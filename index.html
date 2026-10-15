@@ -1713,6 +1713,10 @@ body.dark-mode {
             + Tambah Perjanjian
           </button>
 
+          <button id="btn-export-perjanjian" class="btn btn-secondary btn-sm" style="width:100%;border-color:#38bdf8;color:#7dd3fc;margin-bottom:10px;">
+            📤 Export Semua (.txt)
+          </button>
+
           <div id="perjanjian-list" style="display:flex;flex-direction:column;gap:8px;"></div>
 
         </div>
@@ -13104,6 +13108,31 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
 
     document.getElementById('btn-back-home-perjanjian').addEventListener('click', () => {
       showSection(sectionHome);
+    });
+
+    // 📤 Export semua perjanjian → satu fail .txt (ikut susunan semasa)
+    document.getElementById('btn-export-perjanjian').addEventListener('click', () => {
+      if (!allPerjanjian.length) { showToast('⚠️ Tiada perjanjian untuk diexport.', 3000); return; }
+      const d = new Date();
+      const p2 = n => String(n).padStart(2, '0');
+      const tarikh = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+      const garis = '----------------------------------------';
+      let teks = `LACI PERJANJIAN\nDiexport: ${tarikh} ${p2(d.getHours())}:${p2(d.getMinutes())}\nJumlah: ${allPerjanjian.length}\n${garis}\n\n`;
+      allPerjanjian.forEach((p, i) => {
+        teks += `#${i + 1}  ${(p.title || '').trim() || '(Tiada tajuk)'}\n`;
+        teks += `${(p.text || '').trim() || '(Tiada teks)'}\n\n${garis}\n\n`;
+      });
+      const namaFail = `perjanjian-${tarikh}.txt`;
+      const blob = new Blob([teks], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = namaFail;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast(`✅ ${allPerjanjian.length} perjanjian diexport ke "${namaFail}"`, 4000);
     });
 
     document.getElementById('btn-add-perjanjian').addEventListener('click', async () => {
