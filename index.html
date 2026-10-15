@@ -13179,8 +13179,9 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
       const garis = '----------------------------------------';
       let teks = `LACI PERJANJIAN\nDiexport: ${tarikh} ${p2(d.getHours())}:${p2(d.getMinutes())}\nJumlah: ${allPerjanjian.length}\n${garis}\n\n`;
       allPerjanjian.forEach((p, i) => {
-        teks += `#${i + 1}  ${(p.title || '').trim() || '(Tiada tajuk)'}\n`;
-        teks += `${(p.text || '').trim() || '(Tiada teks)'}\n\n${garis}\n\n`;
+        teks += `#${i + 1}  ${(p.title || '').trim() || '(Tiada tajuk)'}\n\n`;
+        teks += `PENERANGAN:\n${(p.text || '').trim() || '(Tiada teks)'}\n\n`;
+        teks += `AYAT PERJANJIAN:\n${(p.ayat || '').trim() || '(Belum diisi)'}\n\n${garis}\n\n`;
       });
       const namaFail = `perjanjian-${tarikh}.txt`;
       const blob = new Blob([teks], { type: 'text/plain;charset=utf-8' });
@@ -13247,8 +13248,12 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
             <input class="perjanjian-title" value="${data.title || ''}" placeholder="Tajuk perjanjian..." style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:0.9rem;">
             <button class="btn-del-perjanjian btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">X</button>
           </div>
-          <textarea class="perjanjian-text drawer-notes" placeholder="Tulis perjanjian di sini...&#10;Guna = untuk bahagian flip&#10;Contoh: Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya">${data.text || ''}</textarea>
+          <div style="font-size:0.75rem;font-weight:700;color:#7dd3fc;letter-spacing:0.06em;margin-bottom:4px;">PENERANGAN</div>
+          <textarea class="perjanjian-text drawer-notes" placeholder="Tulis penerangan di sini...&#10;Guna = untuk bahagian flip&#10;Contoh: Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya">${data.text || ''}</textarea>
           ${data.text && data.text.includes('=') ? `<div style="font-size:0.68rem;color:#7dd3fc;margin-top:4px;">✓ Ada flip — bahagian selepas "=" jadi "Penerangan Lanjutan"</div>` : ''}
+          <div style="font-size:1rem;font-weight:800;color:#fff;margin-top:12px;padding-top:8px;border-top:1px solid rgba(56,189,248,0.3);">Ayat Perjanjian</div>
+          <div style="font-size:0.68rem;font-style:italic;color:var(--subtext);margin-bottom:6px;line-height:1.4;">(jika pertama kali ditulis, perlu mengangkat tangan dan pembacaan untuk membuat sumpahan)</div>
+          <textarea class="perjanjian-ayat drawer-notes" placeholder="Tulis ayat perjanjian di sini...">${pjEscH(data.ayat || '')}</textarea>
           <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;">
             <button class="btn-pj-tag btn btn-secondary btn-sm pj-tag-btn-kad" style="border-color:#38bdf8;color:#7dd3fc;">🏷️ ${namaTag ? pjEscH(namaTag) : 'Tag'}</button>
             <button class="btn-pj-tanda btn btn-secondary btn-sm">📍 Tanda</button>
@@ -13266,6 +13271,12 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
 
         div.querySelector('.perjanjian-text').addEventListener('change', e => {
           updateDoc(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { text: e.target.value });
+          pjTandaLaci(data.id);
+        });
+
+        // Bahagian kedua: Ayat Perjanjian (medan baru "ayat" — teks asal tidak diusik)
+        div.querySelector('.perjanjian-ayat').addEventListener('change', e => {
+          updateDoc(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { ayat: e.target.value });
           pjTandaLaci(data.id);
         });
 
