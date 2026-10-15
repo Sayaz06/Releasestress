@@ -13672,6 +13672,11 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
         const bil = pjTagBil(t.id);
         html += `<button data-lompat-tag="${pjEscH(t.id)}"${bil ? '' : ' class="kosong"'}>${pjEscH(t.nama)} (${bil})</button>`;
       });
+      // Paling bawah: TIADA TAG → terus ke kumpulan perjanjian belum ditag (bawah sekali laci)
+      if (pjTags.length) {
+        const bilTiada = allPerjanjian.filter(p => !pjTagCari(p.tagId)).length;
+        html += `<button data-lompat-tag="_tiada" style="border-style:dashed;"${bilTiada ? '' : ' class="kosong"'}>TIADA TAG (${bilTiada})</button>`;
+      }
       panel.innerHTML = html;
       panel.style.display = 'block';
       panel.scrollTop = 0;
