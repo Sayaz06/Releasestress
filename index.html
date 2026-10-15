@@ -1717,8 +1717,65 @@ body.dark-mode {
             📤 Export Semua (.txt)
           </button>
 
+          <!-- TAGGING · Pergi ke # · Penanda — selaras dengan Kindle -->
+          <button id="btn-pj-tagging" class="btn btn-secondary btn-sm" style="width:100%;border-color:#38bdf8;color:#7dd3fc;margin-bottom:10px;">🏷️ TAGGING</button>
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <input id="pj-pergi" type="number" inputmode="numeric" placeholder="Pergi ke # ..." style="flex:1;min-width:0;background:rgba(0,0,0,0.25);border:1px solid rgba(56,189,248,0.4);border-radius:8px;color:var(--text);padding:8px 10px;font-size:0.85rem;outline:none;">
+            <button id="btn-pj-pergi" class="btn btn-secondary btn-sm" style="flex-shrink:0;">Pergi</button>
+            <button data-pj-ke-penanda class="btn btn-secondary btn-sm" style="flex-shrink:0;">📍 Penanda</button>
+          </div>
+
           <div id="perjanjian-list" style="display:flex;flex-direction:column;gap:8px;"></div>
 
+        </div>
+
+        <style>
+          .pj-fab { width:92px; padding:9px 6px; border-radius:12px; background:rgba(15,23,42,0.95); border:1px solid rgba(56,189,248,0.6); color:#7dd3fc; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.5); text-align:center; }
+          .pj-tag-kepala { background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff; font-weight:700; font-size:0.78rem; padding:6px 10px; border-radius:8px; margin-top:6px; letter-spacing:0.04em; }
+          .pj-penanda { border:2px solid #fbbf24 !important; box-shadow:0 0 0 3px rgba(251,191,36,0.2); }
+          .pj-penanda-label { background:#fbbf24; color:#0f172a; font-weight:800; font-size:0.68rem; text-align:center; border-radius:6px; padding:3px; margin-bottom:6px; letter-spacing:0.1em; }
+          .btn-pj-tanda.on { background:#fbbf24 !important; color:#0f172a !important; border-color:#fbbf24 !important; }
+          .pj-tag-btn-kad { max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          #pj-tag-panel { position:fixed; left:112px; bottom:20px; z-index:1001; width:200px; max-height:calc(100vh - 120px); overflow-y:auto; -webkit-overflow-scrolling:touch; background:rgba(15,23,42,0.98); border:1px solid rgba(56,189,248,0.6); border-radius:12px; padding:6px; box-shadow:0 6px 20px rgba(0,0,0,0.6); }
+          #pj-tag-panel button { display:block; width:100%; margin:3px 0; padding:9px 8px; border-radius:8px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.4); color:#e0f2fe; font-size:0.8rem; font-weight:600; text-align:left; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          #pj-tag-panel button.kosong { opacity:0.4; }
+          .pj-tag-pilih { display:block; width:100%; margin:4px 0; padding:11px; border-radius:10px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.4); color:#e0f2fe; font-size:0.88rem; font-weight:600; cursor:pointer; }
+          .pj-tag-pilih.on { background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff; border-color:#38bdf8; }
+        </style>
+
+        <!-- Butang terapung: Atas / Penanda / Tag -->
+        <div style="position:fixed;left:10px;bottom:20px;z-index:1000;display:flex;flex-direction:column;gap:8px;">
+          <button class="pj-fab" data-pj-atas>⬆ Atas</button>
+          <button class="pj-fab" data-pj-ke-penanda>📍 Penanda</button>
+          <button class="pj-fab" id="btn-pj-tag-terapung">🏷️ Tag</button>
+        </div>
+        <div id="pj-tag-panel" style="display:none;"></div>
+
+        <!-- PAGE TAGGING -->
+        <div id="pj-tag-modal" style="display:none;position:fixed;inset:0;z-index:100000;background:#020617;overflow-y:auto;padding:16px;">
+          <div style="max-width:520px;margin:0 auto;padding-bottom:40px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <button id="btn-pj-tag-back" class="btn btn-secondary btn-sm">← Balik</button>
+              <div style="font-weight:700;color:#7dd3fc;">🏷️ Tagging Perjanjian</div>
+            </div>
+            <input id="pj-tag-nama" type="text" placeholder="Nama tagging (cth: GYM)" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid rgba(56,189,248,0.5);border-radius:10px;color:#fff;padding:10px 12px;font-size:0.9rem;outline:none;margin-bottom:8px;">
+            <div style="display:flex;gap:6px;">
+              <button id="btn-pj-tag-tambah" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:white;">+ Tambah Tagging</button>
+              <button id="btn-pj-tag-batal-ubah" class="btn btn-secondary btn-sm" style="display:none;">Batal</button>
+            </div>
+            <div style="font-size:0.7rem;color:var(--subtext);text-align:center;margin:8px 0 10px;line-height:1.5;">Susun tagging guna ↑ ↓ — perjanjian dalam laci ikut susunan ini.<br>Perjanjian tanpa tag di bawah sekali.</div>
+            <div id="pj-tag-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+        </div>
+
+        <!-- PILIH TAG UNTUK SATU PERJANJIAN -->
+        <div id="pj-pilih-tag-modal" style="display:none;position:fixed;inset:0;z-index:100001;background:rgba(2,6,23,0.85);align-items:center;justify-content:center;padding:20px;">
+          <div style="background:#0f172a;border:1px solid rgba(56,189,248,0.5);border-radius:14px;padding:16px;width:100%;max-width:340px;">
+            <div style="font-weight:700;color:#7dd3fc;margin-bottom:4px;text-align:center;">🏷️ Pilih tagging</div>
+            <div id="pj-pilih-tag-nama" style="font-size:0.78rem;color:var(--subtext);text-align:center;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+            <div id="pj-pilih-tag-list" style="max-height:55vh;overflow-y:auto;"></div>
+            <button id="btn-pj-pilih-tag-batal" class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;">Batal</button>
+          </div>
         </div>
       </section>
 
@@ -13101,6 +13158,9 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
     });
 
     document.getElementById('btn-go-perjanjian').addEventListener('click', () => {
+      // Masuk laci → terus lompat ke PENANDA (sama macam Kindle); batal jika tiada dalam 4 saat
+      pjLompatPenanda = true;
+      setTimeout(() => { pjLompatPenanda = false; }, 4000);
       showSection(sectionPerjanjian);
       renderPerjanjianList();
       loadPerjanjianCop();
@@ -13158,9 +13218,24 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
         return;
       }
 
+      let kunciLepas = null;
       allPerjanjian.forEach((data, idx) => {
+        const namaTag = pjTagNama(data.tagId);
+        // Tajuk kumpulan setiap kali tag bertukar (hanya bila ada tagging)
+        if (pjTags.length) {
+          const kunci = namaTag ? data.tagId : '_tiada';
+          if (kunci !== kunciLepas) {
+            const h = document.createElement('div');
+            h.className = 'pj-tag-kepala';
+            h.dataset.tagKepala = kunci;
+            h.textContent = namaTag ? `🏷️ ${namaTag} (${pjTagBil(data.tagId)})` : 'TIADA TAG';
+            list.appendChild(h);
+            kunciLepas = kunci;
+          }
+        }
         const div = document.createElement('div');
         div.className = 'drawer-card';
+        div.dataset.pid = data.id;
         div.style.cssText = 'border:1px solid rgba(56,189,248,0.3);';
         div.innerHTML = `
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -13174,14 +13249,24 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
           </div>
           <textarea class="perjanjian-text drawer-notes" placeholder="Tulis perjanjian di sini...&#10;Guna = untuk bahagian flip&#10;Contoh: Saya tidak akan putus asa = Kerana Allah sentiasa bersama saya">${data.text || ''}</textarea>
           ${data.text && data.text.includes('=') ? `<div style="font-size:0.68rem;color:#7dd3fc;margin-top:4px;">✓ Ada flip — bahagian selepas "=" jadi "Penerangan Lanjutan"</div>` : ''}
+          <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;">
+            <button class="btn-pj-tag btn btn-secondary btn-sm pj-tag-btn-kad" style="border-color:#38bdf8;color:#7dd3fc;">🏷️ ${namaTag ? pjEscH(namaTag) : 'Tag'}</button>
+            <button class="btn-pj-tanda btn btn-secondary btn-sm">📍 Tanda</button>
+          </div>
         `;
 
+        div.querySelector('.btn-pj-tag').addEventListener('click', () => pjBukaPilihTag(data.id));
+        div.querySelector('.btn-pj-tanda').addEventListener('click', () => pjTandaLaci(data.id));
+
+        // Edit tajuk / teks → automatik jadi penanda (sama macam Edit di Kindle)
         div.querySelector('.perjanjian-title').addEventListener('change', e => {
           updateDoc(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { title: e.target.value });
+          pjTandaLaci(data.id);
         });
 
         div.querySelector('.perjanjian-text').addEventListener('change', e => {
           updateDoc(doc(db, "users", currentUser.uid, "jogging_perjanjian", data.id), { text: e.target.value });
+          pjTandaLaci(data.id);
         });
 
         div.querySelector('.btn-perjanjian-up').addEventListener('click', async () => {
@@ -13237,7 +13322,352 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
 
         list.appendChild(div);
       });
+      pjSelepasRender();
     }
+
+    // ══════════════════════════════════════════
+    // PENANDA · PERGI KE # · TAGGING — selaras dengan Kindle
+    // Penanda : users/{uid}/kindle_settings/penanda_laci.perjanjian (dikongsi dengan Kindle)
+    // Tagging : users/{uid}/kindle_settings/pj_tagging { senarai: [{ id, nama }] } + medan tagId setiap perjanjian
+    // Susunan : kumpulan ikut kedudukan tag, dalam kumpulan kekal susunan asal, tanpa tag di bawah sekali.
+    // HANYA medan order & tagId diubah (satu batch) — tiada perjanjian dipadam / dicipta semula.
+    // ══════════════════════════════════════════
+    let pjTags = [];
+    let pjPenandaId = null;
+    let pjLompatPenanda = false;
+    let pjLompatPid = null;
+    let pjSusunBusy = false;
+    let pjTagUbahId = null;
+    let pjTagPadam = { id: null, masa: 0 };
+    let pjPilihId = null;
+    let pjExtraUid = null;
+    let pjExtraUnsubs = [];
+
+    const pjEscH = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const pjTagCari = id => (id ? (pjTags.find(t => t.id === id) || null) : null);
+    const pjTagNama = id => { const t = pjTagCari(id); return t ? (t.nama || '') : ''; };
+    const pjTagBil = id => allPerjanjian.filter(p => p.tagId === id).length;
+    const pjTagDocRef = () => doc(db, 'users', currentUser.uid, 'kindle_settings', 'pj_tagging');
+
+    function subscribePjExtra() {
+      if (!currentUser || pjExtraUid === currentUser.uid) return;
+      pjExtraUnsubs.forEach(u => { try { u(); } catch (e) {} });
+      pjExtraUnsubs = [];
+      pjExtraUid = currentUser.uid;
+      pjExtraUnsubs.push(onSnapshot(pjTagDocRef(), s => {
+        const d = s.exists() ? (s.data() || {}) : {};
+        pjTags = Array.isArray(d.senarai) ? d.senarai.slice() : [];
+        pjRenderSemula();
+      }, () => {}));
+      pjExtraUnsubs.push(onSnapshot(doc(db, 'users', currentUser.uid, 'kindle_settings', 'penanda_laci'), s => {
+        const d = s.exists() ? (s.data() || {}) : {};
+        pjPenandaId = d.perjanjian || null;
+        pjTandaDom();
+        if (pjLompatPenanda && pjLompatKePenanda()) pjLompatPenanda = false;
+      }, () => {}));
+    }
+    function pjRenderSemula() {
+      const sec = document.getElementById('section-perjanjian');
+      if (sec && sec.classList.contains('active')) renderPerjanjianList();
+      if (document.getElementById('pj-tag-modal')?.style.display === 'block') renderPjTagPage();
+    }
+
+    // ── Skrol: bekas senarai (scrollable-container) atau page ──
+    function pjBekas() { return document.querySelector('#section-perjanjian .scrollable-container'); }
+    function pjSkrolKe(el) {
+      if (!el) return;
+      const sc = pjBekas(), r = el.getBoundingClientRect();
+      if (sc && sc.scrollHeight > sc.clientHeight + 2) {
+        sc.scrollTop += r.top - sc.getBoundingClientRect().top - 6;
+      } else {
+        window.scrollTo(0, Math.max(0, (window.pageYOffset || 0) + r.top - 6));
+      }
+    }
+    function pjSkrolAtas() {
+      const sc = pjBekas();
+      if (sc) sc.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }
+
+    // ── PENANDA ──
+    function pjTandaLaci(id) {
+      if (!id || !currentUser) return;
+      pjPenandaId = id;
+      setDoc(doc(db, 'users', currentUser.uid, 'kindle_settings', 'penanda_laci'), { perjanjian: id, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+      pjTandaDom();
+    }
+    function pjTandaDom() {
+      document.querySelectorAll('#perjanjian-list [data-pid]').forEach(c => {
+        const ya = c.dataset.pid === pjPenandaId;
+        c.classList.toggle('pj-penanda', ya);
+        let lbl = c.querySelector('.pj-penanda-label');
+        if (ya && !lbl) {
+          lbl = document.createElement('div');
+          lbl.className = 'pj-penanda-label';
+          lbl.textContent = '📍 PENANDA';
+          c.insertBefore(lbl, c.firstChild);
+        } else if (!ya && lbl) lbl.remove();
+        const bt = c.querySelector('.btn-pj-tanda');
+        if (bt) { bt.classList.toggle('on', ya); bt.textContent = ya ? '📍 Ditanda' : '📍 Tanda'; }
+      });
+    }
+    function pjLompatKePenanda() {
+      const c = pjPenandaId && document.querySelector(`#perjanjian-list [data-pid="${pjPenandaId}"]`);
+      if (!c) return false;
+      pjSkrolKe(c);
+      return true;
+    }
+    function pjLompatKeNombor(n) {
+      const kad = document.querySelectorAll('#perjanjian-list [data-pid]');
+      n = parseInt(n, 10);
+      if (!(n >= 1 && n <= kad.length)) return false;
+      pjSkrolKe(kad[n - 1]);
+      return true;
+    }
+    function pjLompatKeTag(tid) {
+      const h = document.querySelector(`#perjanjian-list [data-tag-kepala="${tid}"]`);
+      if (!h) return false;
+      pjSkrolKe(h);
+      return true;
+    }
+    // Dipanggil selepas setiap render senarai
+    function pjSelepasRender() {
+      subscribePjExtra();
+      pjTandaDom();
+      if (pjLompatPid) {
+        const c = document.querySelector(`#perjanjian-list [data-pid="${pjLompatPid}"]`);
+        pjLompatPid = null;
+        if (c) requestAnimationFrame(() => pjSkrolKe(c));
+      } else if (pjLompatPenanda && pjPenandaId && allPerjanjian.length) {
+        requestAnimationFrame(() => { if (pjLompatKePenanda()) pjLompatPenanda = false; });
+      }
+    }
+
+    // Pergi ke # / Penanda / Atas
+    document.getElementById('btn-pj-pergi').addEventListener('click', () => {
+      const inp = document.getElementById('pj-pergi');
+      const nilai = inp.value;
+      if (pjLompatKeNombor(nilai)) { inp.blur(); return; }
+      const bil = document.querySelectorAll('#perjanjian-list [data-pid]').length;
+      inp.value = '';
+      inp.placeholder = nilai ? `#${nilai} tiada (1-${bil})` : 'Taip nombor dulu';
+    });
+    document.getElementById('pj-pergi').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-pj-pergi').click(); }
+    });
+    document.getElementById('section-perjanjian').addEventListener('click', e => {
+      const t = e.target.closest('[data-pj-ke-penanda],[data-pj-atas]');
+      if (!t) return;
+      if (t.hasAttribute('data-pj-atas')) { pjSkrolAtas(); return; }
+      if (!pjLompatKePenanda()) {
+        const asal = t.textContent;
+        t.textContent = 'Tiada penanda';
+        setTimeout(() => { t.textContent = asal; }, 1500);
+      }
+    });
+
+    // ── SUSUN IKUT TAG ──
+    function pjSusunanIkutTag(senarai) {
+      const pos = {};
+      senarai.forEach((t, i) => { pos[t.id] = i; });
+      return allPerjanjian
+        .map((p, i) => ({ p, i, k: (p.tagId && Object.prototype.hasOwnProperty.call(pos, p.tagId)) ? pos[p.tagId] : senarai.length }))
+        .sort((a, b) => (a.k - b.k) || (a.i - b.i))
+        .map(o => o.p);
+    }
+    // Satu batch: senarai tag (jika berubah) + tagId yang berubah + order baru
+    async function pjSimpanTag(senaraiBaru, ubah = {}, mesej = '') {
+      if (!currentUser) return;
+      if (pjSusunBusy) { showToast('⏳ Tunggu sebentar...', 1500); return; }
+      const ada = id => Object.prototype.hasOwnProperty.call(ubah, id);
+      allPerjanjian.forEach(p => { if (ada(p.id)) p.tagId = ubah[p.id]; });
+      const susunan = pjSusunanIkutTag(senaraiBaru || pjTags);
+      const batch = writeBatch(db);
+      let bilOp = 0;
+      if (senaraiBaru) {
+        pjTags = senaraiBaru.slice();
+        batch.set(pjTagDocRef(), { senarai: senaraiBaru, updatedAt: Date.now() }, { merge: true });
+        bilOp++;
+      }
+      susunan.forEach((p, i) => {
+        const o = {};
+        if (p.order !== i) o.order = i;
+        if (ada(p.id)) o.tagId = ubah[p.id];
+        if (Object.keys(o).length) { batch.update(doc(db, 'users', currentUser.uid, 'jogging_perjanjian', p.id), o); bilOp++; }
+      });
+      if (!bilOp) { pjRenderSemula(); return; }
+      pjSusunBusy = true;
+      try {
+        await batch.commit();
+        if (mesej) showToast('✅ ' + mesej, 2000);
+      } catch (e) {
+        showToast('❌ Gagal: ' + (e.message || e), 3500);
+      }
+      pjSusunBusy = false;
+      pjRenderSemula();
+    }
+
+    // ── PAGE TAGGING ──
+    function renderPjTagPage() {
+      const list = document.getElementById('pj-tag-list');
+      if (!list) return;
+      const n = pjTags.length;
+      const tiada = allPerjanjian.filter(p => !pjTagCari(p.tagId)).length;
+      let html = n ? '' : '<div class="empty-state">Belum ada tagging. Taip nama di atas, tekan + Tambah Tagging.</div>';
+      pjTags.forEach((t, i) => {
+        const sedia = pjTagPadam.id === t.id && Date.now() - pjTagPadam.masa < 2000;
+        html += `<div class="drawer-card" data-tid="${pjEscH(t.id)}" style="border:1px solid rgba(56,189,248,0.3);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:0.75rem;background:rgba(56,189,248,0.2);color:#7dd3fc;padding:4px 10px;border-radius:999px;font-weight:700;">#${i + 1}</span>
+            <div style="flex:1;min-width:0;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pjEscH(t.nama)} <span style="font-weight:400;font-size:0.72rem;color:var(--subtext);">(${pjTagBil(t.id)} perjanjian)</span></div>
+            <button class="btn btn-secondary btn-sm" data-tact="up" style="padding:2px 10px;${i === 0 ? 'opacity:0.3;' : ''}" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn btn-secondary btn-sm" data-tact="down" style="padding:2px 10px;${i === n - 1 ? 'opacity:0.3;' : ''}" ${i === n - 1 ? 'disabled' : ''}>↓</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <button class="btn btn-secondary btn-sm" data-tact="ubah" style="flex:1;">✏️ Ubah Nama</button>
+            <button class="btn btn-secondary btn-sm" data-tact="padam" style="flex:1;color:var(--danger);border-color:var(--danger);${sedia ? 'background:var(--danger);color:#fff;' : ''}">${sedia ? 'Tekan lagi = Padam' : '🗑️ Padam'}</button>
+          </div>
+        </div>`;
+      });
+      html += `<div style="text-align:center;font-size:0.72rem;color:var(--subtext);margin-top:4px;">Tanpa tag: ${tiada} perjanjian (paling bawah)</div>`;
+      list.innerHTML = html;
+    }
+    function pjBatalUbahTag() {
+      pjTagUbahId = null;
+      document.getElementById('pj-tag-nama').value = '';
+      document.getElementById('btn-pj-tag-tambah').textContent = '+ Tambah Tagging';
+      document.getElementById('btn-pj-tag-batal-ubah').style.display = 'none';
+    }
+    document.getElementById('btn-pj-tagging').addEventListener('click', () => {
+      pjBatalUbahTag();
+      document.getElementById('pj-tag-modal').style.display = 'block';
+      renderPjTagPage();
+    });
+    document.getElementById('btn-pj-tag-back').addEventListener('click', () => {
+      pjBatalUbahTag();
+      document.getElementById('pj-tag-modal').style.display = 'none';
+      renderPerjanjianList();
+    });
+    document.getElementById('btn-pj-tag-batal-ubah').addEventListener('click', pjBatalUbahTag);
+    document.getElementById('btn-pj-tag-tambah').addEventListener('click', () => {
+      const nama = (document.getElementById('pj-tag-nama').value || '').replace(/\s+/g, ' ').trim();
+      if (!nama) { showToast('⚠️ Taip nama tagging dulu.', 2500); return; }
+      if (pjTags.some(t => t.id !== pjTagUbahId && String(t.nama || '').toLowerCase() === nama.toLowerCase())) {
+        showToast(`⚠️ Nama "${nama}" sudah ada.`, 2500); return;
+      }
+      const senarai = pjTags.map(t => ({ id: t.id, nama: t.id === pjTagUbahId ? nama : t.nama }));
+      let mesej = 'Nama ditukar: ' + nama;
+      if (!pjTagUbahId) {
+        senarai.push({ id: 't' + Date.now().toString(36) + Math.floor(Math.random() * 1000), nama });
+        mesej = 'Tagging ditambah: ' + nama;
+      }
+      pjBatalUbahTag();
+      pjSimpanTag(senarai, {}, mesej);
+    });
+    document.getElementById('pj-tag-nama').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-pj-tag-tambah').click(); }
+    });
+    document.getElementById('pj-tag-list').addEventListener('click', e => {
+      const b = e.target.closest('[data-tact]');
+      const row = e.target.closest('[data-tid]');
+      if (!b || !row || b.disabled) return;
+      const tid = row.dataset.tid, act = b.dataset.tact;
+      const idx = pjTags.findIndex(t => t.id === tid);
+      if (idx < 0) return;
+      const senarai = pjTags.slice();
+      if (act === 'up' || act === 'down') {
+        const ke = act === 'up' ? idx - 1 : idx + 1;
+        if (ke < 0 || ke >= senarai.length) return;
+        const [item] = senarai.splice(idx, 1);
+        senarai.splice(ke, 0, item);
+        pjSimpanTag(senarai, {}, `${item.nama} ke #${ke + 1}`);
+      } else if (act === 'ubah') {
+        pjTagUbahId = tid;
+        document.getElementById('pj-tag-nama').value = pjTags[idx].nama || '';
+        document.getElementById('btn-pj-tag-tambah').textContent = '💾 Simpan Nama';
+        document.getElementById('btn-pj-tag-batal-ubah').style.display = '';
+        document.getElementById('pj-tag-modal').scrollTop = 0;
+        document.getElementById('pj-tag-nama').focus();
+      } else if (act === 'padam') {
+        // Tekan 2 kali dalam 2 saat. Perjanjian TIDAK dipadam — cuma tag dibuang (pindah ke bawah).
+        if (pjTagPadam.id === tid && Date.now() - pjTagPadam.masa < 2000) {
+          pjTagPadam = { id: null, masa: 0 };
+          const nama = pjTags[idx].nama;
+          senarai.splice(idx, 1);
+          const ubah = {};
+          allPerjanjian.forEach(p => { if (p.tagId === tid) ubah[p.id] = ''; });
+          if (pjTagUbahId === tid) pjBatalUbahTag();
+          pjSimpanTag(senarai, ubah, 'Tagging dipadam: ' + nama);
+        } else {
+          pjTagPadam = { id: tid, masa: Date.now() };
+          renderPjTagPage();
+          setTimeout(() => { if (pjTagPadam.id === tid) { pjTagPadam = { id: null, masa: 0 }; renderPjTagPage(); } }, 2100);
+        }
+      }
+    });
+
+    // ── PILIH TAG UNTUK SATU PERJANJIAN ──
+    function pjBukaPilihTag(pid) {
+      const idx = allPerjanjian.findIndex(p => p.id === pid);
+      const p = allPerjanjian[idx];
+      if (!p) return;
+      pjPilihId = pid;
+      document.getElementById('pj-pilih-tag-nama').textContent = `#${idx + 1} ${p.title || '(Tiada tajuk)'}`;
+      const semasa = pjTagCari(p.tagId) ? p.tagId : '';
+      let html = pjTags.length ? '' : '<div style="font-size:0.8rem;color:var(--subtext);padding:8px;text-align:center;">Belum ada tagging. Tekan 🏷️ TAGGING untuk tambah.</div>';
+      pjTags.forEach(t => {
+        html += `<button class="pj-tag-pilih${semasa === t.id ? ' on' : ''}" data-pilih-tag="${pjEscH(t.id)}">${pjEscH(t.nama)}</button>`;
+      });
+      html += `<button class="pj-tag-pilih${semasa ? '' : ' on'}" data-pilih-tag="">Tiada tag</button>`;
+      document.getElementById('pj-pilih-tag-list').innerHTML = html;
+      document.getElementById('pj-pilih-tag-modal').style.display = 'flex';
+    }
+    function pjTutupPilihTag() {
+      document.getElementById('pj-pilih-tag-modal').style.display = 'none';
+      pjPilihId = null;
+    }
+    document.getElementById('btn-pj-pilih-tag-batal').addEventListener('click', pjTutupPilihTag);
+    document.getElementById('pj-pilih-tag-list').addEventListener('click', e => {
+      const b = e.target.closest('[data-pilih-tag]');
+      if (!b) return;
+      const p = allPerjanjian.find(x => x.id === pjPilihId);
+      pjTutupPilihTag();
+      if (!p) return;
+      const tid = b.dataset.pilihTag || '';
+      const semasa = pjTagCari(p.tagId) ? p.tagId : '';
+      if (tid === semasa) return;
+      pjLompatPid = p.id;
+      pjSimpanTag(null, { [p.id]: tid }, tid ? 'Tag: ' + pjTagNama(tid) : 'Tag dibuang');
+    });
+
+    // ── BUTANG TERAPUNG "Tag" → senarai nama tag (boleh skrol) → terus ke kumpulan ──
+    document.getElementById('btn-pj-tag-terapung').addEventListener('click', () => {
+      const panel = document.getElementById('pj-tag-panel');
+      if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+      let html = pjTags.length ? '' : '<div style="font-size:0.75rem;padding:6px;color:var(--subtext);">Belum ada tagging.</div>';
+      pjTags.forEach(t => {
+        const bil = pjTagBil(t.id);
+        html += `<button data-lompat-tag="${pjEscH(t.id)}"${bil ? '' : ' class="kosong"'}>${pjEscH(t.nama)} (${bil})</button>`;
+      });
+      panel.innerHTML = html;
+      panel.style.display = 'block';
+      panel.scrollTop = 0;
+    });
+    document.getElementById('pj-tag-panel').addEventListener('click', e => {
+      const b = e.target.closest('[data-lompat-tag]');
+      if (!b) return;
+      if (pjLompatKeTag(b.dataset.lompatTag)) { e.currentTarget.style.display = 'none'; return; }
+      const asal = b.textContent;
+      b.textContent = 'Tiada perjanjian';
+      setTimeout(() => { b.textContent = asal; }, 1500);
+    });
+    // Tekan di luar senarai → tutup
+    document.addEventListener('click', e => {
+      const panel = document.getElementById('pj-tag-panel');
+      if (!panel || panel.style.display === 'none') return;
+      if (panel.contains(e.target) || e.target.closest('#btn-pj-tag-terapung')) return;
+      panel.style.display = 'none';
+    });
 
     // ── AMT-AK ──────────────────────────────────────────
     const sectionAmtAk = document.getElementById("section-amt-ak");
