@@ -13518,7 +13518,7 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
         const sedia = pjTagPadam.id === t.id && Date.now() - pjTagPadam.masa < 2000;
         html += `<div class="drawer-card" data-tid="${pjEscH(t.id)}" style="border:1px solid rgba(56,189,248,0.3);">
           <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:0.75rem;background:rgba(56,189,248,0.2);color:#7dd3fc;padding:4px 10px;border-radius:999px;font-weight:700;">#${i + 1}</span>
+            <button data-tact="pos" title="Tekan untuk pindah ke kedudukan lain" style="font-size:0.75rem;background:rgba(56,189,248,0.2);color:#7dd3fc;padding:4px 10px;border-radius:999px;font-weight:700;border:1px dashed rgba(56,189,248,0.6);cursor:pointer;flex-shrink:0;">#${i + 1} ⇅</button>
             <div style="flex:1;min-width:0;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pjEscH(t.nama)} <span style="font-weight:400;font-size:0.72rem;color:var(--subtext);">(${pjTagBil(t.id)} perjanjian)</span></div>
             <button class="btn btn-secondary btn-sm" data-tact="up" style="padding:2px 10px;${i === 0 ? 'opacity:0.3;' : ''}" ${i === 0 ? 'disabled' : ''}>↑</button>
             <button class="btn btn-secondary btn-sm" data-tact="down" style="padding:2px 10px;${i === n - 1 ? 'opacity:0.3;' : ''}" ${i === n - 1 ? 'disabled' : ''}>↓</button>
@@ -13575,7 +13575,19 @@ const ayat   = document.getElementById('perjanjian-cop-ayat')?.value || '';
       const idx = pjTags.findIndex(t => t.id === tid);
       if (idx < 0) return;
       const senarai = pjTags.slice();
-      if (act === 'up' || act === 'down') {
+      if (act === 'pos') {
+        // ── PINDAH TERUS KE KEDUDUKAN (tanpa tekan ↑↓ berkali-kali) ──
+        const jumlah = senarai.length;
+        if (jumlah < 2) return;
+        const jawapan = prompt(`Pindah tagging "${pjTags[idx].nama}" ke kedudukan berapa? (1 - ${jumlah})\n\n1 = paling atas · ${jumlah} = paling bawah`, String(idx + 1));
+        if (jawapan === null) return;
+        const ke = parseInt(jawapan, 10) - 1;
+        if (isNaN(ke) || ke < 0 || ke >= jumlah) { showToast(`⚠️ Masukkan nombor 1 hingga ${jumlah}.`, 3000); return; }
+        if (ke === idx) return;
+        const [item] = senarai.splice(idx, 1);
+        senarai.splice(ke, 0, item);
+        pjSimpanTag(senarai, {}, `${item.nama} ke #${ke + 1}`);
+      } else if (act === 'up' || act === 'down') {
         const ke = act === 'up' ? idx - 1 : idx + 1;
         if (ke < 0 || ke >= senarai.length) return;
         const [item] = senarai.splice(idx, 1);
