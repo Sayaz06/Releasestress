@@ -9603,9 +9603,15 @@ faktaTopicsList.appendChild(div);
       });
     }
 
+    // ── SOALAN & JAWAPAN baris fakta (medan soalan / jawapan dalam items[]) ──
+    const _faktaSoalanBuka = new Set();   // kotak soalan yang sedang dibuka (drawerId_idx)
+    let _faktaSoalanFokus = null;         // { kunci, medan, nilai, mula, akhir } — pulih bila senarai dilukis semula
+    const _faktaEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 function renderDrawers() {
       const topic = allTopics.find(t => t.id === currentTopicId);
       document.getElementById("parent-topic-name").textContent = topic && topic.name ? `Topik: ${topic.name}` : "";
+
 
       const existingFloat = document.getElementById('btn-float-countdown-fakta');
       if (existingFloat) existingFloat.remove();
@@ -9677,6 +9683,13 @@ function renderDrawers() {
                   <button class="btn-del-item btn btn-secondary btn-sm" data-idx="${idx}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
                 </div>
                 <textarea class="item-ayat drawer-notes" data-idx="${idx}" placeholder="Isi ayat/teks di sini..." style="min-height:60px;resize:none;width:100%;margin-bottom:6px;">${item.ayat || ''}</textarea>
+                <button class="btn-item-soalan btn btn-secondary btn-sm" data-idx="${idx}" style="width:100%;margin-bottom:6px;font-size:0.72rem;border-color:#22d3ee;color:${(item.soalan || '').trim() ? '#67e8f9' : 'var(--subtext)'};${(item.soalan || '').trim() ? 'background:rgba(34,211,238,0.1);' : ''}">❓ Soalan${(item.soalan || '').trim() ? ' ✓' : ''}</button>
+                <div class="item-soalan-box" data-idx="${idx}" style="display:${_faktaSoalanBuka.has(data.id + '_' + idx) ? 'block' : 'none'};background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.35);border-radius:8px;padding:8px;margin-bottom:6px;">
+                  <div style="font-size:0.7rem;font-weight:700;color:#67e8f9;margin-bottom:3px;">SOALAN</div>
+                  <textarea class="item-soalan drawer-notes" data-idx="${idx}" placeholder="Tulis soalan..." style="min-height:50px;resize:none;width:100%;margin-bottom:6px;">${_faktaEsc(item.soalan)}</textarea>
+                  <div style="font-size:0.7rem;font-weight:700;color:#67e8f9;margin-bottom:3px;">JAWAPAN</div>
+                  <textarea class="item-jawapan drawer-notes" data-idx="${idx}" placeholder="Tulis jawapan..." style="min-height:70px;resize:none;width:100%;">${_faktaEsc(item.jawapan)}</textarea>
+                </div>
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                   <button class="btn-upload-item-img btn btn-secondary btn-sm" data-idx="${idx}" style="flex:1;font-size:0.72rem;border-color:#f59e0b;color:${item.imageUrl ? '#fcd34d' : 'var(--subtext)'};">
                     🖼️1 ${item.imageUrl ? '✓' : 'Upload'}
@@ -9804,6 +9817,53 @@ function renderDrawers() {
             _tipsNoticeChanged = true;
             showTipsNotice('Fakta Drawer');
           });
+        });
+
+        // ── SOALAN & JAWAPAN BARIS ──
+        div.querySelectorAll(".btn-item-soalan").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const idx = btn.getAttribute('data-idx');
+            const box = div.querySelector(`.item-soalan-box[data-idx="${idx}"]`);
+            if (!box) return;
+            const buka = box.style.display === 'none';
+            box.style.display = buka ? 'block' : 'none';
+            const kunci = data.id + '_' + idx;
+            if (buka) { _faktaSoalanBuka.add(kunci); box.querySelector('.item-soalan').focus(); }
+            else _faktaSoalanBuka.delete(kunci);
+          });
+        });
+        div.querySelectorAll(".item-soalan, .item-jawapan").forEach(ta => {
+          const idx = parseInt(ta.getAttribute('data-idx'));
+          const medan = ta.classList.contains('item-soalan') ? 'soalan' : 'jawapan';
+          const kunci = data.id + '_' + idx;
+          const ingat = () => { _faktaSoalanFokus = { kunci, medan, nilai: ta.value, mula: ta.selectionStart, akhir: ta.selectionEnd }; };
+          ta.addEventListener('focus', ingat);
+          ta.addEventListener('input', ingat);
+          // Simpan bila keluar dari kotak — TIDAK reset repeatCount / SR (soalan tak ganggu hafalan)
+          ta.addEventListener('blur', async () => {
+            setTimeout(() => {
+              const a = document.activeElement;
+              if (!a || !a.classList || !(a.classList.contains('item-soalan') || a.classList.contains('item-jawapan'))) _faktaSoalanFokus = null;
+            }, 400);
+            const items = Array.isArray(data.items) ? data.items.map(x => ({ ...x })) : [];
+            if (!items[idx] || (items[idx][medan] || '') === ta.value) return;
+            items[idx][medan] = ta.value;
+            data.items = items;
+            try {
+              await updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), { items });
+            } catch (e) {
+              showToast('❌ Gagal simpan soalan: ' + (e.message || e), 3000);
+            }
+          });
+          // Senarai dilukis semula semasa menaip → pulihkan fokus & teks yang belum disimpan
+          const f = _faktaSoalanFokus;
+          if (f && f.kunci === kunci && f.medan === medan) {
+            if (ta.value !== f.nilai) ta.value = f.nilai;
+            requestAnimationFrame(() => {
+              ta.focus();
+              try { ta.setSelectionRange(f.mula, f.akhir); } catch (e) {}
+            });
+          }
         });
 
         // ── EDIT AYAT ──
@@ -9985,10 +10045,12 @@ bukaCropTool(file, async (blob) => {
               createdAt: Date.now()
             };
             if (data.items && data.items.length > 0) {
-              // Salin items tanpa imageUrl (gambar tak boleh dikongsi URL Storage)
+              // Salin items tanpa imageUrl (gambar tak boleh dikongsi URL Storage) — soalan & jawapan ikut disalin
               laciBaruData.items = data.items.map(item => ({
                 ayat: item.ayat || '',
-                imageUrl: ''
+                imageUrl: '',
+                ...(item.soalan ? { soalan: item.soalan } : {}),
+                ...(item.jawapan ? { jawapan: item.jawapan } : {})
               }));
             }
             if (data.pdfNombor) laciBaruData.pdfNombor = data.pdfNombor;
@@ -30480,26 +30542,42 @@ mifRefreshKeyStatus();
     const slides = [];
     let current = null;
     let currentAyat = null;
+    let medanAkhir = null;
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
       if (!trimmed) continue;
-      const mSlide = trimmed.match(/^Slide\s+(\d+)\s*[—\-]+\s*(.+)/i);
+      // Tajuk slide: cukup "Slide 7" di depan — simbol selepas nombor bebas (— - : ; atau tiada)
+      const mSlide = trimmed.match(/^Slide\s+(\d+)(?!\d)/i);
       if (mSlide) {
         if (current) slides.push(current);
-        current = { tajuk: trimmed.replace(/:$/, '').trim(), items: [] };
+        current = { tajuk: trimmed.replace(/^slide/i, 'Slide').replace(/\s*[:;]+\s*$/, '').trim(), items: [] };
         currentAyat = null;
+        medanAkhir = null;
         continue;
       }
       if (!current) continue;
       const mAyat = trimmed.match(/^-ayat\s*\d*\s*:?\s*(.+)/i);
       if (mAyat) {
-        currentAyat = { ayatText: mAyat[1].trim(), keywords: [] };
+        currentAyat = { ayatText: mAyat[1].trim(), keywords: [], soalan: '', jawapan: '' };
         current.items.push(currentAyat);
+        medanAkhir = null;
         continue;
       }
       const mK = trimmed.match(/^-K(\d+)\s*:\s*(.+)/i);
       if (mK && currentAyat) {
         currentAyat.keywords.push({ num: parseInt(mK[1]), teks: mK[2].trim() });
+        medanAkhir = null;
+        continue;
+      }
+      // Pilihan: -S: soalan · -J: jawapan (baris seterusnya tanpa tanda = sambungan)
+      const mSJ = trimmed.match(/^-(S|J)\s*\d*\s*:\s*(.*)/i);
+      if (mSJ && currentAyat) {
+        medanAkhir = mSJ[1].toUpperCase() === 'S' ? 'soalan' : 'jawapan';
+        currentAyat[medanAkhir] = mSJ[2].trim();
+        continue;
+      }
+      if (medanAkhir && currentAyat) {
+        currentAyat[medanAkhir] += (currentAyat[medanAkhir] ? '\n' : '') + trimmed;
         continue;
       }
     }
@@ -30531,8 +30609,9 @@ mifRefreshKeyStatus();
     const parsed = parseKamusFakta(teks);
     if (!parsed.length) { prev.textContent = ''; return; }
     const totalItems = parsed.reduce((s, p) => s + p.items.length, 0);
+    const totalSoalan = parsed.reduce((s, p) => s + p.items.filter(a => a.soalan).length, 0);
     prev.style.color = '#22d3ee';
-    prev.textContent = parsed.length + ' slide dijumpai | ' + totalItems + ' baris akan dijana';
+    prev.textContent = parsed.length + ' slide dijumpai | ' + totalItems + ' baris akan dijana' + (totalSoalan ? ' | ' + totalSoalan + ' soalan' : '');
   });
 
   document.getElementById('btn-jana-fakta-execute').addEventListener('click', async () => {
@@ -30555,7 +30634,11 @@ mifRefreshKeyStatus();
         const jawab = confirm('Laci ini sudah wujud:\n\n"' + slide.tajuk + '"\n\nTekan OK untuk tambah baris baru. Tekan Batal untuk skip.');
         if (!jawab) { laciSkip++; continue; }
       }
-      const items = slide.items.map(ayatObj => ({ ayat: buatAyatFakta(ayatObj), imageUrl: '' }));
+      const items = slide.items.map(ayatObj => ({
+        ayat: buatAyatFakta(ayatObj), imageUrl: '',
+        ...(ayatObj.soalan ? { soalan: ayatObj.soalan } : {}),
+        ...(ayatObj.jawapan ? { jawapan: ayatObj.jawapan } : {})
+      }));
       if (existing) {
         const itemsGabung = [...(existing.items || []), ...items];
         await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', existing.id), { items: itemsGabung });
