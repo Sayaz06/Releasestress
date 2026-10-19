@@ -2622,8 +2622,28 @@ They immortalized the hero in a statue.
           <button id="btn-add-sem" class="btn btn-sm" style="flex:1;">Tambah Sem/Tahun</button>
           <button id="btn-trash-fakta" class="btn btn-secondary btn-sm btn-trash">🗑️ Tong Sampah</button>
         </div>
+        <!-- 📚 BANK FAKTA: bahan bacaan (PDF dll) ikut Sem → Subjek → Topik → Bahan (BM / BI) -->
+        <button id="btn-buka-bank-fakta" class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;border-color:#a78bfa;color:#c4b5fd;">📚 Bank Fakta</button>
         <div class="list mt-8" id="sem-list" style="padding: 10px;"></div>
       </section>
+
+      <!-- ══ BANK FAKTA (overlay penuh) — dibalut div supaya tetapan wallpaper (reset anak .card) tak buang position:fixed ══ -->
+      <div>
+      <div id="bank-fakta-modal" style="display:none;position:fixed;inset:0;z-index:100000;background:#020617;overflow-y:auto;padding:16px;">
+        <div style="max-width:560px;margin:0 auto;padding-bottom:40px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <button id="btn-bf-balik" class="btn btn-secondary btn-sm">← Tutup</button>
+            <div style="text-align:right;">
+              <div style="font-weight:700;color:#c4b5fd;">📚 Bank Fakta</div>
+              <div style="font-size:0.7rem;color:var(--subtext);">Bahan bacaan lecture · BM &amp; BI</div>
+            </div>
+          </div>
+          <div id="bf-jejak" style="font-size:0.72rem;color:#a5b4fc;margin:6px 0 10px;line-height:1.5;"></div>
+          <button id="btn-bf-tambah" class="btn btn-sm" style="display:none;width:100%;margin-bottom:10px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">+ Tambah Bahan</button>
+          <div id="bf-senarai" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+      </div>
 
       <section id="section-subjects" class="section">
       <div class="topbar">
@@ -2662,6 +2682,8 @@ They immortalized the hero in a statue.
           <button id="btn-duplikasi-info-fakta" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">👻 Ghost Button</button>
         </div>
         <button id="btn-open-jana-pukal-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">🗂️ Jana Pukal Fakta</button>
+        <!-- 📚 Bank Fakta terus ke bahan topik ini -->
+        <button id="btn-bank-fakta-topik" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#c4b5fd;">📚 Bahan Topik Ini (Bank Fakta)</button>
 
 <!-- MODAL JANA PUKAL FAKTA -->
 <div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
@@ -10778,6 +10800,202 @@ btnAddSubject.addEventListener("click", () => {
     document.getElementById('btn-add-sem').addEventListener("click", () => {
       addDoc(collection(db, "users", currentUser.uid, "sems"), { name: "", createdAt: Date.now() });
     });
+
+    // ══════════════════════════════════════════
+    // 📚 BANK FAKTA — senarai fail bahan bacaan ikut Semester → Subjek → Topik → Bahan
+    // Firestore : users/{uid}/fakta_bank/{bahanId} { semId, subjectId, topicId, tajuk, bm:{...}, bi:{...}, createdAt }
+    //             bm / bi = { nama, path, url, saiz, jenis, at }  (maklumat ringan sahaja)
+    // Storage   : users/{uid}/fakta_bank/{bahanId}_{bm|bi}_{masa}.{ext}  (fail sebenar)
+    // ══════════════════════════════════════════
+    const bf = { aras: 'sem', semId: null, subjekId: null, topikId: null, bahan: [], unsub: null, muatNaik: {} };
+    const bfEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const bfSusun = (a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
+    const bfSaiz = n => !n ? '' : n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
+    const bfBil = (medan, id) => bf.bahan.filter(x => x[medan] === id).length;
+    const BF_LABEL = { bm: '🇲🇾 Bahasa Melayu', bi: '🇬🇧 Bahasa Inggeris' };
+
+    function bfDengar() {
+      if (bf.unsub || !currentUser) return;
+      bf.unsub = onSnapshot(collection(db, 'users', currentUser.uid, 'fakta_bank'), snap => {
+        bf.bahan = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (document.getElementById('bank-fakta-modal').style.display !== 'block') return;
+        // Sedang taip tajuk → tangguh lukis semula (elak teks / fokus hilang)
+        if (document.activeElement && document.activeElement.classList.contains('bf-tajuk')) { bf.tertunda = true; return; }
+        bfLukis();
+      }, err => console.warn('fakta_bank:', err));
+    }
+    function bfBuka(aras, ids = {}) {
+      Object.assign(bf, { aras, semId: null, subjekId: null, topikId: null }, ids);
+      document.getElementById('bank-fakta-modal').style.display = 'block';
+      bfDengar();
+      bfLukis();
+    }
+    function bfTutup() { document.getElementById('bank-fakta-modal').style.display = 'none'; }
+
+    function bfLukis() {
+      const sem = allSems.find(s => s.id === bf.semId);
+      const subj = allSubjects.find(s => s.id === bf.subjekId);
+      const top = allTopics.find(t => t.id === bf.topikId);
+      const jejak = ['Semester'];
+      if (sem) jejak.push(sem.name || '(Tanpa nama)');
+      if (subj) jejak.push(subj.name || '(Tanpa nama)');
+      if (top) jejak.push(top.name || '(Tanpa nama)');
+      document.getElementById('bf-jejak').textContent = jejak.join('  ›  ');
+      document.getElementById('btn-bf-balik').textContent = bf.aras === 'sem' ? '← Tutup' : '← Balik';
+      document.getElementById('btn-bf-tambah').style.display = bf.aras === 'bahan' ? 'block' : 'none';
+      const list = document.getElementById('bf-senarai');
+      const item = (id, nama, sub) => `<div class="drawer-card" data-bf-pilih="${bfEsc(id)}" style="cursor:pointer;border:1px solid rgba(167,139,250,0.35);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="font-weight:700;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;">${bfEsc(nama || '(Tanpa nama)')}</div>
+          <div style="font-size:0.7rem;color:#c4b5fd;flex-shrink:0;">${sub} ›</div></div>`;
+      let html = '';
+      if (bf.aras === 'sem') {
+        html = allSems.slice().sort(bfSusun).map(s => item(s.id, s.name, bfBil('semId', s.id) + ' bahan')).join('');
+        if (!html) html = '<div class="empty-state">Belum ada Sem/Tahun. Tambah di page Sem/Tahun dahulu.</div>';
+      } else if (bf.aras === 'subjek') {
+        html = allSubjects.filter(s => s.semId === bf.semId).sort(bfSusun).map(s => item(s.id, s.name, bfBil('subjectId', s.id) + ' bahan')).join('');
+        if (!html) html = '<div class="empty-state">Tiada subjek dalam semester ini.</div>';
+      } else if (bf.aras === 'topik') {
+        html = allTopics.filter(t => t.subjectId === bf.subjekId).sort(bfSusun).map(t => item(t.id, t.name, bfBil('topicId', t.id) + ' bahan')).join('');
+        if (!html) html = '<div class="empty-state">Tiada topik dalam subjek ini.</div>';
+      } else {
+        const senarai = bf.bahan.filter(b => b.topicId === bf.topikId)
+          .sort((a, b) => (a.tajuk || '').localeCompare(b.tajuk || '', undefined, { numeric: true }) || (a.createdAt || 0) - (b.createdAt || 0));
+        html = senarai.map(bfKadBahan).join('');
+        if (!html) html = '<div class="empty-state">Belum ada bahan untuk topik ini. Tekan + Tambah Bahan.</div>';
+      }
+      list.innerHTML = html;
+    }
+
+    function bfKadBahan(b) {
+      const baris = lang => {
+        const f = b[lang];
+        const kunci = b.id + '_' + lang;
+        if (bf.muatNaik[kunci] != null) {
+          return `<div style="font-size:0.75rem;color:#c4b5fd;padding:6px 0;">${BF_LABEL[lang]} · Memuat naik ${bf.muatNaik[kunci]}%...</div>`;
+        }
+        if (!f || !f.url) {
+          return `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 0;">
+            <span style="font-size:0.75rem;color:var(--subtext);">${BF_LABEL[lang]} · <i>belum ada</i></span>
+            <button class="btn btn-secondary btn-sm" data-bf-upload="${lang}" style="flex-shrink:0;border-color:#a78bfa;color:#c4b5fd;">⬆ Upload</button></div>`;
+        }
+        return `<div style="padding:4px 0;">
+            <div style="font-size:0.75rem;color:#e0e7ff;margin-bottom:4px;word-break:break-all;">${BF_LABEL[lang]} · ${bfEsc(f.nama)} <span style="color:var(--subtext);">${bfSaiz(f.saiz)}</span></div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm" data-bf-buka="${lang}" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 Buka ${lang.toUpperCase()}</button>
+              <button class="btn btn-secondary btn-sm" data-bf-upload="${lang}" style="flex:1;">Ganti</button>
+              <button class="btn btn-secondary btn-sm" data-bf-buang="${lang}" style="color:var(--danger);border-color:var(--danger);">✕</button>
+            </div></div>`;
+      };
+      return `<div class="drawer-card" data-bf-bahan="${bfEsc(b.id)}" style="border:1px solid rgba(167,139,250,0.35);">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+            <input class="bf-tajuk" value="${bfEsc(b.tajuk)}" placeholder="Tajuk bahan (cth: Lecture 3 — Classification of Law)" style="flex:1;min-width:0;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:0.9rem;font-weight:600;">
+            <button class="btn btn-secondary btn-sm" data-bf-padam="1" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">Padam</button>
+          </div>
+          ${baris('bm')}
+          ${baris('bi')}
+        </div>`;
+    }
+
+    async function bfMuatNaik(b, lang, file) {
+      if (!file || !currentUser) return;
+      if (file.size > 50 * 1024 * 1024) { showToast('⚠️ Fail terlalu besar (maksimum 50MB).', 3500); return; }
+      const ext = ((file.name.match(/\.([a-z0-9]+)$/i) || [])[1] || 'bin').toLowerCase();
+      const path = `users/${currentUser.uid}/fakta_bank/${b.id}_${lang}_${Date.now()}.${ext}`;
+      const kunci = b.id + '_' + lang;
+      bf.muatNaik[kunci] = 0; bfLukis();
+      const tugas = uploadBytesResumable(ref(storage, path), file, { contentType: file.type || undefined });
+      tugas.on('state_changed',
+        s => { bf.muatNaik[kunci] = Math.round(s.bytesTransferred / Math.max(1, s.totalBytes) * 100); bfLukis(); },
+        err => { delete bf.muatNaik[kunci]; bfLukis(); showToast('❌ Gagal upload: ' + (err.message || err), 4000); },
+        async () => {
+          try {
+            const url = await getDownloadURL(tugas.snapshot.ref);
+            const lama = b[lang] && b[lang].path;
+            await updateDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id), {
+              [lang]: { nama: file.name, path, url, saiz: file.size, jenis: file.type || ext, at: Date.now() }, updatedAt: Date.now()
+            });
+            if (lama && lama !== path) deleteObject(ref(storage, lama)).catch(() => {});
+            showToast(`✅ ${lang.toUpperCase()} dimuat naik: ${file.name}`, 2500);
+          } catch (e) {
+            showToast('❌ Gagal simpan: ' + (e.message || e), 4000);
+          }
+          delete bf.muatNaik[kunci]; bfLukis();
+        });
+    }
+
+    document.getElementById('btn-buka-bank-fakta').addEventListener('click', () => bfBuka('sem'));
+    document.getElementById('btn-bank-fakta-topik').addEventListener('click', () => {
+      const t = allTopics.find(x => x.id === currentTopicId);
+      const s = t && allSubjects.find(x => x.id === t.subjectId);
+      if (!t) { bfBuka('sem'); return; }
+      bfBuka('bahan', { semId: s ? s.semId : null, subjekId: t.subjectId || null, topikId: t.id });
+    });
+    document.getElementById('btn-bf-balik').addEventListener('click', () => {
+      if (bf.aras === 'bahan') { bf.aras = 'topik'; bf.topikId = null; }
+      else if (bf.aras === 'topik') { bf.aras = 'subjek'; bf.subjekId = null; }
+      else if (bf.aras === 'subjek') { bf.aras = 'sem'; bf.semId = null; }
+      else { bfTutup(); return; }
+      bfLukis();
+      document.getElementById('bank-fakta-modal').scrollTop = 0;
+    });
+    document.getElementById('btn-bf-tambah').addEventListener('click', async () => {
+      if (!currentUser || !bf.topikId) return;
+      await addDoc(collection(db, 'users', currentUser.uid, 'fakta_bank'), {
+        semId: bf.semId, subjectId: bf.subjekId, topicId: bf.topikId, tajuk: '', createdAt: Date.now()
+      });
+    });
+    document.getElementById('bf-senarai').addEventListener('click', async e => {
+      const pilih = e.target.closest('[data-bf-pilih]');
+      if (pilih) {
+        const id = pilih.dataset.bfPilih;
+        if (bf.aras === 'sem') { bf.semId = id; bf.aras = 'subjek'; }
+        else if (bf.aras === 'subjek') { bf.subjekId = id; bf.aras = 'topik'; }
+        else if (bf.aras === 'topik') { bf.topikId = id; bf.aras = 'bahan'; }
+        bfLukis();
+        document.getElementById('bank-fakta-modal').scrollTop = 0;
+        return;
+      }
+      const kad = e.target.closest('[data-bf-bahan]');
+      if (!kad) return;
+      const b = bf.bahan.find(x => x.id === kad.dataset.bfBahan);
+      if (!b) return;
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.dataset.bfBuka) {
+        const f = b[btn.dataset.bfBuka];
+        if (f && f.url) window.open(f.url, '_blank');
+      } else if (btn.dataset.bfUpload) {
+        const lang = btn.dataset.bfUpload;
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,image/*';
+        input.addEventListener('change', () => bfMuatNaik(b, lang, input.files[0]));
+        input.click();
+      } else if (btn.dataset.bfBuang) {
+        const lang = btn.dataset.bfBuang;
+        if (!confirm(`Buang fail ${lang.toUpperCase()} "${(b[lang] && b[lang].nama) || ''}"?`)) return;
+        const path = b[lang] && b[lang].path;
+        await updateDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id), { [lang]: deleteField(), updatedAt: Date.now() });
+        if (path) deleteObject(ref(storage, path)).catch(() => {});
+      } else if (btn.dataset.bfPadam) {
+        if (!confirm(`Padam bahan "${b.tajuk || '(Tanpa tajuk)'}" berserta fail BM dan BI?`)) return;
+        ['bm', 'bi'].forEach(l => { if (b[l] && b[l].path) deleteObject(ref(storage, b[l].path)).catch(() => {}); });
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id));
+        showToast('🗑️ Bahan dipadam.', 2000);
+      }
+    });
+    document.getElementById('bf-senarai').addEventListener('focusout', () => {
+      setTimeout(() => {
+        const a = document.activeElement;
+        if (bf.tertunda && !(a && a.classList.contains('bf-tajuk'))) { bf.tertunda = false; bfLukis(); }
+      }, 300);
+    });
+    document.getElementById('bf-senarai').addEventListener('change', e => {
+      if (!e.target.classList.contains('bf-tajuk')) return;
+      const kad = e.target.closest('[data-bf-bahan]');
+      if (kad) updateDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', kad.dataset.bfBahan), { tajuk: e.target.value.trim(), updatedAt: Date.now() });
+    });
+
     btnAddTopic.addEventListener("click", () => { 
       if(currentSubjectId) {
         addDoc(collection(db, "users", currentUser.uid, "topics"), { name: "", subjectId: currentSubjectId, isActive: false, createdAt: Date.now() }); 
