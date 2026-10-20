@@ -2639,7 +2639,10 @@ They immortalized the hero in a statue.
             </div>
           </div>
           <div id="bf-jejak" style="font-size:0.72rem;color:#a5b4fc;margin:6px 0 10px;line-height:1.5;"></div>
-          <button id="btn-bf-tambah" class="btn btn-sm" style="display:none;width:100%;margin-bottom:10px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">+ Tambah Bahan</button>
+          <div id="bf-butang-bahan" style="display:none;gap:8px;margin-bottom:10px;">
+            <button id="btn-bf-tambah" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">+ Tambah Bahan</button>
+            <button id="btn-bf-ke-laci" class="btn btn-secondary btn-sm" style="flex:1;border-color:#38bdf8;color:#7dd3fc;">🗂️ Pergi ke Laci Topik Ini</button>
+          </div>
           <div id="bf-senarai" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </div>
@@ -2682,8 +2685,14 @@ They immortalized the hero in a statue.
           <button id="btn-duplikasi-info-fakta" class="btn btn-sm" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:white;">👻 Ghost Button</button>
         </div>
         <button id="btn-open-jana-pukal-fakta" class="btn btn-sm mt-8" style="width:100%;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white;">🗂️ Jana Pukal Fakta</button>
-        <!-- 📚 Bank Fakta terus ke bahan topik ini -->
-        <button id="btn-bank-fakta-topik" class="btn btn-secondary btn-sm mt-8" style="width:100%;border-color:#a78bfa;color:#c4b5fd;">📚 Bahan Topik Ini (Bank Fakta)</button>
+        <!-- 📚 BAHAN TOPIK INI — senarai bahan bacaan topik ini (BM / BI) dari Bank Fakta · Edit Bank → buka Bank Fakta -->
+        <div id="bahan-topik-panel" style="margin-top:10px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.35);border-radius:14px;padding:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <div style="font-size:0.9rem;font-weight:700;color:#c4b5fd;">📚 Bahan Topik Ini</div>
+            <button id="btn-bahan-topik-edit" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;color:#c4b5fd;">✏️ Edit Bank</button>
+          </div>
+          <div id="bahan-topik-senarai" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
 
 <!-- MODAL JANA PUKAL FAKTA -->
 <div id="jana-pukal-fakta-modal" style="display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
@@ -9633,6 +9642,7 @@ faktaTopicsList.appendChild(div);
 function renderDrawers() {
       const topic = allTopics.find(t => t.id === currentTopicId);
       document.getElementById("parent-topic-name").textContent = topic && topic.name ? `Topik: ${topic.name}` : "";
+      try { bfPanelTopik(); } catch (e) {} // 📚 Bahan Topik Ini — ikut topik yang dibuka
 
 
       const existingFloat = document.getElementById('btn-float-countdown-fakta');
@@ -10818,12 +10828,42 @@ btnAddSubject.addEventListener("click", () => {
       if (bf.unsub || !currentUser) return;
       bf.unsub = onSnapshot(collection(db, 'users', currentUser.uid, 'fakta_bank'), snap => {
         bf.bahan = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        bfPanelTopik();
         if (document.getElementById('bank-fakta-modal').style.display !== 'block') return;
         // Sedang taip tajuk → tangguh lukis semula (elak teks / fokus hilang)
         if (document.activeElement && document.activeElement.classList.contains('bf-tajuk')) { bf.tertunda = true; return; }
         bfLukis();
       }, err => console.warn('fakta_bank:', err));
     }
+
+    // ── 📚 BAHAN TOPIK INI (page Isi Laci) — senarai sahaja: tajuk + Buka BM / Buka BI ──
+    function bfPanelTopik() {
+      const list = document.getElementById('bahan-topik-senarai');
+      if (!list || !currentUser) return;
+      bfDengar();
+      const senarai = bf.bahan.filter(b => b.topicId === currentTopicId)
+        .sort((a, b) => (a.tajuk || '').localeCompare(b.tajuk || '', undefined, { numeric: true }) || (a.createdAt || 0) - (b.createdAt || 0));
+      if (!senarai.length) {
+        list.innerHTML = '<div style="font-size:0.75rem;color:var(--subtext);text-align:center;padding:4px;">Belum ada bahan untuk topik ini. Tekan ✏️ Edit Bank untuk tambah.</div>';
+        return;
+      }
+      const btnFail = (b, lang, label) => (b[lang] && b[lang].url)
+        ? `<button class="btn btn-sm" data-bt-buka="${lang}" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 ${label}</button>`
+        : `<button class="btn btn-secondary btn-sm" disabled style="flex-shrink:0;opacity:0.35;">${label}</button>`;
+      list.innerHTML = senarai.map(b => `<div data-bt-bahan="${bfEsc(b.id)}" style="display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.2);border-radius:10px;padding:8px;">
+          <div style="flex:1;min-width:0;font-size:0.82rem;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bfEsc(b.tajuk || '(Tanpa tajuk)')}</div>
+          ${btnFail(b, 'bm', 'BM')}
+          ${btnFail(b, 'bi', 'BI')}
+        </div>`).join('');
+    }
+    document.getElementById('bahan-topik-senarai').addEventListener('click', e => {
+      const btn = e.target.closest('[data-bt-buka]');
+      const row = e.target.closest('[data-bt-bahan]');
+      if (!btn || !row) return;
+      const b = bf.bahan.find(x => x.id === row.dataset.btBahan);
+      const f = b && b[btn.dataset.btBuka];
+      if (f && f.url) window.open(f.url, '_blank');
+    });
     function bfBuka(aras, ids = {}) {
       Object.assign(bf, { aras, semId: null, subjekId: null, topikId: null }, ids);
       document.getElementById('bank-fakta-modal').style.display = 'block';
@@ -10842,7 +10882,7 @@ btnAddSubject.addEventListener("click", () => {
       if (top) jejak.push(top.name || '(Tanpa nama)');
       document.getElementById('bf-jejak').textContent = jejak.join('  ›  ');
       document.getElementById('btn-bf-balik').textContent = bf.aras === 'sem' ? '← Tutup' : '← Balik';
-      document.getElementById('btn-bf-tambah').style.display = bf.aras === 'bahan' ? 'block' : 'none';
+      document.getElementById('bf-butang-bahan').style.display = bf.aras === 'bahan' ? 'flex' : 'none';
       const list = document.getElementById('bf-senarai');
       const item = (id, nama, sub) => `<div class="drawer-card" data-bf-pilih="${bfEsc(id)}" style="cursor:pointer;border:1px solid rgba(167,139,250,0.35);display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="font-weight:700;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;">${bfEsc(nama || '(Tanpa nama)')}</div>
@@ -10924,11 +10964,22 @@ btnAddSubject.addEventListener("click", () => {
     }
 
     document.getElementById('btn-buka-bank-fakta').addEventListener('click', () => bfBuka('sem'));
-    document.getElementById('btn-bank-fakta-topik').addEventListener('click', () => {
+    // ✏️ Edit Bank (page Isi Laci) → buka Bank Fakta terus pada topik ini
+    document.getElementById('btn-bahan-topik-edit').addEventListener('click', () => {
       const t = allTopics.find(x => x.id === currentTopicId);
       const s = t && allSubjects.find(x => x.id === t.subjectId);
       if (!t) { bfBuka('sem'); return; }
       bfBuka('bahan', { semId: s ? s.semId : null, subjekId: t.subjectId || null, topikId: t.id });
+    });
+    // 🗂️ Pergi ke Laci Topik Ini (Bank Fakta) → tutup bank, buka page Isi Laci topik ini
+    document.getElementById('btn-bf-ke-laci').addEventListener('click', () => {
+      if (!bf.topikId) return;
+      currentTopicId = bf.topikId;
+      if (bf.subjekId) currentSubjectId = bf.subjekId;
+      if (bf.semId) currentSemId = bf.semId;
+      bfTutup();
+      showSection(sectionDrawer);
+      renderDrawers();
     });
     document.getElementById('btn-bf-balik').addEventListener('click', () => {
       if (bf.aras === 'bahan') { bf.aras = 'topik'; bf.topikId = null; }
