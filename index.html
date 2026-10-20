@@ -2155,6 +2155,7 @@ body.dark-mode {
         <div style="display:flex;gap:6px;">
           <button id="btn-bank-upload" class="btn btn-sm" style="flex:2;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📤 Upload Fail</button>
           <button id="btn-bank-folder" class="btn btn-secondary btn-sm" style="flex:1;border-color:#a78bfa;color:#c4b5fd;">📁 Folder</button>
+          <button id="btn-bank-trash" class="btn btn-secondary btn-sm" style="flex-shrink:0;border-color:#f87171;color:#fca5a5;">🗑️ Tong Sampah</button>
         </div>
         <input id="bank-upload-input" type="file" accept=".txt,text/plain" multiple style="display:none;">
         <input id="bank-folder-input" type="file" webkitdirectory directory multiple style="display:none;">
@@ -2633,6 +2634,7 @@ They immortalized the hero in a statue.
         <div style="max-width:560px;margin:0 auto;padding-bottom:40px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
             <button id="btn-bf-balik" class="btn btn-secondary btn-sm">← Tutup</button>
+            <button id="btn-bf-trash" class="btn btn-secondary btn-sm" style="border-color:#f87171;color:#fca5a5;">🗑️ Tong Sampah</button>
             <div style="text-align:right;">
               <div style="font-weight:700;color:#c4b5fd;">📚 Bank Fakta</div>
               <div style="font-size:0.7rem;color:var(--subtext);">Bahan bacaan lecture · BM &amp; BI</div>
@@ -2644,6 +2646,27 @@ They immortalized the hero in a statue.
             <button id="btn-bf-ke-laci" class="btn btn-secondary btn-sm" style="flex:1;border-color:#38bdf8;color:#7dd3fc;">🗂️ Pergi ke Laci Topik Ini</button>
           </div>
           <div id="bf-senarai" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+      <!-- 🗑️ TONG SAMPAH BAHAN (Bank Fakta + Bank Kamus) — simpan 1 tahun · berasingan dari Pembersih Data Yatim -->
+      <div id="bahan-trash-modal" style="display:none;position:fixed;inset:0;z-index:100001;background:#020617;overflow-y:auto;padding:16px;">
+        <div style="max-width:560px;margin:0 auto;padding-bottom:40px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <button id="btn-bt-tutup" class="btn btn-secondary btn-sm">← Tutup</button>
+            <div style="text-align:right;">
+              <div style="font-weight:700;color:#fca5a5;">🗑️ Tong Sampah Bahan</div>
+              <div id="bt-kira" style="font-size:0.7rem;color:var(--subtext);">Disimpan 1 tahun</div>
+            </div>
+          </div>
+          <div style="font-size:0.72rem;color:#94a3b8;line-height:1.6;margin:8px 0;padding:8px 10px;border-radius:10px;background:rgba(239,68,68,0.06);border:1px dashed rgba(248,113,113,0.4);">
+            Bahan Bank Fakta (BM &amp; BI) dan fail Bank Kamus yang dibuang disimpan di sini selama <b>1 tahun</b>, kemudian dipadam automatik. Tekan <b>♻️ Pulih</b> untuk kembalikan ke tempat asal. Tiada kaitan dengan Pembersih Data Yatim.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <button class="btn btn-secondary btn-sm" data-bt-tapis="semua" style="flex:1;">Semua</button>
+            <button class="btn btn-secondary btn-sm" data-bt-tapis="fakta" style="flex:1;">📚 Fakta</button>
+            <button class="btn btn-secondary btn-sm" data-bt-tapis="kamus" style="flex:1;">📖 Kamus</button>
+          </div>
+          <div id="bt-senarai" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </div>
       </div>
@@ -10959,10 +10982,12 @@ btnAddSubject.addEventListener("click", () => {
           try {
             const url = await getDownloadURL(tugas.snapshot.ref);
             const lama = b[lang] && b[lang].path;
+            const failLama = b[lang] && b[lang].url ? { ...b[lang] } : null;
             await updateDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id), {
               [lang]: { nama: file.name, path, url, saiz: file.size, jenis: file.type || ext, at: Date.now() }, updatedAt: Date.now()
             });
-            if (lama && lama !== path) deleteObject(ref(storage, lama)).catch(() => {});
+            // 🗑️ Fail lama TIDAK dipadam — masuk Tong Sampah Bahan (1 tahun)
+            if (lama && lama !== path && failLama) await bahanKeTrashFaktaFail(b, lang, failLama, 'diganti').catch(e => console.warn('trash:', e));
             showToast(`✅ ${lang.toUpperCase()} dimuat naik: ${file.name}`, 2500);
           } catch (e) {
             showToast('❌ Gagal simpan: ' + (e.message || e), 4000);
@@ -11032,15 +11057,19 @@ btnAddSubject.addEventListener("click", () => {
         input.click();
       } else if (btn.dataset.bfBuang) {
         const lang = btn.dataset.bfBuang;
-        if (!confirm(`Buang fail ${lang.toUpperCase()} "${(b[lang] && b[lang].nama) || ''}"?`)) return;
-        const path = b[lang] && b[lang].path;
-        await updateDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id), { [lang]: deleteField(), updatedAt: Date.now() });
-        if (path) deleteObject(ref(storage, path)).catch(() => {});
+        if (!confirm(`Buang fail ${lang.toUpperCase()} "${(b[lang] && b[lang].nama) || ''}"?\n\nFail akan masuk 🗑️ Tong Sampah Bahan (simpan 1 tahun).`)) return;
+        try {
+          if (b[lang] && b[lang].url) await bahanKeTrashFaktaFail(b, lang, { ...b[lang] }, 'dibuang');
+          await updateDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id), { [lang]: deleteField(), updatedAt: Date.now() });
+          showToast('🗑️ Fail masuk Tong Sampah Bahan.', 2000);
+        } catch (err) { showToast('❌ ' + (err.message || err), 4000); }
       } else if (btn.dataset.bfPadam) {
-        if (!confirm(`Padam bahan "${b.tajuk || '(Tanpa tajuk)'}" berserta fail BM dan BI?`)) return;
-        ['bm', 'bi'].forEach(l => { if (b[l] && b[l].path) deleteObject(ref(storage, b[l].path)).catch(() => {}); });
-        await deleteDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id));
-        showToast('🗑️ Bahan dipadam.', 2000);
+        if (!confirm(`Padam bahan "${b.tajuk || '(Tanpa tajuk)'}" berserta fail BM dan BI?\n\nBahan akan masuk 🗑️ Tong Sampah Bahan (simpan 1 tahun).`)) return;
+        try {
+          await bahanKeTrashFakta(b);
+          await deleteDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id));
+          showToast('🗑️ Bahan masuk Tong Sampah Bahan.', 2000);
+        } catch (err) { showToast('❌ ' + (err.message || err), 4000); }
       }
     });
     document.getElementById('bf-senarai').addEventListener('focusout', () => {
@@ -19197,15 +19226,228 @@ async function _bankLihatFail(kunci, ms) {
   p.querySelector('[data-ai-popup-batal]').addEventListener('click', () => p.remove());
   p.querySelector('[data-salin]').addEventListener('click', (e) => _bankSalin(teks, e.currentTarget, '📋 Copy Teks Fail'));
   p.querySelector('[data-buang]').addEventListener('click', async () => {
-    if (!confirm(`Buang fail ${t.nama} MS${ms} dari Bank Kamus?\n\n(Muka surat, perkataan, laci & SR yang sudah ada TIDAK diusik.)`)) return;
+    if (!confirm(`Buang fail ${t.nama} MS${ms} dari Bank Kamus?\n\nFail akan masuk 🗑️ Tong Sampah Bahan (simpan 1 tahun).\n(Muka surat, perkataan, laci & SR yang sudah ada TIDAK diusik.)`)) return;
     try {
+      await bahanKeTrash({
+        jenis: 'kamus', kunci, ms: String(ms), label: `${t.nama} MS${ms}`, sebab: 'dibuang',
+        failData: s.exists() ? s.data() : null,
+        indeks: (_bankIndeks[kunci] || {})[String(ms)] || { bil: d.bil || 0, namaFail: d.namaFail || '' }
+      });
       await deleteDoc(doc(db, 'users', currentUser.uid, 'kamus_bank_fail', `${kunci}_${ms}`));
       await updateDoc(doc(db, 'users', currentUser.uid, 'kamus_bank', kunci), { [`ms.${ms}`]: deleteField() });
       p.remove();
-      showToast('🗑️ Fail dibuang dari Bank.');
+      showToast('🗑️ Fail masuk Tong Sampah Bahan.');
     } catch (e) { showToast('❌ ' + e.message); }
   });
 }
+
+// ══════════ 🗑️ TONG SAMPAH BAHAN (Bank Fakta BM/BI + Bank Kamus) ══════════
+// Simpan 1 tahun. Collection sendiri: users/{uid}/bahan_trash
+// TIADA kaitan dengan Pembersih Data Yatim / trash / universal_trash.
+// Fail di Storage TIDAK dipadam semasa buang — hanya bila Padam Kekal / luput 1 tahun.
+const BT_COLL = 'bahan_trash';
+const BT_SETAHUN = 365 * 24 * 60 * 60 * 1000;
+const _bt = { senarai: [], unsub: null, uid: null, tapis: 'semua', dibersih: false, sibuk: false };
+const _btEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const _btMeta = b => ({ semId: b.semId || null, subjectId: b.subjectId || null, topicId: b.topicId || null, tajuk: b.tajuk || '', createdAt: b.createdAt || Date.now() });
+
+async function bahanKeTrash(item) {
+  if (!currentUser) throw new Error('Belum log masuk');
+  const now = Date.now();
+  const bersih = JSON.parse(JSON.stringify(item)); // buang medan undefined
+  await addDoc(collection(db, 'users', currentUser.uid, BT_COLL), { ...bersih, deletedAt: now, luputAt: now + BT_SETAHUN });
+}
+async function bahanKeTrashFakta(b) {
+  const { id, ...data } = b;
+  await bahanKeTrash({
+    jenis: 'fakta', bahanId: id, label: b.tajuk || '(Tanpa tajuk)', sebab: 'dipadam', data,
+    paths: ['bm', 'bi'].map(l => b[l] && b[l].path).filter(Boolean)
+  });
+}
+async function bahanKeTrashFaktaFail(b, lang, fail, sebab) {
+  await bahanKeTrash({
+    jenis: 'fakta_fail', bahanId: b.id, lang, fail, meta: _btMeta(b), label: fail.nama || '', sebab,
+    paths: fail.path ? [fail.path] : []
+  });
+}
+
+function _btDengar() {
+  if (!currentUser) return;
+  if (_bt.unsub && _bt.uid === currentUser.uid) return;
+  if (_bt.unsub) { _bt.unsub(); _bt.dibersih = false; }
+  _bt.uid = currentUser.uid;
+  _bt.unsub = onSnapshot(collection(db, 'users', currentUser.uid, BT_COLL), snap => {
+    _bt.senarai = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+    if (!_bt.dibersih) { _bt.dibersih = true; _btBuangLuput(); }
+    _btLukis();
+  }, err => console.warn('bahan_trash:', err));
+}
+function bukaTrashBahan() {
+  if (!currentUser) return;
+  document.getElementById('bahan-trash-modal').style.display = 'block';
+  _btDengar();
+  _btLukis();
+}
+function _btJejak(m) {
+  m = m || {};
+  const sem = allSems.find(x => x.id === m.semId);
+  const sub = allSubjects.find(x => x.id === m.subjectId);
+  const top = allTopics.find(x => x.id === m.topicId);
+  if (!top) return '⚠️ topik asal sudah tiada';
+  return [sem && sem.name, sub && sub.name, top.name].filter(Boolean).join(' › ');
+}
+function _btTarikh(ms) {
+  try { return new Date(ms).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; }
+}
+function _btLukis() {
+  const box = document.getElementById('bt-senarai');
+  if (!box || document.getElementById('bahan-trash-modal').style.display !== 'block') return;
+  document.querySelectorAll('[data-bt-tapis]').forEach(b => {
+    const on = b.dataset.btTapis === _bt.tapis;
+    b.style.background = on ? '#7c3aed' : 'transparent';
+    b.style.color = on ? '#fff' : '#c4b5fd';
+    b.style.borderColor = on ? '#7c3aed' : '#a78bfa';
+  });
+  document.getElementById('bt-kira').textContent = `${_bt.senarai.length} item · disimpan 1 tahun`;
+  const now = Date.now();
+  const senarai = _bt.senarai.filter(it => _bt.tapis === 'semua' || (_bt.tapis === 'kamus' ? it.jenis === 'kamus' : it.jenis !== 'kamus'));
+  if (!senarai.length) { box.innerHTML = '<div class="empty-state">Tong sampah kosong.</div>'; return; }
+  const btnBuka = (f, lang) => (f && f.url)
+    ? `<button class="btn btn-secondary btn-sm" data-bt-buka="${lang}" style="flex-shrink:0;">📖 ${lang.toUpperCase()}</button>` : '';
+  box.innerHTML = senarai.map(it => {
+    const hari = Math.max(0, Math.ceil(((it.luputAt || 0) - now) / 86400000));
+    let jenis, tajuk, sub, buka = '';
+    if (it.jenis === 'kamus') {
+      const f = it.failData || {};
+      jenis = '📖 Fail Bank Kamus';
+      tajuk = it.label || `${it.kunci} MS${it.ms}`;
+      sub = `${f.namaFail || (it.indeks && it.indeks.namaFail) || ''} · ${f.bil || (it.indeks && it.indeks.bil) || 0} perkataan`;
+    } else if (it.jenis === 'fakta') {
+      const d = it.data || {};
+      jenis = '📚 Bahan Bank Fakta (penuh)';
+      tajuk = d.tajuk || '(Tanpa tajuk)';
+      sub = `${_btJejak(d)} · ${['bm', 'bi'].filter(l => d[l] && d[l].url).map(l => l.toUpperCase()).join(' + ') || 'tiada fail'}`;
+      buka = btnBuka(d.bm, 'bm') + btnBuka(d.bi, 'bi');
+    } else {
+      const f = it.fail || {};
+      jenis = `📄 Fail ${String(it.lang || '').toUpperCase()} Bank Fakta`;
+      tajuk = f.nama || '(fail)';
+      sub = `Bahan: ${(it.meta && it.meta.tajuk) || '(Tanpa tajuk)'} · ${_btJejak(it.meta)}`;
+      buka = btnBuka(f, it.lang);
+    }
+    return `<div class="drawer-card" data-bt-id="${_btEsc(it.id)}" style="border:1px solid rgba(248,113,113,0.35);">
+        <div style="font-size:0.68rem;color:#fca5a5;margin-bottom:2px;">${jenis} · ${it.sebab === 'diganti' ? 'diganti' : 'dibuang'} ${_btTarikh(it.deletedAt)} · tinggal ${hari} hari</div>
+        <div style="font-weight:700;color:#fff;word-break:break-word;">${_btEsc(tajuk)}</div>
+        <div style="font-size:0.72rem;color:var(--subtext);margin:2px 0 8px;word-break:break-word;">${_btEsc(sub)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-sm" data-bt-aksi="pulih" style="flex:1;background:linear-gradient(135deg,#16a34a,#15803d);border:none;color:white;">♻️ Pulih</button>
+          ${buka}
+          <button class="btn btn-secondary btn-sm" data-bt-aksi="padam" style="flex-shrink:0;color:var(--danger);border-color:var(--danger);">🔥 Padam Kekal</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Padam fail Storage — tapi JANGAN padam fail yang masih dipakai bahan aktif / item lain dalam tong
+async function _btPadamFailStorage(it) {
+  const paths = (it.paths || []).filter(Boolean);
+  if (!paths.length) return;
+  const guna = new Set();
+  try {
+    const s = await getDocs(collection(db, 'users', currentUser.uid, 'fakta_bank'));
+    s.forEach(d => { const x = d.data() || {}; ['bm', 'bi'].forEach(l => { if (x[l] && x[l].path) guna.add(x[l].path); }); });
+  } catch (e) { return; } // gagal semak → selamat, jangan padam
+  _bt.senarai.forEach(o => { if (o.id !== it.id) (o.paths || []).forEach(p => guna.add(p)); });
+  for (const p of paths) if (!guna.has(p)) await deleteObject(ref(storage, p)).catch(() => {});
+}
+async function _btPadamKekal(it) {
+  await _btPadamFailStorage(it);
+  await deleteDoc(doc(db, 'users', currentUser.uid, BT_COLL, it.id));
+}
+async function _btBuangLuput() {
+  const now = Date.now();
+  const luput = _bt.senarai.filter(it => it.luputAt && it.luputAt < now);
+  for (const it of luput) { try { await _btPadamKekal(it); } catch (e) { console.warn('luput:', e); } }
+}
+
+// Pulih ke tempat asal. Kalau tempat itu sudah ada fail lain → tanya, fail sedia ada pula masuk tong.
+async function _btPulih(it) {
+  const uid = currentUser.uid;
+  if (it.jenis === 'kamus') {
+    const kunci = it.kunci, ms = String(it.ms);
+    const rf = doc(db, 'users', uid, 'kamus_bank_fail', `${kunci}_${ms}`);
+    const ada = await getDoc(rf);
+    if (ada.exists()) {
+      if (!confirm(`Bank Kamus sudah ada fail ${it.label || ''} sekarang.\nGanti dengan fail dari tong sampah?\n\n(Fail sedia ada pula akan masuk tong sampah.)`)) return false;
+      const x = ada.data() || {};
+      await bahanKeTrash({ jenis: 'kamus', kunci, ms, label: it.label, sebab: 'diganti', failData: x,
+        indeks: (_bankIndeks[kunci] || {})[ms] || { bil: x.bil || 0, namaFail: x.namaFail || '' } });
+    }
+    if (it.failData) await setDoc(rf, it.failData);
+    const f = it.failData || {};
+    await setDoc(doc(db, 'users', uid, 'kamus_bank', kunci),
+      { ms: { [ms]: it.indeks || { bil: f.bil || 0, namaFail: f.namaFail || '' } } }, { merge: true });
+    return true;
+  }
+  const r = doc(db, 'users', uid, 'fakta_bank', it.bahanId);
+  const ada = await getDoc(r);
+  const baru = it.jenis === 'fakta' ? { ...(it.data || {}) } : { ...(it.meta || {}), [it.lang]: it.fail };
+  if (!ada.exists()) {
+    await setDoc(r, { ...baru, updatedAt: Date.now() });
+    return true;
+  }
+  // Bahan masih wujud → gabung fail sahaja (tajuk sedia ada dikekalkan)
+  const kini = ada.data() || {};
+  const gabung = {};
+  for (const l of ['bm', 'bi']) {
+    const f = baru[l];
+    if (!f || !f.url) continue;
+    if (kini[l] && kini[l].url && kini[l].path !== f.path) {
+      if (!confirm(`Bahan "${kini.tajuk || '(Tanpa tajuk)'}" sudah ada fail ${l.toUpperCase()}: ${kini[l].nama || ''}\nGanti dengan fail dari tong sampah (${f.nama || ''})?\n\n(Fail sedia ada pula akan masuk tong sampah.)`)) continue;
+      await bahanKeTrashFaktaFail({ id: it.bahanId, ...kini }, l, { ...kini[l] }, 'diganti');
+    }
+    gabung[l] = f;
+  }
+  if (!kini.tajuk && baru.tajuk) gabung.tajuk = baru.tajuk;
+  if (!Object.keys(gabung).length) return false;
+  await updateDoc(r, { ...gabung, updatedAt: Date.now() });
+  return true;
+}
+
+document.getElementById('btn-bf-trash')?.addEventListener('click', bukaTrashBahan);
+document.getElementById('btn-bank-trash')?.addEventListener('click', bukaTrashBahan);
+document.getElementById('btn-bt-tutup')?.addEventListener('click', () => { document.getElementById('bahan-trash-modal').style.display = 'none'; });
+document.querySelectorAll('[data-bt-tapis]').forEach(b => b.addEventListener('click', () => { _bt.tapis = b.dataset.btTapis; _btLukis(); }));
+document.getElementById('bt-senarai')?.addEventListener('click', async e => {
+  const btn = e.target.closest('button');
+  const kad = e.target.closest('[data-bt-id]');
+  if (!btn || !kad || _bt.sibuk) return;
+  const it = _bt.senarai.find(x => x.id === kad.dataset.btId);
+  if (!it) return;
+  if (btn.dataset.btBuka) {
+    const l = btn.dataset.btBuka;
+    const f = it.jenis === 'fakta' ? (it.data || {})[l] : it.fail;
+    if (f && f.url) window.open(f.url, '_blank');
+    return;
+  }
+  const aksi = btn.dataset.btAksi;
+  if (aksi === 'padam' && !confirm(`Padam KEKAL "${it.label || ''}"?\n\nTidak boleh dipulih lagi selepas ini.`)) return;
+  _bt.sibuk = true;
+  kad.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  try {
+    if (aksi === 'pulih') {
+      if (await _btPulih(it)) {
+        await deleteDoc(doc(db, 'users', currentUser.uid, BT_COLL, it.id));
+        showToast('♻️ Dipulih ke tempat asal.', 2500);
+      }
+    } else if (aksi === 'padam') {
+      await _btPadamKekal(it);
+      showToast('🔥 Dipadam kekal.', 2000);
+    }
+  } catch (err) { showToast('❌ ' + (err.message || err), 4000); }
+  _bt.sibuk = false;
+  _btLukis();
+});
 
 // Senarai fail satu kategori dalam Bank (dengan carian)
 function bukaBankKategori(kunci) {
