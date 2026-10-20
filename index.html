@@ -10845,7 +10845,7 @@ btnAddSubject.addEventListener("click", () => {
     const bfSusun = (a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
     const bfSaiz = n => !n ? '' : n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
     const bfBil = (medan, id) => bf.bahan.filter(x => x[medan] === id).length;
-    const BF_LABEL = { bm: '🇲🇾 Bahasa Melayu', bi: '🇬🇧 Bahasa Inggeris' };
+    const BF_LABEL = { bm: '🇲🇾', bi: '🇬🇧' };
 
     function bfDengar() {
       if (bf.unsub || !currentUser) return;
