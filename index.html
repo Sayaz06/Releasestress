@@ -2607,6 +2607,8 @@ They immortalized the hero in a statue.
           <div id="fact-hint" class="fact-hint">(Tekan/Klik kotak ini untuk terjemahan)</div>
         </div>
 
+        <button id="btn-belajar-audio" type="button" class="btn" style="display:none;margin-top:8px;background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:#fff;">🎧 Belajar melalui audio</button>
+
         <div class="row" style="margin-top: auto;">
           <div class="chip">
             <span>Auto simpan ke Firestore</span>
@@ -8531,6 +8533,63 @@ function pushKindleSession() {
       }, { merge: true }).catch(() => {});
     }  
 
+    let _faktaAudioEl = null;
+    function faktaAudioEl() {
+      if (!_faktaAudioEl) {
+        _faktaAudioEl = new Audio();
+        _faktaAudioEl.setAttribute('playsinline', '');
+        _faktaAudioEl.preload = 'none';
+      }
+      return _faktaAudioEl;
+    }
+    window.mainAudioSlide = function(url, btn, labelMain, labelHenti) {
+      labelMain = labelMain || '▶ Main';
+      labelHenti = labelHenti || '⏸ Henti';
+      const a = faktaAudioEl();
+      if (!url) { showToast('Slide ini belum ada audio.'); return; }
+      if (a.getAttribute('data-url') === url && !a.paused) {
+        a.pause();
+        if (btn) btn.textContent = labelMain;
+        return;
+      }
+      a.pause();
+      a.src = url;
+      a.setAttribute('data-url', url);
+      a.onended = () => { if (btn) btn.textContent = labelMain; };
+      a.play().then(() => { if (btn) btn.textContent = labelHenti; }).catch(() => {
+        showToast('❌ Tak boleh main audio.');
+        if (btn) btn.textContent = labelMain;
+      });
+    };
+    function kemaskiniBtnAudioFakta(data) {
+      const btn = document.getElementById('btn-belajar-audio');
+      if (!btn) return;
+      let url = '';
+      if (factMode && !bahasaMode && !routineMode && data && data.drawerId) {
+        const drawer = allDrawers.find(d => d.id === data.drawerId);
+        if (drawer && drawer.audioUrl) url = drawer.audioUrl;
+      }
+      const a = _faktaAudioEl;
+      if (a && url && a.getAttribute('data-url') && a.getAttribute('data-url') !== url && !a.paused) a.pause();
+      if (url) {
+        btn.style.display = 'block';
+        btn.setAttribute('data-url', url);
+        btn.textContent = (a && a.getAttribute('data-url') === url && !a.paused) ? '⏸ Henti audio' : '🎧 Belajar melalui audio';
+      } else {
+        btn.style.display = 'none';
+        btn.removeAttribute('data-url');
+        btn.textContent = '🎧 Belajar melalui audio';
+      }
+    }
+    const btnBelajarAudio = document.getElementById('btn-belajar-audio');
+    if (btnBelajarAudio) {
+      btnBelajarAudio.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = btnBelajarAudio.getAttribute('data-url');
+        window.mainAudioSlide(url, btnBelajarAudio, '🎧 Belajar melalui audio', '⏸ Henti audio');
+      });
+    }
+
     function renderCurrentFact() {
       // Sync Jogging Kad bila countdown bergerak
       if (jbAktif && (bahasaMode || factMode)) {
@@ -8549,10 +8608,13 @@ function pushKindleSession() {
         factHintEl.style.display = 'none';
         btnSpeak.style.display = 'none';
         btnCopyFact.style.display = 'none';
+        const btnBelajarKosong = document.getElementById('btn-belajar-audio');
+        if (btnBelajarKosong) btnBelajarKosong.style.display = 'none';
         return;
       }
 
       const data = dataSource[currentIndex];
+      kemaskiniBtnAudioFakta(data);
       
       factContentEl.scrollTop = 0;
 
@@ -9749,6 +9811,14 @@ function renderDrawers() {
             : `<div style="font-size:0.68rem;background:rgba(245,158,11,0.1);color:#fcd34d;padding:3px 10px;border-radius:999px;margin-bottom:8px;display:inline-block;">⚠️ Belum export PDF — kod sementara</div>`
           }
 
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary btn-sm btn-upload-slide-audio" style="flex:1;border-color:#22d3ee;color:${data.audioUrl ? '#67e8f9' : 'var(--subtext)'};">🎧 ${data.audioUrl ? 'Tukar audio slide' : 'Letak audio slide'}</button>
+            ${data.audioUrl ? `<button type="button" class="btn btn-secondary btn-sm btn-main-slide-audio" style="border-color:#34d399;color:#34d399;">▶ Main</button>` : ''}
+            ${data.audioUrl ? `<button type="button" class="btn btn-secondary btn-sm btn-padam-slide-audio" style="color:var(--danger);border-color:var(--danger);">✕</button>` : ''}
+          </div>
+          ${data.audioName ? `<div style="font-size:0.68rem;color:#67e8f9;margin:-4px 0 8px;">🎧 ${data.audioName}</div>` : ''}
+          <input type="file" class="input-slide-audio" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac" style="display:none;">
+
           <div class="fakta-items-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
             ${(items || []).map((item, idx) => `
               <div class="fakta-item-card" data-idx="${idx}" style="background:rgba(30,41,59,0.6);border:1px solid var(--border-soft);border-radius:10px;padding:10px;">
@@ -9838,6 +9908,67 @@ function renderDrawers() {
           _tipsNoticeChanged = true;
           showTipsNotice('Fakta Drawer');
         });
+
+        const btnUploadAudio = div.querySelector('.btn-upload-slide-audio');
+        const inputSlideAudio = div.querySelector('.input-slide-audio');
+        if (btnUploadAudio && inputSlideAudio) {
+          btnUploadAudio.addEventListener('click', () => inputSlideAudio.click());
+          inputSlideAudio.addEventListener('change', async () => {
+            const file = inputSlideAudio.files && inputSlideAudio.files[0];
+            inputSlideAudio.value = '';
+            if (!file || !currentUser) return;
+            if (file.size > 30 * 1024 * 1024) { showToast('❌ Audio terlalu besar (maks 30MB).'); return; }
+            const ext = ((file.name.split('.').pop() || 'mp3').toLowerCase().replace(/[^a-z0-9]/g, '')) || 'mp3';
+            const path = `users/${currentUser.uid}/fakta_audio/${data.id}.${ext}`;
+            try {
+              if (data.audioPath && data.audioPath !== path) {
+                await deleteObject(ref(storage, data.audioPath)).catch(() => {});
+              }
+              showToast('⏳ Muat naik audio...', 0);
+              const task = uploadBytesResumable(ref(storage, path), file, { contentType: file.type || 'audio/mpeg' });
+              task.on('state_changed', (snap) => {
+                const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+                showToast('⏳ Audio ' + pct + '%...', 0);
+              }, (err) => {
+                showToast('❌ Gagal muat naik: ' + (err && err.message ? err.message : err));
+              }, async () => {
+                const url = await getDownloadURL(task.snapshot.ref);
+                await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', data.id), {
+                  audioUrl: url,
+                  audioPath: path,
+                  audioName: file.name,
+                  audioUpdatedAt: Date.now()
+                });
+                showToast('✅ Audio slide disimpan.');
+              });
+            } catch (e) {
+              showToast('❌ ' + (e && e.message ? e.message : e));
+            }
+          });
+        }
+        const btnMainAudio = div.querySelector('.btn-main-slide-audio');
+        if (btnMainAudio && data.audioUrl) {
+          btnMainAudio.addEventListener('click', () => window.mainAudioSlide(data.audioUrl, btnMainAudio));
+        }
+        const btnPadamAudio = div.querySelector('.btn-padam-slide-audio');
+        if (btnPadamAudio) {
+          btnPadamAudio.addEventListener('click', async () => {
+            if (!confirm('Padam audio slide ini?')) return;
+            try {
+              if (data.audioPath) await deleteObject(ref(storage, data.audioPath)).catch(() => {});
+              if (window._faktaAudioEl) window._faktaAudioEl.pause();
+              await updateDoc(doc(db, 'users', currentUser.uid, 'drawer', data.id), {
+                audioUrl: deleteField(),
+                audioPath: deleteField(),
+                audioName: deleteField(),
+                audioUpdatedAt: deleteField()
+              });
+              showToast('🗑️ Audio slide dipadam.');
+            } catch (e) {
+              showToast('❌ ' + (e && e.message ? e.message : e));
+            }
+          });
+        }
 
         // ── TAMBAH BARIS ──
         div.querySelector(".btn-add-item").addEventListener("click", async () => {
@@ -10149,6 +10280,9 @@ bukaCropTool(file, async (blob) => {
                 await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${i}.jpg`)).catch(() => {});
               }
             }
+          }
+          if (data.audioPath) {
+            await deleteObject(ref(storage, data.audioPath)).catch(() => {});
           }
 
           // Padam semua SR fakta untuk laci ini serta-merta
