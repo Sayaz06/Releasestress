@@ -11025,6 +11025,8 @@ btnAddSubject.addEventListener("click", () => {
       }
       const btnFail = (b, lang, label) => (b[lang] && b[lang].url)
         ? `<button class="btn btn-sm" data-bt-buka="${lang}" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;color:white;">📖 ${label}</button>`
+        : (b[lang] && b[lang].tidakPerlu)
+        ? `<button class="btn btn-sm" disabled style="flex-shrink:0;background:#16a34a;border:none;color:white;opacity:1;">✓ ${label}</button>`
         : `<button class="btn btn-secondary btn-sm" disabled style="flex-shrink:0;opacity:0.35;">${label}</button>`;
       list.innerHTML = senarai.map(b => `<div data-bt-bahan="${bfEsc(b.id)}" style="display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.2);border-radius:10px;padding:8px;">
           <div style="flex:1;min-width:0;font-size:0.82rem;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bfEsc(b.tajuk || '(Tanpa tajuk)')}</div>
@@ -11062,7 +11064,8 @@ btnAddSubject.addEventListener("click", () => {
       const list = document.getElementById('bf-senarai');
       // Lencana MY / GB: hijau = SEMUA bahan ada fail bahasa itu · merah = ada yang belum · kelabu = tiada bahan
       const lencana = (senarai, lang, label) => {
-        const warna = !senarai.length ? '#64748b' : senarai.every(b => b[lang] && b[lang].url) ? '#22c55e' : '#ef4444';
+        const lengkap = b => { const f = b[lang]; return !!(f && (f.url || f.tidakPerlu)); };
+        const warna = !senarai.length ? '#64748b' : senarai.every(lengkap) ? '#22c55e' : '#ef4444';
         return `<span style="font-size:0.6rem;font-weight:800;padding:1px 5px;border-radius:4px;border:1px solid ${warna};color:${warna};">${label}</span>`;
       };
       const item = (id, nama, medan) => {
@@ -11098,9 +11101,13 @@ btnAddSubject.addEventListener("click", () => {
           return `<div style="font-size:0.75rem;color:#c4b5fd;padding:6px 0;">${BF_LABEL[lang]} · Memuat naik ${bf.muatNaik[kunci]}%...</div>`;
         }
         if (!f || !f.url) {
+          const takPerlu = !!(f && f.tidakPerlu);
           return `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 0;">
-            <span style="font-size:0.75rem;color:var(--subtext);">${BF_LABEL[lang]} · <i>belum ada</i></span>
-            <button class="btn btn-secondary btn-sm" data-bf-upload="${lang}" style="flex-shrink:0;border-color:#a78bfa;color:#c4b5fd;">⬆ Upload</button></div>`;
+            <span style="font-size:0.75rem;color:${takPerlu ? '#22c55e' : 'var(--subtext)'};font-weight:${takPerlu ? '700' : '400'};">${BF_LABEL[lang]} · <i>${takPerlu ? 'tidak perlu' : 'belum ada'}</i></span>
+            <span style="display:flex;gap:6px;flex-shrink:0;">
+              <button class="btn btn-sm" data-bf-perlu="${lang}" style="${takPerlu ? 'background:#16a34a;border:none;color:#fff;' : 'background:transparent;border:1px solid #22c55e;color:#86efac;'}">${takPerlu ? '✓ Tidak perlu' : 'Tidak perlu'}</button>
+              ${takPerlu ? '' : `<button class="btn btn-secondary btn-sm" data-bf-upload="${lang}" style="border-color:#a78bfa;color:#c4b5fd;">⬆ Upload</button>`}
+            </span></div>`;
         }
         return `<div style="padding:4px 0;">
             <div style="font-size:0.75rem;color:#e0e7ff;margin-bottom:4px;word-break:break-all;">${BF_LABEL[lang]} · ${bfEsc(f.nama)} <span style="color:var(--subtext);">${bfSaiz(f.saiz)}</span></div>
@@ -11201,6 +11208,17 @@ btnAddSubject.addEventListener("click", () => {
       if (btn.dataset.bfBuka) {
         const f = b[btn.dataset.bfBuka];
         if (f && f.url) window.open(f.url, '_blank');
+      } else if (btn.dataset.bfPerlu) {
+        const lang = btn.dataset.bfPerlu;
+        const f = b[lang];
+        if (f && f.url) return;
+        const kini = !!(f && f.tidakPerlu);
+        try {
+          await updateDoc(doc(db, 'users', currentUser.uid, 'fakta_bank', b.id), kini
+            ? { [lang]: deleteField(), updatedAt: Date.now() }
+            : { [lang]: { tidakPerlu: true }, updatedAt: Date.now() });
+          showToast(kini ? 'Status asal: belum ada.' : 'Ditanda tidak perlu.', 1800);
+        } catch (err) { showToast('❌ ' + (err.message || err), 4000); }
       } else if (btn.dataset.bfUpload) {
         const lang = btn.dataset.bfUpload;
         const input = document.createElement('input');
