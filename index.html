@@ -9524,6 +9524,7 @@ function subscribeAllHierarchyData() {
       onSnapshot(query(collection(db, "users", currentUser.uid, "topics")), snap => {
         allTopics = snap.docs.map(d => ({id: d.id, ...d.data()}));
         if(sectionTopics.classList.contains('active')) renderTopics();
+        if(sectionDrawer.classList.contains('active')) faktaTandaSemasa(); // 📍 baris semasa
 
         const activeTopic = topikFaktaAktif();
         if (activeTopic) {
@@ -9881,6 +9882,7 @@ function renderDrawers() {
       sortedDrawers.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
+        div.dataset.laciId = data.id; // untuk tanda 📍 SEMASA (faktaTandaSemasa)
         // SR Fakta kini ikut BARIS (ID baris) — kira berapa baris laci ini dalam SR
         const bilSRBaris = (Array.isArray(data.items) ? data.items : []).filter(it => it && it.fid && faktaSRQueueIds.has(String(it.fid))).length;
         const adaSRFakta = bilSRBaris > 0;
@@ -9901,6 +9903,7 @@ function renderDrawers() {
           <div class="drawer-title-wrapper">
             <input class="drawer-title" value="${data.title || ''}" placeholder="Tajuk Slide (Cth: Slide 1)">
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="tanda-semasa-laci"></span>
               ${adaSRFakta ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;">⏰ ' + bilSRBaris + ' baris SR</span>' : ''}
               <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
               <button type="button" class="btn btn-secondary btn-sm btn-tak-letak-isi" style="font-size:0.62rem;padding:3px 8px;border-color:#22c55e;color:#86efac;">Tak letak isi</button>
@@ -9922,8 +9925,9 @@ function renderDrawers() {
 
           <div class="fakta-items-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
             ${(items || []).map((item, idx) => `
-              <div class="fakta-item-card" data-idx="${idx}" style="background:rgba(30,41,59,0.6);border:1px solid var(--border-soft);border-radius:10px;padding:10px;">
+              <div class="fakta-item-card" data-idx="${idx}" data-fid="${item.fid || ''}" style="background:rgba(30,41,59,0.6);border:1px solid var(--border-soft);border-radius:10px;padding:10px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <span class="tanda-semasa-baris" style="display:none;"></span>
                   <span style="font-size:0.72rem;font-weight:700;color:#a5b4fc;">Baris ${idx + 1} <span style="color:#fcd34d;font-weight:700;">· ${item.fid ? 'ID ' + item.fid : 'ID …'}</span></span>
                   <div style="display:flex;gap:6px;align-items:center;">
                     ${item.fid ? `<button class="btn-sr-baris btn btn-secondary btn-sm" data-idx="${idx}" style="padding:1px 8px;font-size:0.65rem;border-color:#f59e0b;color:${faktaSRQueueIds.has(String(item.fid)) ? '#fcd34d' : 'var(--subtext)'};${faktaSRQueueIds.has(String(item.fid)) ? 'background:rgba(245,158,11,0.12);' : ''}">⏰${faktaSRQueueIds.has(String(item.fid)) ? ' ✓' : ' SR'}</button>` : ''}
@@ -10398,6 +10402,40 @@ bukaCropTool(file, async (blob) => {
         });
 
         drawerList.appendChild(div);
+      });
+      faktaTandaSemasa();
+    }
+
+    // ── 📍 BARIS SEMASA (Fakta) — lencana hijau macam Golongan Bahasa ──
+    // Kindle: topics.kindleFid (ID baris yang sedang dipapar di Kindle) · Phone: topics.phoneFaktaPos
+    // Dikemas kini terus pada DOM (tanpa lukis semula senarai) supaya kotak taip tidak hilang fokus.
+    function faktaTandaSemasa() {
+      const t = allTopics.find(x => x.id === currentTopicId);
+      const aktif = !!(t && t.isActive);
+      const kFid = aktif ? (t.kindleFid || null) : null;
+      const pPos = aktif ? (t.phoneFaktaPos || null) : null;
+      const lencana = (teks) => `<span style="font-size:0.66rem;font-weight:700;color:#34d399;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.5);padding:2px 8px;border-radius:999px;white-space:nowrap;">${teks}</span>`;
+      document.querySelectorAll('#drawer-list .drawer-card[data-laci-id]').forEach(kad => {
+        const laciId = kad.dataset.laciId;
+        let adaDlmLaci = false;
+        kad.querySelectorAll('.fakta-item-card').forEach(row => {
+          const fid = parseInt(row.dataset.fid, 10) || null;
+          const idx = parseInt(row.dataset.idx, 10);
+          const k = !!(kFid && fid === kFid);
+          const ph = !!(pPos && !pPos.tamat && pPos.drawerId === laciId && pPos.itemIndex === idx);
+          const el = row.querySelector('.tanda-semasa-baris');
+          if (el) {
+            const label = k && ph ? '📍 Semasa · Kindle & Phone' : k ? '📍 Semasa · Kindle' : ph ? '📍 Semasa · Phone' : '';
+            el.innerHTML = label ? lencana(label) : '';
+            el.style.display = label ? 'block' : 'none';
+            el.style.marginBottom = label ? '4px' : '';
+          }
+          row.style.border = (k || ph) ? '2px solid #34d399' : '1px solid var(--border-soft)';
+          row.style.boxShadow = (k || ph) ? '0 0 0 3px rgba(52,211,153,0.15)' : '';
+          if (k || ph) adaDlmLaci = true;
+        });
+        const el2 = kad.querySelector('.tanda-semasa-laci');
+        if (el2) el2.innerHTML = adaDlmLaci ? lencana('📍 SEMASA') : '';
       });
     }
 
