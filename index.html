@@ -6494,6 +6494,7 @@ document.getElementById('peraturan-taip-input').addEventListener('keydown', (e) 
     // UTILITIES & VIBRATION HANDLER
     // ==========================================
 function showSection(section) {
+      if (section !== sectionDrawer) window._faktaSkrolTopik = null; // masuk Isi Laci semula → skrol ke baris SEMASA lagi
       // Buang floating buttons bila tukar page
       const floatFakta = document.getElementById('btn-float-countdown-fakta');
       if (floatFakta) floatFakta.remove();
@@ -10461,6 +10462,26 @@ bukaCropTool(file, async (blob) => {
         const el2 = kad.querySelector('.tanda-semasa-laci');
         if (el2) el2.innerHTML = adaDlmLaci ? lencana('📍 SEMASA') : '';
       });
+      // Skrol terus ke baris SEMASA bila baru masuk page / tukar topik (bukan setiap kali data berubah) — macam Bahasa.
+      // Skrol dalam BEKAS senarai sahaja (bukan scrollIntoView) supaya butang ← Topik tidak tertolak keluar.
+      const sasaran = document.querySelector('#drawer-list .fakta-item-card .tanda-semasa-baris:not(:empty)');
+      if (sasaran && window._faktaSkrolTopik !== currentTopicId) {
+        window._faktaSkrolTopik = currentTopicId;
+        const row = sasaran.closest('.fakta-item-card');
+        setTimeout(() => {
+          try {
+            let sc = row.parentElement;
+            while (sc && sc !== document.body) {
+              const oy = getComputedStyle(sc).overflowY;
+              if ((oy === 'auto' || oy === 'scroll') && sc.scrollHeight > sc.clientHeight + 2) break;
+              sc = sc.parentElement;
+            }
+            if (!sc || sc === document.body) { row.scrollIntoView({ block: 'center' }); return; }
+            const rL = sc.getBoundingClientRect(), rK = row.getBoundingClientRect();
+            sc.scrollTop += (rK.top - rL.top) - (sc.clientHeight - row.offsetHeight) / 2;
+          } catch (e) {}
+        }, 150);
+      }
     }
 
     // Topik aktif: kalau lebih dari satu masih bertanda aktif → ambil yang PALING BARU ditick (aktifAt)
