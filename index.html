@@ -8816,8 +8816,12 @@ function syncIndexToFirestore(newIndex) {
       }
 
       if (!routineMode && activeGlobalTopicId !== 'default') {
+        // Simpan kedudukan sebagai laci + baris (phoneFaktaPos). lastIndex TIDAK disentuh lagi —
+        // Kindle tulis lastIndex ikut kiraan kadnya sendiri (gambar/F1/F2), jadi phone tersalah lompat slide.
+        const f = allFacts[newIndex];
+        if (!f || f.isFaktaSR || f.isSRMode || !f.drawerId) return; // senarai SR — jangan tindih kedudukan laci biasa
         updateDoc(doc(db, "users", currentUser.uid, "topics", activeGlobalTopicId), {
-          lastIndex: newIndex
+          phoneFaktaPos: { drawerId: f.drawerId, itemIndex: (f.itemIndex ?? null), tamat: !!f.isTamat }
         }).catch(err => console.log("Gagal sync index Fakta ke Firestore:", err));
       } else if (routineMode) {
         // ── QURAN: Skip lastIndex — guna leaderboard sahaja ──
@@ -9435,10 +9439,11 @@ function subscribeAllHierarchyData() {
         allTopics = snap.docs.map(d => ({id: d.id, ...d.data()}));
         if(sectionTopics.classList.contains('active')) renderTopics();
 
-        const activeTopic = allTopics.find(t => t.isActive);
+        const activeTopic = topikFaktaAktif();
         if (activeTopic) {
           activeGlobalTopicId = activeTopic.id;
-          const dbIndex = activeTopic.lastIndex || 0;
+          // Kedudukan phone ikut laci + baris (phoneFaktaPos) — BUKAN lastIndex (Kindle guna kiraan kad lain)
+          const dbIndex = faktaPosKeIndex(activeTopic);
           
           if (currentFactIndex !== dbIndex) {
             currentFactIndex = dbIndex;
@@ -9681,7 +9686,7 @@ function renderTopics() {
           if (isChecked) {
             // Pastikan HANYA SATU topik aktif: baca terus dari Firestore (bukan memori phone) dan tulis
             // dalam SATU batch — elak dua topik tertinggal aktif (Kindle tersalah topik / lompat slide).
-            const reset = { lastIndex: 0, lastDrawerId: null, lastItemIndex: null };
+            const reset = { lastIndex: 0, lastDrawerId: null, lastItemIndex: null, phoneFaktaPos: null };
             const batch = writeBatch(db);
             const dahTutup = new Set();
             const aktifSnap = await getDocs(query(collection(db, "users", currentUser.uid, "topics"), where("isActive", "==", true)));
@@ -10334,9 +10339,22 @@ bukaCropTool(file, async (blob) => {
       });
     }
 
+    // Topik aktif: kalau lebih dari satu masih bertanda aktif → ambil yang PALING BARU ditick (aktifAt)
+    function topikFaktaAktif() {
+      return allTopics.filter(t => t.isActive).sort((a, b) => (b.aktifAt || 0) - (a.aktifAt || 0))[0];
+    }
+    // phoneFaktaPos { drawerId, itemIndex, tamat } → indeks dalam allFacts (tiada / tak jumpa → mula dari awal)
+    function faktaPosKeIndex(topic) {
+      const pos = topic && topic.phoneFaktaPos;
+      if (!pos || !pos.drawerId) return 0;
+      const i = allFacts.findIndex(f => f.drawerId === pos.drawerId && !f.isFaktaSR && !f.isSRMode &&
+        (pos.tamat ? f.isTamat : (!f.isTamat && f.itemIndex === pos.itemIndex)));
+      return i >= 0 ? i : 0;
+    }
+
     async function kemaskiniIsLastFakta() {
       if (!currentUser) return;
-      const activeTopic = allTopics.find(t => t.isActive);
+      const activeTopic = topikFaktaAktif();
       if (!activeTopic) return;
       const activeDrawers = allDrawers
         .filter(d => d.topicId === activeTopic.id)
@@ -10356,7 +10374,7 @@ bukaCropTool(file, async (blob) => {
 
     function rebuildFacts() {
       allFacts = [];
-      const activeTopic = allTopics.find(t => t.isActive);
+      const activeTopic = topikFaktaAktif();
       
       if (activeTopic) {
         activeGlobalTopicId = activeTopic.id;
@@ -10404,9 +10422,7 @@ bukaCropTool(file, async (blob) => {
       }
 
       let savedIndex = 0;
-      if (activeTopic && activeTopic.lastIndex !== undefined) {
-        savedIndex = parseInt(activeTopic.lastIndex);
-      }
+      if (activeTopic) savedIndex = faktaPosKeIndex(activeTopic);
       if (savedIndex >= allFacts.length) savedIndex = 0;
       
       currentFactIndex = savedIndex;
