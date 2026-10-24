@@ -2630,8 +2630,34 @@ They immortalized the hero in a statue.
         </div>
         <!-- 📚 BANK FAKTA: bahan bacaan (PDF dll) ikut Sem → Subjek → Topik → Bahan (BM / BI) -->
         <button id="btn-buka-bank-fakta" class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;border-color:#a78bfa;color:#c4b5fd;">📚 Bank Fakta</button>
+        <!-- 📒 BUKU ID: setiap baris Fakta ada ID kekal (1, 2, 3 ...) — senarai & carian -->
+        <button id="btn-buka-buku-id" class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;border-color:#f59e0b;color:#fcd34d;">📒 Buku ID Baris Fakta</button>
         <div class="list mt-8" id="sem-list" style="padding: 10px;"></div>
       </section>
+
+      <!-- ══ 📒 BUKU ID BARIS FAKTA (overlay penuh) — dibalut div supaya tetapan wallpaper tak buang position:fixed ══ -->
+      <div>
+      <div id="buku-id-modal" style="display:none;position:fixed;inset:0;z-index:100003;background:#020617;overflow-y:auto;padding:16px;">
+        <div style="max-width:560px;margin:0 auto;padding-bottom:40px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <button id="btn-bid-tutup" class="btn btn-secondary btn-sm">← Tutup</button>
+            <div style="text-align:right;">
+              <div style="font-weight:700;color:#fcd34d;">📒 Buku ID Baris Fakta</div>
+              <div id="bid-info" style="font-size:0.7rem;color:var(--subtext);">-</div>
+            </div>
+          </div>
+          <div style="font-size:0.72rem;color:#94a3b8;line-height:1.6;margin:8px 0;padding:8px 10px;border-radius:10px;background:rgba(245,158,11,0.06);border:1px dashed rgba(245,158,11,0.4);">
+            Setiap baris Fakta diberi <b>ID kekal</b> (1, 2, 3 ...) bila dicipta — manual, Jana Pukal atau Duplikasi. ID tak berubah walaupun baris dipindah kedudukan atau diedit, dan <b>tidak diguna semula</b>. SR Fakta disimpan ikut ID ini.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <input id="bid-cari" type="number" inputmode="numeric" min="1" placeholder="Cari nombor ID (cth: 57)" style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.4);border-radius:8px;color:#e5e7eb;padding:8px 10px;font-size:0.85rem;outline:none;">
+            <button id="btn-bid-cari" class="btn btn-sm" style="flex-shrink:0;background:linear-gradient(135deg,#f59e0b,#b45309);border:none;color:white;">Cari</button>
+          </div>
+          <div id="bid-senarai" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <button id="btn-bid-lagi" class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px;display:none;">Muat ID lebih lama</button>
+        </div>
+      </div>
+      </div>
 
       <!-- ══ BANK FAKTA (overlay penuh) — dibalut div supaya tetapan wallpaper (reset anak .card) tak buang position:fixed ══ -->
       <div>
@@ -3348,8 +3374,8 @@ They immortalized the hero in a statue.
   <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
     <div style="font-size:0.78rem;font-weight:700;color:#f59e0b;margin-bottom:6px;">📌 Cara Kerja SR</div>
     <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
-      Setiap laci yang selesai dihafal akan dijadualkan untuk diulang secara automatik.<br>
-      • <strong style="color:#fcd34d;">Overdue</strong> — ulangan tertunggak, akan masuk bila ON Bahasa<br>
+      Bahasa: setiap <b>laci</b> yang selesai dihafal dijadualkan untuk diulang. Fakta: setiap <b>baris</b> (ikut ID baris) yang selesai F2 dijadualkan untuk diulang.<br>
+      • <strong style="color:#fcd34d;">Overdue</strong> — ulangan tertunggak, akan masuk bila ON Bahasa / Fakta<br>
       • <strong style="color:#34d399;">Upcoming</strong> — dijadualkan, belum sampai masa<br>
       • Interval: +20min → +2jam → +4jam → +6jam → +2hari → +4hari → +6hari → +7hari → +8hari...
     </div>
@@ -3357,6 +3383,12 @@ They immortalized the hero in a statue.
 
   <!-- STATS BAR -->
   <div id="sr-stats-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;flex-shrink:0;"></div>
+
+  <!-- SUIS JENIS SR: Bahasa (ikut laci) | Fakta (ikut baris) — diasingkan sepenuhnya -->
+  <div style="display:flex;gap:6px;margin-bottom:8px;flex-shrink:0;">
+    <button id="btn-sr-jenis-bahasa" class="btn btn-sm" style="flex:1;font-size:0.8rem;padding:8px;">📝 Bahasa</button>
+    <button id="btn-sr-jenis-fakta" class="btn btn-secondary btn-sm" style="flex:1;font-size:0.8rem;padding:8px;">📚 Fakta</button>
+  </div>
 
   <!-- FILTER TABS -->
   <div style="display:flex;gap:6px;margin-bottom:10px;flex-shrink:0;">
@@ -4072,6 +4104,7 @@ import {
       orderBy,
       limit,
       writeBatch,
+      runTransaction,
       deleteField
     } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
@@ -8360,6 +8393,8 @@ async function checkFaktaSRQueue() {
           // 🛡️ SR SELAMAT: laci tak dijumpai dalam memori — langkau sahaja, JANGAN padam rekod SR
           return;
         }
+        // SR ikut ID baris: baris itu sudah tiada dalam laci → langkau sahaja (JANGAN padam rekod)
+        if (data.fid && !(drawer.items || []).some(x => x.fid === data.fid)) return;
         if (data.nextDueAt <= now) overdue.push({ id: d.id, ...data });
       });
       faktaSRQueue = overdue.sort((a, b) => a.nextDueAt - b.nextDueAt);
@@ -8410,6 +8445,57 @@ async function checkFaktaSRQueue() {
           faktaSRModeAktif = false;
           triggerFadeAnimation(renderCurrentFact);
         }
+        return;
+      }
+
+      // ── SR ikut ID baris (rekod baru): ulang BARIS ITU SAHAJA — tiada ejaan tajuk, tiada baris lain ──
+      if (srData.fid) {
+        const idxF = (drawer.items || []).findIndex(x => x.fid === srData.fid);
+        const itF = idxF >= 0 ? drawer.items[idxF] : null;
+        if (!itF || !(itF.ayat || '').trim()) {
+          // 🛡️ Baris sudah tiada / kosong — JANGAN padam rekod SR, terus ke SR lain
+          const adaSRLain = await checkFaktaSRQueue();
+          if (adaSRLain && muatFaktaSRLaciSeterusnya() && faktaSRLaciSemasa.id !== srData.id) {
+            tunjukPopupSR(faktaSRLaciSemasa);
+            await muatFaktaSRKeDalamFacts(faktaSRLaciSemasa);
+          } else {
+            faktaSRModeAktif = false;
+            faktaSRLaciSemasa = null;
+            rebuildFacts();
+          }
+          return;
+        }
+        const tajukF = drawer.title || 'Tiada Tajuk';
+        allFacts = [{
+          drawerId: drawer.id,
+          title: tajukF,
+          text: itF.ayat.trim(),
+          translation: null,
+          isTamat: false,
+          isFasaEjaan: false,
+          isSRMode: true,
+          isFaktaSR: true,
+          isItemFormat: true,
+          itemIndex: idxF
+        }, {
+          drawerId: drawer.id,
+          title: tajukF,
+          text: `✅ SR Fakta selesai — Baris ${idxF + 1} (ID ${srData.fid}) — ${getLabelFasaSR(srData.fasaSemasa)}`,
+          isTamat: true,
+          isSRMode: true,
+          isFaktaSR: true
+        }];
+        currentFactIndex = 0;
+        mainRestCount = mainRestMax;
+        mainRestPhase = 1;
+        comboStep = 0;
+        isFlipped = false;
+        isBlocked = false;
+        factMode = true;
+        const btnFactF = document.getElementById('btn-toggle-fact');
+        if (btnFactF) { btnFactF.textContent = 'Fakta: ON'; btnFactF.classList.add('btn-active'); }
+        triggerFadeAnimation(renderCurrentFact);
+        updateTasbihUI();
         return;
       }
 
@@ -9470,6 +9556,7 @@ onSnapshot(query(collection(db, "users", currentUser.uid, "drawer")), snap => {
         if(sectionDrawer.classList.contains('active')) renderDrawers();
         rebuildFacts();
         kemaskiniIsLastFakta();
+        faktaIdSemak(); // 📒 Buku ID: beri ID baris baru · rekod baris dipadam / dipulih
         // Auto-sync SR queue fakta bila drawer berubah
         setTimeout(() => syncFaktaSRQueuePdfKod(), 2000);
       });
@@ -9794,7 +9881,9 @@ function renderDrawers() {
       sortedDrawers.forEach(data => {
         const div = document.createElement("div");
         div.className = "drawer-card";
-        const adaSRFakta = faktaSRQueueIds.has(data.id);
+        // SR Fakta kini ikut BARIS (ID baris) — kira berapa baris laci ini dalam SR
+        const bilSRBaris = (Array.isArray(data.items) ? data.items : []).filter(it => it && it.fid && faktaSRQueueIds.has(String(it.fid))).length;
+        const adaSRFakta = bilSRBaris > 0;
         if (adaSRFakta) div.style.borderColor = 'rgba(245,158,11,0.4)';
 
         // Semak ada pdfNombor — kod tetap atau sementara
@@ -9812,7 +9901,7 @@ function renderDrawers() {
           <div class="drawer-title-wrapper">
             <input class="drawer-title" value="${data.title || ''}" placeholder="Tajuk Slide (Cth: Slide 1)">
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-              ${adaSRFakta ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;">⏰ SR</span>' : ''}
+              ${adaSRFakta ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;">⏰ ' + bilSRBaris + ' baris SR</span>' : ''}
               <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
               <button type="button" class="btn btn-secondary btn-sm btn-tak-letak-isi" style="font-size:0.62rem;padding:3px 8px;border-color:#22c55e;color:#86efac;">Tak letak isi</button>
             </div>
@@ -9835,8 +9924,11 @@ function renderDrawers() {
             ${(items || []).map((item, idx) => `
               <div class="fakta-item-card" data-idx="${idx}" style="background:rgba(30,41,59,0.6);border:1px solid var(--border-soft);border-radius:10px;padding:10px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                  <span style="font-size:0.72rem;font-weight:700;color:#a5b4fc;">Baris ${idx + 1}</span>
-                  <button class="btn-del-item btn btn-secondary btn-sm" data-idx="${idx}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
+                  <span style="font-size:0.72rem;font-weight:700;color:#a5b4fc;">Baris ${idx + 1} <span style="color:#fcd34d;font-weight:700;">· ${item.fid ? 'ID ' + item.fid : 'ID …'}</span></span>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    ${item.fid ? `<button class="btn-sr-baris btn btn-secondary btn-sm" data-idx="${idx}" style="padding:1px 8px;font-size:0.65rem;border-color:#f59e0b;color:${faktaSRQueueIds.has(String(item.fid)) ? '#fcd34d' : 'var(--subtext)'};${faktaSRQueueIds.has(String(item.fid)) ? 'background:rgba(245,158,11,0.12);' : ''}">⏰${faktaSRQueueIds.has(String(item.fid)) ? ' ✓' : ' SR'}</button>` : ''}
+                    <button class="btn-del-item btn btn-secondary btn-sm" data-idx="${idx}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
+                  </div>
                 </div>
                 <textarea class="item-ayat drawer-notes" data-idx="${idx}" placeholder="Isi ayat/teks di sini..." style="min-height:60px;resize:none;width:100%;margin-bottom:6px;">${item.ayat || ''}</textarea>
                 <button class="btn-item-soalan btn btn-secondary btn-sm" data-idx="${idx}" style="width:100%;margin-bottom:6px;font-size:0.72rem;border-color:#22d3ee;color:${(item.soalan || '').trim() ? '#67e8f9' : 'var(--subtext)'};${(item.soalan || '').trim() ? 'background:rgba(34,211,238,0.1);' : ''}">❓ Soalan${(item.soalan || '').trim() ? ' ✓' : ''}</button>
@@ -9885,9 +9977,6 @@ function renderDrawers() {
             <button class="btn btn-secondary btn-open-memanah" style="width:100%;border-color:var(--grad2);">🏹 Buka Mode Memanah (Hafal & Main)</button>
           </div>
 <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;">
-            <button class="btn btn-secondary btn-sm btn-daftar-sr-fakta" style="border-color:#f59e0b;color:${adaSRFakta ? '#fcd34d' : 'var(--subtext)'};${adaSRFakta ? 'background:rgba(245,158,11,0.12);' : ''}">
-              ⏰${adaSRFakta ? ' ✓' : ' SR'}
-            </button>
             <button class="btn btn-secondary btn-sm btn-duplikasi-laci" style="border-color:#a78bfa;color:#a78bfa;">📋 Duplikasi</button>
             <button class="btn btn-secondary btn-sm btn-del-laci" style="color:var(--danger);border-color:var(--danger);">Padam</button>
           </div>
@@ -10020,32 +10109,8 @@ function renderDrawers() {
               } catch(e) {}
             }
 
-            // Padam SR doc untuk baris ini kalau ada
-            const srDocIdPadam = data.id + '_b' + idx;
-            try {
-              await deleteDoc(doc(db, "users", currentUser.uid, "fakta_sr_queue", srDocIdPadam));
-              faktaSRQueueIds.delete(srDocIdPadam);
-            } catch(e) {}
-
-            // Update itemIndex SR doc untuk semua baris selepas idx
-            const srSnap = await getDocs(collection(db, "users", currentUser.uid, "fakta_sr_queue"));
-            const batch = writeBatch(db);
-            srSnap.docs.forEach(d => {
-              const srData = d.data();
-              if (srData.drawerId === data.id && srData.itemIndex != null && srData.itemIndex > idx) {
-                const idxBaru = srData.itemIndex - 1;
-                const idBaru = data.id + '_b' + idxBaru;
-                batch.delete(doc(db, "users", currentUser.uid, "fakta_sr_queue", d.id));
-                batch.set(doc(db, "users", currentUser.uid, "fakta_sr_queue", idBaru), {
-                  ...srData,
-                  itemIndex: idxBaru,
-                  srDocId: idBaru
-                });
-                faktaSRQueueIds.delete(d.id);
-                faktaSRQueueIds.add(idBaru);
-              }
-            });
-            await batch.commit();
+            // SR baris ini (ikut ID) & rekod "baris ini dipadam" dalam Buku ID diurus automatik oleh faktaIdSemak()
+            // — tiada lagi anjakan nombor baris SR (SR kini ikut ID baris, bukan kedudukan).
 
             currentItems.splice(idx, 1);
             await simpanItems(currentItems);
@@ -10246,26 +10311,23 @@ bukaCropTool(file, async (blob) => {
           openMemanahMode(data);
         });
 
-        // ── DAFTAR SR FAKTA ──
-        div.querySelector(".btn-daftar-sr-fakta").addEventListener("click", async () => {
-          if (adaSRFakta) {
-            showToast('⏰ Laci ini sudah dalam SR queue.', 3000);
-            return;
-          }
-          // Daftar per-baris (sama seperti aliran play automatik)
-          const items = data.items || [];
-          if (!items.length) {
-            showToast('⚠️ Tiada baris dalam laci ini.', 3000);
-            return;
-          }
-          for (let bi = 0; bi < items.length; bi++) {
-            const ayat = (items[bi].ayat || items[bi].text || '').trim();
-            if (!ayat) continue;
+        // ── ⏰ LOCENG SR SETIAP BARIS (manual) — SR Fakta ikut ID baris ──
+        div.querySelectorAll(".btn-sr-baris").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            const it = (data.items || [])[idx];
+            if (!it || !it.fid) { showToast('⏳ Baris ini belum dapat ID — cuba sebentar lagi.', 2500); return; }
+            const ayat = (it.ayat || '').trim();
+            if (!ayat) { showToast('⚠️ Baris ini masih kosong.', 2500); return; }
+            if (faktaSRQueueIds.has(String(it.fid))) {
+              showToast(`⏰ Baris ${idx + 1} (ID ${it.fid}) sudah dalam SR.`, 3000);
+              return;
+            }
             const depan = ayat.includes('=') ? ayat.split('=')[0].trim() : ayat;
-            await daftarSRBaru(data.id, 'fakta', bi, depan);
-          }
-          await refreshSRQueueIds();
-          renderDrawers();
+            await daftarSRBaru(data.id, 'fakta', idx, depan);
+            showToast(`⏰ Baris ${idx + 1} (ID ${it.fid}) didaftar dalam SR (+20 min)`, 2500);
+            renderDrawers();
+          });
         });
 
         // ── DUPLIKASI LACI ──
@@ -21779,6 +21841,216 @@ document.getElementById('btn-copy-tips-sebutan').addEventListener('click', () =>
       return `Fasa ${fasaIndex + 1} — +${extraDays} hari`;
     }
 
+    // ══════════ 📒 BUKU ID BARIS FAKTA ══════════
+    // Setiap baris Fakta ada ID KEKAL (fid) dari satu kaunter: users/{uid}/settings/faktaIdBuku { seterusnya }
+    // Mula dari 1, sentiasa menaik, TIDAK diguna semula. Log setiap ID: users/{uid}/fakta_id_buku/{fid}
+    //   { fid, status: 'aktif' | 'dipadam', drawerId, topicId, slide, ayat, dibuatAt, dipadamAt }
+    // faktaIdSemak() berjalan setiap kali koleksi laci berubah → apa jua cara baris dicipta (Tambah Baris,
+    // Tambah Laci, Jana Pukal, Duplikasi, Salin ke Topik, Jogging, Memanah) terus dapat ID dari buku.
+    // Baris dipadam → "baris ini dipadam" + SR baris itu dibuang. Laci dipulih dari tong sampah → ID aktif semula.
+    // Salinan laci (ID sama muncul dalam laci lain yang lebih baru) → baris salinan diberi ID baru.
+    const _fidKaunterRef = () => doc(db, "users", currentUser.uid, "settings", "faktaIdBuku");
+    const _fidBukuRef = (fid) => doc(db, "users", currentUser.uid, "fakta_id_buku", String(fid));
+    const _fidRingkas = (t) => String(t || '').slice(0, 200);
+    let _fidGiliran = Promise.resolve();
+    const _fidDalamGiliran = new Set();
+    let _fidKenal = null; // Map fid → info baris dari snapshot sebelum ini (null = asas belum ada)
+    let _fidUid = null;
+
+    function _fidKunciSusun(d) {
+      const t = allTopics.find(x => x.id === d.topicId);
+      const s = t && allSubjects.find(x => x.id === t.subjectId);
+      const m = s && allSems.find(x => x.id === s.semId);
+      return [(m && m.name) || '', (s && s.name) || '', (t && t.name) || '', d.title || ''];
+    }
+    function _fidSusunLaci(a, b) {
+      const A = _fidKunciSusun(a), B = _fidKunciSusun(b);
+      for (let i = 0; i < 4; i++) {
+        const c = A[i].localeCompare(B[i], undefined, { numeric: true });
+        if (c) return c;
+      }
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    }
+    // Laci "lebih lama" memiliki ID — salinan (laci lebih baru) perlu ID baru
+    const _fidLebihLama = (a, b) => ((a.createdAt || 0) - (b.createdAt || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    function _fidSalinan(fid, drawer) {
+      return allDrawers.some(o => o.id !== drawer.id && (o.items || []).some(y => y && y.fid === fid) && _fidLebihLama(o, drawer) < 0);
+    }
+
+    async function faktaBeriId(drawerId) {
+      if (!currentUser) return;
+      const dRef = doc(db, "users", currentUser.uid, "drawer", drawerId);
+      const lama = allDrawers.find(d => d.id === drawerId) || { id: drawerId };
+      await runTransaction(db, async (tx) => {
+        const kSnap = await tx.get(_fidKaunterRef());
+        const dSnap = await tx.get(dRef);
+        if (!dSnap.exists()) return;
+        const d = dSnap.data();
+        const items = Array.isArray(d.items) ? d.items.map(x => ({ ...x })) : [];
+        let seterusnya = (kSnap.exists() && kSnap.data().seterusnya) || 1;
+        const lihat = new Set();
+        const baru = [];
+        items.forEach(x => {
+          const salinan = x.fid && (lihat.has(x.fid) || _fidSalinan(x.fid, { ...lama, createdAt: d.createdAt }));
+          if (!x.fid || salinan) { x.fid = seterusnya++; baru.push(x); }
+          lihat.add(x.fid);
+        });
+        if (!baru.length) return;
+        const now = Date.now();
+        tx.set(_fidKaunterRef(), { seterusnya, updatedAt: now }, { merge: true });
+        tx.update(dRef, { items });
+        baru.forEach(x => tx.set(_fidBukuRef(x.fid), {
+          fid: x.fid, status: 'aktif', drawerId, topicId: d.topicId || '', slide: d.title || '',
+          ayat: _fidRingkas(x.ayat), dibuatAt: now
+        }));
+      });
+    }
+
+    async function _fidTulisPukal(ops) {
+      for (let i = 0; i < ops.length; i += 400) {
+        const b = writeBatch(db);
+        ops.slice(i, i + 400).forEach(f => f(b));
+        await b.commit();
+      }
+    }
+
+    function faktaIdSemak() {
+      if (!currentUser) return;
+      if (_fidUid !== currentUser.uid) { _fidUid = currentUser.uid; _fidKenal = null; }
+      const kini = new Map();
+      const perlu = [];
+      allDrawers.forEach(d => {
+        const items = Array.isArray(d.items) ? d.items : [];
+        const lihat = new Set();
+        let perluId = false;
+        items.forEach(x => {
+          if (!x) return;
+          if (!x.fid || lihat.has(x.fid)) { perluId = true; return; }
+          lihat.add(x.fid);
+          const ada = kini.get(x.fid);
+          if (!ada || _fidLebihLama(d, ada.laci) < 0) {
+            if (ada) ada.laci._perlu = true; // laci lain ialah salinan
+            kini.set(x.fid, { laci: d, drawerId: d.id, topicId: d.topicId || '', slide: d.title || '', ayat: x.ayat || '' });
+          } else {
+            perluId = true; // ID ini milik laci yang lebih lama → baris ini salinan
+          }
+        });
+        if (perluId) d._perlu = true;
+      });
+      allDrawers.forEach(d => { if (d._perlu) { perlu.push(d); delete d._perlu; } });
+
+      // Baris hilang (dipadam) / muncul semula (laci dipulih) — dibanding dengan snapshot sebelum ini
+      if (_fidKenal) {
+        const ops = [];
+        const now = Date.now();
+        _fidKenal.forEach((info, fid) => {
+          if (kini.has(fid)) return;
+          ops.push(b => b.set(_fidBukuRef(fid), {
+            fid, status: 'dipadam', dipadamAt: now, drawerId: info.drawerId, topicId: info.topicId,
+            slide: info.slide, ayat: _fidRingkas(info.ayat)
+          }, { merge: true }));
+          ops.push(b => b.delete(doc(db, "users", currentUser.uid, "fakta_sr_queue", String(fid))));
+          faktaSRQueueIds.delete(String(fid));
+        });
+        kini.forEach((info, fid) => {
+          if (_fidKenal.has(fid)) return;
+          ops.push(b => b.set(_fidBukuRef(fid), {
+            fid, status: 'aktif', dipadamAt: null, drawerId: info.drawerId, topicId: info.topicId, slide: info.slide
+          }, { merge: true }));
+        });
+        if (ops.length) _fidTulisPukal(ops).catch(e => console.warn('Buku ID:', e));
+      }
+      _fidKenal = new Map([...kini].map(([fid, v]) => [fid, { drawerId: v.drawerId, topicId: v.topicId, slide: v.slide, ayat: v.ayat }]));
+
+      // Beri ID kepada baris baru / salinan — satu laci satu masa, ikut susunan Sem → Subjek → Topik → Slide
+      perlu.sort(_fidSusunLaci).forEach(d => {
+        if (_fidDalamGiliran.has(d.id)) return;
+        _fidDalamGiliran.add(d.id);
+        _fidGiliran = _fidGiliran
+          .then(() => faktaBeriId(d.id))
+          .catch(e => console.warn('Beri ID baris gagal:', e))
+          .then(() => { _fidDalamGiliran.delete(d.id); });
+      });
+    }
+
+    // ── PAGE BUKU ID ──
+    const bid = { kursor: null, habis: false, sibuk: false };
+    const _bidEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const _bidTarikh = ms => { try { return new Date(ms).toLocaleString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
+    function _bidCariBaris(fid) {
+      for (const d of allDrawers) {
+        const i = (d.items || []).findIndex(x => x && x.fid === fid);
+        if (i >= 0) return { d, i, it: d.items[i] };
+      }
+      return null;
+    }
+    function _bidKad(x) {
+      const fid = x.fid;
+      const kini = _bidCariBaris(fid);
+      if (kini) {
+        const t = allTopics.find(z => z.id === kini.d.topicId);
+        const sr = faktaSRQueueIds.has(String(fid));
+        return `<div class="drawer-card" style="border:1px solid rgba(99,102,241,0.35);padding:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <b style="color:#fcd34d;">ID ${fid}</b>
+            <span style="font-size:0.65rem;color:#86efac;">● aktif${sr ? ' · ⏰ SR' : ''}</span>
+          </div>
+          <div style="font-size:0.72rem;color:#a5b4fc;margin:3px 0;">${_bidEsc((t && t.name) || '(topik)')} › ${_bidEsc(kini.d.title || 'Slide')} · Baris ${kini.i + 1}</div>
+          <div style="font-size:0.78rem;color:#e5e7eb;word-break:break-word;">${_bidEsc(_fidRingkas(kini.it.ayat) || '(baris kosong)')}</div>
+        </div>`;
+      }
+      const t = allTopics.find(z => z.id === x.topicId);
+      const label = x.status === 'dipadam' || !x.status ? 'baris ini dipadam' : 'baris tidak dijumpai';
+      return `<div class="drawer-card" style="border:1px solid rgba(248,113,113,0.3);padding:10px;opacity:0.85;">
+          <div><b style="color:#fca5a5;">${fid} ; ${label}</b> <span style="font-size:0.65rem;color:var(--subtext);">${x.dipadamAt ? _bidTarikh(x.dipadamAt) : ''}</span></div>
+          <div style="font-size:0.7rem;color:var(--subtext);margin-top:3px;">Dahulu: ${_bidEsc((t && t.name) || '')} › ${_bidEsc(x.slide || '')}</div>
+          ${x.ayat ? `<div style="font-size:0.75rem;color:#9ca3af;text-decoration:line-through;word-break:break-word;">${_bidEsc(x.ayat)}</div>` : ''}
+        </div>`;
+    }
+    async function bidMuat(reset) {
+      if (!currentUser || bid.sibuk) return;
+      const box = document.getElementById('bid-senarai');
+      const btnLagi = document.getElementById('btn-bid-lagi');
+      if (reset) { bid.kursor = null; bid.habis = false; box.innerHTML = '<div class="empty-state">Memuatkan...</div>'; }
+      bid.sibuk = true;
+      try {
+        if (reset) {
+          const k = await getDoc(_fidKaunterRef());
+          const seterusnya = (k.exists() && k.data().seterusnya) || 1;
+          document.getElementById('bid-info').textContent = `${seterusnya - 1} ID diberi · ID seterusnya: ${seterusnya}`;
+        }
+        const syarat = [orderBy('fid', 'desc'), limit(50)];
+        if (bid.kursor !== null) syarat.unshift(where('fid', '<', bid.kursor));
+        const snap = await getDocs(query(collection(db, "users", currentUser.uid, "fakta_id_buku"), ...syarat));
+        if (reset) box.innerHTML = '';
+        snap.docs.forEach(d => { const x = d.data(); box.insertAdjacentHTML('beforeend', _bidKad(x)); bid.kursor = x.fid; });
+        if (snap.docs.length < 50) bid.habis = true;
+        if (reset && !snap.docs.length) box.innerHTML = '<div class="empty-state">Buku ID masih kosong. ID diberi bila baris Fakta dicipta.</div>';
+      } catch (e) {
+        box.insertAdjacentHTML('beforeend', `<div class="empty-state">❌ ${_bidEsc(e.message || e)}</div>`);
+      }
+      bid.sibuk = false;
+      btnLagi.style.display = bid.habis ? 'none' : 'block';
+    }
+    async function bidCari() {
+      const n = parseInt(document.getElementById('bid-cari').value, 10);
+      if (!n || n < 1) { bidMuat(true); return; }
+      const box = document.getElementById('bid-senarai');
+      box.innerHTML = '<div class="empty-state">Mencari...</div>';
+      document.getElementById('btn-bid-lagi').style.display = 'none';
+      const s = await getDoc(_fidBukuRef(n));
+      box.innerHTML = s.exists() ? _bidKad(s.data()) : `<div class="empty-state">ID ${n} belum diberi.</div>`;
+    }
+    document.getElementById('btn-buka-buku-id')?.addEventListener('click', () => {
+      document.getElementById('buku-id-modal').style.display = 'block';
+      document.getElementById('bid-cari').value = '';
+      bidMuat(true);
+    });
+    document.getElementById('btn-bid-tutup')?.addEventListener('click', () => { document.getElementById('buku-id-modal').style.display = 'none'; });
+    document.getElementById('btn-bid-lagi')?.addEventListener('click', () => bidMuat(false));
+    document.getElementById('btn-bid-cari')?.addEventListener('click', bidCari);
+    document.getElementById('bid-cari')?.addEventListener('keydown', e => { if (e.key === 'Enter') bidCari(); });
+
     // State SR semasa
 let srQueue = [];           // Queue overdue yang sedang aktif
     let srModeAktif = false;    // Adakah SR mode sedang berjalan
@@ -21806,11 +22078,15 @@ async function daftarSRBaru(drawerId, mode = 'bahasa', itemIndex = null, barisTe
       const now = Date.now();
       const nextDueAt = now + SR_INTERVALS[0];
 
-      // Fakta: satu baris = satu SR (docId = drawerId_b{itemIndex})
+      // Fakta: satu baris = satu SR, ikut ID KEKAL baris (docId = ID baris, cth "57") — bukan kedudukan baris
       // Bahasa: kekal per-laci
       let srDocId = drawerId;
-      if (mode === 'fakta' && itemIndex !== null && itemIndex !== undefined) {
-        srDocId = drawerId + '_b' + itemIndex;
+      let fidSR = null;
+      if (mode === 'fakta') {
+        const itSR = (itemIndex !== null && itemIndex !== undefined) ? (drawer.items || [])[itemIndex] : null;
+        if (!itSR || !itSR.fid) return; // baris tanpa ID (belum diberi) tidak masuk SR
+        fidSR = itSR.fid;
+        srDocId = String(fidSR);
       }
 
       const refSR = doc(db, "users", currentUser.uid, srColl, srDocId);
@@ -21867,6 +22143,7 @@ async function daftarSRBaru(drawerId, mode = 'bahasa', itemIndex = null, barisTe
         srData.jenisId = drawer.jenisId || '';
       } else {
         srData.topicId = drawer.topicId || '';
+        srData.fid = fidSR; // ID kekal baris
         srData.pdfKod = pdfKod;
         srData.isSementara = isSementara;
         if (itemIndex !== null && itemIndex !== undefined) {
@@ -22047,6 +22324,20 @@ async function syncSRQueuePdfKod() {
           const srData = srDoc.data();
           const laci = laciMap.get(srData.drawerId);
           if (!laci) return;
+
+          // SR ikut ID baris → kedudukan & teks baris semasa dikira dari ID (baris boleh disisip / dipadam)
+          if (srData.fid) {
+            const posKini = (laci.items || []).findIndex(x => x.fid === srData.fid);
+            if (posKini < 0) return;
+            const teksKini = String(laci.items[posKini].ayat || '').split('=')[0].trim().slice(0, 200);
+            if (srData.itemIndex !== posKini || (srData.barisText || '') !== teksKini || (srData.drawerTitle || '') !== (laci.title || '')) {
+              batch.update(doc(db, "users", currentUser.uid, "fakta_sr_queue", srDoc.id), {
+                itemIndex: posKini, barisText: teksKini, drawerTitle: laci.title || '', updatedAt: Date.now()
+              });
+              updateCount++;
+            }
+            srData.itemIndex = posKini;
+          }
 
           const pdfNombor = laci.pdfNombor || null;
           const pdfTopik  = laci.pdfTopik  || null;
@@ -25840,6 +26131,25 @@ function subscribeBacaanTambahan() {
     // ══════════════════════════════════════════
 
     let srTabAktif = 'overdue'; // 'overdue' | 'upcoming' | 'semua'
+    // Jenis SR dipapar: 'bahasa' (ikut laci) | 'fakta' (ikut baris) — diingat dalam peranti ini
+    let srJenisAktif = (() => { try { return localStorage.getItem('sr_jenis_aktif') === 'fakta' ? 'fakta' : 'bahasa'; } catch (e) { return 'bahasa'; } })();
+    function _srJenisButang() {
+      const bB = document.getElementById('btn-sr-jenis-bahasa');
+      const bF = document.getElementById('btn-sr-jenis-fakta');
+      if (!bB || !bF) return;
+      const f = srJenisAktif === 'fakta';
+      bB.className = 'btn btn-sm' + (f ? ' btn-secondary' : ' btn-active');
+      bF.className = 'btn btn-sm' + (f ? ' btn-active' : ' btn-secondary');
+    }
+    _srJenisButang();
+    ['bahasa', 'fakta'].forEach(j => {
+      document.getElementById('btn-sr-jenis-' + j)?.addEventListener('click', () => {
+        srJenisAktif = j;
+        try { localStorage.setItem('sr_jenis_aktif', j); } catch (e) {}
+        _srJenisButang();
+        renderSRQueuePage();
+      });
+    });
 
     // Navigation
     document.getElementById('btn-back-sr-queue').addEventListener('click', () => {
@@ -25896,6 +26206,8 @@ async function renderSRQueuePage() {
             srTakJumpaF++;
             return;
           }
+          // SR ikut ID baris: baris itu sudah tiada → kira sahaja (tidak dipapar, TIDAK dipadam)
+          if (data.fid && !(drawer.items || []).some(x => x && x.fid === data.fid)) { srTakJumpaF++; return; }
           faktaSRItems.push({ id: d.id, ...data, laciData: drawer, isFakta: true });
         });
       } catch(e) {}
@@ -25909,9 +26221,9 @@ async function renderSRQueuePage() {
         );
 
         if (snap.empty && !faktaSRItems.length) {
-          list.innerHTML = '<div class="empty-state">Belum ada laci dalam SR queue. Habiskan laci bahasa untuk mula.</div>';
+          list.innerHTML = '<div class="empty-state">Belum ada rekod dalam SR queue.</div>';
           if (statsBar) statsBar.innerHTML = '';
-          if (subtitle) subtitle.textContent = '0 laci dalam queue';
+          if (subtitle) subtitle.textContent = '0 dalam queue';
           return;
         }
 
@@ -25938,19 +26250,20 @@ async function renderSRQueuePage() {
         const overdue = semua.filter(s => s.nextDueAt <= now);
         const upcoming = semua.filter(s => s.nextDueAt > now);
 
-        if (subtitle) subtitle.textContent = `${semua.length + faktaSRItems.length} laci dalam queue`;
+        const jenisF = srJenisAktif === 'fakta';
+        if (subtitle) subtitle.textContent = jenisF ? `${faktaSRItems.length} baris Fakta dalam queue` : `${semua.length} laci Bahasa dalam queue`;
 
-        // Kemaskini stats bar
+        // Kemaskini stats bar (ikut jenis yang dipilih)
         if (statsBar) {
-          const overdueB = overdue.length;
-          const overdueF = faktaSRItems.filter(s => s.nextDueAt <= now).length;
-          const upcomingB = upcoming.length;
-          const upcomingF = faktaSRItems.filter(s => s.nextDueAt > now).length;
+          const senaraiJ = jenisF ? faktaSRItems : semua;
+          const overdueJ = senaraiJ.filter(s => s.nextDueAt <= now).length;
+          const upcomingJ = senaraiJ.length - overdueJ;
+          const takJumpaJ = jenisF ? srTakJumpaF : srTakJumpaB;
           statsBar.innerHTML = `
-            <div class="chip" style="border-color:#f59e0b;color:#fcd34d;">⚠️ Overdue: ${overdueB + overdueF} <span style="font-size:0.6rem;opacity:0.7;">(B:${overdueB} F:${overdueF})</span></div>
-            <div class="chip" style="border-color:#34d399;color:#6ee7b7;">📅 Upcoming: ${upcomingB + upcomingF}</div>
-            <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📋 Jumlah: ${semua.length + faktaSRItems.length}</div>
-            ${(srTakJumpaB + srTakJumpaF) ? `<div class="chip" style="border-color:#f87171;color:#fca5a5;">🛡️ ${srTakJumpaB + srTakJumpaF} rekod SR laci tak dijumpai — disimpan, tidak dipadam</div>` : ''}
+            <div class="chip" style="border-color:#f59e0b;color:#fcd34d;">⚠️ Overdue: ${overdueJ}</div>
+            <div class="chip" style="border-color:#34d399;color:#6ee7b7;">📅 Upcoming: ${upcomingJ}</div>
+            <div class="chip" style="border-color:#a78bfa;color:#c4b5fd;">📋 Jumlah: ${senaraiJ.length} ${jenisF ? 'baris' : 'laci'}</div>
+            ${takJumpaJ ? `<div class="chip" style="border-color:#f87171;color:#fca5a5;">🛡️ ${takJumpaJ} rekod SR ${jenisF ? "baris/laci" : "laci"} tak dijumpai — disimpan, tidak dipadam</div>` : ''}
           `;
         }
 
@@ -25966,10 +26279,9 @@ async function renderSRQueuePage() {
           ? faktaSRItems.filter(s => s.nextDueAt > now)
           : faktaSRItems;
 
-        const allToShow = [
-          ...toShow.map(s => ({ ...s, isFakta: false })),
-          ...faktaToShow
-        ].sort((a, b) => a.nextDueAt - b.nextDueAt);
+        // Bahasa & Fakta DIASINGKAN — papar jenis yang dipilih sahaja
+        const allToShow = (jenisF ? faktaToShow : toShow.map(s => ({ ...s, isFakta: false })))
+          .sort((a, b) => a.nextDueAt - b.nextDueAt);
 
         if (!allToShow.length) {
           list.innerHTML = `<div class="empty-state">${srTabAktif === 'overdue' ? '✅ Tiada ulangan tertunggak!' : srTabAktif === 'upcoming' ? 'Tiada ulangan akan datang.' : 'Queue kosong.'}</div>`;
@@ -26006,6 +26318,12 @@ const drawerDataSR = data.isFakta
           // ── Label PDF ikut mode ──
           let labelPDFSR = null;
           let isSementaraSR = false;
+
+          // Fakta ikut ID baris: kedudukan & teks baris SEMASA dikira dari ID (rekod lama: ikut nombor baris)
+          const _posSR = data.isFakta && data.fid ? (drawerDataSR?.items || []).findIndex(x => x && x.fid === data.fid) : -1;
+          const _barisNoSR = !data.isFakta ? null : data.fid ? (_posSR >= 0 ? _posSR + 1 : null) : (data.itemIndex != null ? data.itemIndex + 1 : null);
+          const _teksSR = data.isFakta ? (_posSR >= 0 ? String(drawerDataSR.items[_posSR].ayat || '').split('=')[0].trim() : (data.barisText || '')) : '';
+          const _labelSR = (data.drawerTitle || 'Tiada Tajuk') + (_barisNoSR ? ` · Baris ${_barisNoSR}` : '') + (data.isFakta && data.fid ? ` (ID ${data.fid})` : '');
 
           if (data.isFakta) {
             // Fakta — guna pdfKod dari SR queue terus
@@ -26052,9 +26370,9 @@ const div = document.createElement('div');
             </div>
 
             <div style="font-size:0.95rem;font-weight:700;color:white;margin-bottom:2px;">
-              ${data.drawerTitle || 'Tiada Tajuk'}${data.isFakta && data.itemIndex != null ? ` <span style="font-size:0.78rem;color:#fb923c;font-weight:700;">· Baris ${data.itemIndex + 1}</span>` : ''}
+              ${data.drawerTitle || 'Tiada Tajuk'}${_barisNoSR ? ` <span style="font-size:0.78rem;color:#fb923c;font-weight:700;">· Baris ${_barisNoSR}</span>` : ''}${data.isFakta && data.fid ? ` <span style="font-size:0.72rem;color:#fcd34d;font-weight:700;">· ID ${data.fid}</span>` : ''}
             </div>
-            ${data.isFakta && data.barisText ? `<div style="font-size:0.75rem;color:#d1d5db;margin-bottom:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">"${data.barisText.slice(0, 60)}${data.barisText.length > 60 ? '…' : ''}"</div>` : ''}
+            ${data.isFakta && _teksSR ? `<div style="font-size:0.75rem;color:#d1d5db;margin-bottom:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">"${_teksSR.slice(0, 60)}${_teksSR.length > 60 ? '…' : ''}"</div>` : ''}
 
             ${parentLabel ? `<div style="font-size:0.72rem;color:var(--subtext);margin-bottom:8px;">📂 ${jenisLabel ? jenisLabel + ' → ' : ''}${parentLabel}</div>` : ''}
 
@@ -26107,7 +26425,7 @@ const div = document.createElement('div');
 
 // Reset ke fasa 1
           div.querySelector('.btn-sr-reset').addEventListener('click', async () => {
-            if (!confirm(`Reset SR "${data.drawerTitle}" ke Fasa 1?\n\nSejarah ulangan akan dipadam.`)) return;
+            if (!confirm(`Reset SR "${_labelSR}" ke Fasa 1?\n\nSejarah ulangan akan dipadam.`)) return;
             const now = Date.now();
             const srCollName = data.isFakta ? 'fakta_sr_queue' : 'bahasa_sr_queue';
             const refSR = doc(db, "users", currentUser.uid, srCollName, data.id);
@@ -26117,19 +26435,19 @@ const div = document.createElement('div');
               sejarahFasa: [],
               updatedAt: now
             });
-            showToast(`🔄 "${data.drawerTitle}" di-reset ke Fasa 1 (+20 minit)`);
+            showToast(`🔄 "${_labelSR}" di-reset ke Fasa 1 (+20 minit)`);
             renderSRQueuePage();
           });
 
           // Buang dari queue
           div.querySelector('.btn-sr-delete').addEventListener('click', async () => {
-            if (!confirm(`Buang "${data.drawerTitle}" dari SR queue?\n\nLaci tidak akan diulang lagi.`)) return;
+            if (!confirm(`Buang "${_labelSR}" dari SR queue?\n\n${data.isFakta ? 'Baris' : 'Laci'} ini tidak akan diulang lagi.`)) return;
             if (data.isFakta) {
               await deleteFaktaSRRekod(data.id);
             } else {
               await deleteSRRekod(data.id);
             }
-            showToast(`🗑️ "${data.drawerTitle}" dibuang dari SR queue.`);
+            showToast(`🗑️ "${_labelSR}" dibuang dari SR queue.`);
             renderSRQueuePage();
           });
           list.appendChild(div);
