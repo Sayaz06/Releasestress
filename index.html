@@ -9774,7 +9774,7 @@ function renderTopics() {
           if (isChecked) {
             // Pastikan HANYA SATU topik aktif: baca terus dari Firestore (bukan memori phone) dan tulis
             // dalam SATU batch — elak dua topik tertinggal aktif (Kindle tersalah topik / lompat slide).
-            const reset = { lastIndex: 0, lastDrawerId: null, lastItemIndex: null, phoneFaktaPos: null };
+            const reset = { lastIndex: 0, lastDrawerId: null, lastItemIndex: null, phoneFaktaPos: null, kindleFid: null };
             const batch = writeBatch(db);
             const dahTutup = new Set();
             const aktifSnap = await getDocs(query(collection(db, "users", currentUser.uid, "topics"), where("isActive", "==", true)));
@@ -10409,10 +10409,34 @@ bukaCropTool(file, async (blob) => {
     // ── 📍 BARIS SEMASA (Fakta) — lencana hijau macam Golongan Bahasa ──
     // Kindle: topics.kindleFid (ID baris yang sedang dipapar di Kindle) · Phone: topics.phoneFaktaPos
     // Dikemas kini terus pada DOM (tanpa lukis semula senarai) supaya kotak taip tidak hilang fokus.
+    // Baris yang Kindle akan papar seterusnya — dikira dari kedudukan Kindle (lastDrawerId + lastItemIndex),
+    // sama logik dengan Kindle: slide ikut tajuk, baris kosong dilangkau, tiada kedudukan → baris pertama.
+    function _faktaKindleSeterusnyaFid(t) {
+      const laci = allDrawers
+        .filter(d => d.topicId === t.id && ((d.items && d.items.length) || (d.notes || '').trim()))
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }));
+      const baris = d => (d.items || []).filter(x => x && (x.ayat || x.text || '').trim());
+      let mula = 0, lepas = -1;
+      if (t.lastDrawerId) {
+        const i = laci.findIndex(d => d.id === t.lastDrawerId);
+        if (i >= 0) { mula = i; lepas = (t.lastItemIndex === null || t.lastItemIndex === undefined) ? Infinity : t.lastItemIndex; }
+      }
+      for (let i = mula; i < laci.length; i++) {
+        const b = baris(laci[i]);
+        const dari = i === mula ? lepas + 1 : 0;
+        if (dari < b.length) return b[dari].fid || null;
+      }
+      for (const d of laci) { const b = baris(d); if (b.length) return b[0].fid || null; } // habis → Kindle mula semula
+      return null;
+    }
     function faktaTandaSemasa() {
       const t = allTopics.find(x => x.id === currentTopicId);
       const aktif = !!(t && t.isActive);
-      const kFid = aktif ? (t.kindleFid || null) : null;
+      // Kindle: ID baris yang sedang dipapar (kindleFid) — kalau belum ada / bukan topik ini → kira dari kedudukan Kindle
+      let kFid = aktif ? (t.kindleFid || null) : null;
+      if (aktif && (!kFid || !allDrawers.some(d => d.topicId === t.id && (d.items || []).some(x => x && x.fid === kFid)))) {
+        kFid = _faktaKindleSeterusnyaFid(t);
+      }
       const pPos = aktif ? (t.phoneFaktaPos || null) : null;
       const lencana = (teks) => `<span style="font-size:0.66rem;font-weight:700;color:#34d399;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.5);padding:2px 8px;border-radius:999px;white-space:nowrap;">${teks}</span>`;
       document.querySelectorAll('#drawer-list .drawer-card[data-laci-id]').forEach(kad => {
