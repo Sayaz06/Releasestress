@@ -9679,11 +9679,17 @@ function renderTopics() {
         div.querySelector(".topic-active").addEventListener("change", async (e) => { 
           const isChecked = e.target.checked;
           if (isChecked) {
-            const others = allTopics.filter(t => t.isActive && t.id !== data.id);
-            for (let t of others) {
-              await updateDoc(doc(db, "users", currentUser.uid, "topics", t.id), { isActive: false, lastIndex: 0, lastDrawerId: null, lastItemIndex: null });
-            }
-            await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: true, lastIndex: 0, lastDrawerId: null, lastItemIndex: null });
+            // Pastikan HANYA SATU topik aktif: baca terus dari Firestore (bukan memori phone) dan tulis
+            // dalam SATU batch — elak dua topik tertinggal aktif (Kindle tersalah topik / lompat slide).
+            const reset = { lastIndex: 0, lastDrawerId: null, lastItemIndex: null };
+            const batch = writeBatch(db);
+            const dahTutup = new Set();
+            const aktifSnap = await getDocs(query(collection(db, "users", currentUser.uid, "topics"), where("isActive", "==", true)));
+            aktifSnap.forEach(d => { if (d.id !== data.id) { batch.update(d.ref, { isActive: false, ...reset }); dahTutup.add(d.id); } });
+            allTopics.filter(t => t.isActive && t.id !== data.id && !dahTutup.has(t.id))
+              .forEach(t => batch.update(doc(db, "users", currentUser.uid, "topics", t.id), { isActive: false, ...reset }));
+            batch.update(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: true, aktifAt: Date.now(), ...reset });
+            await batch.commit();
           } else {
             await updateDoc(doc(db, "users", currentUser.uid, "topics", data.id), { isActive: false });
           }
