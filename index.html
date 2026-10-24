@@ -9803,6 +9803,7 @@ function renderDrawers() {
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
               ${adaSRFakta ? '<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;">⏰ SR</span>' : ''}
               <span class="badge-status badge-done">Ulang: ${data.repeatCount || 0}</span>
+              <button type="button" class="btn btn-secondary btn-sm btn-tak-letak-isi" style="font-size:0.62rem;padding:3px 8px;border-color:#22c55e;color:#86efac;">Tak letak isi</button>
             </div>
           </div>
 
@@ -9881,6 +9882,18 @@ function renderDrawers() {
           </div>
         `;
 
+        if (data.takLetakIsi) {
+          Array.from(div.children).forEach(function(ch) {
+            if (!ch.classList.contains('drawer-title-wrapper')) ch.style.display = 'none';
+          });
+          var kanan = div.querySelector('.drawer-title-wrapper > div');
+          if (kanan) kanan.style.display = 'none';
+          var st = document.createElement('div');
+          st.style.marginTop = '8px';
+          st.innerHTML = '<button type="button" class="btn btn-sm btn-tak-letak-isi" style="width:100%;background:#16a34a;border:none;color:#fff;font-weight:700;">✓ Tak letak isi</button><div style="font-size:0.68rem;color:#86efac;text-align:center;margin-top:4px;">Slide lecture ini tiada isi. Tekan butang hijau untuk kembalikan.</div>';
+          div.appendChild(st);
+        }
+
         // ── HELPER: Simpan items ke Firestore ──
         async function simpanItems(newItems) {
           await updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), {
@@ -9888,6 +9901,12 @@ function renderDrawers() {
             repeatCount: 0
           });
         }
+
+        div.querySelectorAll(".btn-tak-letak-isi").forEach(function(btn) {
+          btn.addEventListener("click", async function() {
+            await updateDoc(doc(db, "users", currentUser.uid, "drawer", data.id), { takLetakIsi: !data.takLetakIsi });
+          });
+        });
 
         // ── TITLE CHANGE ──
         div.querySelector(".drawer-title").addEventListener("change", async (e) => {
