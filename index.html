@@ -11688,7 +11688,7 @@ btnAddLaci.addEventListener("click", async () => {
     const lxSusun = (a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
     const lxCol = (n, j) => collection(db, 'users', currentUser.uid, LX_JENIS[j || lx.jenis].pre + n);
     const lxDoc = (n, id, j) => doc(db, 'users', currentUser.uid, LX_JENIS[j || lx.jenis].pre + n, id);
-    const lxD = () => lx.data[lx.jenis] || { sems: [], subjects: [], topics: [], drawers: [] };
+    const lxD = () => lx.data[lx.jenis] || { sems: [], subjects: [], topics: [], drawers: [], srIds: new Set() };
     const lxSec = id => document.getElementById(id);
     const lxSedangTaip = box => {
       const a = document.activeElement;
@@ -11696,24 +11696,147 @@ btnAddLaci.addEventListener("click", async () => {
     };
     const lxCuba = fn => async (...arg) => { try { await fn(...arg); } catch (e) { showToast('❌ ' + (e && e.message ? e.message : e), 3000); } };
 
-    // Dengar 4 koleksi jenis ini (sekali sahaja). Senarai dilukis semula bila data berubah —
+    // Dengar 5 koleksi jenis ini (sekali sahaja): sems, subjects, topics, drawer + SR. Senarai dilukis semula bila data berubah —
     // ditangguh jika pengguna sedang menaip dalam page itu (elak teks hilang).
     function lxLanggan(j) {
       if (lx.unsub[j] || !currentUser) return;
-      lx.data[j] = { sems: [], subjects: [], topics: [], drawers: [] };
+      lx.data[j] = { sems: [], subjects: [], topics: [], drawers: [], srIds: new Set() };
       const peta = [
         ['sems', 'sems', 'section-lx-sem', lxRenderSem],
         ['subjects', 'subjects', 'section-lx-subjects', lxRenderSubjects],
         ['topics', 'topics', 'section-lx-topics', lxRenderTopics],
-        ['drawer', 'drawers', 'section-lx-drawer', lxRenderLaci]
+        ['drawer', 'drawers', 'section-lx-drawer', lxRenderLaci],
+        ['sr_queue', 'srIds', 'section-lx-drawer', lxRenderLaci]
       ];
       lx.unsub[j] = peta.map(([koleksi, kunci, secId, lukis]) => onSnapshot(lxCol(koleksi, j), snap => {
-        lx.data[j][kunci] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        lx.data[j][kunci] = kunci === 'srIds' ? new Set(snap.docs.map(d => d.id)) : snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (kunci === 'drawers') lxIdSemak(j, !!(snap.metadata && snap.metadata.fromCache)); // 📒 ID baris kekal
         const sec = lxSec(secId);
         if (lx.jenis !== j || !sec || !sec.classList.contains('active')) return;
         if (lxSedangTaip(sec)) { lx.tangguh[secId] = lukis; return; }
         lukis();
       }, e => console.warn('Laci ' + j + ':', e)));
+    }
+
+    // ══ 📒 ID BARIS KEKAL — sama sistem Fakta, kaunter SENDIRI setiap jenis ══
+    // Kaunter: settings/{pre}IdBuku { seterusnya } · Log: {pre}id_buku/{fid} { status 'aktif' | 'dipadam', ... }
+    // ID mula dari 1, sentiasa menaik, TIDAK diguna semula. SR disimpan ikut ID (docId = ID baris), BUKAN kedudukan →
+    // baris dipindah / baris lain dipadam TIDAK rosakkan SR. Baris dipadam → log 'dipadam' + SR baris ITU SAHAJA dibuang.
+    // ID sama muncul dalam 2 baris (salinan) → baris dalam laci yang lebih baru diberi ID baru.
+    const lxIdKaunter = j => doc(db, 'users', currentUser.uid, 'settings', LX_JENIS[j].pre + 'IdBuku');
+    const lxIdLog = (j, fid) => lxDoc('id_buku', String(fid), j);
+    const lxId = {}; // j → { kenal: Map | null, giliran: Promise, dalam: Set }
+    const lxLebihLama = (a, b) => ((a.createdAt || 0) - (b.createdAt || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    async function lxTulisPukal(ops) {
+      for (let i = 0; i < ops.length; i += 400) {
+        const b = writeBatch(db);
+        ops.slice(i, i + 400).forEach(f => f(b));
+        await b.commit();
+      }
+    }
+    async function lxBeriId(j, drawerId) {
+      const dRef = lxDoc('drawer', drawerId, j);
+      const semua = (lx.data[j] && lx.data[j].drawers) || [];
+      await runTransaction(db, async tx => {
+        const kSnap = await tx.get(lxIdKaunter(j));
+        const dSnap = await tx.get(dRef);
+        if (!dSnap.exists()) return;
+        const d = { id: drawerId, ...dSnap.data() };
+        const items = Array.isArray(d.items) ? d.items.map(x => (x ? { ...x } : x)) : [];
+        let seterusnya = (kSnap.exists() && kSnap.data().seterusnya) || 1;
+        const lihat = new Set();
+        const baru = [];
+        items.forEach(x => {
+          if (!x) return;
+          const salinan = x.fid && (lihat.has(x.fid) || semua.some(o => o.id !== drawerId && (o.items || []).some(y => y && y.fid === x.fid) && lxLebihLama(o, d) < 0));
+          if (!x.fid || salinan) { x.fid = seterusnya++; baru.push(x); }
+          lihat.add(x.fid);
+        });
+        if (!baru.length) return;
+        const now = Date.now();
+        tx.set(lxIdKaunter(j), { seterusnya, updatedAt: now }, { merge: true });
+        tx.update(dRef, { items });
+        baru.forEach(x => tx.set(lxIdLog(j, x.fid), {
+          fid: x.fid, status: 'aktif', drawerId, topicId: d.topicId || '', slide: d.title || '',
+          ayat: String(x.ayat || '').slice(0, 200), dibuatAt: now
+        }));
+      });
+    }
+    function lxIdSemak(j, dariCache) {
+      if (!currentUser || !lx.data[j]) return;
+      const st = lxId[j] || (lxId[j] = { kenal: null, giliran: Promise.resolve(), dalam: new Set() });
+      const kini = new Map();
+      const perlu = new Set();
+      lx.data[j].drawers.forEach(d => {
+        const lihat = new Set();
+        (Array.isArray(d.items) ? d.items : []).forEach(x => {
+          if (!x) return;
+          if (!x.fid || lihat.has(x.fid)) { perlu.add(d); return; }
+          lihat.add(x.fid);
+          const ada = kini.get(x.fid);
+          if (!ada || lxLebihLama(d, ada.laci) < 0) {
+            if (ada) perlu.add(ada.laci); // laci lain ialah salinan
+            kini.set(x.fid, { laci: d, ayat: x.ayat || '' });
+          } else {
+            perlu.add(d); // ID ini milik laci yang lebih lama → baris ini salinan
+          }
+        });
+      });
+      // Data dari cache mungkin belum lengkap → JANGAN anggap baris dipadam (elak SR terpadam tersilap)
+      if (!dariCache) {
+        if (st.kenal) {
+          const ops = [];
+          const now = Date.now();
+          st.kenal.forEach((info, fid) => {
+            if (kini.has(fid)) return;
+            ops.push(b => b.set(lxIdLog(j, fid), {
+              fid, status: 'dipadam', dipadamAt: now, drawerId: info.drawerId, topicId: info.topicId,
+              slide: info.slide, ayat: String(info.ayat || '').slice(0, 200)
+            }, { merge: true }));
+            ops.push(b => b.delete(lxDoc('sr_queue', String(fid), j)));
+          });
+          kini.forEach((info, fid) => {
+            if (st.kenal.has(fid)) return;
+            ops.push(b => b.set(lxIdLog(j, fid), {
+              fid, status: 'aktif', dipadamAt: null, drawerId: info.laci.id, topicId: info.laci.topicId || '', slide: info.laci.title || ''
+            }, { merge: true }));
+          });
+          if (ops.length) lxTulisPukal(ops).catch(e => console.warn('ID baris ' + j + ':', e));
+        }
+        st.kenal = new Map([...kini].map(([fid, v]) => [fid, { drawerId: v.laci.id, topicId: v.laci.topicId || '', slide: v.laci.title || '', ayat: v.ayat }]));
+      }
+      // Beri ID kepada baris baru / salinan — satu laci satu masa
+      [...perlu].sort(lxLebihLama).forEach(d => {
+        if (st.dalam.has(d.id)) return;
+        st.dalam.add(d.id);
+        st.giliran = st.giliran
+          .then(() => lxBeriId(j, d.id))
+          .catch(e => console.warn('Beri ID baris gagal:', e))
+          .then(() => { st.dalam.delete(d.id); });
+      });
+    }
+
+    // ⏰ Daftar SATU baris ke SR (docId = ID baris) — bentuk rekod sama dengan SR Fakta
+    async function lxDaftarSR(laci, i) {
+      const it = (laci.items || [])[i];
+      if (!it || !it.fid) { showToast('⏳ Baris ini belum dapat ID — cuba sebentar lagi.', 2500); return; }
+      const ayat = (it.ayat || '').trim();
+      if (!ayat) { showToast('⚠️ Baris ini masih kosong.', 2500); return; }
+      const ref = lxDoc('sr_queue', String(it.fid));
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const x = snap.data();
+        showToast(`⏰ Sudah dalam SR — ${getLabelFasaSR(x.fasaSemasa)} — ${formatTarikhMasaSR(x.nextDueAt)}`, 4000);
+        return;
+      }
+      const now = Date.now();
+      await setDoc(ref, {
+        drawerId: laci.id, drawerTitle: laci.title || '', hafalAt: now, fasaSemasa: 0,
+        nextDueAt: now + SR_INTERVALS[0], sejarahFasa: [], createdAt: now, mode: lx.jenis,
+        srDocId: String(it.fid), topicId: laci.topicId || '', fid: it.fid, itemIndex: i,
+        barisText: (ayat.includes('=') ? ayat.split('=')[0].trim() : ayat).slice(0, 200)
+      });
+      showToast(`⏰ Baris ${i + 1} (ID ${it.fid}) didaftar dalam SR`, 2500);
     }
     document.querySelectorAll('.section-lx').forEach(sec => sec.addEventListener('focusout', () => {
       setTimeout(() => {
@@ -11874,11 +11997,16 @@ btnAddLaci.addEventListener("click", async () => {
     function lxKadLaci(laci) {
       const items = Array.isArray(laci.items) ? laci.items : [];
       const ph = LX_JENIS[lx.jenis].ph;
+      const srIds = lxD().srIds || new Set();
+      const dalamSR = it => !!(it && it.fid && srIds.has(String(it.fid)));
+      const bilSR = items.filter(dalamSR).length;
       const div = document.createElement('div');
       div.className = 'drawer-card';
+      if (bilSR) div.style.borderColor = 'rgba(245,158,11,0.4)';
       div.innerHTML = `
         <div class="drawer-title-wrapper">
           <input class="drawer-title lx-tajuk" value="${lxEsc(laci.title)}" placeholder="Tajuk Laci (Cth: 1)">
+          ${bilSR ? `<span style="font-size:0.58rem;font-weight:700;color:#fcd34d;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:999px;padding:1px 7px;white-space:nowrap;">⏰ ${bilSR} baris SR</span>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
           ${items.map((it, i) => {
@@ -11887,8 +12015,11 @@ btnAddLaci.addEventListener("click", async () => {
             return `
             <div style="background:rgba(30,41,59,0.6);border:1px solid var(--border-soft);border-radius:10px;padding:10px;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                <span style="font-size:0.72rem;font-weight:700;color:#a5b4fc;">Baris ${i + 1}</span>
-                <button class="btn btn-secondary btn-sm lx-padam-baris" data-idx="${i}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
+                <span style="font-size:0.72rem;font-weight:700;color:#a5b4fc;">Baris ${i + 1} <span style="color:#fcd34d;">· ${it && it.fid ? 'ID ' + it.fid : 'ID …'}</span></span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  ${it && it.fid ? `<button class="btn btn-secondary btn-sm lx-sr-baris" data-idx="${i}" style="padding:1px 8px;font-size:0.65rem;border-color:#f59e0b;color:${dalamSR(it) ? '#fcd34d' : 'var(--subtext)'};${dalamSR(it) ? 'background:rgba(245,158,11,0.12);' : ''}">⏰${dalamSR(it) ? ' ✓' : ' SR'}</button>` : ''}
+                  <button class="btn btn-secondary btn-sm lx-padam-baris" data-idx="${i}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
+                </div>
               </div>
               <textarea class="drawer-notes lx-ayat" data-idx="${i}" placeholder="${lxEsc(ph)}" style="min-height:60px;resize:none;width:100%;margin-bottom:6px;">${lxEsc(it && it.ayat)}</textarea>
               <button class="btn btn-secondary btn-sm lx-togol-soalan" data-idx="${i}" style="width:100%;margin-bottom:6px;font-size:0.72rem;border-color:#22d3ee;color:${adaSoalan ? '#67e8f9' : 'var(--subtext)'};">❓ Soalan${adaSoalan ? ' ✓' : ''}</button>
@@ -11949,11 +12080,14 @@ btnAddLaci.addEventListener("click", async () => {
         baru.push({ ayat: '', imageUrl: '' });
         await simpan(baru, true);
       }));
+      div.querySelectorAll('.lx-sr-baris').forEach(btn => btn.addEventListener('click', lxCuba(async () => {
+        await lxDaftarSR(laci, parseInt(btn.dataset.idx, 10));
+      })));
       div.querySelectorAll('.lx-padam-baris').forEach(btn => btn.addEventListener('click', lxCuba(async () => {
         const i = parseInt(btn.dataset.idx, 10);
         const baru = salinItems();
         if (!baru[i]) return;
-        if ((baru[i].ayat || '').trim() && !confirm(`Padam Baris ${i + 1}?`)) return;
+        if ((baru[i].ayat || '').trim() && !confirm(`Padam Baris ${i + 1}${baru[i].fid ? ' (ID ' + baru[i].fid + ')' : ''}?\n\nSR baris ini sahaja akan dibuang — SR baris lain tidak terjejas.`)) return;
         baru.splice(i, 1);
         lx.soalanBuka.clear();
         await simpan(baru, true);
