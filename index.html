@@ -2548,6 +2548,8 @@ They immortalized the hero in a statue.
           <div style="text-align:right; display:flex; gap:6px; flex-direction:column; align-items:flex-end;">
             <div style="display:flex; gap:6px;">
               <button id="btn-go-subjects" class="btn btn-secondary btn-sm">Laci Fakta</button>
+              <button id="btn-go-reasoning" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;">🧠 Laci Reasoning</button>
+              <button id="btn-go-presenting" class="btn btn-secondary btn-sm" style="border-color:#f472b6;">🎤 Laci Presenting</button>
               <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
               <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Wirid</button>
               <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
@@ -2717,6 +2719,61 @@ They immortalized the hero in a statue.
         </div>
       </div>
       </div>
+
+      <!-- ══ 🧠🎤 LACI REASONING / PRESENTING — salinan Laci Fakta (koleksi berasingan) ══ -->
+      <section id="section-lx-sem" class="section section-lx">
+        <div class="topbar">
+          <button id="btn-lx-back-sem" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Sem / Tahun</div>
+            <div class="topbar-sub lx-nama-laci" style="color:var(--grad2);font-weight:bold;"></div>
+          </div>
+        </div>
+        <button id="btn-lx-add-sem" class="btn btn-sm mt-8" style="width:100%;">Tambah Sem/Tahun</button>
+        <div class="list mt-8" id="lx-sem-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-lx-subjects" class="section section-lx">
+        <div class="topbar">
+          <button id="btn-lx-back-subjects" class="btn btn-secondary btn-sm">← Sem/Tahun</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Senarai Subjek</div>
+            <div class="topbar-sub lx-nama-laci" style="color:var(--grad2);font-weight:bold;"></div>
+            <div class="topbar-sub" id="lx-nama-sem"></div>
+          </div>
+        </div>
+        <button id="btn-lx-add-subject" class="btn btn-sm mt-8">Tambah Subjek</button>
+        <div class="list mt-8" id="lx-subjects-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-lx-topics" class="section section-lx">
+        <div class="topbar">
+          <button id="btn-lx-back-topics" class="btn btn-secondary btn-sm">← Subjek</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Senarai Topik</div>
+            <div class="topbar-sub lx-nama-laci" style="color:var(--grad2);font-weight:bold;"></div>
+            <div class="topbar-sub" id="lx-nama-subjek"></div>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin-bottom:8px;">
+          Tanda (tick) SATU kotak sahaja untuk aktifkan.
+        </div>
+        <button id="btn-lx-add-topic" class="btn btn-sm">Tambah Topik</button>
+        <div class="list mt-8" id="lx-topics-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-lx-drawer" class="section section-lx">
+        <div class="topbar">
+          <button id="btn-lx-back-drawer" class="btn btn-secondary btn-sm">← Topik</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Isi Laci</div>
+            <div class="topbar-sub lx-nama-laci" style="color:var(--grad2);font-weight:bold;"></div>
+            <div class="topbar-sub" id="lx-nama-topik"></div>
+          </div>
+        </div>
+        <button id="btn-lx-add-laci" class="btn btn-sm mt-8" style="width:100%;">Tambah Laci</button>
+        <div class="list mt-8" id="lx-drawer-list" style="padding:10px;"></div>
+      </section>
 
       <section id="section-subjects" class="section">
       <div class="topbar">
@@ -6551,6 +6608,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-assignment-belly')?.classList.remove("active");
       document.getElementById('section-bank-kamus')?.classList.remove("active");
       document.getElementById('section-golongan')?.classList.remove("active");
+      document.querySelectorAll('.section-lx').forEach(el => el.classList.remove("active")); // 🧠🎤 Laci Reasoning / Presenting
           section.classList.add("active");
       // Pastikan bar atas (butang ← back) sentiasa nampak: reset skrol bekas utama.
       // scrollIntoView / fokus input boleh tertolak bekas .card (overflow:hidden) → pengguna tak boleh skrol balik.
@@ -11616,6 +11674,324 @@ btnAddLaci.addEventListener("click", async () => {
     showTipsNotice('Fakta Drawer');
   }
 });
+
+
+    // ══════════ 🧠🎤 LACI REASONING & PRESENTING — salinan Laci Fakta (koleksi BERASINGAN) ══════════
+    // users/{uid}/{pre}sems → {pre}subjects (semId) → {pre}topics (subjectId, isActive, aktifAt) → {pre}drawer (topicId, items[])
+    // SR: {pre}sr_queue · pre = 'reasoning_' / 'presenting_' · bentuk dokumen SAMA dengan Fakta (Kindle guna enjin Fakta)
+    const LX_JENIS = {
+      reasoning:  { label: 'Reasoning',  ikon: '🧠', pre: 'reasoning_',  ph: 'Soalan = Jawapan (cth: Why do plants need light? = To make food)' },
+      presenting: { label: 'Presenting', ikon: '🎤', pre: 'presenting_', ph: 'Satu ayat presenting (cth: Today I would like to talk about...)' }
+    };
+    const lx = { jenis: null, data: {}, unsub: {}, semId: null, subjectId: null, topicId: null, tangguh: {}, soalanBuka: new Set() };
+    const lxEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const lxSusun = (a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
+    const lxCol = (n, j) => collection(db, 'users', currentUser.uid, LX_JENIS[j || lx.jenis].pre + n);
+    const lxDoc = (n, id, j) => doc(db, 'users', currentUser.uid, LX_JENIS[j || lx.jenis].pre + n, id);
+    const lxD = () => lx.data[lx.jenis] || { sems: [], subjects: [], topics: [], drawers: [] };
+    const lxSec = id => document.getElementById(id);
+    const lxSedangTaip = box => {
+      const a = document.activeElement;
+      return !!(a && box && box.contains(a) && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type !== 'checkbox')));
+    };
+    const lxCuba = fn => async (...arg) => { try { await fn(...arg); } catch (e) { showToast('❌ ' + (e && e.message ? e.message : e), 3000); } };
+
+    // Dengar 4 koleksi jenis ini (sekali sahaja). Senarai dilukis semula bila data berubah —
+    // ditangguh jika pengguna sedang menaip dalam page itu (elak teks hilang).
+    function lxLanggan(j) {
+      if (lx.unsub[j] || !currentUser) return;
+      lx.data[j] = { sems: [], subjects: [], topics: [], drawers: [] };
+      const peta = [
+        ['sems', 'sems', 'section-lx-sem', lxRenderSem],
+        ['subjects', 'subjects', 'section-lx-subjects', lxRenderSubjects],
+        ['topics', 'topics', 'section-lx-topics', lxRenderTopics],
+        ['drawer', 'drawers', 'section-lx-drawer', lxRenderLaci]
+      ];
+      lx.unsub[j] = peta.map(([koleksi, kunci, secId, lukis]) => onSnapshot(lxCol(koleksi, j), snap => {
+        lx.data[j][kunci] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const sec = lxSec(secId);
+        if (lx.jenis !== j || !sec || !sec.classList.contains('active')) return;
+        if (lxSedangTaip(sec)) { lx.tangguh[secId] = lukis; return; }
+        lukis();
+      }, e => console.warn('Laci ' + j + ':', e)));
+    }
+    document.querySelectorAll('.section-lx').forEach(sec => sec.addEventListener('focusout', () => {
+      setTimeout(() => {
+        const lukis = lx.tangguh[sec.id];
+        if (!lukis || lxSedangTaip(sec)) return;
+        delete lx.tangguh[sec.id];
+        if (lx.jenis && sec.classList.contains('active')) lukis();
+      }, 300);
+    }));
+
+    function lxMula(j) {
+      if (!currentUser) { showToast('Sila log masuk dahulu.'); return; }
+      lx.jenis = j; lx.semId = null; lx.subjectId = null; lx.topicId = null; lx.tangguh = {};
+      const k = LX_JENIS[j];
+      document.querySelectorAll('.lx-nama-laci').forEach(el => { el.textContent = k.ikon + ' Laci ' + k.label; });
+      lxLanggan(j);
+      showSection(lxSec('section-lx-sem'));
+      lxRenderSem();
+    }
+
+    // ── Padam: kumpul rujukan dokumen (laci + topik + SR baris laci itu) → padam berkumpulan ──
+    async function lxPadamPukal(refs) {
+      for (let i = 0; i < refs.length; i += 450) {
+        const b = writeBatch(db);
+        refs.slice(i, i + 450).forEach(r => b.delete(r));
+        await b.commit();
+      }
+    }
+    async function lxRujukSR(laciIds) {
+      if (!laciIds.size) return [];
+      const snap = await getDocs(lxCol('sr_queue'));
+      return snap.docs.filter(x => laciIds.has(x.data().drawerId)).map(x => x.ref);
+    }
+    async function lxRujukTopik(topikIds) {
+      const laci = lxD().drawers.filter(x => topikIds.includes(x.topicId));
+      const refs = laci.map(x => lxDoc('drawer', x.id));
+      topikIds.forEach(id => refs.push(lxDoc('topics', id)));
+      refs.push(...await lxRujukSR(new Set(laci.map(x => x.id))));
+      return refs;
+    }
+
+    function lxBarisNama(data, koleksi, ph, onBuka, onPadam) {
+      const div = document.createElement('div');
+      div.className = 'drawer-card';
+      div.style.cssText = 'display:flex;gap:8px;align-items:center;';
+      div.innerHTML = `
+        <input class="lx-nama" value="${lxEsc(data.name)}" placeholder="${ph}" style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:1rem;">
+        <button class="btn btn-secondary btn-sm lx-buka">Buka</button>
+        <button class="btn btn-secondary btn-sm lx-padam" style="color:var(--danger);border-color:var(--danger);">X</button>`;
+      div.querySelector('.lx-nama').addEventListener('change', lxCuba(e => updateDoc(lxDoc(koleksi, data.id), { name: e.target.value })));
+      div.querySelector('.lx-buka').addEventListener('click', onBuka);
+      div.querySelector('.lx-padam').addEventListener('click', lxCuba(onPadam));
+      return div;
+    }
+
+    function lxRenderSem() {
+      const box = lxSec('lx-sem-list'); if (!box || !lx.jenis) return;
+      const d = lxD();
+      box.innerHTML = '';
+      const senarai = [...d.sems].sort(lxSusun);
+      if (!senarai.length) { box.innerHTML = '<div class="empty-state">Belum ada Sem/Tahun. Tekan Tambah.</div>'; return; }
+      senarai.forEach(s => box.appendChild(lxBarisNama(s, 'sems', 'Cth: Sem 1 2025...', () => {
+        lx.semId = s.id;
+        showSection(lxSec('section-lx-subjects'));
+        lxRenderSubjects();
+      }, async () => {
+        if (!confirm('Padam Sem/Tahun ini beserta SEMUA subjek, topik & laci di dalamnya?\n\nTIDAK boleh dipulih.')) return;
+        const subj = d.subjects.filter(x => x.semId === s.id);
+        const refs = await lxRujukTopik(d.topics.filter(t => subj.some(x => x.id === t.subjectId)).map(t => t.id));
+        subj.forEach(x => refs.push(lxDoc('subjects', x.id)));
+        refs.push(lxDoc('sems', s.id));
+        await lxPadamPukal(refs);
+        showToast('🗑️ Sem/Tahun dipadam.');
+      })));
+    }
+
+    function lxRenderSubjects() {
+      const box = lxSec('lx-subjects-list'); if (!box || !lx.jenis) return;
+      const d = lxD();
+      const sem = d.sems.find(x => x.id === lx.semId);
+      lxSec('lx-nama-sem').textContent = sem && sem.name ? 'Sem: ' + sem.name : '';
+      box.innerHTML = '';
+      const senarai = d.subjects.filter(x => x.semId === lx.semId).sort(lxSusun);
+      if (!senarai.length) { box.innerHTML = '<div class="empty-state">Belum ada subjek. Tekan Tambah.</div>'; return; }
+      senarai.forEach(s => box.appendChild(lxBarisNama(s, 'subjects', 'Nama Subjek...', () => {
+        lx.subjectId = s.id;
+        showSection(lxSec('section-lx-topics'));
+        lxRenderTopics();
+      }, async () => {
+        if (!confirm('Padam subjek ini beserta SEMUA topik & laci di dalamnya?\n\nTIDAK boleh dipulih.')) return;
+        const refs = await lxRujukTopik(d.topics.filter(t => t.subjectId === s.id).map(t => t.id));
+        refs.push(lxDoc('subjects', s.id));
+        await lxPadamPukal(refs);
+        showToast('🗑️ Subjek dipadam.');
+      })));
+    }
+
+    function lxRenderTopics() {
+      const box = lxSec('lx-topics-list'); if (!box || !lx.jenis) return;
+      const d = lxD();
+      const subj = d.subjects.find(x => x.id === lx.subjectId);
+      lxSec('lx-nama-subjek').textContent = subj && subj.name ? 'Subjek: ' + subj.name : '';
+      box.innerHTML = '';
+      const senarai = d.topics.filter(t => t.subjectId === lx.subjectId).sort(lxSusun);
+      if (!senarai.length) { box.innerHTML = '<div class="empty-state">Belum ada topik. Tekan Tambah.</div>'; return; }
+      senarai.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'drawer-card';
+        div.style.cssText = 'display:flex;gap:8px;align-items:center;';
+        div.innerHTML = `
+          <input type="checkbox" class="lx-aktif" ${t.isActive ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--grad1);">
+          <input class="lx-nama" value="${lxEsc(t.name)}" placeholder="Nama Topik..." style="flex:1;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;">
+          <button class="btn btn-secondary btn-sm lx-buka">Buka</button>
+          <button class="btn btn-secondary btn-sm lx-padam" style="color:var(--danger);border-color:var(--danger);">X</button>`;
+        // Tick SATU topik sahaja (dalam laci jenis ini) — topik Fakta / laci lain TIDAK terjejas
+        div.querySelector('.lx-aktif').addEventListener('change', lxCuba(async e => {
+          if (e.target.checked) {
+            const reset = { lastIndex: 0, lastDrawerId: null, lastItemIndex: null, kindleFid: null };
+            const batch = writeBatch(db);
+            const aktifSnap = await getDocs(query(lxCol('topics'), where('isActive', '==', true)));
+            aktifSnap.forEach(x => { if (x.id !== t.id) batch.update(x.ref, { isActive: false, ...reset }); });
+            batch.update(lxDoc('topics', t.id), { isActive: true, aktifAt: Date.now(), ...reset });
+            await batch.commit();
+          } else {
+            await updateDoc(lxDoc('topics', t.id), { isActive: false });
+          }
+        }));
+        div.querySelector('.lx-nama').addEventListener('change', lxCuba(e => updateDoc(lxDoc('topics', t.id), { name: e.target.value })));
+        div.querySelector('.lx-buka').addEventListener('click', () => {
+          lx.topicId = t.id;
+          showSection(lxSec('section-lx-drawer'));
+          lxRenderLaci();
+        });
+        div.querySelector('.lx-padam').addEventListener('click', lxCuba(async () => {
+          if (!confirm('Padam topik ini beserta SEMUA laci di dalamnya?\n\nTIDAK boleh dipulih.')) return;
+          await lxPadamPukal(await lxRujukTopik([t.id]));
+          showToast('🗑️ Topik dipadam.');
+        }));
+        box.appendChild(div);
+      });
+    }
+
+    function lxRenderLaci() {
+      const box = lxSec('lx-drawer-list'); if (!box || !lx.jenis) return;
+      const d = lxD();
+      const t = d.topics.find(x => x.id === lx.topicId);
+      lxSec('lx-nama-topik').textContent = t && t.name ? 'Topik: ' + t.name : '';
+      box.innerHTML = '';
+      const senarai = d.drawers.filter(x => x.topicId === lx.topicId).sort((a, b) => {
+        if ((a.title || '') === '~') return 1;
+        if ((b.title || '') === '~') return -1;
+        return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true }) || ((a.createdAt || 0) - (b.createdAt || 0));
+      });
+      if (!senarai.length) { box.innerHTML = '<div class="empty-state">Belum ada laci. Tekan Tambah Laci.</div>'; return; }
+      senarai.forEach(laci => box.appendChild(lxKadLaci(laci)));
+    }
+
+    function lxKadLaci(laci) {
+      const items = Array.isArray(laci.items) ? laci.items : [];
+      const ph = LX_JENIS[lx.jenis].ph;
+      const div = document.createElement('div');
+      div.className = 'drawer-card';
+      div.innerHTML = `
+        <div class="drawer-title-wrapper">
+          <input class="drawer-title lx-tajuk" value="${lxEsc(laci.title)}" placeholder="Tajuk Laci (Cth: 1)">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
+          ${items.map((it, i) => {
+            const adaSoalan = !!(it && (it.soalan || '').trim());
+            const buka = lx.soalanBuka.has(laci.id + '_' + i);
+            return `
+            <div style="background:rgba(30,41,59,0.6);border:1px solid var(--border-soft);border-radius:10px;padding:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:0.72rem;font-weight:700;color:#a5b4fc;">Baris ${i + 1}</span>
+                <button class="btn btn-secondary btn-sm lx-padam-baris" data-idx="${i}" style="color:var(--danger);border-color:var(--danger);padding:1px 8px;font-size:0.65rem;">✕</button>
+              </div>
+              <textarea class="drawer-notes lx-ayat" data-idx="${i}" placeholder="${lxEsc(ph)}" style="min-height:60px;resize:none;width:100%;margin-bottom:6px;">${lxEsc(it && it.ayat)}</textarea>
+              <button class="btn btn-secondary btn-sm lx-togol-soalan" data-idx="${i}" style="width:100%;margin-bottom:6px;font-size:0.72rem;border-color:#22d3ee;color:${adaSoalan ? '#67e8f9' : 'var(--subtext)'};">❓ Soalan${adaSoalan ? ' ✓' : ''}</button>
+              <div class="lx-kotak-soalan" data-idx="${i}" style="display:${buka ? 'block' : 'none'};background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.35);border-radius:8px;padding:8px;margin-bottom:6px;">
+                <div style="font-size:0.7rem;font-weight:700;color:#67e8f9;margin-bottom:3px;">SOALAN</div>
+                <textarea class="drawer-notes lx-soalan" data-idx="${i}" placeholder="Tulis soalan..." style="min-height:50px;resize:none;width:100%;margin-bottom:6px;">${lxEsc(it && it.soalan)}</textarea>
+                <div style="font-size:0.7rem;font-weight:700;color:#67e8f9;margin-bottom:3px;">JAWAPAN</div>
+                <textarea class="drawer-notes lx-jawapan" data-idx="${i}" placeholder="Tulis jawapan..." style="min-height:70px;resize:none;width:100%;">${lxEsc(it && it.jawapan)}</textarea>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <button class="btn btn-secondary btn-sm lx-tambah-baris" style="width:100%;border-color:#6366f1;color:#a5b4fc;margin-bottom:10px;">+ Tambah Baris</button>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+          <button class="btn btn-secondary btn-sm lx-padam-laci" style="color:var(--danger);border-color:var(--danger);">Padam Laci</button>
+        </div>`;
+
+      const salinItems = () => (Array.isArray(laci.items) ? laci.items : []).map(x => ({ ...x }));
+      const simpan = (baru, resetUlang) => updateDoc(lxDoc('drawer', laci.id), resetUlang ? { items: baru, repeatCount: 0 } : { items: baru });
+
+      div.querySelector('.lx-tajuk').addEventListener('change', lxCuba(async e => {
+        await updateDoc(lxDoc('drawer', laci.id), { title: e.target.value });
+        const refs = await lxRujukSR(new Set([laci.id]));
+        if (refs.length) {
+          const b = writeBatch(db);
+          refs.forEach(r => b.update(r, { drawerTitle: e.target.value }));
+          await b.commit();
+        }
+      }));
+      div.querySelectorAll('.lx-ayat').forEach(ta => ta.addEventListener('change', lxCuba(async () => {
+        const i = parseInt(ta.dataset.idx, 10);
+        const baru = salinItems();
+        if (!baru[i]) return;
+        baru[i].ayat = ta.value;
+        laci.items = baru;
+        await simpan(baru, true);
+      })));
+      div.querySelectorAll('.lx-soalan, .lx-jawapan').forEach(ta => ta.addEventListener('change', lxCuba(async () => {
+        const i = parseInt(ta.dataset.idx, 10);
+        const medan = ta.classList.contains('lx-soalan') ? 'soalan' : 'jawapan';
+        const baru = salinItems();
+        if (!baru[i]) return;
+        baru[i][medan] = ta.value;
+        laci.items = baru;
+        await simpan(baru, false);
+      })));
+      div.querySelectorAll('.lx-togol-soalan').forEach(btn => btn.addEventListener('click', () => {
+        const i = btn.dataset.idx;
+        const kotak = div.querySelector(`.lx-kotak-soalan[data-idx="${i}"]`);
+        if (!kotak) return;
+        const buka = kotak.style.display === 'none';
+        kotak.style.display = buka ? 'block' : 'none';
+        if (buka) { lx.soalanBuka.add(laci.id + '_' + i); kotak.querySelector('.lx-soalan').focus(); }
+        else lx.soalanBuka.delete(laci.id + '_' + i);
+      }));
+      div.querySelector('.lx-tambah-baris').addEventListener('click', lxCuba(async () => {
+        const baru = salinItems();
+        baru.push({ ayat: '', imageUrl: '' });
+        await simpan(baru, true);
+      }));
+      div.querySelectorAll('.lx-padam-baris').forEach(btn => btn.addEventListener('click', lxCuba(async () => {
+        const i = parseInt(btn.dataset.idx, 10);
+        const baru = salinItems();
+        if (!baru[i]) return;
+        if ((baru[i].ayat || '').trim() && !confirm(`Padam Baris ${i + 1}?`)) return;
+        baru.splice(i, 1);
+        lx.soalanBuka.clear();
+        await simpan(baru, true);
+      })));
+      div.querySelector('.lx-padam-laci').addEventListener('click', lxCuba(async () => {
+        if (!confirm(`Padam laci "${laci.title || '~'}"?\n\nTIDAK boleh dipulih.`)) return;
+        const refs = await lxRujukSR(new Set([laci.id]));
+        refs.push(lxDoc('drawer', laci.id));
+        await lxPadamPukal(refs);
+        showToast('🗑️ Laci dipadam.');
+      }));
+      return div;
+    }
+
+    // ── Butang & navigasi ──
+    lxSec('btn-go-reasoning')?.addEventListener('click', () => lxMula('reasoning'));
+    lxSec('btn-go-presenting')?.addEventListener('click', () => lxMula('presenting'));
+    lxSec('btn-lx-back-sem')?.addEventListener('click', () => showSection(sectionTasbih));
+    lxSec('btn-lx-back-subjects')?.addEventListener('click', () => { showSection(lxSec('section-lx-sem')); lxRenderSem(); });
+    lxSec('btn-lx-back-topics')?.addEventListener('click', () => { showSection(lxSec('section-lx-subjects')); lxRenderSubjects(); });
+    lxSec('btn-lx-back-drawer')?.addEventListener('click', () => { showSection(lxSec('section-lx-topics')); lxRenderTopics(); });
+    lxSec('btn-lx-add-sem')?.addEventListener('click', lxCuba(async () => {
+      if (!lx.jenis) return;
+      await addDoc(lxCol('sems'), { name: '', createdAt: Date.now() });
+    }));
+    lxSec('btn-lx-add-subject')?.addEventListener('click', lxCuba(async () => {
+      if (!lx.jenis || !lx.semId) return;
+      await addDoc(lxCol('subjects'), { name: '', semId: lx.semId, createdAt: Date.now() });
+    }));
+    lxSec('btn-lx-add-topic')?.addEventListener('click', lxCuba(async () => {
+      if (!lx.jenis || !lx.subjectId) return;
+      await addDoc(lxCol('topics'), { name: '', subjectId: lx.subjectId, isActive: false, createdAt: Date.now() });
+    }));
+    lxSec('btn-lx-add-laci')?.addEventListener('click', lxCuba(async () => {
+      if (!lx.jenis || !lx.topicId) return;
+      await addDoc(lxCol('drawer'), { title: '~', items: [{ ayat: '', imageUrl: '' }], notes: '', repeatCount: 0, topicId: lx.topicId, createdAt: Date.now() });
+      showToast('✅ Laci ditambah di bahagian bawah sekali');
+    }));
 
     // Tambah Data Rutin
     btnAddRoutineTime.addEventListener("click", () => {
