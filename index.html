@@ -2550,6 +2550,7 @@ They immortalized the hero in a statue.
               <button id="btn-go-subjects" class="btn btn-secondary btn-sm">Laci Fakta</button>
               <button id="btn-go-reasoning" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;">🧠 Laci Reasoning</button>
               <button id="btn-go-presenting" class="btn btn-secondary btn-sm" style="border-color:#f472b6;">🎤 Laci Presenting</button>
+              <button id="btn-go-writing" class="btn btn-secondary btn-sm" style="border-color:#34d399;">✍️ Laci Writing</button>
               <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
               <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Wirid</button>
               <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
@@ -2774,6 +2775,49 @@ They immortalized the hero in a statue.
         <button id="btn-lx-add-laci" class="btn btn-sm mt-8" style="width:100%;">Tambah Laci</button>
         <div class="list mt-8" id="lx-drawer-list" style="padding:10px;"></div>
       </section>
+
+      <!-- ══ ✍️ LACI WRITING (17 Nov) — topik → soalan → karangan (English sahaja). Kindle: LATIHAN WRITING baca ikut SR · PELABUHAN WRITING pecah ayat ══ -->
+      <section id="section-lw-topik" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-lw-back-topik" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Topik Writing</div>
+            <div class="topbar-sub" style="color:#34d399;font-weight:bold;">✍️ Laci Writing</div>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin:6px 0;">Kindle baca karangan ikut giliran topik: topik 1 soalan 1 → topik 2 soalan 1 → ...</div>
+        <button id="btn-lw-add-topik" class="btn btn-sm mt-8" style="width:100%;">Tambah Topik</button>
+        <div class="list mt-8" id="lw-topik-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-lw-soalan" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-lw-back-soalan" class="btn btn-secondary btn-sm">← Topik</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Soalan</div>
+            <div class="topbar-sub" style="color:#34d399;font-weight:bold;">✍️ Laci Writing</div>
+            <div class="topbar-sub" id="lw-nama-topik"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;" class="mt-8">
+          <button id="btn-lw-add-t1" class="btn btn-sm" style="flex:1;">+ Soalan Task 1</button>
+          <button id="btn-lw-add-t2" class="btn btn-sm" style="flex:1;">+ Soalan Task 2</button>
+        </div>
+        <div class="list mt-8" id="lw-soalan-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-lw-karangan" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-lw-back-karangan" class="btn btn-secondary btn-sm">← Soalan</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Karangan</div>
+            <div class="topbar-sub" style="color:#34d399;font-weight:bold;">✍️ Laci Writing</div>
+            <div class="topbar-sub" id="lw-nama-task"></div>
+          </div>
+        </div>
+        <div id="lw-karangan-isi" style="padding:10px;"></div>
+      </section>
+
 
       <section id="section-subjects" class="section">
       <div class="topbar">
@@ -6609,6 +6653,7 @@ if (sectionAmtAk) sectionAmtAk.classList.remove("active");
       document.getElementById('section-bank-kamus')?.classList.remove("active");
       document.getElementById('section-golongan')?.classList.remove("active");
       document.querySelectorAll('.section-lx').forEach(el => el.classList.remove("active")); // 🧠🎤 Laci Reasoning / Presenting
+      document.querySelectorAll('.section-lw').forEach(el => el.classList.remove("active")); // ✍️ Laci Writing
           section.classList.add("active");
       // Pastikan bar atas (butang ← back) sentiasa nampak: reset skrol bekas utama.
       // scrollIntoView / fokus input boleh tertolak bekas .card (overflow:hidden) → pengguna tak boleh skrol balik.
@@ -12126,6 +12171,170 @@ btnAddLaci.addEventListener("click", async () => {
       await addDoc(lxCol('drawer'), { title: '~', items: [{ ayat: '', imageUrl: '' }], notes: '', repeatCount: 0, topicId: lx.topicId, createdAt: Date.now() });
       showToast('✅ Laci ditambah di bahagian bawah sekali');
     }));
+
+    // ══════════ ✍️ LACI WRITING (17 Nov) — topik → soalan → karangan (English sahaja, tiada terjemahan) ══════════
+    // users/{uid}/writing_topik/{id} { name, createdAt }
+    // users/{uid}/writing_soalan/{id} { topikId, task: 1 | 2, jenis, soalan, karangan, nota: [{ n, f: [] }], fakta: [], createdAt, updatedAt }
+    // Kindle: USAHA → LATIHAN WRITING baca satu karangan sekali (giliran topik) → masuk SR (coach/writing_baca)
+    //         PELABUHAN WRITING: karangan dalam SR jadi kapal — dipecah ikut titik (. ! ?) → terjemah setiap ayat → dermaga
+    const LW_JENIS = { 'discursive': 'Discursive', 'argumentative': 'Argumentative', 'problem-solution': 'Problem-solution' };
+    const lw = { topik: [], soalan: [], unsub: null, topikId: null, soalanId: null, tangguh: {} };
+    const lwCol = n => collection(db, 'users', currentUser.uid, n);
+    const lwDoc = (n, id) => doc(db, 'users', currentUser.uid, n, id);
+    const lwSec = id => document.getElementById(id);
+    const lwSusun = (a, b) => ((a.createdAt || 0) - (b.createdAt || 0)) || (a.id < b.id ? -1 : 1);
+    const lwKira = t => (String(t || '').match(/[A-Za-z0-9À-ɏ]+(['’-][A-Za-z0-9]+)*/g) || []).length;
+    const lwMin = task => task === 2 ? 250 : 100;
+    // Pecah ayat SAMA seperti Kindle (Dr. / e.g. / i.e. / 3.5 tidak dipecah)
+    function lwAyat(teks) {
+      const Q = '\u0001', out = [];
+      String(teks || '').split(/\r?\n/).forEach(b => {
+        let s = b.replace(/\s+/g, ' ').trim();
+        if (!s) return;
+        s = s.replace(/\b(Dr|Mr|Mrs|Ms|Prof|St|No|vs|etc|Jr|Sr)\./g, '$1' + Q).replace(/\b(e)\.(g)\./gi, '$1' + Q + '$2' + Q).replace(/\b(i)\.(e)\./gi, '$1' + Q + '$2' + Q).replace(/(\d)\.(\d)/g, '$1' + Q + '$2');
+        (s.match(/[^.!?]+(?:[.!?]+["'’”)\]]*|$)/g) || [s]).forEach(m => { const a = m.split(Q).join('.').trim(); if (a) out.push(a); });
+      });
+      return out;
+    }
+    function lwLanggan() {
+      if (lw.unsub || !currentUser) return;
+      lw.unsub = [
+        onSnapshot(lwCol('writing_topik'), snap => { lw.topik = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(lwSusun); lwSegar(); }, e => console.warn('writing_topik:', e)),
+        onSnapshot(lwCol('writing_soalan'), snap => { lw.soalan = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(lwSusun); lwSegar(); }, e => console.warn('writing_soalan:', e))
+      ];
+    }
+    // Lukis semula page yang terbuka — ditangguh jika sedang menaip (teks tak hilang)
+    function lwSegar() {
+      [['section-lw-topik', lwRenderTopik], ['section-lw-soalan', lwRenderSoalan], ['section-lw-karangan', lwRenderKarangan]].forEach(([id, fn]) => {
+        const sec = lwSec(id);
+        if (!sec || !sec.classList.contains('active')) return;
+        if (lxSedangTaip(sec)) { lw.tangguh[id] = fn; return; }
+        fn();
+      });
+    }
+    document.querySelectorAll('.section-lw').forEach(sec => sec.addEventListener('focusout', () => {
+      setTimeout(() => {
+        const fn = lw.tangguh[sec.id];
+        if (!fn || lxSedangTaip(sec)) return;
+        delete lw.tangguh[sec.id];
+        if (sec.classList.contains('active')) fn();
+      }, 300);
+    }));
+    function lwRenderTopik() {
+      const box = lwSec('lw-topik-list'); if (!box) return;
+      box.innerHTML = '';
+      if (!lw.topik.length) { box.innerHTML = '<div class="empty-state">Belum ada topik. Tekan Tambah Topik (cth: Environment).</div>'; return; }
+      lw.topik.forEach((t, i) => {
+        const sq = lw.soalan.filter(s => s.topikId === t.id), siap = sq.filter(s => lwKira(s.karangan) > 0).length;
+        const div = document.createElement('div');
+        div.className = 'drawer-card';
+        div.style.cssText = 'display:flex;gap:8px;align-items:center;';
+        div.innerHTML = `<span style="color:var(--subtext);font-size:0.8rem;">${i + 1}.</span>
+          <div style="flex:1;min-width:0;"><input class="lw-nama" value="${lxEsc(t.name)}" placeholder="Nama topik (cth: Environment)" style="width:100%;border:none;background:transparent;color:white;border-bottom:1px solid var(--border-mid);outline:none;padding:4px;font-size:1rem;">
+          <div style="font-size:0.72rem;color:var(--subtext);margin-top:3px;">${sq.length} soalan · ${siap} karangan ditulis</div></div>
+          <button class="btn btn-secondary btn-sm lw-buka">Buka</button>
+          <button class="btn btn-secondary btn-sm lw-padam" style="color:var(--danger);border-color:var(--danger);">X</button>`;
+        div.querySelector('.lw-nama').addEventListener('change', lxCuba(e => updateDoc(lwDoc('writing_topik', t.id), { name: e.target.value })));
+        div.querySelector('.lw-buka').addEventListener('click', () => { lw.topikId = t.id; showSection(lwSec('section-lw-soalan')); lwRenderSoalan(); });
+        div.querySelector('.lw-padam').addEventListener('click', lxCuba(async () => {
+          if (!confirm('Padam topik ini beserta ' + sq.length + ' soalan & karangan di dalamnya?\n\nTIDAK boleh dipulih.')) return;
+          const b = writeBatch(db);
+          sq.forEach(s => b.delete(lwDoc('writing_soalan', s.id)));
+          b.delete(lwDoc('writing_topik', t.id));
+          await b.commit();
+          showToast('🗑️ Topik dipadam.');
+        }));
+        box.appendChild(div);
+      });
+    }
+    function lwRenderSoalan() {
+      const box = lwSec('lw-soalan-list'); if (!box) return;
+      const t = lw.topik.find(x => x.id === lw.topikId);
+      lwSec('lw-nama-topik').textContent = t ? (t.name || '(tanpa nama)') : '';
+      box.innerHTML = '';
+      const sq = lw.soalan.filter(s => s.topikId === lw.topikId);
+      if (!sq.length) { box.innerHTML = '<div class="empty-state">Belum ada soalan. Tekan + Soalan Task 1 / Task 2.</div>'; return; }
+      sq.forEach((s, i) => {
+        const n = lwKira(s.karangan), min = lwMin(s.task);
+        const div = document.createElement('div');
+        div.className = 'drawer-card';
+        div.innerHTML = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+            <strong style="color:#34d399;">${i + 1}. TASK ${s.task === 2 ? 2 : 1}</strong>
+            ${s.task === 2 ? `<select class="lw-jenis" style="background:rgba(0,0,0,0.3);color:white;border:1px solid var(--border-mid);border-radius:6px;padding:3px;">
+              <option value="">— jenis esei —</option>${Object.keys(LW_JENIS).map(k => `<option value="${k}"${s.jenis === k ? ' selected' : ''}>${LW_JENIS[k]}</option>`).join('')}</select>` : '<span style="font-size:0.75rem;color:var(--subtext);">E-mel / surat</span>'}
+            <span style="flex:1;"></span>
+            <button class="btn btn-secondary btn-sm lw-padam" style="color:var(--danger);border-color:var(--danger);">X</button></div>
+          <textarea class="lw-soalan" rows="3" placeholder="Tulis soalan / situasi..." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;font-size:0.9rem;resize:vertical;">${lxEsc(s.soalan)}</textarea>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:6px;">
+            <span style="flex:1;font-size:0.78rem;color:${n >= min ? '#34d399' : 'var(--subtext)'};">${n ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : 'Karangan belum ditulis'}</span>
+            <button class="btn btn-sm lw-tulis">${n ? 'Baiki karangan' : 'Tulis karangan'}</button></div>`;
+        div.querySelector('.lw-soalan').addEventListener('change', lxCuba(e => updateDoc(lwDoc('writing_soalan', s.id), { soalan: e.target.value, updatedAt: Date.now() })));
+        const j = div.querySelector('.lw-jenis');
+        if (j) j.addEventListener('change', lxCuba(e => updateDoc(lwDoc('writing_soalan', s.id), { jenis: e.target.value, updatedAt: Date.now() })));
+        div.querySelector('.lw-tulis').addEventListener('click', () => { lw.soalanId = s.id; showSection(lwSec('section-lw-karangan')); lwRenderKarangan(); });
+        div.querySelector('.lw-padam').addEventListener('click', lxCuba(async () => {
+          if (!confirm('Padam soalan ini beserta karangannya?\n\nTIDAK boleh dipulih.')) return;
+          await deleteDoc(lwDoc('writing_soalan', s.id));
+          showToast('🗑️ Soalan dipadam.');
+        }));
+        box.appendChild(div);
+      });
+    }
+    function lwRenderKarangan() {
+      const box = lwSec('lw-karangan-isi'); if (!box) return;
+      const s = lw.soalan.find(x => x.id === lw.soalanId);
+      if (!s) { box.innerHTML = '<div class="empty-state">Soalan tidak dijumpai.</div>'; return; }
+      const min = lwMin(s.task);
+      lwSec('lw-nama-task').textContent = 'TASK ' + (s.task === 2 ? '2' + (s.jenis ? ' · ' + (LW_JENIS[s.jenis] || s.jenis) : '') : '1 · e-mel / surat');
+      let bantu = '';
+      if ((s.nota || []).length) bantu = s.nota.map(x => `<div>• <b>${lxEsc(x.n)}</b> → ${lxEsc((x.f || []).join('; '))}</div>`).join('');
+      else if ((s.fakta || []).length) bantu = s.fakta.map(x => `<div>• ${lxEsc(x)}</div>`).join('');
+      box.innerHTML = `<div class="drawer-card" style="font-size:0.9rem;white-space:pre-wrap;">${lxEsc(s.soalan || '(soalan kosong)')}</div>
+        ${bantu ? `<details class="drawer-card" style="font-size:0.82rem;"><summary style="cursor:pointer;color:#34d399;">Nota / fakta</summary><div style="margin-top:6px;">${bantu}</div></details>` : ''}
+        <textarea id="lw-karangan" rows="16" placeholder="Tulis karangan dalam English. Setiap ayat ditamatkan dengan titik — Kindle akan pecahkan ikut titik." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:8px;font-size:0.95rem;line-height:1.5;resize:vertical;">${lxEsc(s.karangan || '')}</textarea>
+        <div id="lw-kira" style="font-size:0.8rem;margin:6px 0;color:var(--subtext);"></div>
+        <button id="btn-lw-simpan" class="btn btn-sm" style="width:100%;">💾 Simpan karangan</button>`;
+      const ta = lwSec('lw-karangan'), kira = lwSec('lw-kira');
+      const kemas = () => { const n = lwKira(ta.value), a = lwAyat(ta.value).length; kira.textContent = n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') + ' · ' + a + ' ayat'; kira.style.color = n >= min ? '#34d399' : 'var(--subtext)'; };
+      const simpan = lxCuba(async (senyap) => {
+        const teks = ta.value.replace(/\s+$/, '');
+        if (teks === (s.karangan || '')) { if (senyap !== true) showToast('✅ Karangan sudah disimpan.'); return; }
+        await updateDoc(lwDoc('writing_soalan', s.id), { karangan: teks, updatedAt: Date.now() });
+        s.karangan = teks;
+        if (senyap !== true) showToast('✅ Karangan disimpan (' + lwKira(teks) + ' perkataan).');
+      });
+      ta.addEventListener('input', kemas);
+      ta.addEventListener('change', () => simpan(true)); // simpan sendiri bila keluar dari kotak
+      lwSec('btn-lw-simpan').addEventListener('click', () => simpan(false));
+      kemas();
+    }
+    function lwMula() {
+      if (!currentUser) { showToast('Sila log masuk dahulu.'); return; }
+      lw.topikId = null; lw.soalanId = null; lw.tangguh = {};
+      lwLanggan();
+      showSection(lwSec('section-lw-topik'));
+      lwRenderTopik();
+    }
+    lwSec('btn-go-writing')?.addEventListener('click', lwMula);
+    lwSec('btn-lw-back-topik')?.addEventListener('click', () => showSection(sectionTasbih));
+    lwSec('btn-lw-back-soalan')?.addEventListener('click', () => { showSection(lwSec('section-lw-topik')); lwRenderTopik(); });
+    lwSec('btn-lw-back-karangan')?.addEventListener('click', () => {
+      const ta = lwSec('lw-karangan'), s = lw.soalan.find(x => x.id === lw.soalanId);
+      if (ta && s && ta.value.replace(/\s+$/, '') !== (s.karangan || '') && !confirm('Karangan belum disimpan. Keluar tanpa simpan?')) return;
+      showSection(lwSec('section-lw-soalan')); lwRenderSoalan();
+    });
+    lwSec('btn-lw-add-topik')?.addEventListener('click', lxCuba(async () => {
+      await addDoc(lwCol('writing_topik'), { name: '', createdAt: Date.now() });
+      showToast('✅ Topik ditambah di bawah sekali');
+    }));
+    const lwTambahSoalan = task => lxCuba(async () => {
+      if (!lw.topikId) return;
+      const now = Date.now();
+      await addDoc(lwCol('writing_soalan'), { topikId: lw.topikId, task, jenis: '', soalan: '', karangan: '', nota: [], fakta: [], createdAt: now, updatedAt: now });
+      showToast('✅ Soalan Task ' + task + ' ditambah di bawah sekali');
+    });
+    lwSec('btn-lw-add-t1')?.addEventListener('click', lwTambahSoalan(1));
+    lwSec('btn-lw-add-t2')?.addEventListener('click', lwTambahSoalan(2));
 
     // Tambah Data Rutin
     btnAddRoutineTime.addEventListener("click", () => {
