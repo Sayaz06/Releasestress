@@ -2551,6 +2551,7 @@ They immortalized the hero in a statue.
               <button id="btn-go-reasoning" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;">🧠 Laci Reasoning</button>
               <button id="btn-go-presenting" class="btn btn-secondary btn-sm" style="border-color:#f472b6;">🎤 Laci Presenting</button>
               <button id="btn-go-writing" class="btn btn-secondary btn-sm" style="border-color:#34d399;">✍️ Laci Writing</button>
+              <button id="btn-go-dre" class="btn btn-secondary btn-sm" style="border-color:#fbbf24;">🔁 Daily Repetition</button>
               <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
               <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Wirid</button>
               <button id="btn-go-quran-times" class="btn btn-secondary btn-sm" style="border-color:#10b981;">📖 Laci Quran</button>
@@ -2817,6 +2818,23 @@ They immortalized the hero in a statue.
         </div>
         <div id="lw-karangan-isi" style="padding:10px;"></div>
       </section>
+
+      <!-- ══ 🔁 DAILY REPETITION — TAMBAH NOTA (17 Nov, dipindah dari Kindle) ══ -->
+      <section id="section-dre" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-dre-back" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Daily Repetition</div>
+            <div class="topbar-sub" style="color:#fbbf24;font-weight:bold;">🔁 Tambah nota (Kindle: ARKED)</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;" class="mt-8">
+          <button id="btn-dre-pawagam" class="btn btn-sm" style="flex:1;">🎧 Listening</button>
+          <button id="btn-dre-tulis" class="btn btn-secondary btn-sm" style="flex:1;">✍️ Writing</button>
+        </div>
+        <div id="dre-isi" style="padding:10px;"></div>
+      </section>
+
 
 
       <section id="section-subjects" class="section">
@@ -12335,6 +12353,139 @@ btnAddLaci.addEventListener("click", async () => {
     });
     lwSec('btn-lw-add-t1')?.addEventListener('click', lwTambahSoalan(1));
     lwSec('btn-lw-add-t2')?.addEventListener('click', lwTambahSoalan(2));
+
+    // ══════════ 🔁 DAILY REPETITION — TAMBAH NOTA (17 Nov, dipindah dari Kindle) ══════════
+    // Senarai nota semasa diterbitkan oleh Kindle: coach/dre_senarai { sets: [{ id, r, t, g: [{ id, t, ms, f }] }], versi: { pawagam, tulis } }
+    // Nota baru disimpan dalam coach/pawagam_bank { tambah: [entri], versi, versiTulis } — format SAMA dengan JANA PUKAL Kindle.
+    // Item = 'frasa' ATAU { w: perkataan, m: maksud }.
+    const dre = { rumah: 'pawagam', data: null, unsub: null, mesej: '', preset: '' };
+    const dreRef = n => doc(db, 'users', currentUser.uid, 'coach', n);
+    const dreHari = () => { const d = new Date(); if (d.getHours() < 4) d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+    const dreItem = x => (x && typeof x === 'object') ? [x.w, x.m || ''] : x;
+    const dreKunci = x => JSON.stringify(dreItem(x));
+    const dreGrp = (sets, id) => { for (const S of sets) for (const g of S.g) if (g.id === id) return g; return null; };
+    function dreVersi() { const v = (dre.data && dre.data.versi) || {}; return v[dre.rumah] || '-'; }
+    function drePreset(syor) {
+      const L = [];
+      (dre.data.sets || []).filter(S => S.r === dre.rumah).forEach(S => {
+        L.push('SET "' + S.id + '" — ' + S.t + ':');
+        S.g.forEach(g => L.push('  · ' + g.id + ' — ' + g.t + ': ' + g.f.map(x => typeof x === 'string' ? x : x.w + ' = ' + (x.m || '')).join(' / ')));
+      });
+      return [
+        'TUGAS: Beri nota BARU untuk DAILY REPETITION EXERCISE (' + (dre.rumah === 'tulis' ? 'MUET Writing Task 1 — useful expressions untuk membalas e-mel / surat' : 'MUET Listening — useful expressions / linking words') + ') dalam app saya, sebanyak yang boleh, yang BELUM ADA dalam senarai di bawah.',
+        syor ? '\nPERKARA DISYORKAN: "' + syor + '"\n- MULAKAN dengan SEBANYAK MUNGKIN nota yang berkaitan atau hampir dengan perkara ini.\n- SELEPAS itu, beri juga nota lain seperti biasa.' : '',
+        '',
+        'FORMAT WAJIB (saya tampal terus ke butang JANA PUKAL dalam app — ikut tepat, satu baris satu entri):',
+        'G: idSet | idKumpulanBaru | Tajuk English | Maksud Melayu | frasa 1 | frasa 2 | frasa 3 | frasa 4',
+        'F: idKumpulanSediaAda | frasa baru | frasa baru',
+        '',
+        'PERATURAN:',
+        '1. G = kumpulan BARU dalam set sedia ada (sekurang-kurangnya 4 item). F = tambah item ke HUJUNG kumpulan sedia ada.',
+        '2. idSet dan idKumpulan sedia ada mesti DITULIS TEPAT seperti dalam senarai. idKumpulanBaru unik: huruf kecil + sengkang.',
+        '3. Item = frasa English (cth: In my opinion, ...) ATAU "perkataan = maksud Melayu". Satu jenis sahaja dalam satu kumpulan — ikut jenis kumpulan itu.',
+        '4. JANGAN buat set baru. JANGAN ulang item yang sudah ada. Jangan guna aksara | dalam ayat. Tiada emoji, tiada nombor di depan baris.',
+        '5. Output: SATU codebox teks biasa sahaja, tanpa penerangan.',
+        '',
+        'SENARAI NOTA SEMASA:'
+      ].concat(L).join('\n');
+    }
+    // JANA PUKAL — sama logik dengan Kindle (pnPukal). Pulang { baru, sets, g, f, ulang, salah }
+    function drePukal(teks) {
+      const sets = JSON.parse(JSON.stringify(dre.data.sets || [])), hari = dreHari(), baru = [], r = { g: 0, f: 0, ulang: 0, salah: 0 };
+      const item = x => { const p = x.split('='); if (p.length > 1) { const w = p.shift().trim(), m = p.join('=').trim(); return w ? { w, m } : null; } return x || null; };
+      String(teks || '').split(/\r?\n/).forEach(baris => {
+        const gr = baris.replace(/^\s*([-*•>]|\d+[.)])\s*/, '').replace(/\*\*/g, '').trim();
+        if (!gr || /^```/.test(gr)) return;
+        const m = gr.match(/^([GF])\s*:\s*(.+)$/i);
+        if (!m) { r.salah++; return; }
+        const bh = m[2].split('|').map(x => x.trim());
+        const tambahItem = (gx, items) => {
+          const ada = new Set(gx.f.map(dreKunci)), bf = [];
+          items.forEach(it => { if (it && !ada.has(dreKunci(it))) { bf.push(it); ada.add(dreKunci(it)); } });
+          if (!bf.length) { r.ulang++; return; }
+          gx.f = gx.f.concat(bf); baru.push({ tarikh: hari, grp: gx.id, f: bf }); r.f++;
+        };
+        if (m[1].toUpperCase() === 'G') {
+          const sid = bh.shift(), gid = (bh.shift() || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, ''), t = bh.shift() || '', ms = bh.shift() || '';
+          const items = bh.map(item).filter(Boolean), S = sets.find(x => x.id === sid);
+          if (!S || S.r !== dre.rumah || !gid || !t || !items.length) { r.salah++; return; }
+          const gx = dreGrp(sets, gid);
+          if (gx) { tambahItem(gx, items); return; } // kumpulan sudah ada → tambah item
+          S.g.push({ id: gid, t, ms, f: items }); baru.push({ tarikh: hari, set: sid, g: { id: gid, t, ms, f: items } }); r.g++;
+        } else {
+          const gx = dreGrp(sets, bh.shift());
+          if (!gx) { r.salah++; return; }
+          tambahItem(gx, bh.map(item).filter(Boolean));
+        }
+      });
+      return { ...r, baru, sets };
+    }
+    function dreLukis() {
+      const box = lwSec('dre-isi'); if (!box) return;
+      lwSec('btn-dre-pawagam').className = 'btn btn-sm' + (dre.rumah === 'pawagam' ? '' : ' btn-secondary');
+      lwSec('btn-dre-tulis').className = 'btn btn-sm' + (dre.rumah === 'tulis' ? '' : ' btn-secondary');
+      if (!dre.data) { box.innerHTML = '<div class="empty-state">Senarai nota belum ada. Buka <b>ARKED → LISTENING / WRITING</b> di Kindle sekali dulu — Kindle akan hantar senarai nota ke sini.</div>'; return; }
+      const v = dreVersi(), perlu = v === '-' || v < dreHari(), sets = (dre.data.sets || []).filter(S => S.r === dre.rumah);
+      const bil = sets.reduce((n, S) => n + S.g.length, 0);
+      box.innerHTML = `
+        <div class="drawer-card" style="${perlu ? 'border-color:#fbbf24;' : ''}">
+          <div style="font-weight:bold;color:${perlu ? '#fbbf24' : '#34d399'};">${perlu ? '📣 ARAHAN COACH: TAMBAH NOTA BARU HARI INI' : '✅ Nota hari ini sudah ditambah'}</div>
+          <div style="font-size:0.8rem;color:var(--subtext);margin-top:4px;">${dre.rumah === 'tulis' ? 'Writing (useful expressions & cohesive devices)' : 'Listening (useful expressions / linking words)'} · ${bil} kumpulan · nota terakhir ditambah: ${v}</div>
+          <div style="font-size:0.85rem;margin-top:6px;">1. Tekan <b>SALIN PRESET</b> → tampal ke AI.<br>2. Salin jawapan AI.<br>3. Tampal dalam kotak <b>JANA PUKAL</b> → <b>SIMPAN</b>.<br>Nota lama kekal — senarai bertambah setiap hari.</div>
+        </div>
+        <div class="drawer-card">
+          <div style="font-size:0.8rem;color:var(--subtext);">Ada perkara yang disyorkan? (pilihan — cth: expressions for giving advice)</div>
+          <input id="dre-syor" placeholder="Perkara disyorkan (pilihan)" style="width:100%;box-sizing:border-box;margin-top:4px;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;">
+          <button id="btn-dre-preset" class="btn btn-sm mt-8" style="width:100%;">📋 SALIN PRESET</button>
+          ${dre.preset ? `<textarea readonly rows="8" style="width:100%;box-sizing:border-box;margin-top:6px;font-size:0.75rem;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;">${lxEsc(dre.preset)}</textarea>` : ''}
+        </div>
+        <div class="drawer-card">
+          <div style="font-weight:bold;">JANA PUKAL</div>
+          <textarea id="dre-pukal" rows="8" placeholder="G: idSet | id-kumpulan | Tajuk | Maksud | frasa | frasa&#10;F: id-kumpulan | frasa baru" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;font-size:0.85rem;"></textarea>
+          <button id="btn-dre-simpan" class="btn btn-sm mt-8" style="width:100%;">💾 SIMPAN</button>
+          ${dre.mesej ? `<div style="font-size:0.85rem;margin-top:6px;color:#fbbf24;">${lxEsc(dre.mesej)}</div>` : ''}
+        </div>
+        <details class="drawer-card"><summary style="cursor:pointer;color:#34d399;">Senarai nota semasa (${bil} kumpulan)</summary>
+          <div style="font-size:0.8rem;margin-top:6px;">${sets.map(S => `<div style="font-weight:bold;margin-top:6px;">${lxEsc(S.t)}</div>` + S.g.map(g => `<div style="margin:3px 0 0 8px;"><b>${lxEsc(g.t)}</b> — ${lxEsc(g.f.map(x => typeof x === 'string' ? x : x.w + ' = ' + (x.m || '')).join(' / '))}</div>`).join('')).join('')}</div>
+        </details>`;
+      lwSec('btn-dre-preset').addEventListener('click', async () => {
+        const teks = drePreset((lwSec('dre-syor').value || '').trim());
+        try { await navigator.clipboard.writeText(teks); dre.preset = ''; dre.mesej = ''; showToast('📋 Preset disalin. Tampal ke AI.'); }
+        catch (e) { dre.preset = teks; showToast('Tekan lama teks preset → Pilih semua → Salin.'); }
+        dreLukis();
+      });
+      lwSec('btn-dre-simpan').addEventListener('click', lxCuba(async () => {
+        const r = drePukal(lwSec('dre-pukal').value);
+        if (!r.g && !r.f) { dre.mesej = 'Tiada nota baru dijumpai.' + (r.ulang ? ' ' + r.ulang + ' baris sudah ada.' : '') + (r.salah ? ' ' + r.salah + ' baris tidak ikut format.' : ''); dreLukis(); return; }
+        const hari = dreHari(), rumah = dre.rumah;
+        await runTransaction(db, async tx => {
+          const s = await tx.get(dreRef('pawagam_bank'));
+          const d = s.exists() ? s.data() : {};
+          const up = { ...d, tambah: (d.tambah || []).concat(r.baru) };
+          if (rumah === 'tulis') up.versiTulis = hari; else up.versi = hari;
+          tx.set(dreRef('pawagam_bank'), up);
+        });
+        await setDoc(dreRef('dre_senarai'), { sets: r.sets, versi: { ...(dre.data.versi || {}), [rumah]: hari }, kunci: 'phone', at: Date.now() });
+        dre.mesej = '✅ JANA PUKAL: ' + r.g + ' kumpulan baru, ' + r.f + ' tambahan item' + (r.ulang ? ' · ' + r.ulang + ' sudah ada (diabaikan)' : '') + (r.salah ? ' · ' + r.salah + ' baris salah format' : '') + '. Kindle: ARKED.';
+        showToast('✅ Nota disimpan.');
+      }));
+    }
+    function dreMula() {
+      if (!currentUser) { showToast('Sila log masuk dahulu.'); return; }
+      dre.mesej = ''; dre.preset = '';
+      if (!dre.unsub) dre.unsub = onSnapshot(dreRef('dre_senarai'), s => {
+        dre.data = s.exists() ? s.data() : null;
+        const sec = lwSec('section-dre');
+        if (sec && sec.classList.contains('active') && !lxSedangTaip(sec)) dreLukis();
+      }, e => console.warn('dre_senarai:', e));
+      showSection(lwSec('section-dre'));
+      dreLukis();
+    }
+    lwSec('btn-go-dre')?.addEventListener('click', dreMula);
+    lwSec('btn-dre-back')?.addEventListener('click', () => showSection(sectionTasbih));
+    lwSec('btn-dre-pawagam')?.addEventListener('click', () => { dre.rumah = 'pawagam'; dre.mesej = ''; dre.preset = ''; dreLukis(); });
+    lwSec('btn-dre-tulis')?.addEventListener('click', () => { dre.rumah = 'tulis'; dre.mesej = ''; dre.preset = ''; dreLukis(); });
+
 
     // Tambah Data Rutin
     btnAddRoutineTime.addEventListener("click", () => {
