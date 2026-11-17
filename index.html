@@ -2556,6 +2556,7 @@ They immortalized the hero in a statue.
               <button id="btn-go-reasoning" class="btn btn-secondary btn-sm" style="border-color:#a78bfa;">🧠 Laci Reasoning</button>
               <button id="btn-go-presenting" class="btn btn-secondary btn-sm" style="border-color:#f472b6;">🎤 Laci Presenting</button>
               <button id="btn-go-writing" class="btn btn-secondary btn-sm" style="border-color:#34d399;">✍️ Laci Writing</button>
+              <button id="btn-go-speaking" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;">🗣️ Laci Speaking</button>
               <button id="btn-go-dre" class="btn btn-secondary btn-sm" style="border-color:#fbbf24;">🔁 Daily Repetition</button>
               <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
               <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Wirid</button>
@@ -2822,6 +2823,44 @@ They immortalized the hero in a statue.
           </div>
         </div>
         <div id="lw-karangan-isi" style="padding:10px;"></div>
+      </section>
+
+      <!-- ══ 🗣️ LACI SPEAKING (18 Nov) — topik besar → soalan (P1 / P2) → HURAIAN ditulis di sini. Kindle: PENTAS baca huraian ikut SR ══ -->
+      <section id="section-ls-tema" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-ls-back-tema" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Topik Speaking</div>
+            <div class="topbar-sub" style="color:#38bdf8;font-weight:bold;">🗣️ Laci Speaking</div>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--subtext);text-align:center;margin:6px 0;">AI beri soalan &amp; isi · anda tulis HURAIAN sendiri. Kindle: Pentas baca huraian ikut SR.</div>
+        <div id="ls-ai" style="padding:0 10px;"></div>
+        <div class="list mt-8" id="ls-tema-list" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-ls-soalan" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-ls-back-soalan" class="btn btn-secondary btn-sm">← Topik</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Soalan</div>
+            <div class="topbar-sub" style="color:#38bdf8;font-weight:bold;">🗣️ Laci Speaking</div>
+            <div class="topbar-sub" id="ls-nama-tema"></div>
+          </div>
+        </div>
+        <div id="ls-soalan-isi" style="padding:10px;"></div>
+      </section>
+
+      <section id="section-ls-huraian" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-ls-back-huraian" class="btn btn-secondary btn-sm">← Soalan</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Huraian</div>
+            <div class="topbar-sub" style="color:#38bdf8;font-weight:bold;">🗣️ Laci Speaking</div>
+            <div class="topbar-sub" id="ls-nama-part"></div>
+          </div>
+        </div>
+        <div id="ls-huraian-isi" style="padding:10px;"></div>
       </section>
 
       <!-- ══ 🔁 DAILY REPETITION — TAMBAH NOTA (17 Nov, dipindah dari Kindle) ══ -->
@@ -12171,8 +12210,9 @@ btnAddLaci.addEventListener("click", async () => {
     }
 
     // ── Butang & navigasi ──
-    lxSec('btn-go-reasoning')?.addEventListener('click', () => lxMula('reasoning'));
-    lxSec('btn-go-presenting')?.addEventListener('click', () => lxMula('presenting'));
+    // 17 Nov: Laci Reasoning / Presenting kini cara WRITING (topik → soalan → karangan) — lihat lwMula
+    lxSec('btn-go-reasoning')?.addEventListener('click', () => lwMula('reasoning'));
+    lxSec('btn-go-presenting')?.addEventListener('click', () => lwMula('presenting'));
     lxSec('btn-lx-back-sem')?.addEventListener('click', () => showSection(sectionTasbih));
     lxSec('btn-lx-back-subjects')?.addEventListener('click', () => { showSection(lxSec('section-lx-sem')); lxRenderSem(); });
     lxSec('btn-lx-back-topics')?.addEventListener('click', () => { showSection(lxSec('section-lx-subjects')); lxRenderSubjects(); });
@@ -12201,7 +12241,15 @@ btnAddLaci.addEventListener("click", async () => {
     // Kindle: USAHA → LATIHAN WRITING baca satu karangan sekali (giliran topik) → masuk SR (coach/writing_baca)
     //         PELABUHAN WRITING: karangan dalam SR jadi kapal — dipecah ikut titik (. ! ?) → terjemah setiap ayat → dermaga
     const LW_JENIS = { 'discursive': 'Discursive', 'argumentative': 'Argumentative', 'problem-solution': 'Problem-solution' };
-    const lw = { topik: [], soalan: [], unsub: null, topikId: null, soalanId: null, tangguh: {} };
+    // 17 Nov: REASONING & PRESENTING guna page yang SAMA (koleksi sendiri, tiada Task 1/2). Kindle: Pelabuhan Reasoning / Presenting → baca → kapal → DALAM KAPAL → laci
+    const LW_CFG = {
+      writing:    { label: 'Writing',    ikon: '✍️', warna: '#34d399', topik: 'writing_topik',    soalan: 'writing_soalan',    task: true },
+      reasoning:  { label: 'Reasoning',  ikon: '🧠', warna: '#a78bfa', topik: 'reasoning_topik',  soalan: 'reasoning_soalan',  task: false },
+      presenting: { label: 'Presenting', ikon: '🎤', warna: '#f472b6', topik: 'presenting_topik', soalan: 'presenting_soalan', task: false }
+    };
+    const lw = { j: 'writing', unsubJ: null, topik: [], soalan: [], unsub: null, topikId: null, soalanId: null, tangguh: {} };
+    const lwC = () => LW_CFG[lw.j] || LW_CFG.writing;
+    const lwK = n => lwC()[n]; // 'topik' / 'soalan' → nama koleksi jenis semasa
     const lwCol = n => collection(db, 'users', currentUser.uid, n);
     const lwDoc = (n, id) => doc(db, 'users', currentUser.uid, n, id);
     const lwSec = id => document.getElementById(id);
@@ -12220,10 +12268,13 @@ btnAddLaci.addEventListener("click", async () => {
       return out;
     }
     function lwLanggan() {
-      if (lw.unsub || !currentUser) return;
+      if (!currentUser) return;
+      if (lw.unsub && lw.unsubJ === lw.j) return;
+      if (lw.unsub) { lw.unsub.forEach(u => { try { u(); } catch (e) {} }); lw.unsub = null; }
+      lw.unsubJ = lw.j; lw.topik = []; lw.soalan = [];
       lw.unsub = [
-        onSnapshot(lwCol('writing_topik'), snap => { lw.topik = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(lwSusun); lwSegar(); }, e => console.warn('writing_topik:', e)),
-        onSnapshot(lwCol('writing_soalan'), snap => { lw.soalan = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(lwSusun); lwSegar(); }, e => console.warn('writing_soalan:', e))
+        onSnapshot(lwCol(lwK('topik')), snap => { lw.topik = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(lwSusun); lwSegar(); }, e => console.warn('writing_topik:', e)),
+        onSnapshot(lwCol(lwK('soalan')), snap => { lw.soalan = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(lwSusun); lwSegar(); }, e => console.warn('writing_soalan:', e))
       ];
     }
     // Lukis semula page yang terbuka — ditangguh jika sedang menaip (teks tak hilang)
@@ -12257,13 +12308,13 @@ btnAddLaci.addEventListener("click", async () => {
           <div style="font-size:0.72rem;color:var(--subtext);margin-top:3px;">${sq.length} soalan · ${siap} karangan ditulis</div></div>
           <button class="btn btn-secondary btn-sm lw-buka">Buka</button>
           <button class="btn btn-secondary btn-sm lw-padam" style="color:var(--danger);border-color:var(--danger);">X</button>`;
-        div.querySelector('.lw-nama').addEventListener('change', lxCuba(e => updateDoc(lwDoc('writing_topik', t.id), { name: e.target.value })));
+        div.querySelector('.lw-nama').addEventListener('change', lxCuba(e => updateDoc(lwDoc(lwK('topik'), t.id), { name: e.target.value })));
         div.querySelector('.lw-buka').addEventListener('click', () => { lw.topikId = t.id; showSection(lwSec('section-lw-soalan')); lwRenderSoalan(); });
         div.querySelector('.lw-padam').addEventListener('click', lxCuba(async () => {
           if (!confirm('Padam topik ini beserta ' + sq.length + ' soalan & karangan di dalamnya?\n\nTIDAK boleh dipulih.')) return;
           const b = writeBatch(db);
-          sq.forEach(s => b.delete(lwDoc('writing_soalan', s.id)));
-          b.delete(lwDoc('writing_topik', t.id));
+          sq.forEach(s => b.delete(lwDoc(lwK('soalan'), s.id)));
+          b.delete(lwDoc(lwK('topik'), t.id));
           await b.commit();
           showToast('🗑️ Topik dipadam.');
         }));
@@ -12278,26 +12329,26 @@ btnAddLaci.addEventListener("click", async () => {
       const sq = lw.soalan.filter(s => s.topikId === lw.topikId);
       if (!sq.length) { box.innerHTML = '<div class="empty-state">Belum ada soalan. Tekan + Soalan Task 1 / Task 2.</div>'; return; }
       sq.forEach((s, i) => {
-        const n = lwKira(s.karangan), min = lwMin(s.task);
+        const adaTask = lwC().task, n = lwKira(s.karangan), min = adaTask ? lwMin(s.task) : 1;
         const div = document.createElement('div');
         div.className = 'drawer-card';
         div.innerHTML = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-            <strong style="color:#34d399;">${i + 1}. TASK ${s.task === 2 ? 2 : 1}</strong>
-            ${s.task === 2 ? `<select class="lw-jenis" style="background:rgba(0,0,0,0.3);color:white;border:1px solid var(--border-mid);border-radius:6px;padding:3px;">
+            <strong style="color:${lwC().warna};">${i + 1}. ${adaTask ? 'TASK ' + (s.task === 2 ? 2 : 1) : 'SOALAN'}</strong>
+            ${!adaTask ? '' : s.task === 2 ? `<select class="lw-jenis" style="background:rgba(0,0,0,0.3);color:white;border:1px solid var(--border-mid);border-radius:6px;padding:3px;">
               <option value="">— jenis esei —</option>${Object.keys(LW_JENIS).map(k => `<option value="${k}"${s.jenis === k ? ' selected' : ''}>${LW_JENIS[k]}</option>`).join('')}</select>` : '<span style="font-size:0.75rem;color:var(--subtext);">E-mel / surat</span>'}
             <span style="flex:1;"></span>
             <button class="btn btn-secondary btn-sm lw-padam" style="color:var(--danger);border-color:var(--danger);">X</button></div>
           <textarea class="lw-soalan" rows="3" placeholder="Tulis soalan / situasi..." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;font-size:0.9rem;resize:vertical;">${lxEsc(s.soalan)}</textarea>
           <div style="display:flex;gap:6px;align-items:center;margin-top:6px;">
-            <span style="flex:1;font-size:0.78rem;color:${n >= min ? '#34d399' : 'var(--subtext)'};">${n ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : 'Karangan belum ditulis'}</span>
+            <span style="flex:1;font-size:0.78rem;color:${n >= min ? '#34d399' : 'var(--subtext)'};">${n ? (adaTask ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : n + ' perkataan') : 'Karangan belum ditulis'}</span>
             <button class="btn btn-sm lw-tulis">${n ? 'Baiki karangan' : 'Tulis karangan'}</button></div>`;
-        div.querySelector('.lw-soalan').addEventListener('change', lxCuba(e => updateDoc(lwDoc('writing_soalan', s.id), { soalan: e.target.value, updatedAt: Date.now() })));
+        div.querySelector('.lw-soalan').addEventListener('change', lxCuba(e => updateDoc(lwDoc(lwK('soalan'), s.id), { soalan: e.target.value, updatedAt: Date.now() })));
         const j = div.querySelector('.lw-jenis');
-        if (j) j.addEventListener('change', lxCuba(e => updateDoc(lwDoc('writing_soalan', s.id), { jenis: e.target.value, updatedAt: Date.now() })));
+        if (j) j.addEventListener('change', lxCuba(e => updateDoc(lwDoc(lwK('soalan'), s.id), { jenis: e.target.value, updatedAt: Date.now() })));
         div.querySelector('.lw-tulis').addEventListener('click', () => { lw.soalanId = s.id; showSection(lwSec('section-lw-karangan')); lwRenderKarangan(); });
         div.querySelector('.lw-padam').addEventListener('click', lxCuba(async () => {
           if (!confirm('Padam soalan ini beserta karangannya?\n\nTIDAK boleh dipulih.')) return;
-          await deleteDoc(lwDoc('writing_soalan', s.id));
+          await deleteDoc(lwDoc(lwK('soalan'), s.id));
           showToast('🗑️ Soalan dipadam.');
         }));
         box.appendChild(div);
@@ -12307,8 +12358,8 @@ btnAddLaci.addEventListener("click", async () => {
       const box = lwSec('lw-karangan-isi'); if (!box) return;
       const s = lw.soalan.find(x => x.id === lw.soalanId);
       if (!s) { box.innerHTML = '<div class="empty-state">Soalan tidak dijumpai.</div>'; return; }
-      const min = lwMin(s.task);
-      lwSec('lw-nama-task').textContent = 'TASK ' + (s.task === 2 ? '2' + (s.jenis ? ' · ' + (LW_JENIS[s.jenis] || s.jenis) : '') : '1 · e-mel / surat');
+      const adaTask = lwC().task, min = adaTask ? lwMin(s.task) : 1;
+      lwSec('lw-nama-task').textContent = adaTask ? 'TASK ' + (s.task === 2 ? '2' + (s.jenis ? ' · ' + (LW_JENIS[s.jenis] || s.jenis) : '') : '1 · e-mel / surat') : lwC().label.toUpperCase();
       let bantu = '';
       if ((s.nota || []).length) bantu = s.nota.map(x => `<div>• <b>${lxEsc(x.n)}</b> → ${lxEsc((x.f || []).join('; '))}</div>`).join('');
       else if ((s.fakta || []).length) bantu = s.fakta.map(x => `<div>• ${lxEsc(x)}</div>`).join('');
@@ -12318,11 +12369,11 @@ btnAddLaci.addEventListener("click", async () => {
         <div id="lw-kira" style="font-size:0.8rem;margin:6px 0;color:var(--subtext);"></div>
         <button id="btn-lw-simpan" class="btn btn-sm" style="width:100%;">💾 Simpan karangan</button>`;
       const ta = lwSec('lw-karangan'), kira = lwSec('lw-kira');
-      const kemas = () => { const n = lwKira(ta.value), a = lwAyat(ta.value).length; kira.textContent = n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') + ' · ' + a + ' ayat'; kira.style.color = n >= min ? '#34d399' : 'var(--subtext)'; };
+      const kemas = () => { const n = lwKira(ta.value), a = lwAyat(ta.value).length; kira.textContent = (adaTask ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : n + ' perkataan') + ' · ' + a + ' ayat'; kira.style.color = n >= min ? '#34d399' : 'var(--subtext)'; };
       const simpan = lxCuba(async (senyap) => {
         const teks = ta.value.replace(/\s+$/, '');
         if (teks === (s.karangan || '')) { if (senyap !== true) showToast('✅ Karangan sudah disimpan.'); return; }
-        await updateDoc(lwDoc('writing_soalan', s.id), { karangan: teks, updatedAt: Date.now() });
+        await updateDoc(lwDoc(lwK('soalan'), s.id), { karangan: teks, updatedAt: Date.now() });
         s.karangan = teks;
         if (senyap !== true) showToast('✅ Karangan disimpan (' + lwKira(teks) + ' perkataan).');
       });
@@ -12331,14 +12382,29 @@ btnAddLaci.addEventListener("click", async () => {
       lwSec('btn-lw-simpan').addEventListener('click', () => simpan(false));
       kemas();
     }
-    function lwMula() {
+    // Butang + Soalan (Reasoning / Presenting — tiada Task 1 / 2)
+    (() => {
+      const t2 = lwSec('btn-lw-add-t2'); if (!t2 || lwSec('btn-lw-add-s')) return;
+      const b = document.createElement('button');
+      b.id = 'btn-lw-add-s'; b.className = 'btn btn-sm'; b.style.cssText = 'flex:1;display:none;'; b.textContent = '+ Soalan';
+      t2.parentNode.appendChild(b);
+    })();
+    function lwMula(j) {
       if (!currentUser) { showToast('Sila log masuk dahulu.'); return; }
+      lw.j = LW_CFG[j] ? j : 'writing';
+      const c = lwC();
+      // Label page ikut jenis (Writing / Reasoning / Presenting)
+      document.querySelectorAll('#section-lw-topik .topbar-sub, #section-lw-soalan .topbar-sub, #section-lw-karangan .topbar-sub').forEach(e => { if (!e.id) { e.textContent = c.ikon + ' Laci ' + c.label; e.style.color = c.warna; } });
+      lwAi.buka = ''; lwAi.mesej = ''; lwAiLukis(); // SALIN PRESET / JANA PUKAL — Laci Writing sahaja
+      const tt = document.querySelector('#section-lw-topik .topbar-title'); if (tt) tt.textContent = 'Topik ' + c.label;
+      ['btn-lw-add-t1', 'btn-lw-add-t2'].forEach(id => { const b = lwSec(id); if (b) b.style.display = c.task ? '' : 'none'; });
+      const bs = lwSec('btn-lw-add-s'); if (bs) bs.style.display = c.task ? 'none' : '';
       lw.topikId = null; lw.soalanId = null; lw.tangguh = {};
       lwLanggan();
       showSection(lwSec('section-lw-topik'));
       lwRenderTopik();
     }
-    lwSec('btn-go-writing')?.addEventListener('click', lwMula);
+    lwSec('btn-go-writing')?.addEventListener('click', () => lwMula('writing'));
     lwSec('btn-lw-back-topik')?.addEventListener('click', () => showSection(sectionTasbih));
     lwSec('btn-lw-back-soalan')?.addEventListener('click', () => { showSection(lwSec('section-lw-topik')); lwRenderTopik(); });
     lwSec('btn-lw-back-karangan')?.addEventListener('click', () => {
@@ -12347,17 +12413,368 @@ btnAddLaci.addEventListener("click", async () => {
       showSection(lwSec('section-lw-soalan')); lwRenderSoalan();
     });
     lwSec('btn-lw-add-topik')?.addEventListener('click', lxCuba(async () => {
-      await addDoc(lwCol('writing_topik'), { name: '', createdAt: Date.now() });
+      await addDoc(lwCol(lwK('topik')), { name: '', createdAt: Date.now() });
       showToast('✅ Topik ditambah di bawah sekali');
     }));
     const lwTambahSoalan = task => lxCuba(async () => {
       if (!lw.topikId) return;
       const now = Date.now();
-      await addDoc(lwCol('writing_soalan'), { topikId: lw.topikId, task, jenis: '', soalan: '', karangan: '', nota: [], fakta: [], createdAt: now, updatedAt: now });
-      showToast('✅ Soalan Task ' + task + ' ditambah di bawah sekali');
+      await addDoc(lwCol(lwK('soalan')), { topikId: lw.topikId, task, jenis: '', soalan: '', karangan: '', nota: [], fakta: [], createdAt: now, updatedAt: now });
+      showToast('✅ Soalan' + (lwC().task ? ' Task ' + task : '') + ' ditambah di bawah sekali');
     });
+    lwSec('btn-lw-add-s')?.addEventListener('click', lwTambahSoalan(1));
     lwSec('btn-lw-add-t1')?.addEventListener('click', lwTambahSoalan(1));
     lwSec('btn-lw-add-t2')?.addEventListener('click', lwTambahSoalan(2));
+
+    // ══════════ ✍️ LACI WRITING — SALIN PRESET + JANA PUKAL (18 Nov, dipindah dari Kindle Dewan Tulis) ══════════
+    // AI beri SOALAN + nota / fakta sahaja (karangan ditulis sendiri). Format sama dengan Kindle lama:
+    //   TOPIK: nama · T1: situasi | nota = fakta; fakta | ... · T2: jenis | soalan | fakta | fakta ...
+    const lwAi = { buka: '', syor: '', mesej: '' };
+    const lwJenisAi = x => {
+      x = String(x || '').toLowerCase().replace(/[^a-z]/g, '');
+      if (x === 'd' || x.indexOf('discurs') === 0) return 'discursive';
+      if (x === 'a' || x.indexOf('argument') === 0) return 'argumentative';
+      if (x === 'p' || x === 'ps' || x.indexOf('problem') === 0) return 'problem-solution';
+      return '';
+    };
+    function lwPreset(syor) {
+      const L = []; let n = 0;
+      lw.topik.forEach(t => {
+        L.push('TOPIK: ' + (t.name || '(tanpa nama)'));
+        lw.soalan.filter(s => s.topikId === t.id && s.soalan).forEach(s => { L.push('T' + (s.task === 2 ? 2 : 1) + ': ' + (s.task === 2 && s.jenis ? s.jenis + ' | ' : '') + s.soalan); n++; });
+      });
+      syor = String(syor || '').trim();
+      return [
+        'TUGAS: Beri SOALAN WRITING MUET (Paper 4) BARU sebanyak yang boleh (sekurang-kurangnya 20) yang BELUM ADA dalam senarai saya di bawah. Boleh juga cadang TOPIK BESAR baru yang sesuai dengan tema MUET.',
+        'PENTING: JANGAN tulis jawapan / karangan — saya tulis sendiri. Beri soalan dan FAKTA SAHAJA (frasa pendek, bukan ayat penuh). Contoh fakta untuk "cara jaga keselamatan elektrik": tutup suis utama seterika selepas guna; jangan sentuh suis dengan tangan basah.',
+        syor ? '\nPERKARA DISYORKAN: "' + syor + '"\n- MULAKAN dengan SEBANYAK MUNGKIN soalan (T1 dan T2) yang berkaitan atau hampir dengan perkara ini. Letak di bawah topik besar yang paling sesuai (atau topik besar baru).\n- SELEPAS itu, beri juga soalan lain yang TIADA kaitan dengan perkara ini seperti biasa (pelbagai topik besar).' : '',
+        '',
+        'FORMAT WAJIB (saya tampal terus ke butang JANA PUKAL dalam app — ikut tepat, satu soalan satu baris):',
+        'TOPIK: nama topik besar',
+        'T1: situasi + e-mel/surat yang perlu dibalas (siapa pengirim, tentang apa, nyatakan E-mel/Surat dan formal/informal) | nota 1 = fakta; fakta | nota 2 = fakta; fakta | nota 3 = fakta; fakta | nota 4 = fakta; fakta',
+        'T2: jenis | soalan (siapa penutur, pernyataan, arahan esei) | fakta | fakta | fakta | fakta | fakta',
+        '',
+        'PERATURAN:',
+        '1. Tulis baris TOPIK: sebelum soalan topik itu. Nama topik sedia ada mesti ditulis TEPAT seperti dalam senarai.',
+        "2. T1 = Task 1 Guided Writing (balas e-mel / surat, sekurang-kurangnya 100 perkataan). Tepat 4 nota ala MUET, cth: Excellent! ... / Describe / Yes, because ... / Tell Lynn / Suggest two places / Certainly, don't worry ... Setiap nota 2-3 fakta dipisah ;",
+        '3. Campur T1 e-mel & surat, formal (kepada pengurus, pengetua, pensyarah) & informal (kepada kawan, keluarga).',
+        '4. T2 = Task 2 Extended Writing (esei, sekurang-kurangnya 250 perkataan). jenis MESTI salah satu: discursive / argumentative / problem-solution. Beri 5-6 fakta; tanda (other side), (counterargument), (problem) atau (solution) jika sesuai.',
+        '5. Campur T1 dan T2, dan ketiga-tiga jenis esei. Jangan ulang / ubah sedikit soalan yang sudah ada. Jangan guna aksara | = ; dalam ayat soalan / fakta. Tiada emoji, tiada nombor di depan baris.',
+        '6. Output: SATU codebox teks biasa sahaja, tanpa penerangan.',
+        '',
+        'SENARAI SAYA (' + lw.topik.length + ' topik, ' + n + ' soalan):'
+      ].concat(L).join('\n');
+    }
+    // JANA PUKAL → topik baru (jika nama belum ada) + soalan baru (karangan kosong). Soalan yang sudah ada diabaikan.
+    async function lwJanaPukal(teks) {
+      const r = { n: 0, t: 0, ulang: 0, salah: 0 }, kunci = t => String(t).toLowerCase().replace(/\s+/g, ' ').trim();
+      const adaS = {}, adaT = {};
+      lw.soalan.forEach(s => { adaS[kunci(s.soalan || '')] = 1; });
+      lw.topik.forEach(t => { adaT[kunci(t.name || '')] = t.id; });
+      const b = writeBatch(db); let now = Date.now(), topikId = '', ops = 0;
+      const topikDari = nama => {
+        const k = kunci(nama);
+        if (adaT[k]) return adaT[k];
+        const ref = doc(lwCol('writing_topik'));
+        b.set(ref, { name: nama, createdAt: now++ }); ops++; r.t++;
+        adaT[k] = ref.id; return ref.id;
+      };
+      String(teks || '').split(/\r?\n/).forEach(baris => {
+        const gr = baris.replace(/^\s*([-*•>]|\d+[.)])\s*/, '').replace(/\*\*/g, '').trim();
+        if (!gr || /^```/.test(gr)) return;
+        let m = gr.match(/^(TOPIK|TOPIC)\s*:\s*(.+)$/i);
+        if (m) { topikId = topikDari(m[2].trim()); return; }
+        m = gr.match(/^T(?:ASK)?\s*([12])\s*:\s*(.+)$/i);
+        if (!m) { r.salah++; return; }
+        const bh = m[2].split('|').map(x => x.trim()), task = +m[1];
+        const it = { task, jenis: '', soalan: '', karangan: '', nota: [], fakta: [] };
+        if (task === 2) {
+          it.jenis = lwJenisAi(bh[0]); if (it.jenis) bh.shift();
+          const q = bh.shift(); if (!q || !it.jenis) { r.salah++; return; }
+          it.soalan = q; it.fakta = bh.filter(Boolean);
+        } else {
+          const q = bh.shift(); if (!q) { r.salah++; return; }
+          it.soalan = q;
+          bh.filter(Boolean).forEach(x => { const ps = x.split('='), nm = ps.shift().trim(); if (nm) it.nota.push({ n: nm, f: ps.join('=').split(';').map(y => y.trim()).filter(Boolean) }); });
+        }
+        if (adaS[kunci(it.soalan)]) { r.ulang++; return; }
+        adaS[kunci(it.soalan)] = 1;
+        const tId = topikId || topikDari('Lain-lain');
+        b.set(doc(lwCol('writing_soalan')), { topikId: tId, ...it, createdAt: now, updatedAt: now++ }); ops++; r.n++;
+      });
+      if (ops) await b.commit();
+      return r;
+    }
+    function lwAiLukis() {
+      const box = lwSec('lw-ai'); if (!box) return;
+      if (lw.j !== 'writing') { box.innerHTML = ''; return; }
+      let h = '<div style="border:1px solid #34d399;border-radius:10px;padding:8px;margin:6px 0;">' +
+        '<div style="font-size:0.8rem;color:var(--subtext);margin-bottom:6px;">Tambah soalan dengan AI: 1) Salin Preset → tampal ke AI · 2) salin jawapan AI · 3) Jana Pukal → tampal → Simpan. AI beri soalan &amp; nota/fakta sahaja — karangan anda tulis sendiri.</div>' +
+        '<div style="display:flex;gap:6px;"><button class="btn btn-sm" data-lwai="preset" style="flex:1;">📋 Salin Preset</button><button class="btn btn-sm" data-lwai="pukal" style="flex:1;">📥 Jana Pukal</button></div>';
+      if (lwAi.buka === 'preset') h += '<div class="mt-8"><input id="lw-ai-syor" type="text" placeholder="Perkara disyorkan (pilihan) — cth: teknologi" value="' + lxEsc(lwAi.syor) + '" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;">' +
+        '<button class="btn btn-sm mt-8" data-lwai="salin" style="width:100%;background:#34d399;color:#000;">Salin Preset</button></div>';
+      if (lwAi.buka === 'pukal') h += '<div class="mt-8"><textarea id="lw-ai-pukal" rows="8" placeholder="TOPIK: Environment&#10;T1: situasi... | nota = fakta; fakta | ...&#10;T2: discursive | soalan... | fakta | fakta" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;"></textarea>' +
+        '<button class="btn btn-sm mt-8" data-lwai="simpan" style="width:100%;background:#34d399;color:#000;">Simpan</button></div>';
+      if (lwAi.mesej) h += '<div style="font-size:0.8rem;margin-top:6px;color:#34d399;">' + lxEsc(lwAi.mesej) + '</div>';
+      box.innerHTML = h + '</div>';
+    }
+    (() => {
+      const btnT = lwSec('btn-lw-add-topik'); if (!btnT || lwSec('lw-ai')) return;
+      const d = document.createElement('div'); d.id = 'lw-ai'; btnT.parentNode.insertBefore(d, btnT);
+      d.addEventListener('click', lxCuba(async e => {
+        const t = e.target.closest('[data-lwai]'); if (!t) return;
+        const a = t.getAttribute('data-lwai');
+        if (a === 'preset' || a === 'pukal') { lwAi.buka = lwAi.buka === a ? '' : a; lwAi.mesej = ''; lwAiLukis(); return; }
+        if (a === 'salin') {
+          lwAi.syor = (lwSec('lw-ai-syor') || {}).value || '';
+          const teks = lwPreset(lwAi.syor);
+          try { await navigator.clipboard.writeText(teks); lwAi.buka = ''; lwAi.mesej = '📋 Preset disalin. Tampal ke AI → salin jawapan AI → Jana Pukal.'; }
+          catch (er) { lwAi.mesej = 'Telefon sekat salin automatik — teks preset dipapar dalam kotak Jana Pukal untuk disalin manual.'; lwAi.buka = 'pukal'; lwAiLukis(); lwSec('lw-ai-pukal').value = teks; return; }
+          lwAiLukis(); return;
+        }
+        if (a === 'simpan') {
+          const r = await lwJanaPukal((lwSec('lw-ai-pukal') || {}).value || '');
+          if (!r.n && !r.t) { showToast('Tiada soalan baru.' + (r.ulang ? ' ' + r.ulang + ' sudah ada.' : '') + (r.salah ? ' ' + r.salah + ' baris salah format.' : ''), 3500); return; }
+          lwAi.buka = ''; lwAi.mesej = '✅ Jana Pukal: ' + r.n + ' soalan baru' + (r.t ? ', ' + r.t + ' topik baru' : '') + (r.ulang ? ' · ' + r.ulang + ' sudah ada' : '') + (r.salah ? ' · ' + r.salah + ' baris salah format' : '');
+          lwAiLukis();
+        }
+      }));
+    })();
+
+    // ══════════ 🗣️ LACI SPEAKING (18 Nov) — dipindah dari Kindle PENTAS: tulis HURAIAN di phone, Kindle baca ikut SR ══════════
+    // Data (SAMA dengan Kindle):
+    //   coach/pentas_asal  { soalan: [...], versi } — soalan asal dalam kod Kindle (diterbitkan oleh Kindle)
+    //   coach/pentas_bank  { soalan: [...], tema: [...], buang: { id | 'tema:x': 1 }, tambah } — soalan sendiri / JANA PUKAL
+    //   pentas_karangan/q-{id} { h: { '0', '1' ... (P1) | 'p0', 'p1' ... (P2) }, at, tarikh }
+    // Soalan: { id, tema, part: 1|2, soalan, pilihan: [], terbaik, isi: [{ p: -1 | indeks pilihan, t }] }
+    const ls = { asal: [], u: null, kar: {}, tema: '', id: '', ai: '', syor: '', mesej: '', baru: 0, dimuat: false };
+    const lsRef = n => doc(db, 'users', currentUser.uid, 'coach', n);
+    const lsKarRef = id => doc(db, 'users', currentUser.uid, 'pentas_karangan', 'q-' + id);
+    const lsHari = () => { const d = new Date(); if (d.getHours() < 4) d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+    async function lsMuat() {
+      const [a, b, k] = await Promise.all([getDoc(lsRef('pentas_asal')), getDoc(lsRef('pentas_bank')), getDocs(collection(db, 'users', currentUser.uid, 'pentas_karangan'))]);
+      ls.asal = (a.exists() && a.data().soalan) || [];
+      const u = b.exists() ? b.data() : {};
+      ls.u = { ...u, soalan: u.soalan || [], tema: u.tema || [], buang: u.buang || {} };
+      ls.kar = {}; k.forEach(d => { ls.kar[d.id] = d.data() || {}; });
+      ls.dimuat = true;
+    }
+    const lsSimpanU = () => setDoc(lsRef('pentas_bank'), ls.u);
+    function lsBank() {
+      const S = {}, L = [], T = [], bg = ls.u.buang || {};
+      ls.asal.concat(ls.u.soalan).forEach((b, i) => {
+        if (!b || !b.id || !b.soalan || S[b.id]) return;
+        const s = { id: b.id, tema: b.tema || 'Lain-lain', part: b.part === 2 ? 2 : 1, soalan: b.soalan, tarikh: b.tarikh || '', pilihan: (b.pilihan || []).slice(), terbaik: b.terbaik || '', isi: (b.isi || []).slice(), milik: i >= ls.asal.length };
+        S[s.id] = s; L.push(s); if (T.indexOf(s.tema) < 0) T.push(s.tema);
+      });
+      (ls.u.tema || []).forEach(t => { if (T.indexOf(t) < 0) T.push(t); });
+      return { S, L: L.filter(s => !bg[s.id] && !bg['tema:' + s.tema]), T: T.filter(t => !bg['tema:' + t]) };
+    }
+    const lsH = id => { const r = ls.kar['q-' + id]; return (r && r.h && typeof r.h === 'object') ? r.h : {}; };
+    const lsKiraH = id => Object.values(lsH(id)).filter(x => String(x || '').trim()).length;
+    const lsSlot = s => s.part === 1 ? s.isi.map((x, i) => ({ k: String(i), tajuk: 'ISI ' + (i + 1), isi: [x.t] })) : s.pilihan.map((p, i) => ({ k: 'p' + i, tajuk: p + (s.terbaik === p ? ' ★' : ''), isi: s.isi.filter(x => x.p === i).map(x => x.t) }));
+    function lsPreset(syor) {
+      const B = lsBank(), L = []; let n = 0;
+      B.T.forEach(t => { L.push('TOPIK: ' + t); B.L.filter(s => s.tema === t).sort((x, y) => x.part - y.part).forEach(s => { L.push('P' + s.part + ': ' + s.soalan); n++; }); });
+      syor = String(syor || '').trim();
+      return [
+        'TUGAS: Beri SOALAN SPEAKING MUET BARU sebanyak yang boleh (sekurang-kurangnya 30) yang BELUM ADA dalam senarai saya di bawah. Boleh juga cadang TOPIK BESAR baru yang sesuai dengan tema MUET.',
+        'PENTING: JANGAN tulis karangan / huraian — saya tulis huraian sendiri. Beri soalan dan isi SAHAJA (frasa pendek, bukan ayat penuh).',
+        syor ? '\nPERKARA DISYORKAN: "' + syor + '"\n- MULAKAN dengan SEBANYAK MUNGKIN soalan (P1 dan P2) yang berkaitan atau hampir dengan perkara ini. Letak di bawah topik besar yang paling sesuai (atau topik besar baru).\n- SELEPAS itu, beri juga soalan lain yang TIADA kaitan dengan perkara ini seperti biasa (pelbagai topik besar).' : '',
+        '',
+        'FORMAT WAJIB (saya tampal terus ke butang JANA PUKAL dalam app — ikut tepat, satu soalan satu baris):',
+        'TOPIK: nama topik besar',
+        'P1: Soalan individual presentation? | isi 1 | isi 2 | isi 3',
+        'P2: Soalan group discussion? | pilihan 1* = hujah; hujah | pilihan 2 = hujah; hujah | pilihan 3 = hujah | pilihan 4 = hujah',
+        '',
+        'PERATURAN:',
+        '1. Tulis baris TOPIK: sebelum soalan topik itu. Nama topik sedia ada mesti ditulis TEPAT seperti dalam senarai.',
+        '2. P1 = soalan terbuka (Individual Presentation), 3 isi.',
+        '3. P2 = soalan pilih yang PALING sesuai (Group Discussion), 4-5 pilihan; tanda * pada SATU pilihan terbaik; 1-2 hujah setiap pilihan dipisah ;',
+        '4. Campur P1 dan P2. Jangan ulang / ubah sedikit soalan yang sudah ada. Jangan guna aksara | = ; dalam ayat. Tiada emoji, tiada nombor di depan baris.',
+        '5. Output: SATU codebox teks biasa sahaja, tanpa penerangan.',
+        '',
+        'SENARAI SAYA (' + B.T.length + ' topik, ' + n + ' soalan):'
+      ].concat(L).join('\n');
+    }
+    // JANA PUKAL (format SAMA dengan Kindle ptPukal) → coach/pentas_bank. temaAsal / partAsal = tambah manual dalam satu topik.
+    function lsPukal(teks, temaAsal, partAsal) {
+      const B = lsBank(), r = { n: 0, t: 0, ulang: 0, salah: 0 }, ada = {}, hari = lsHari(), U = ls.u;
+      Object.values(B.S).forEach(s => { ada[s.soalan.toLowerCase().replace(/\s+/g, ' ')] = 1; });
+      let tema = temaAsal || '';
+      String(teks || '').split(/\r?\n/).forEach(baris => {
+        const gr = baris.replace(/^\s*([-*•>]|\d+[.)])\s*/, '').replace(/\*\*/g, '').trim();
+        if (!gr || /^```/.test(gr)) return;
+        let m = gr.match(/^(TOPIK|TOPIC)\s*:\s*(.+)$/i);
+        if (m) {
+          tema = m[2].trim();
+          if (U.buang['tema:' + tema]) delete U.buang['tema:' + tema];
+          if (B.T.indexOf(tema) < 0 && U.tema.indexOf(tema) < 0) { U.tema.push(tema); r.t++; }
+          return;
+        }
+        m = gr.match(/^P\s*([12])\s*:\s*(.+)$/i);
+        if (!m && partAsal) m = [gr, String(partAsal), gr];
+        if (!m) { r.salah++; return; }
+        const bh = m[2].split('|').map(x => x.trim()), q = bh.shift();
+        if (!q) { r.salah++; return; }
+        if (ada[q.toLowerCase().replace(/\s+/g, ' ')]) { r.ulang++; return; }
+        const it = { id: 'u' + Date.now().toString(36) + r.n + Math.floor(Math.random() * 1000), tema: tema || 'Lain-lain', part: +m[1], soalan: q, tarikh: hari, pilihan: [], terbaik: '', isi: [] };
+        if (!tema && U.tema.indexOf('Lain-lain') < 0 && B.T.indexOf('Lain-lain') < 0) { U.tema.push('Lain-lain'); r.t++; }
+        bh.forEach(x => {
+          if (!x) return;
+          if (it.part === 1) { it.isi.push({ p: -1, t: x }); return; }
+          const ps = x.split('='); let nm = ps.shift().trim();
+          if (/\*/.test(nm)) { nm = nm.replace(/\*/g, '').trim(); it.terbaik = nm; }
+          if (!nm) return;
+          it.pilihan.push(nm);
+          ps.join('=').split(';').map(y => y.trim()).filter(Boolean).forEach(y => it.isi.push({ p: it.pilihan.length - 1, t: y }));
+        });
+        ada[q.toLowerCase().replace(/\s+/g, ' ')] = 1;
+        U.soalan.push(it); r.n++;
+      });
+      if (r.n || r.t) U.tambah = hari;
+      return r;
+    }
+    const lsGaya = 'width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;';
+    function lsRenderTema() {
+      const ai = lwSec('ls-ai'), box = lwSec('ls-tema-list'); if (!ai || !box) return;
+      if (!ls.dimuat) { box.innerHTML = '<div class="empty-state">Memuatkan...</div>'; return; }
+      const B = lsBank();
+      let h = '<div style="border:1px solid #38bdf8;border-radius:10px;padding:8px;margin:6px 0;">' +
+        '<div style="font-size:0.8rem;color:var(--subtext);margin-bottom:6px;">Tambah soalan dengan AI: Salin Preset → tampal ke AI → salin jawapan → Jana Pukal → Simpan.' + (ls.u.tambah ? ' Terakhir ditambah: ' + ls.u.tambah + '.' : '') + '</div>' +
+        '<div style="display:flex;gap:6px;"><button class="btn btn-sm" data-ls="preset" style="flex:1;">📋 Salin Preset</button><button class="btn btn-sm" data-ls="pukal" style="flex:1;">📥 Jana Pukal</button><button class="btn btn-sm btn-secondary" data-ls="topikbaru" style="flex:1;">+ Topik</button></div>';
+      if (ls.ai === 'preset') h += '<div class="mt-8"><input id="ls-syor" type="text" placeholder="Perkara disyorkan (pilihan)" value="' + lxEsc(ls.syor) + '" style="' + lsGaya + '"><button class="btn btn-sm mt-8" data-ls="salin" style="width:100%;background:#38bdf8;color:#000;">Salin Preset</button></div>';
+      if (ls.ai === 'pukal') h += '<div class="mt-8"><textarea id="ls-pukal" rows="8" placeholder="TOPIK: Science and technology&#10;P1: Soalan? | isi 1 | isi 2 | isi 3&#10;P2: Soalan? | pilihan* = hujah; hujah | pilihan = hujah" style="' + lsGaya + '"></textarea><button class="btn btn-sm mt-8" data-ls="simpanpukal" style="width:100%;background:#38bdf8;color:#000;">Simpan</button></div>';
+      if (ls.ai === 'topikbaru') h += '<div class="mt-8"><input id="ls-topik" type="text" placeholder="cth: Sports and recreation" style="' + lsGaya + '"><button class="btn btn-sm mt-8" data-ls="simpantopik" style="width:100%;background:#38bdf8;color:#000;">Tambah Topik</button></div>';
+      if (ls.mesej) h += '<div style="font-size:0.8rem;margin-top:6px;color:#38bdf8;">' + lxEsc(ls.mesej) + '</div>';
+      ai.innerHTML = h + '</div>';
+      if (!ls.asal.length) box.innerHTML = '<div class="empty-state" style="margin-bottom:8px;">Soalan asal belum diterbitkan oleh Kindle — buka app Kindle sekali (page Coach), kemudian kembali ke sini.</div>';
+      else box.innerHTML = '';
+      if (!B.T.length) { box.innerHTML += '<div class="empty-state">Belum ada topik.</div>'; return; }
+      B.T.forEach(t => {
+        const sq = B.L.filter(s => s.tema === t), siap = sq.filter(s => lsKiraH(s.id)).length;
+        const div = document.createElement('div');
+        div.className = 'drawer-card';
+        div.innerHTML = `<div style="display:flex;gap:6px;align-items:center;"><div style="flex:1;"><b>${lxEsc(t)}</b>
+          <div style="font-size:0.72rem;color:var(--subtext);margin-top:3px;">${sq.filter(s => s.part === 1).length} P1 · ${sq.filter(s => s.part === 2).length} P2 · ${siap} dah ada huraian</div></div>
+          <button class="btn btn-sm">Buka →</button></div>`;
+        div.querySelector('button').addEventListener('click', () => { ls.tema = t; ls.baru = 0; ls.mesej = ''; showSection(lwSec('section-ls-soalan')); lsRenderSoalan(); });
+        box.appendChild(div);
+      });
+    }
+    function lsRenderSoalan() {
+      const box = lwSec('ls-soalan-isi'); if (!box) return;
+      lwSec('ls-nama-tema').textContent = ls.tema;
+      const B = lsBank(), sq = B.L.filter(s => s.tema === ls.tema).sort((x, y) => x.part - y.part);
+      let h = '<div style="display:flex;gap:6px;"><button class="btn btn-sm" data-ls="baru1" style="flex:1;">+ Soalan P1</button><button class="btn btn-sm" data-ls="baru2" style="flex:1;">+ Soalan P2</button></div>';
+      if (ls.baru) h += '<div class="drawer-card mt-8"><b>Soalan baru · Part ' + ls.baru + (ls.baru === 1 ? ' (Individual)' : ' (Group)') + '</b>' +
+        '<textarea id="ls-sq" rows="2" placeholder="Soalan?" style="' + lsGaya + 'margin-top:6px;"></textarea>' +
+        '<div style="font-size:0.75rem;color:var(--subtext);margin-top:6px;">' + (ls.baru === 1 ? 'Isi — satu baris satu isi:' : 'Pilihan — satu baris satu pilihan: pilihan = hujah; hujah (tanda * pada pilihan terbaik)') + '</div>' +
+        '<textarea id="ls-si" rows="5" style="' + lsGaya + '"></textarea>' +
+        '<div style="display:flex;gap:6px;" class="mt-8"><button class="btn btn-sm" data-ls="simpansoalan" style="flex:1;background:#38bdf8;color:#000;">Tambah</button><button class="btn btn-sm btn-secondary" data-ls="batalsoalan" style="flex:1;">Batal</button></div></div>';
+      if (ls.mesej) h += '<div style="font-size:0.8rem;margin-top:6px;color:#38bdf8;">' + lxEsc(ls.mesej) + '</div>';
+      if (!sq.length) h += '<div class="empty-state mt-8">Belum ada soalan dalam topik ini.</div>';
+      sq.forEach(s => {
+        const n = lsKiraH(s.id), slot = lsSlot(s).length;
+        h += `<div class="drawer-card mt-8" data-ls="soalan" data-v="${lxEsc(s.id)}" style="cursor:pointer;">
+          <div style="font-size:0.72rem;color:#38bdf8;font-weight:bold;">P${s.part} · ${s.part === 1 ? 'Individual' : 'Group'}${s.tarikh === lsHari() ? ' · BARU' : ''}</div>
+          <div style="margin:3px 0;">${lxEsc(s.soalan)}</div>
+          <div style="font-size:0.75rem;color:${n >= slot && slot ? '#34d399' : 'var(--subtext)'};">${n}/${slot} huraian ditulis${n >= slot && slot ? ' ✓' : ''}</div></div>`;
+      });
+      h += '<button class="btn btn-sm btn-secondary mt-8" data-ls="buangtema" style="width:100%;color:#f87171;">🗑️ Buang Topik Ini</button>';
+      box.innerHTML = h;
+    }
+    function lsRenderHuraian() {
+      const box = lwSec('ls-huraian-isi'); if (!box) return;
+      const s = lsBank().S[ls.id];
+      if (!s) { box.innerHTML = '<div class="empty-state">Soalan tiada.</div>'; return; }
+      lwSec('ls-nama-part').textContent = 'P' + s.part + ' · ' + s.tema;
+      const hs = lsH(s.id);
+      let h = `<div class="drawer-card"><div style="font-size:0.72rem;color:#38bdf8;font-weight:bold;">${s.part === 1 ? 'PART 1 · INDIVIDUAL PRESENTATION' : 'PART 2 · GROUP DISCUSSION'}</div><div style="font-weight:bold;margin-top:4px;">${lxEsc(s.soalan)}</div>` +
+        (s.part === 2 ? '<div style="font-size:0.75rem;color:var(--subtext);margin-top:4px;">Pilihan: ' + s.pilihan.map(lxEsc).join(' · ') + (s.terbaik ? ' · terbaik ★ ' + lxEsc(s.terbaik) : '') + '</div>' : '') + '</div>' +
+        '<div style="font-size:0.75rem;color:var(--subtext);margin:8px 0;">App beri isi · anda tulis huraian sendiri (sebab, contoh, kesan). Tak reti? Tanya AI, kemudian tulis semula dengan ayat sendiri. Auto-simpan bila keluar dari kotak.</div>';
+      lsSlot(s).forEach(x => {
+        h += `<div class="drawer-card mt-8"><div style="font-weight:bold;color:#38bdf8;">${lxEsc(x.tajuk)}</div>` +
+          x.isi.map(t => `<div style="font-size:0.85rem;margin:2px 0;">→ ${lxEsc(t)}</div>`).join('') +
+          `<textarea class="ls-h" data-k="${x.k}" rows="5" placeholder="Huraian saya..." style="${lsGaya}margin-top:6px;">${lxEsc(hs[x.k] || '')}</textarea></div>`;
+      });
+      h += '<button class="btn btn-sm mt-8" data-ls="simpanhuraian" style="width:100%;background:#38bdf8;color:#000;">💾 Simpan Huraian</button>' +
+        '<button class="btn btn-sm btn-secondary mt-8" data-ls="buangsoalan" style="width:100%;color:#f87171;">🗑️ Buang Soalan Ini</button>';
+      box.innerHTML = h;
+    }
+    async function lsSimpanHuraian(senyap) {
+      const s = lsBank().S[ls.id]; if (!s) return;
+      const hs = {}; let n = 0;
+      lwSec('ls-huraian-isi').querySelectorAll('textarea.ls-h').forEach(t => { const x = t.value.replace(/\s+$/, ''); hs[t.getAttribute('data-k')] = x; if (x) n++; });
+      const lama = lsH(s.id);
+      if (Object.keys(hs).every(k => (lama[k] || '') === hs[k])) { if (senyap !== true) showToast('✅ Huraian sudah disimpan.'); return; }
+      const rek = { h: hs, at: Date.now(), tarikh: lsHari() };
+      await setDoc(lsKarRef(s.id), rek);
+      ls.kar['q-' + s.id] = rek;
+      if (senyap !== true) showToast('✅ Huraian disimpan (' + n + ' isi).');
+    }
+    async function lsMula() {
+      if (!currentUser) { showToast('Sila log masuk dahulu.'); return; }
+      ls.tema = ''; ls.id = ''; ls.ai = ''; ls.mesej = ''; ls.dimuat = false;
+      showSection(lwSec('section-ls-tema'));
+      lsRenderTema();
+      await lsMuat();
+      lsRenderTema();
+    }
+    lwSec('btn-go-speaking')?.addEventListener('click', lxCuba(lsMula));
+    lwSec('btn-ls-back-tema')?.addEventListener('click', () => showSection(sectionTasbih));
+    lwSec('btn-ls-back-soalan')?.addEventListener('click', () => { ls.mesej = ''; showSection(lwSec('section-ls-tema')); lsRenderTema(); });
+    lwSec('btn-ls-back-huraian')?.addEventListener('click', lxCuba(async () => { await lsSimpanHuraian(true); showSection(lwSec('section-ls-soalan')); lsRenderSoalan(); }));
+    lwSec('section-ls-huraian')?.addEventListener('focusout', e => { if (e.target && e.target.classList && e.target.classList.contains('ls-h')) lsSimpanHuraian(true).catch(er => showToast('❌ ' + (er.message || er), 3000)); });
+    ['section-ls-tema', 'section-ls-soalan', 'section-ls-huraian'].forEach(id => lwSec(id)?.addEventListener('click', lxCuba(async e => {
+      const t = e.target.closest('[data-ls]'); if (!t) return;
+      const a = t.getAttribute('data-ls'), v = t.getAttribute('data-v');
+      if (a === 'preset' || a === 'pukal' || a === 'topikbaru') { ls.ai = ls.ai === a ? '' : a; ls.mesej = ''; lsRenderTema(); return; }
+      if (a === 'salin') {
+        ls.syor = (lwSec('ls-syor') || {}).value || '';
+        const teks = lsPreset(ls.syor);
+        try { await navigator.clipboard.writeText(teks); ls.ai = ''; ls.mesej = '📋 Preset disalin. Tampal ke AI → salin jawapan → Jana Pukal.'; lsRenderTema(); }
+        catch (er) { ls.ai = 'pukal'; ls.mesej = 'Telefon sekat salin automatik — salin teks preset dalam kotak di bawah.'; lsRenderTema(); lwSec('ls-pukal').value = teks; }
+        return;
+      }
+      if (a === 'simpanpukal') {
+        const r = lsPukal((lwSec('ls-pukal') || {}).value || '');
+        if (!r.n && !r.t) { showToast('Tiada soalan baru.' + (r.ulang ? ' ' + r.ulang + ' sudah ada.' : '') + (r.salah ? ' ' + r.salah + ' baris salah format.' : ''), 3500); return; }
+        await lsSimpanU();
+        ls.ai = ''; ls.mesej = '✅ Jana Pukal: ' + r.n + ' soalan baru' + (r.t ? ', ' + r.t + ' topik baru' : '') + (r.ulang ? ' · ' + r.ulang + ' sudah ada' : '') + (r.salah ? ' · ' + r.salah + ' baris salah format' : '');
+        lsRenderTema(); return;
+      }
+      if (a === 'simpantopik') {
+        const nt = ((lwSec('ls-topik') || {}).value || '').trim();
+        if (!nt) { showToast('Tulis nama topik.'); return; }
+        if (lsBank().T.indexOf(nt) >= 0) { showToast('Topik sudah ada.'); return; }
+        delete ls.u.buang['tema:' + nt];
+        if (ls.u.tema.indexOf(nt) < 0) ls.u.tema.push(nt);
+        await lsSimpanU(); ls.ai = ''; ls.mesej = '✅ Topik "' + nt + '" ditambah.'; lsRenderTema(); return;
+      }
+      if (a === 'baru1' || a === 'baru2') { ls.baru = +a.slice(-1); ls.mesej = ''; lsRenderSoalan(); return; }
+      if (a === 'batalsoalan') { ls.baru = 0; lsRenderSoalan(); return; }
+      if (a === 'simpansoalan') {
+        const q = ((lwSec('ls-sq') || {}).value || '').replace(/\s+/g, ' ').trim();
+        const isi = ((lwSec('ls-si') || {}).value || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+        if (!q) { showToast('Tulis soalan.'); return; }
+        const r = lsPukal('P' + ls.baru + ': ' + q + (isi.length ? ' | ' + isi.join(' | ') : ''), ls.tema, ls.baru);
+        if (!r.n) { showToast(r.ulang ? 'Soalan ini sudah ada.' : 'Format tidak sah.'); return; }
+        await lsSimpanU(); ls.baru = 0; ls.mesej = '✅ Soalan ditambah.'; lsRenderSoalan(); return;
+      }
+      if (a === 'soalan') { ls.id = v; showSection(lwSec('section-ls-huraian')); lsRenderHuraian(); return; }
+      if (a === 'buangtema') {
+        if (!confirm('Buang topik "' + ls.tema + '" beserta semua soalannya dari senarai? (Huraian yang sudah ditulis tidak dipadam.)')) return;
+        ls.u.buang['tema:' + ls.tema] = 1; await lsSimpanU();
+        ls.mesej = '🗑️ Topik dibuang.'; showSection(lwSec('section-ls-tema')); lsRenderTema(); return;
+      }
+      if (a === 'simpanhuraian') { await lsSimpanHuraian(); return; }
+      if (a === 'buangsoalan') {
+        if (!confirm('Buang soalan ini dari senarai? (Huraian tidak dipadam.)')) return;
+        ls.u.buang[ls.id] = 1; await lsSimpanU();
+        ls.mesej = '🗑️ Soalan dibuang.'; showSection(lwSec('section-ls-soalan')); lsRenderSoalan(); return;
+      }
+    })));
 
     // ══════════ 🔁 DAILY REPETITION — TAMBAH NOTA (17 Nov, dipindah dari Kindle) ══════════
     // Senarai nota semasa diterbitkan oleh Kindle: coach/dre_senarai { sets: [{ id, r, t, g: [{ id, t, ms, f }] }], versi: { pawagam, tulis } }
