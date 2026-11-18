@@ -2557,6 +2557,7 @@ They immortalized the hero in a statue.
               <button id="btn-go-presenting" class="btn btn-secondary btn-sm" style="border-color:#f472b6;">🎤 Laci Presenting</button>
               <button id="btn-go-writing" class="btn btn-secondary btn-sm" style="border-color:#34d399;">✍️ Laci Writing</button>
               <button id="btn-go-speaking" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;">🗣️ Laci Speaking</button>
+              <button id="btn-go-reading" class="btn btn-secondary btn-sm" style="border-color:#fb923c;">📖 Laci Reading</button>
               <button id="btn-go-dre" class="btn btn-secondary btn-sm" style="border-color:#fbbf24;">🔁 Daily Repetition</button>
               <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
               <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Wirid</button>
@@ -2861,6 +2862,23 @@ They immortalized the hero in a statue.
           </div>
         </div>
         <div id="ls-huraian-isi" style="padding:10px;"></div>
+      </section>
+
+      <!-- ══ 📖 LACI READING (18 Nov) — bank SINONIM / ANTONIM / IDIOM. Kindle: nota di tab TOPIK Perpustakaan, latihan dalam ayat di ARKED READING ══ -->
+      <section id="section-lr" class="section section-lw">
+        <div class="topbar">
+          <button id="btn-lr-back" class="btn btn-secondary btn-sm">← Tasbih</button>
+          <div style="text-align:right;">
+            <div class="topbar-title">Laci Reading</div>
+            <div class="topbar-sub" style="color:#fb923c;font-weight:bold;">📖 Sinonim · Antonim · Idiom</div>
+          </div>
+        </div>
+        <div id="lr-tab" style="display:flex;gap:6px;padding:8px 10px 0;">
+          <button class="btn btn-sm btn-secondary" data-lrj="sin" style="flex:1;">🔁 Sinonim</button>
+          <button class="btn btn-sm btn-secondary" data-lrj="ant" style="flex:1;">↔️ Antonim</button>
+          <button class="btn btn-sm btn-secondary" data-lrj="idm" style="flex:1;">💬 Idiom</button>
+        </div>
+        <div id="lr-isi" style="padding:10px;"></div>
       </section>
 
       <!-- ══ 🔁 DAILY REPETITION — TAMBAH NOTA (17 Nov, dipindah dari Kindle) ══ -->
@@ -12775,6 +12793,118 @@ btnAddLaci.addEventListener("click", async () => {
         ls.mesej = '🗑️ Soalan dibuang.'; showSection(lwSec('section-ls-soalan')); lsRenderSoalan(); return;
       }
     })));
+
+    // ══════════ 📖 LACI READING (18 Nov) — bank SINONIM · ANTONIM · IDIOM ══════════
+    // Kindle: nota (jawapan) di tab TOPIK Perpustakaan · latihan dalam bentuk AYAT di ARKED READING (titik 4)
+    // coach/reading_bank { sin: [it], ant: [it], idm: [it], at } · it = { id, s: 'ayat dengan [perkataan]', w, j: jawapan, x: [salah, salah], m: maksud BM }
+    const LR_JENIS = {
+      sin: { label: 'Sinonim', ikon: '🔁', arahan: 'Replace each underlined word with the most appropriate synonym.' },
+      ant: { label: 'Antonim', ikon: '↔️', arahan: 'Choose the word most opposite in meaning to the underlined word.' },
+      idm: { label: 'Idiom', ikon: '💬', arahan: 'What does the underlined idiom mean?' }
+    };
+    const lr = { j: 'sin', bank: null, ai: '', syor: '', mesej: '' };
+    const lrRef = () => doc(db, 'users', currentUser.uid, 'coach', 'reading_bank');
+    async function lrMuat() { const d = await getDoc(lrRef()); const b = d.exists() ? d.data() : {}; lr.bank = { sin: b.sin || [], ant: b.ant || [], idm: b.idm || [] }; }
+    const lrSimpan = () => setDoc(lrRef(), { sin: lr.bank.sin, ant: lr.bank.ant, idm: lr.bank.idm, at: Date.now() });
+    const lrAyat = s => lxEsc(s).replace(/\[([^\]]+)\]/, '<u><b>$1</b></u>');
+    function lrPreset(j, syor) {
+      const L = lr.bank[j], idm = j === 'idm', ant = j === 'ant';
+      syor = String(syor || '').trim();
+      return [
+        idm ? 'TUGAS: Beri sekurang-kurangnya 30 IDIOM bahasa Inggeris (idiomatic expressions) BARU yang biasa muncul dalam teks MUET (Reading & Listening) dan BELUM ADA dalam senarai saya di bawah. Setiap idiom digunakan dalam SATU ayat konteks.'
+            : 'TUGAS: Beri sekurang-kurangnya 30 soalan ' + (ant ? 'ANTONIM' : 'SINONIM') + ' BARU gaya buku MUET (Pre-Reading Activities: "' + LR_JENIS[j].arahan + '"). Perkataan sasaran BELUM ADA dalam senarai saya di bawah. Tahap MUET band 4-5 (kosa kata akademik).',
+        syor ? 'PERKARA DISYORKAN: "' + syor + '" — MULAKAN dengan seberapa banyak soalan berkaitan perkara ini, kemudian topik lain seperti biasa.' : 'Campur topik MUET: masyarakat & budaya, kewangan & kepenggunaan, sains & teknologi, kesihatan & alam sekitar, pendidikan.',
+        '',
+        'FORMAT WAJIB (saya tampal terus ke butang JANA PUKAL dalam app — satu soalan satu baris, ikut tepat):',
+        idm ? 'Ayat yang menggunakan [idiom] dalam kurungan siku | maksud betul (English ringkas) | maksud salah 1 | maksud salah 2 | maksud dalam BM'
+            : 'Ayat dengan [perkataan sasaran] dalam kurungan siku | jawapan betul | pilihan salah 1 | pilihan salah 2 | maksud BM perkataan sasaran',
+        'Contoh: ' + (idm ? 'You will need to [burn the midnight oil] if you want to finish the report by tomorrow. | to work late into the night | to waste electricity | to go to bed early | bekerja hingga lewat malam'
+            : ant ? 'The instruction from the top management is [vague], so the departments have to meet again. | clear | confusing | brief | samar-samar'
+            : 'The instruction from the top management is [vague], so the departments have to meet again. | ambiguous | baffling | unfavourable | samar-samar'),
+        '',
+        'PERATURAN:',
+        '1. Hanya SATU [ ] dalam setiap ayat.',
+        '2. Pilihan salah mesti munasabah (makna hampir / berkaitan) supaya mencabar, tetapi hanya SATU jawapan paling tepat dalam konteks ayat.',
+        '3. Jangan guna aksara | dalam ayat. Tiada nombor di depan baris, tiada emoji.',
+        '4. Output: SATU codebox teks biasa sahaja, tanpa penerangan.',
+        '',
+        'SENARAI SAYA (' + L.length + '): ' + (L.map(x => x.w).join(', ') || '(kosong)')
+      ].join('\n');
+    }
+    // JANA PUKAL: baris = ayat [sasaran] | jawapan | salah 1 | salah 2 | maksud BM (pilihan). Awalan SIN: / ANT: / IDM: boleh tukar jenis.
+    function lrPukal(teks, jAsal) {
+      const r = { n: 0, ulang: 0, salah: 0 }, kunci = (j, w) => j + ':' + String(w).toLowerCase().replace(/\s+/g, ' ').trim(), ada = {};
+      Object.keys(LR_JENIS).forEach(j => lr.bank[j].forEach(x => { ada[kunci(j, x.w)] = 1; }));
+      String(teks || '').split(/\r?\n/).forEach(baris => {
+        let gr = baris.replace(/^\s*([-*•>]|\d+[.)])\s*/, '').replace(/\*\*/g, '').trim(), j = jAsal;
+        if (!gr || /^```/.test(gr)) return;
+        const m = gr.match(/^(SINONIM|ANTONIM|IDIOM|SIN|ANT|IDM)\s*:\s*(.+)$/i);
+        if (m) { const p = m[1].toUpperCase(); j = p.indexOf('SIN') === 0 ? 'sin' : p.indexOf('ANT') === 0 ? 'ant' : 'idm'; gr = m[2]; }
+        const bh = gr.split('|').map(x => x.trim()), w = ((bh[0] || '').match(/\[([^\]]+)\]/) || [])[1];
+        if (bh.length < 4 || !w || !bh[1] || !bh[2] || !bh[3]) { r.salah++; return; }
+        if (ada[kunci(j, w)]) { r.ulang++; return; }
+        ada[kunci(j, w)] = 1;
+        lr.bank[j].push({ id: j + Date.now().toString(36) + r.n + Math.floor(Math.random() * 1000), s: bh[0], w: w.trim(), j: bh[1], x: [bh[2], bh[3]], m: bh[4] || '' });
+        r.n++;
+      });
+      return r;
+    }
+    function lrRender() {
+      const box = lwSec('lr-isi'), tab = lwSec('lr-tab'); if (!box || !tab) return;
+      tab.querySelectorAll('[data-lrj]').forEach(b => { const on = b.getAttribute('data-lrj') === lr.j; b.style.background = on ? '#fb923c' : ''; b.style.color = on ? '#000' : ''; });
+      if (!lr.bank) { box.innerHTML = '<div class="empty-state">Memuatkan...</div>'; return; }
+      const c = LR_JENIS[lr.j], L = lr.bank[lr.j], gaya = 'width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;';
+      let h = '<div style="border:1px solid #fb923c;border-radius:10px;padding:8px;margin:0 0 6px;">' +
+        '<div style="font-size:0.8rem;color:var(--subtext);margin-bottom:6px;">' + c.ikon + ' <b>' + c.label + '</b> · Kindle latih dalam ayat: <i>' + c.arahan + '</i><br>Tambah dengan AI: Salin Preset → tampal ke AI → salin jawapan → Jana Pukal → Simpan.</div>' +
+        '<div style="display:flex;gap:6px;"><button class="btn btn-sm" data-lr="preset" style="flex:1;">📋 Salin Preset</button><button class="btn btn-sm" data-lr="pukal" style="flex:1;">📥 Jana Pukal</button></div>';
+      if (lr.ai === 'preset') h += '<div class="mt-8"><input id="lr-syor" type="text" placeholder="Perkara disyorkan (pilihan) — cth: kesihatan" value="' + lxEsc(lr.syor) + '" style="' + gaya + '"><button class="btn btn-sm mt-8" data-lr="salin" style="width:100%;background:#fb923c;color:#000;">Salin Preset ' + c.label + '</button></div>';
+      if (lr.ai === 'pukal') h += '<div class="mt-8"><div style="font-size:0.72rem;color:var(--subtext);margin-bottom:4px;">Satu baris: ayat dengan [' + (lr.j === 'idm' ? 'idiom' : 'perkataan') + '] | jawapan betul | salah 1 | salah 2 | maksud BM (pilihan)</div>' +
+        '<textarea id="lr-pukal" rows="8" style="' + gaya + '"></textarea><button class="btn btn-sm mt-8" data-lr="simpan" style="width:100%;background:#fb923c;color:#000;">Simpan</button></div>';
+      if (lr.mesej) h += '<div style="font-size:0.8rem;margin-top:6px;color:#fb923c;">' + lxEsc(lr.mesej) + '</div>';
+      h += '</div><div style="font-size:0.8rem;color:var(--subtext);margin:4px 0;">' + L.length + ' soalan ' + c.label + '</div>';
+      if (!L.length) h += '<div class="empty-state">Belum ada. Tekan 📋 Salin Preset untuk mula.</div>';
+      for (let i = L.length - 1; i >= 0; i--) {
+        const it = L[i];
+        h += `<div class="drawer-card mt-8"><div style="display:flex;gap:6px;align-items:flex-start;"><div style="flex:1;">
+          <div><b style="color:#fb923c;">${lxEsc(it.w)}</b> ${lr.j === 'ant' ? '≠' : '='} <b>${lxEsc(it.j)}</b>${it.m ? ' <span style="font-size:0.75rem;color:var(--subtext);">(' + lxEsc(it.m) + ')</span>' : ''}</div>
+          <div style="font-size:0.85rem;margin-top:3px;">${lrAyat(it.s)}</div>
+          <div style="font-size:0.72rem;color:var(--subtext);margin-top:3px;">Pilihan salah: ${(it.x || []).map(lxEsc).join(' · ')}</div></div>
+          <button class="btn btn-secondary btn-sm" data-lr="buang" data-v="${lxEsc(it.id)}" style="color:var(--danger);border-color:var(--danger);">X</button></div></div>`;
+      }
+      box.innerHTML = h;
+    }
+    lwSec('btn-go-reading')?.addEventListener('click', lxCuba(async () => {
+      if (!currentUser) { showToast('Sila log masuk dahulu.'); return; }
+      lr.ai = ''; lr.mesej = ''; lr.bank = null;
+      showSection(lwSec('section-lr')); lrRender();
+      await lrMuat(); lrRender();
+    }));
+    lwSec('btn-lr-back')?.addEventListener('click', () => showSection(sectionTasbih));
+    lwSec('lr-tab')?.addEventListener('click', e => { const t = e.target.closest('[data-lrj]'); if (!t) return; lr.j = t.getAttribute('data-lrj'); lr.ai = ''; lr.mesej = ''; lrRender(); });
+    lwSec('lr-isi')?.addEventListener('click', lxCuba(async e => {
+      const t = e.target.closest('[data-lr]'); if (!t || !lr.bank) return;
+      const a = t.getAttribute('data-lr');
+      if (a === 'preset' || a === 'pukal') { lr.ai = lr.ai === a ? '' : a; lr.mesej = ''; lrRender(); return; }
+      if (a === 'salin') {
+        lr.syor = (lwSec('lr-syor') || {}).value || '';
+        const teks = lrPreset(lr.j, lr.syor);
+        try { await navigator.clipboard.writeText(teks); lr.ai = ''; lr.mesej = '📋 Preset disalin. Tampal ke AI → salin jawapan → Jana Pukal.'; lrRender(); }
+        catch (er) { lr.ai = 'pukal'; lr.mesej = 'Telefon sekat salin automatik — salin teks preset dalam kotak di bawah.'; lrRender(); lwSec('lr-pukal').value = teks; }
+        return;
+      }
+      if (a === 'simpan') {
+        const r = lrPukal((lwSec('lr-pukal') || {}).value || '', lr.j);
+        if (!r.n) { showToast('Tiada soalan baru.' + (r.ulang ? ' ' + r.ulang + ' sudah ada.' : '') + (r.salah ? ' ' + r.salah + ' baris salah format.' : ''), 3500); return; }
+        await lrSimpan();
+        lr.ai = ''; lr.mesej = '✅ Jana Pukal: ' + r.n + ' soalan baru' + (r.ulang ? ' · ' + r.ulang + ' sudah ada' : '') + (r.salah ? ' · ' + r.salah + ' baris salah format' : '');
+        lrRender(); return;
+      }
+      if (a === 'buang') {
+        const v = t.getAttribute('data-v'), L = lr.bank[lr.j], i = L.findIndex(x => x.id === v);
+        if (i < 0 || !confirm('Buang "' + L[i].w + '"?')) return;
+        L.splice(i, 1); await lrSimpan(); lr.mesej = '🗑️ Dibuang.'; lrRender();
+      }
+    }));
 
     // ══════════ 🔁 DAILY REPETITION — TAMBAH NOTA (17 Nov, dipindah dari Kindle) ══════════
     // Senarai nota semasa diterbitkan oleh Kindle: coach/dre_senarai { sets: [{ id, r, t, g: [{ id, t, ms, f }] }], versi: { pawagam, tulis } }
