@@ -2558,6 +2558,7 @@ They immortalized the hero in a statue.
               <button id="btn-go-writing" class="btn btn-secondary btn-sm" style="border-color:#34d399;">✍️ Laci Writing</button>
               <button id="btn-go-speaking" class="btn btn-secondary btn-sm" style="border-color:#38bdf8;">🗣️ Laci Speaking</button>
               <button id="btn-go-reading" class="btn btn-secondary btn-sm" style="border-color:#fb923c;">📖 Laci Reading</button>
+              <button id="btn-go-readingb" class="btn btn-secondary btn-sm" style="border-color:#fdba74;">📚 Laci Reading (Bukan MUET)</button>
               <button id="btn-go-dre" class="btn btn-secondary btn-sm" style="border-color:#fbbf24;">🔁 Daily Repetition</button>
               <button id="btn-go-bahasa-times" class="btn btn-secondary btn-sm" style="border-color:#06b6d4;">📝 Laci Bahasa</button>
               <button id="btn-go-routine-times" class="btn btn-secondary btn-sm" style="border-color:var(--grad1);">Laci Wirid</button>
@@ -12263,7 +12264,10 @@ btnAddLaci.addEventListener("click", async () => {
     const LW_CFG = {
       writing:    { label: 'Writing',    ikon: '✍️', warna: '#34d399', topik: 'writing_topik',    soalan: 'writing_soalan',    task: true },
       reasoning:  { label: 'Reasoning',  ikon: '🧠', warna: '#a78bfa', topik: 'reasoning_topik',  soalan: 'reasoning_soalan',  task: false },
-      presenting: { label: 'Presenting', ikon: '🎤', warna: '#f472b6', topik: 'presenting_topik', soalan: 'presenting_soalan', task: false }
+      presenting: { label: 'Presenting', ikon: '🎤', warna: '#f472b6', topik: 'presenting_topik', soalan: 'presenting_soalan', task: false },
+      // 22 Nov: READING BUKAN MUET — petikan (tahap UPSR ke atas). Kindle: PERPUSTAKAAN titik BUKAN MUET → SUDAH BACA → KILANG READING → Laci Reading
+      readingb:   { label: 'Reading (Bukan MUET)', ikon: '📚', warna: '#fdba74', topik: 'readingb_topik', soalan: 'readingb_soalan', task: false,
+                    soal: 'PETIKAN', ph: 'Tajuk petikan (cth: The Fox and the Grapes)', benda: 'petikan', phTeks: 'Tampal / tulis petikan English di sini. Setiap ayat ditamatkan dengan titik — Kindle akan pecahkan ikut titik.' }
     };
     const lw = { j: 'writing', unsubJ: null, topik: [], soalan: [], unsub: null, topikId: null, soalanId: null, tangguh: {} };
     const lwC = () => LW_CFG[lw.j] || LW_CFG.writing;
@@ -12351,15 +12355,15 @@ btnAddLaci.addEventListener("click", async () => {
         const div = document.createElement('div');
         div.className = 'drawer-card';
         div.innerHTML = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-            <strong style="color:${lwC().warna};">${i + 1}. ${adaTask ? 'TASK ' + (s.task === 2 ? 2 : 1) : 'SOALAN'}</strong>
+            <strong style="color:${lwC().warna};">${i + 1}. ${adaTask ? 'TASK ' + (s.task === 2 ? 2 : 1) : (lwC().soal || 'SOALAN')}</strong>
             ${!adaTask ? '' : s.task === 2 ? `<select class="lw-jenis" style="background:rgba(0,0,0,0.3);color:white;border:1px solid var(--border-mid);border-radius:6px;padding:3px;">
               <option value="">— jenis esei —</option>${Object.keys(LW_JENIS).map(k => `<option value="${k}"${s.jenis === k ? ' selected' : ''}>${LW_JENIS[k]}</option>`).join('')}</select>` : '<span style="font-size:0.75rem;color:var(--subtext);">E-mel / surat</span>'}
             <span style="flex:1;"></span>
             <button class="btn btn-secondary btn-sm lw-padam" style="color:var(--danger);border-color:var(--danger);">X</button></div>
-          <textarea class="lw-soalan" rows="3" placeholder="Tulis soalan / situasi..." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;font-size:0.9rem;resize:vertical;">${lxEsc(s.soalan)}</textarea>
+          <textarea class="lw-soalan" rows="3" placeholder="${lwC().ph || 'Tulis soalan / situasi...'}" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;font-size:0.9rem;resize:vertical;">${lxEsc(s.soalan)}</textarea>
           <div style="display:flex;gap:6px;align-items:center;margin-top:6px;">
-            <span style="flex:1;font-size:0.78rem;color:${n >= min ? '#34d399' : 'var(--subtext)'};">${n ? (adaTask ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : n + ' perkataan') : 'Karangan belum ditulis'}</span>
-            <button class="btn btn-sm lw-tulis">${n ? 'Baiki karangan' : 'Tulis karangan'}</button></div>`;
+            <span style="flex:1;font-size:0.78rem;color:${n >= min ? '#34d399' : 'var(--subtext)'};">${n ? (adaTask ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : n + ' perkataan') : (lwC().benda ? 'Petikan belum ditulis' : 'Karangan belum ditulis')}</span>
+            <button class="btn btn-sm lw-tulis">${(n ? 'Baiki ' : 'Tulis ') + (lwC().benda || 'karangan')}</button></div>`;
         div.querySelector('.lw-soalan').addEventListener('change', lxCuba(e => updateDoc(lwDoc(lwK('soalan'), s.id), { soalan: e.target.value, updatedAt: Date.now() })));
         const j = div.querySelector('.lw-jenis');
         if (j) j.addEventListener('change', lxCuba(e => updateDoc(lwDoc(lwK('soalan'), s.id), { jenis: e.target.value, updatedAt: Date.now() })));
@@ -12383,9 +12387,9 @@ btnAddLaci.addEventListener("click", async () => {
       else if ((s.fakta || []).length) bantu = s.fakta.map(x => `<div>• ${lxEsc(x)}</div>`).join('');
       box.innerHTML = `<div class="drawer-card" style="font-size:0.9rem;white-space:pre-wrap;">${lxEsc(s.soalan || '(soalan kosong)')}</div>
         ${bantu ? `<details class="drawer-card" style="font-size:0.82rem;"><summary style="cursor:pointer;color:#34d399;">Nota / fakta</summary><div style="margin-top:6px;">${bantu}</div></details>` : ''}
-        <textarea id="lw-karangan" rows="16" placeholder="Tulis karangan dalam English. Setiap ayat ditamatkan dengan titik — Kindle akan pecahkan ikut titik." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:8px;font-size:0.95rem;line-height:1.5;resize:vertical;">${lxEsc(s.karangan || '')}</textarea>
+        <textarea id="lw-karangan" rows="16" placeholder="${lwC().phTeks || 'Tulis karangan dalam English. Setiap ayat ditamatkan dengan titik — Kindle akan pecahkan ikut titik.'}" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:8px;font-size:0.95rem;line-height:1.5;resize:vertical;">${lxEsc(s.karangan || '')}</textarea>
         <div id="lw-kira" style="font-size:0.8rem;margin:6px 0;color:var(--subtext);"></div>
-        <button id="btn-lw-simpan" class="btn btn-sm" style="width:100%;">💾 Simpan karangan</button>`;
+        <button id="btn-lw-simpan" class="btn btn-sm" style="width:100%;">💾 Simpan ${lwC().benda || 'karangan'}</button>`;
       const ta = lwSec('lw-karangan'), kira = lwSec('lw-kira');
       const kemas = () => { const n = lwKira(ta.value), a = lwAyat(ta.value).length; kira.textContent = (adaTask ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : n + ' perkataan') + ' · ' + a + ' ayat'; kira.style.color = n >= min ? '#34d399' : 'var(--subtext)'; };
       const simpan = lxCuba(async (senyap) => {
@@ -12423,6 +12427,7 @@ btnAddLaci.addEventListener("click", async () => {
       lwRenderTopik();
     }
     lwSec('btn-go-writing')?.addEventListener('click', () => lwMula('writing'));
+    lwSec('btn-go-readingb')?.addEventListener('click', () => lwMula('readingb')); // 22 Nov: Laci Reading bukan MUET
     lwSec('btn-lw-back-topik')?.addEventListener('click', () => showSection(sectionTasbih));
     lwSec('btn-lw-back-soalan')?.addEventListener('click', () => { showSection(lwSec('section-lw-topik')); lwRenderTopik(); });
     lwSec('btn-lw-back-karangan')?.addEventListener('click', () => {
