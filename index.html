@@ -11276,6 +11276,7 @@ if (routineMode && allRoutines.length > 0) {
         }
         
 showSection(secToShow); 
+        setTimeout(phoneBukaSemak, 1500); // 24 Nov: isyarat dari Kindle (STATUS ALIRAN › PHONE) → terus buka laci
         await ensureTodayTasbih();
         checkShowAdminPinBtn();        
         subscribeHistory();
@@ -12428,6 +12429,24 @@ btnAddLaci.addEventListener("click", async () => {
     }
     lwSec('btn-go-writing')?.addEventListener('click', () => lwMula('writing'));
     lwSec('btn-go-readingb')?.addEventListener('click', () => lwMula('readingb')); // 22 Nov: Laci Reading bukan MUET
+    // 24 Nov: BUKA DARI KINDLE — Kindle STATUS ALIRAN › PHONE tulis coach/phone_buka { laci, at } → app phone (bila dibuka / kembali ke depan) terus masuk laci itu
+    const PB_BTN = { writing: 'btn-go-writing', reasoning: 'btn-go-reasoning', presenting: 'btn-go-presenting', speaking: 'btn-go-speaking', reading: 'btn-go-reading', readingb: 'btn-go-readingb' };
+    let pbSemakAt = 0;
+    async function phoneBukaSemak() {
+      if (!currentUser || Date.now() - pbSemakAt < 3000) return;
+      pbSemakAt = Date.now();
+      try {
+        const r = doc(db, 'users', currentUser.uid, 'coach', 'phone_buka');
+        const s = await getDoc(r);
+        if (!s.exists()) return;
+        const d = s.data() || {};
+        if (d.dah || !d.at || Math.abs(Date.now() - d.at) > 30 * 60000 || !PB_BTN[d.laci]) return;
+        await updateDoc(r, { dah: true, dahAt: Date.now() });
+        const b = document.getElementById(PB_BTN[d.laci]);
+        if (b) b.click();
+      } catch (e) { console.error('phone_buka:', e); }
+    }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') phoneBukaSemak(); });
     lwSec('btn-lw-back-topik')?.addEventListener('click', () => showSection(sectionTasbih));
     lwSec('btn-lw-back-soalan')?.addEventListener('click', () => { showSection(lwSec('section-lw-topik')); lwRenderTopik(); });
     lwSec('btn-lw-back-karangan')?.addEventListener('click', () => {
