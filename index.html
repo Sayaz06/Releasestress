@@ -12348,6 +12348,7 @@ btnAddLaci.addEventListener("click", async () => {
       const box = lwSec('lw-soalan-list'); if (!box) return;
       const t = lw.topik.find(x => x.id === lw.topikId);
       lwSec('lw-nama-topik').textContent = t ? (t.name || '(tanpa nama)') : '';
+      lwJwpLukis(); // 24 Nov: Preset Jawapan Pukal + Jana Pukal (topik ini)
       box.innerHTML = '';
       const sq = lw.soalan.filter(s => s.topikId === lw.topikId);
       if (!sq.length) { box.innerHTML = '<div class="empty-state">Belum ada soalan. Tekan + Soalan Task 1 / Task 2.</div>'; return; }
@@ -12355,6 +12356,7 @@ btnAddLaci.addEventListener("click", async () => {
         const adaTask = lwC().task, n = lwKira(s.karangan), min = adaTask ? lwMin(s.task) : 1;
         const div = document.createElement('div');
         div.className = 'drawer-card';
+        div.setAttribute('data-sid', s.id); // 24 Nov: Kindle › APP PHONE lompat terus ke soalan ini
         div.innerHTML = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
             <strong style="color:${lwC().warna};">${i + 1}. ${adaTask ? 'TASK ' + (s.task === 2 ? 2 : 1) : (lwC().soal || 'SOALAN')}</strong>
             ${!adaTask ? '' : s.task === 2 ? `<select class="lw-jenis" style="background:rgba(0,0,0,0.3);color:white;border:1px solid var(--border-mid);border-radius:6px;padding:3px;">
@@ -12390,7 +12392,11 @@ btnAddLaci.addEventListener("click", async () => {
         ${bantu ? `<details class="drawer-card" style="font-size:0.82rem;"><summary style="cursor:pointer;color:#34d399;">Nota / fakta</summary><div style="margin-top:6px;">${bantu}</div></details>` : ''}
         <textarea id="lw-karangan" rows="16" placeholder="${lwC().phTeks || 'Tulis karangan dalam English. Setiap ayat ditamatkan dengan titik — Kindle akan pecahkan ikut titik.'}" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:8px;font-size:0.95rem;line-height:1.5;resize:vertical;">${lxEsc(s.karangan || '')}</textarea>
         <div id="lw-kira" style="font-size:0.8rem;margin:6px 0;color:var(--subtext);"></div>
-        <button id="btn-lw-simpan" class="btn btn-sm" style="width:100%;">💾 Simpan ${lwC().benda || 'karangan'}</button>`;
+        <button id="btn-lw-simpan" class="btn btn-sm" style="width:100%;">💾 Simpan ${lwC().benda || 'karangan'}</button>
+        <div style="display:flex;gap:6px;margin-top:8px;"><button id="btn-lw-aij-preset" class="btn btn-secondary btn-sm" style="flex:1;">📋 Salin Preset AI</button><button id="btn-lw-aij-jana" class="btn btn-secondary btn-sm" style="flex:1;">📥 Jana Jawapan</button></div>
+        <div id="lw-aij-kotak" style="display:none;margin-top:8px;"><div style="font-size:0.78rem;color:var(--subtext);margin-bottom:4px;">Malas fikir? Salin Preset AI → tampal ke AI → salin jawapan AI → tampal di sini → Masukkan. Kemudian semak &amp; baiki sendiri.</div>
+          <textarea id="lw-aij-ta" rows="6" placeholder="Tampal jawapan AI di sini..." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;font-size:0.9rem;"></textarea>
+          <button id="btn-lw-aij-masuk" class="btn btn-sm mt-8" style="width:100%;">✅ Masukkan &amp; Simpan</button></div>`;
       const ta = lwSec('lw-karangan'), kira = lwSec('lw-kira');
       const kemas = () => { const n = lwKira(ta.value), a = lwAyat(ta.value).length; kira.textContent = (adaTask ? n + ' / ' + min + ' perkataan' + (n >= min ? ' ✓' : '') : n + ' perkataan') + ' · ' + a + ' ayat'; kira.style.color = n >= min ? '#34d399' : 'var(--subtext)'; };
       const simpan = lxCuba(async (senyap) => {
@@ -12403,6 +12409,20 @@ btnAddLaci.addEventListener("click", async () => {
       ta.addEventListener('input', kemas);
       ta.addEventListener('change', () => simpan(true)); // simpan sendiri bila keluar dari kotak
       lwSec('btn-lw-simpan').addEventListener('click', () => simpan(false));
+      // 24 Nov: PRESET AI (salin soalan + arahan ke AI) · JANA JAWAPAN (tampal jawapan AI → masuk karangan → simpan)
+      lwSec('btn-lw-aij-preset').addEventListener('click', lxCuba(async () => {
+        const teks = lwPresetJawapan(s);
+        try { await navigator.clipboard.writeText(teks); showToast('📋 Preset disalin. Tampal ke AI → salin jawapan → Jana Jawapan.', 3500); }
+        catch (er) { lwSec('lw-aij-kotak').style.display = ''; lwSec('lw-aij-ta').value = teks; autoTinggi(lwSec('lw-aij-ta')); showToast('Telefon sekat salin — salin teks preset dalam kotak.', 3500); }
+      }));
+      lwSec('btn-lw-aij-jana').addEventListener('click', () => { const k = lwSec('lw-aij-kotak'); k.style.display = k.style.display === 'none' ? '' : 'none'; autoTinggi(lwSec('lw-aij-ta')); });
+      lwSec('btn-lw-aij-masuk').addEventListener('click', lxCuba(async () => {
+        const t = aijBersih(lwSec('lw-aij-ta').value);
+        if (!t) { showToast('Tampal jawapan AI dahulu.'); return; }
+        if (ta.value.trim() && !confirm('Ganti ' + (lwC().benda || 'karangan') + ' sedia ada dengan jawapan AI?')) return;
+        ta.value = t; autoTinggi(ta); kemas(); await simpan(false);
+        lwSec('lw-aij-ta').value = ''; lwSec('lw-aij-kotak').style.display = 'none';
+      }));
       kemas();
     }
     // Butang + Soalan (Reasoning / Presenting — tiada Task 1 / 2)
@@ -12443,8 +12463,30 @@ btnAddLaci.addEventListener("click", async () => {
         if (d.dah || !d.at || Math.abs(Date.now() - d.at) > 30 * 60000 || !PB_BTN[d.laci]) return;
         await updateDoc(r, { dah: true, dahAt: Date.now() });
         const b = document.getElementById(PB_BTN[d.laci]);
-        if (b) b.click();
+        if (b) { b.click(); await pbDalam(d.laci); }
       } catch (e) { console.error('phone_buka:', e); }
+    }
+    // 24 Nov: masuk lebih dalam — terus ke page SOALAN (topik yang ada soalan pertama belum ditulis), skrol ke soalan itu
+    async function pbDalam(laci) {
+      const tunggu = async fn => { for (let i = 0; i < 40; i++) { if (fn()) return true; await new Promise(r => setTimeout(r, 250)); } return false; };
+      if (LW_CFG[laci]) {
+        if (!await tunggu(() => lw.j === laci && lw.topik.length && lw.soalan.length)) return;
+        await new Promise(r => setTimeout(r, 400));
+        let s = null;
+        for (const t of lw.topik) { s = lw.soalan.find(x => x.topikId === t.id && !lwKira(x.karangan)); if (s) break; }
+        if (!s) { const t0 = lw.topik.find(t => lw.soalan.some(x => x.topikId === t.id)); if (!t0) return; s = lw.soalan.find(x => x.topikId === t0.id); }
+        lw.topikId = s.topikId; showSection(lwSec('section-lw-soalan')); lwRenderSoalan();
+        setTimeout(() => { const kad = lwSec('lw-soalan-list')?.querySelector('[data-sid="' + s.id + '"]'); if (kad) kad.scrollIntoView({ block: 'center' }); }, 400);
+        return;
+      }
+      if (laci === 'speaking') {
+        if (!await tunggu(() => ls.dimuat)) return;
+        const B = lsBank(); let tm = '';
+        for (const t of B.T) if (B.L.some(s => s.tema === t && lsKiraH(s.id) < lsSlot(s).length)) { tm = t; break; }
+        if (!tm) tm = B.T.find(t => B.L.some(s => s.tema === t)) || '';
+        if (!tm) return;
+        ls.tema = tm; ls.baru = 0; ls.mesej = ''; showSection(lwSec('section-ls-soalan')); lsRenderSoalan();
+      }
     }
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') phoneBukaSemak(); });
     lwSec('btn-lw-back-topik')?.addEventListener('click', () => showSection(sectionTasbih));
@@ -12583,6 +12625,92 @@ btnAddLaci.addEventListener("click", async () => {
       }));
     })();
 
+    // ══════════ 🤖 JAWAPAN AI (24 Nov) — PRESET (salin ke AI) + JANA (tampal jawapan AI) · satu soalan & pukal (satu topik) ══════════
+    const AIJ_ATURAN = ['PERATURAN:',
+      '1. English sahaja. Setiap ayat MESTI ditamatkan dengan titik (.), tanda soal (?) atau seru (!) — app pecahkan ayat ikut titik.',
+      '2. Tiada tajuk, bullet, emoji atau markdown (** #) dalam jawapan.',
+      '3. Tahap MUET Band 4-5: ayat jelas, tatabahasa betul, kosa kata sederhana-tinggi.',
+      '4. Output: SATU codebox teks biasa sahaja, tanpa penerangan.'];
+    const aijBersih = t => String(t || '').replace(/^\s*```[a-z]*\s*$/gim, '').replace(/\*\*/g, '').trim();
+    function lwArahan(s) {
+      if (lw.j === 'writing' && s.task !== 2) return { tugas: 'Tulis jawapan MUET Writing Task 1 (balas e-mel / surat) sekurang-kurangnya 100 perkataan (sasar 110-130). Guna format e-mel / surat yang betul (salam pembuka, perenggan, penutup) dan liputi SEMUA nota.', bantu: (s.nota || []).map(x => '- ' + x.n + ': ' + (x.f || []).join('; ')) };
+      if (lw.j === 'writing') return { tugas: 'Tulis esei MUET Writing Task 2 (' + (LW_JENIS[s.jenis] || 'extended writing') + ') sekurang-kurangnya 250 perkataan (sasar 280-320): pendahuluan, 2-3 perenggan isi, kesimpulan.', bantu: (s.fakta || []).map(x => '- ' + x) };
+      if (lw.j === 'reasoning') return { tugas: 'Tulis esei REASONING dalam English (sasar 250-300 perkataan): nyatakan pendirian, beri 3 sebab dengan huraian dan contoh, dan kesimpulan.', bantu: [] };
+      if (lw.j === 'presenting') return { tugas: 'Tulis skrip PRESENTATION dalam English untuk dibentang 2-3 minit (sasar 280-330 perkataan): sapaan pembuka, pengenalan, 3 isi dengan huraian dan contoh, penutup dan ucapan terima kasih.', bantu: [] };
+      return { tugas: 'Tulis PETIKAN bacaan English (tahap UPSR ke atas, 200-300 perkataan) berdasarkan tajuk di bawah — cerita / rencana yang menarik, ayat pendek hingga sederhana.', bantu: [] };
+    }
+    const lwLabelSoal = () => lw.j === 'readingb' ? 'TAJUK' : 'SOALAN';
+    function lwPresetJawapan(s) {
+      const a = lwArahan(s);
+      return ['TUGAS: ' + a.tugas, '', lwLabelSoal() + ':', s.soalan || '', a.bantu.length ? '\nNOTA / FAKTA (wajib guna):\n' + a.bantu.join('\n') : '', ''].concat(AIJ_ATURAN).join('\n');
+    }
+    function lwPresetPukal() {
+      const sq = lw.soalan.filter(s => s.topikId === lw.topikId && s.soalan && !lwKira(s.karangan));
+      if (!sq.length) return '';
+      const L = [];
+      sq.forEach((s, i) => { const a = lwArahan(s); L.push('=== ' + (i + 1) + ' #' + s.id.slice(0, 6) + ' ===', 'TUGAS: ' + a.tugas, lwLabelSoal() + ': ' + s.soalan.replace(/\s+/g, ' ').trim()); if (a.bantu.length) L.push('NOTA / FAKTA:', ...a.bantu); L.push(''); });
+      return ['TUGAS: Tulis jawapan untuk SETIAP soalan di bawah (' + sq.length + ' soalan) ikut TUGAS masing-masing.', '',
+        'FORMAT WAJIB (saya tampal terus ke butang JANA PUKAL dalam app):',
+        '- Mulakan setiap jawapan dengan baris penanda yang SAMA TEPAT seperti soalan, cth: === 1 #abc123 ===',
+        '- Jawapan penuh di bawahnya. Jangan tulis semula soalan.', ''].concat(AIJ_ATURAN, ['', 'SENARAI SOALAN:', ''], L).join('\n');
+    }
+    // Pecah jawapan pukal ikut baris penanda === n #id ===
+    function aijPecahPukal(teks) {
+      const out = []; let cur = null;
+      String(teks || '').replace(/\*\*/g, '').split(/\r?\n/).forEach(b => {
+        const m = b.match(/^\s*=+\s*(\d+)\s*(?:#\s*([A-Za-z0-9_-]+))?\s*=+\s*$/);
+        if (m) { cur = { n: +m[1], id6: m[2] || '', L: [] }; out.push(cur); return; }
+        if (/^\s*```/.test(b)) return;
+        if (cur) cur.L.push(b);
+      });
+      return out.map(x => ({ n: x.n, id6: x.id6, t: x.L.join('\n').trim() })).filter(x => x.t);
+    }
+    const lwJwp = { buka: false };
+    function lwJwpLukis() {
+      const box = lwSec('lw-jwp'); if (!box) return;
+      const lama = (lwSec('lw-jwp-ta') || {}).value || '';
+      const kosong = lw.soalan.filter(s => s.topikId === lw.topikId && s.soalan && !lwKira(s.karangan)).length;
+      box.innerHTML = `<div style="border:1px solid ${lwC().warna};border-radius:10px;padding:8px;margin:6px 10px 0;">
+        <div style="font-size:0.78rem;color:var(--subtext);margin-bottom:6px;">Jawapan AI pukal (topik ini): <b>${kosong}</b> ${lwC().benda || 'karangan'} belum ditulis. Preset → tampal ke AI → salin jawapan → Jana Pukal → semak sendiri.</div>
+        <div style="display:flex;gap:6px;"><button class="btn btn-sm" data-jwp="preset" style="flex:1;">📋 Preset Jawapan Pukal</button><button class="btn btn-sm" data-jwp="jana" style="flex:1;">📥 Jana Pukal</button></div>
+        <div id="lw-jwp-kotak" style="display:${lwJwp.buka ? '' : 'none'};margin-top:8px;"><textarea id="lw-jwp-ta" rows="6" placeholder="=== 1 #abc123 ===&#10;Jawapan...&#10;=== 2 #def456 ===&#10;Jawapan..." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;font-size:0.9rem;"></textarea>
+        <button class="btn btn-sm mt-8" data-jwp="simpan" style="width:100%;">✅ Simpan Semua</button></div></div>`;
+      if (lama) lwSec('lw-jwp-ta').value = lama;
+    }
+    (() => {
+      const lst = lwSec('lw-soalan-list'); if (!lst || lwSec('lw-jwp')) return;
+      const d = document.createElement('div'); d.id = 'lw-jwp'; lst.parentNode.insertBefore(d, lst);
+      d.addEventListener('click', lxCuba(async e => {
+        const t = e.target.closest('[data-jwp]'); if (!t) return;
+        const a = t.getAttribute('data-jwp');
+        if (a === 'jana') { lwJwp.buka = !lwJwp.buka; lwSec('lw-jwp-kotak').style.display = lwJwp.buka ? '' : 'none'; autoTinggi(lwSec('lw-jwp-ta')); return; }
+        if (a === 'preset') {
+          const teks = lwPresetPukal();
+          if (!teks) { showToast('Semua ' + (lwC().benda || 'karangan') + ' dalam topik ini sudah ditulis.'); return; }
+          try { await navigator.clipboard.writeText(teks); showToast('📋 Preset pukal disalin. Tampal ke AI → salin jawapan → Jana Pukal.', 3500); }
+          catch (er) { lwJwp.buka = true; lwSec('lw-jwp-kotak').style.display = ''; lwSec('lw-jwp-ta').value = teks; autoTinggi(lwSec('lw-jwp-ta')); showToast('Telefon sekat salin — salin teks preset dalam kotak.', 3500); }
+          return;
+        }
+        if (a === 'simpan') {
+          const bh = aijPecahPukal((lwSec('lw-jwp-ta') || {}).value || '');
+          if (!bh.length) { showToast('Tiada jawapan dijumpai. Pastikan ada baris === 1 #xxxxxx ===', 3500); return; }
+          const sq = lw.soalan.filter(s => s.topikId === lw.topikId), kosong = sq.filter(s => s.soalan && !lwKira(s.karangan));
+          const b = writeBatch(db), guna = {}; let n = 0, ada = 0, x = 0, now = Date.now();
+          bh.forEach(p => {
+            const s = (p.id6 && sq.find(q => q.id.indexOf(p.id6) === 0)) || (!p.id6 && kosong[p.n - 1]);
+            if (!s || guna[s.id]) { x++; return; }
+            guna[s.id] = 1;
+            if (lwKira(s.karangan)) { ada++; return; }
+            b.update(lwDoc(lwK('soalan'), s.id), { karangan: p.t, updatedAt: now++ }); n++;
+          });
+          if (n) await b.commit();
+          lwJwp.buka = false;
+          showToast('✅ Jana Pukal: ' + n + ' jawapan disimpan' + (ada ? ' · ' + ada + ' sudah ada (tak diganti)' : '') + (x ? ' · ' + x + ' tak padan' : '') + '. Semak setiap satu.', 4500);
+          lwJwpLukis(); if (lwSec('lw-jwp-ta')) lwSec('lw-jwp-ta').value = '';
+        }
+      }));
+    })();
+
     // ══════════ 🗣️ LACI SPEAKING (18 Nov) — dipindah dari Kindle PENTAS: tulis HURAIAN di phone, Kindle baca ikut SR ══════════
     // Data (SAMA dengan Kindle):
     //   coach/pentas_asal  { soalan: [...], versi } — soalan asal dalam kod Kindle (diterbitkan oleh Kindle)
@@ -12678,6 +12806,32 @@ btnAddLaci.addEventListener("click", async () => {
       return r;
     }
     const lsGaya = 'width:100%;box-sizing:border-box;background:rgba(0,0,0,0.25);color:white;border:1px solid var(--border-mid);border-radius:8px;padding:6px;';
+    // 24 Nov: HURAIAN AI — preset satu soalan / pukal satu topik · format [1] [2] ... ikut slot (ISI / PILIHAN)
+    const lsArahanAi = s => s.part === 1 ? 'Tulis HURAIAN MUET Speaking Part 1 (Individual Presentation) untuk setiap ISI di bawah: 3-4 ayat setiap isi (sebab, contoh, kesan).'
+      : 'Tulis HURAIAN MUET Speaking Part 2 (Group Discussion) untuk setiap PILIHAN di bawah: 3-4 ayat setiap pilihan (kenapa sesuai / kurang sesuai, contoh). Pilihan bertanda terbaik — huraikan kenapa ia paling baik.';
+    const lsBlokAi = s => ['SOALAN (P' + s.part + '): ' + s.soalan].concat(lsSlot(s).map((x, i) => '[' + (i + 1) + '] ' + x.tajuk.replace(' ★', ' (terbaik)') + (x.isi.length ? ' — ' + x.isi.join('; ') : '')));
+    function lsPresetSatu(s) {
+      return ['TUGAS: ' + lsArahanAi(s), ''].concat(lsBlokAi(s), ['', 'FORMAT WAJIB (saya tampal terus ke butang JANA JAWAPAN dalam app):', 'Satu perenggan bagi setiap nombor, dimulakan dengan nombor yang SAMA, cth:', '[1] huraian...', '[2] huraian...', ''], AIJ_ATURAN).join('\n');
+    }
+    function lsPresetPukal() {
+      const sq = lsBank().L.filter(s => s.tema === ls.tema && lsSlot(s).length && lsKiraH(s.id) < lsSlot(s).length).sort((x, y) => x.part - y.part);
+      if (!sq.length) return '';
+      const L = []; sq.forEach((s, i) => { L.push('=== ' + (i + 1) + ' #' + s.id + ' ===', 'TUGAS: ' + lsArahanAi(s), ...lsBlokAi(s), ''); });
+      return ['TUGAS: Tulis huraian untuk SETIAP soalan di bawah (' + sq.length + ' soalan).', '', 'FORMAT WAJIB (saya tampal terus ke butang JANA PUKAL dalam app):',
+        '- Mulakan setiap soalan dengan baris penanda yang SAMA TEPAT, cth: === 1 #u1abc ===',
+        '- Di bawahnya, satu perenggan bagi setiap nombor, setiap satu di baris baru: [1] huraian... [2] huraian...',
+        '- Jangan tulis semula soalan.', ''].concat(AIJ_ATURAN, ['', 'SENARAI SOALAN:', ''], L).join('\n');
+    }
+    function lsPecahSlot(teks) {
+      const h = {}; let cur = -1;
+      String(teks || '').replace(/\*\*/g, '').split(/\r?\n/).forEach(b => {
+        if (/^\s*```/.test(b)) return;
+        const m = b.match(/^\s*\[(\d+)\]\s*(.*)$/);
+        if (m) { cur = +m[1] - 1; h[cur] = m[2].trim(); return; }
+        if (cur >= 0 && b.trim()) h[cur] += (h[cur] ? ' ' : '') + b.trim();
+      });
+      return h;
+    }
     function lsRenderTema() {
       const ai = lwSec('ls-ai'), box = lwSec('ls-tema-list'); if (!ai || !box) return;
       if (!ls.dimuat) { box.innerHTML = '<div class="empty-state">Memuatkan...</div>'; return; }
@@ -12709,6 +12863,10 @@ btnAddLaci.addEventListener("click", async () => {
       lwSec('ls-nama-tema').textContent = ls.tema;
       const B = lsBank(), sq = B.L.filter(s => s.tema === ls.tema).sort((x, y) => x.part - y.part);
       let h = '<div style="display:flex;gap:6px;"><button class="btn btn-sm" data-ls="baru1" style="flex:1;">+ Soalan P1</button><button class="btn btn-sm" data-ls="baru2" style="flex:1;">+ Soalan P2</button></div>';
+      const lsKos = sq.filter(s => lsSlot(s).length && lsKiraH(s.id) < lsSlot(s).length).length; // 24 Nov: huraian AI pukal
+      h += '<div style="border:1px solid #38bdf8;border-radius:10px;padding:8px;margin-top:8px;"><div style="font-size:0.78rem;color:var(--subtext);margin-bottom:6px;">Huraian AI pukal (topik ini): <b>' + lsKos + '</b> soalan belum lengkap. Preset → tampal ke AI → salin jawapan → Jana Pukal → semak sendiri.</div>' +
+        '<div style="display:flex;gap:6px;"><button class="btn btn-sm" data-ls="jwppreset" style="flex:1;">📋 Preset Jawapan Pukal</button><button class="btn btn-sm" data-ls="jwpjana" style="flex:1;">📥 Jana Pukal</button></div>' +
+        '<div id="ls-jwp-kotak" style="display:none;margin-top:8px;"><textarea id="ls-jwp-ta" rows="6" placeholder="=== 1 #u1abc ===&#10;[1] huraian...&#10;[2] huraian..." style="' + lsGaya + '"></textarea><button class="btn btn-sm mt-8" data-ls="jwpsimpan" style="width:100%;background:#38bdf8;color:#000;">✅ Simpan Semua</button></div></div>';
       if (ls.baru) h += '<div class="drawer-card mt-8"><b>Soalan baru · Part ' + ls.baru + (ls.baru === 1 ? ' (Individual)' : ' (Group)') + '</b>' +
         '<textarea id="ls-sq" rows="2" placeholder="Soalan?" style="' + lsGaya + 'margin-top:6px;"></textarea>' +
         '<div style="font-size:0.75rem;color:var(--subtext);margin-top:6px;">' + (ls.baru === 1 ? 'Isi — satu baris satu isi:' : 'Pilihan — satu baris satu pilihan: pilihan = hujah; hujah (tanda * pada pilihan terbaik)') + '</div>' +
@@ -12740,6 +12898,9 @@ btnAddLaci.addEventListener("click", async () => {
           x.isi.map(t => `<div style="font-size:0.85rem;margin:2px 0;">→ ${lxEsc(t)}</div>`).join('') +
           `<textarea class="ls-h" data-k="${x.k}" rows="5" placeholder="Huraian saya..." style="${lsGaya}margin-top:6px;">${lxEsc(hs[x.k] || '')}</textarea></div>`;
       });
+      h += '<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-secondary btn-sm" data-ls="hpreset" style="flex:1;">📋 Salin Preset AI</button><button class="btn btn-secondary btn-sm" data-ls="hjana" style="flex:1;">📥 Jana Jawapan</button></div>' +
+        '<div id="ls-hj-kotak" style="display:none;margin-top:8px;"><div style="font-size:0.78rem;color:var(--subtext);margin-bottom:4px;">Malas fikir? Salin Preset AI → tampal ke AI → salin jawapan → tampal di sini → Masukkan. Kemudian semak &amp; baiki sendiri.</div>' +
+        '<textarea id="ls-hj-ta" rows="6" placeholder="[1] huraian...&#10;[2] huraian..." style="' + lsGaya + '"></textarea><button class="btn btn-sm mt-8" data-ls="hmasuk" style="width:100%;background:#38bdf8;color:#000;">✅ Masukkan &amp; Simpan</button></div>';
       h += '<button class="btn btn-sm mt-8" data-ls="simpanhuraian" style="width:100%;background:#38bdf8;color:#000;">💾 Simpan Huraian</button>' +
         '<button class="btn btn-sm btn-secondary mt-8" data-ls="buangsoalan" style="width:100%;color:#f87171;">🗑️ Buang Soalan Ini</button>';
       box.innerHTML = h;
@@ -12804,6 +12965,39 @@ btnAddLaci.addEventListener("click", async () => {
         if (!r.n) { showToast(r.ulang ? 'Soalan ini sudah ada.' : 'Format tidak sah.'); return; }
         await lsSimpanU(); ls.baru = 0; ls.mesej = '✅ Soalan ditambah.'; lsRenderSoalan(); return;
       }
+      // 24 Nov: HURAIAN AI — satu soalan (page huraian) & pukal (page soalan)
+      if (a === 'hpreset' || a === 'jwppreset') {
+        const s1 = lsBank().S[ls.id], teks = a === 'hpreset' ? (s1 ? lsPresetSatu(s1) : '') : lsPresetPukal(), kid = a === 'hpreset' ? 'ls-hj' : 'ls-jwp';
+        if (!teks) { showToast(a === 'hpreset' ? 'Soalan tiada.' : 'Semua soalan dalam topik ini sudah ada huraian lengkap.'); return; }
+        try { await navigator.clipboard.writeText(teks); showToast('📋 Preset disalin. Tampal ke AI → salin jawapan → ' + (a === 'hpreset' ? 'Jana Jawapan.' : 'Jana Pukal.'), 3500); }
+        catch (er) { lwSec(kid + '-kotak').style.display = ''; lwSec(kid + '-ta').value = teks; autoTinggi(lwSec(kid + '-ta')); showToast('Telefon sekat salin — salin teks preset dalam kotak.', 3500); }
+        return;
+      }
+      if (a === 'hjana' || a === 'jwpjana') { const kid = a === 'hjana' ? 'ls-hj' : 'ls-jwp', k = lwSec(kid + '-kotak'); k.style.display = k.style.display === 'none' ? '' : 'none'; autoTinggi(lwSec(kid + '-ta')); return; }
+      if (a === 'hmasuk') {
+        const hp = lsPecahSlot(lwSec('ls-hj-ta').value), tas = lwSec('ls-huraian-isi').querySelectorAll('textarea.ls-h');
+        if (!Object.keys(hp).length) { showToast('Tiada [1] [2] ... dijumpai dalam jawapan AI.', 3500); return; }
+        let ganti = 0; tas.forEach((t, i) => { if (hp[i] && t.value.trim()) ganti++; });
+        if (ganti && !confirm('Ganti ' + ganti + ' huraian sedia ada dengan jawapan AI?')) return;
+        tas.forEach((t, i) => { if (hp[i]) { t.value = hp[i]; autoTinggi(t); } });
+        lwSec('ls-hj-ta').value = ''; lwSec('ls-hj-kotak').style.display = 'none';
+        await lsSimpanHuraian(); return;
+      }
+      if (a === 'jwpsimpan') {
+        const bh = aijPecahPukal((lwSec('ls-jwp-ta') || {}).value || '');
+        if (!bh.length) { showToast('Tiada jawapan dijumpai. Pastikan ada baris === 1 #xxxx ===', 3500); return; }
+        const B = lsBank(); let n = 0, x = 0;
+        for (const p of bh) {
+          const s = B.S[p.id6]; if (!s) { x++; continue; }
+          const hp = lsPecahSlot(p.t), lama = lsH(s.id), hs = { ...lama }; let ubah = 0;
+          lsSlot(s).forEach((sl, i) => { if (hp[i] && !String(lama[sl.k] || '').trim()) { hs[sl.k] = hp[i]; ubah++; } });
+          if (!ubah) continue;
+          const rek = { h: hs, at: Date.now(), tarikh: lsHari() };
+          await setDoc(lsKarRef(s.id), rek); ls.kar['q-' + s.id] = rek; n++;
+        }
+        showToast('✅ Jana Pukal: ' + n + ' soalan diisi huraian' + (x ? ' · ' + x + ' tak padan' : '') + '. Huraian sedia ada tak diganti. Semak setiap satu.', 4500);
+        lsRenderSoalan(); return;
+      }
       if (a === 'soalan') { ls.id = v; showSection(lwSec('section-ls-huraian')); lsRenderHuraian(); return; }
       if (a === 'buangtema') {
         if (!confirm('Buang topik "' + ls.tema + '" beserta semua soalannya dari senarai? (Huraian yang sudah ditulis tidak dipadam.)')) return;
@@ -12817,6 +13011,16 @@ btnAddLaci.addEventListener("click", async () => {
         ls.mesej = '🗑️ Soalan dibuang.'; showSection(lwSec('section-ls-soalan')); lsRenderSoalan(); return;
       }
     })));
+
+    // ══════════ 24 Nov: KOTAK TEKS LACI MELEBAR SENDIRI — soalan / karangan / huraian panjang nampak penuh tanpa scroll dalam kotak ══════════
+    const AUTO_TA = 'textarea.lw-soalan, #lw-karangan, textarea.ls-h, #ls-sq, #ls-si, #lw-aij-ta, #ls-hj-ta, #lw-jwp-ta, #ls-jwp-ta';
+    function autoTinggi(ta) { if (!ta || !ta.offsetParent) return; ta.style.overflow = 'hidden'; ta.style.resize = 'none'; ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+    const autoTinggiSemua = () => document.querySelectorAll(AUTO_TA).forEach(autoTinggi);
+    document.addEventListener('input', e => { if (e.target && e.target.matches && e.target.matches(AUTO_TA)) autoTinggi(e.target); });
+    let autoTaJadual = 0;
+    const autoTaObs = new MutationObserver(() => { if (autoTaJadual) return; autoTaJadual = requestAnimationFrame(() => { autoTaJadual = 0; autoTinggiSemua(); }); });
+    document.querySelectorAll('.section-lw').forEach(sec => autoTaObs.observe(sec, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }));
+    window.addEventListener('resize', autoTinggiSemua);
 
     // ══════════ 📖 LACI READING (18 Nov) — bank SINONIM · ANTONIM · IDIOM ══════════
     // Kindle: nota (jawapan) di tab TOPIK Perpustakaan · latihan dalam bentuk AYAT di ARKED READING (titik 4)
