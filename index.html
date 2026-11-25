@@ -11277,6 +11277,7 @@ if (routineMode && allRoutines.length > 0) {
         
 showSection(secToShow); 
         setTimeout(phoneBukaSemak, 1500); // 24 Nov: isyarat dari Kindle (STATUS ALIRAN › PHONE) → terus buka laci
+        ketatPLanggan(); // 25 Nov: MOD KETAT dari Kindle — laci bidang yang dikunci tidak boleh dibuka
         await ensureTodayTasbih();
         checkShowAdminPinBtn();        
         subscribeHistory();
@@ -12468,6 +12469,7 @@ btnAddLaci.addEventListener("click", async () => {
     }
     // 24 Nov: masuk lebih dalam — terus ke page SOALAN (topik yang ada soalan pertama belum ditulis), skrol ke soalan itu
     async function pbDalam(laci) {
+      if (ketatPCari(PB_KUNCI[laci])) return; // 25 Nov: MOD KETAT
       const tunggu = async fn => { for (let i = 0; i < 40; i++) { if (fn()) return true; await new Promise(r => setTimeout(r, 250)); } return false; };
       if (LW_CFG[laci]) {
         if (!await tunggu(() => lw.j === laci && lw.topik.length && lw.soalan.length)) return;
@@ -12489,6 +12491,65 @@ btnAddLaci.addEventListener("click", async () => {
       }
     }
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') phoneBukaSemak(); });
+    // ══ MOD KETAT (25 Nov) — Kindle (page COACH) tulis coach/ketat { aktif, blok[], cadang } · laci bidang yang DIKUNCI tidak boleh dibuka di sini ══
+    const KETAT_BTN = { 'btn-go-writing': 'tulis', 'btn-go-reasoning': 'reasoning', 'btn-go-presenting': 'presenting', 'btn-go-speaking': 'pentas', 'btn-go-reading': 'reading', 'btn-go-readingb': 'reading', 'btn-go-bahasa-times': 'vocab' };
+    const KETAT_KE = { tulis: 'btn-go-writing', reasoning: 'btn-go-reasoning', presenting: 'btn-go-presenting', pentas: 'btn-go-speaking', reading: 'btn-go-readingb', vocab: 'btn-go-bahasa-times' };
+    const PB_KUNCI = { writing: 'tulis', reasoning: 'reasoning', presenting: 'presenting', speaking: 'pentas', reading: 'reading', readingb: 'reading' };
+    let ketatP = { aktif: false, blok: [], cadang: null, had: 5 }, ketatUnsub = null;
+    function ketatPLanggan() {
+      if (ketatUnsub) { try { ketatUnsub(); } catch (e) {} ketatUnsub = null; }
+      if (!currentUser) return;
+      ketatUnsub = onSnapshot(doc(db, 'users', currentUser.uid, 'coach', 'ketat'), s => {
+        const d = s.exists() ? (s.data() || {}) : {};
+        ketatP = { aktif: !!d.aktif, blok: Array.isArray(d.blok) ? d.blok : [], cadang: d.cadang || null, had: d.had || 5 };
+        ketatPLabel();
+      }, e => console.warn('ketat:', e));
+    }
+    function ketatPCari(k) { return k && ketatP.aktif ? ketatP.blok.find(x => x && x.k === k) || null : null; }
+    function ketatPLabel() {
+      Object.keys(KETAT_BTN).forEach(id => {
+        const b = document.getElementById(id); if (!b) return;
+        if (b.dataset.ketatAsal === undefined) b.dataset.ketatAsal = b.textContent;
+        const x = ketatPCari(KETAT_BTN[id]);
+        b.textContent = x ? '🔒 ' + b.dataset.ketatAsal : b.dataset.ketatAsal;
+        b.style.opacity = x ? '0.55' : '';
+      });
+    }
+    function ketatPModal(x) {
+      let m = document.getElementById('ketat-modal');
+      if (!m) {
+        m = document.createElement('div'); m.id = 'ketat-modal';
+        m.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999999;background:rgba(0,0,0,.8);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+        m.addEventListener('click', e => {
+          const t = e.target.closest ? e.target.closest('[data-ketat-ke],[data-ketat-tutup]') : null;
+          if (e.target !== m && !t) return;
+          m.style.display = 'none';
+          const ke = t && t.getAttribute('data-ketat-ke');
+          if (ke) document.getElementById(ke)?.click();
+        });
+        document.body.appendChild(m);
+      }
+      const c = ketatP.cadang, had = ketatP.had || 5, ke = c && KETAT_KE[c.k] && !ketatPCari(c.k) ? KETAT_KE[c.k] : '';
+      const nk = ke ? (document.getElementById(ke)?.dataset.ketatAsal || document.getElementById(ke)?.textContent || '') : '';
+      m.innerHTML = `<div style="background:#0a1628;border:1px solid #4b5563;border-radius:18px;padding:22px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.9);color:#e5e7eb;">
+        <div style="font-size:1.1rem;font-weight:700;color:#f97373;margin-bottom:8px;">🔒 Mod Ketat: ${x.nama} dikunci</div>
+        <div style="font-size:.9rem;line-height:1.5;">Pai ${x.nama} sekarang ${x.p} peratus, sedangkan sasarannya ${x.s} peratus. Ia sudah melebihi sasaran lebih daripada ${had} peratus, jadi semua aliran ${x.nama} dikunci buat sementara supaya pai English kembali seimbang.</div>
+        <div style="font-size:.9rem;line-height:1.5;margin-top:8px;">Kunci ini terbuka sendiri bila ${x.nama} turun ke ${x.s + had} peratus atau kurang. Peratusnya turun bila bidang lain naik.</div>
+        ${c ? `<div style="font-size:.9rem;line-height:1.5;margin-top:8px;">Bidang yang paling jauh di bawah sasaran sekarang ialah <b>${c.nama}</b>: ${c.p} peratus, sasaran ${c.s} peratus. Mulakan di situ.</div>` : ''}
+        <div style="font-size:.8rem;color:#9ca3af;margin-top:8px;">Mod Ketat boleh dimatikan di Kindle, page COACH, di atas pai (b).</div>
+        ${ke ? `<button type="button" data-ketat-ke="${ke}" class="btn" style="width:100%;margin-top:14px;">Buka ${nk.replace(/^🔒\s*/, '')}</button>` : ''}
+        <button type="button" data-ketat-tutup="1" class="btn btn-secondary" style="width:100%;margin-top:10px;">Faham</button></div>`;
+      m.style.display = 'flex';
+    }
+    // Disemak di document (fasa capture) — sebelum pengendali asal butang laci
+    document.addEventListener('click', e => {
+      const b = e.target && e.target.closest ? e.target.closest('button[id]') : null;
+      if (!b || !KETAT_BTN[b.id]) return;
+      const x = ketatPCari(KETAT_BTN[b.id]);
+      if (!x) return;
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      ketatPModal(x);
+    }, true);
     lwSec('btn-lw-back-topik')?.addEventListener('click', () => showSection(sectionTasbih));
     lwSec('btn-lw-back-soalan')?.addEventListener('click', () => { showSection(lwSec('section-lw-topik')); lwRenderTopik(); });
     lwSec('btn-lw-back-karangan')?.addEventListener('click', () => {
