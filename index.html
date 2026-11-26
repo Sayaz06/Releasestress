@@ -3051,6 +3051,20 @@ They immortalized the hero in a statue.
           </div>
         </div>
 
+        <!-- 🔍 CARI LACI (26 Nov) — tapis laci ikut tajuk (pilihan: isi baris juga) -->
+        <div id="cari-laci-fakta-wrap" style="position:sticky;top:0;z-index:20;margin-top:10px;background:rgba(15,23,42,0.97);border:1px solid rgba(167,139,250,0.5);border-radius:14px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,0.35);">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:1rem;">🔍</span>
+            <input id="cari-laci-fakta" type="text" inputmode="search" enterkeyhint="search" placeholder="Cari tajuk laci..." autocomplete="off" style="flex:1;min-width:0;background:rgba(0,0,0,0.35);border:1px solid var(--border-mid);border-radius:8px;color:var(--text);padding:8px 10px;font-size:0.9rem;">
+            <button id="btn-cari-laci-fakta-kosong" type="button" class="btn btn-secondary btn-sm" style="display:none;padding:6px 10px;">✕</button>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:6px;">
+            <label style="font-size:0.7rem;color:var(--subtext);display:flex;align-items:center;gap:5px;white-space:nowrap;"><input id="cari-laci-fakta-isi" type="checkbox" style="width:auto;margin:0;"> Cari dalam isi baris juga</label>
+            <span id="cari-laci-fakta-info" style="flex:1;text-align:right;font-size:0.7rem;color:#c4b5fd;font-weight:700;"></span>
+          </div>
+          <div id="cari-laci-fakta-hasil" style="display:none;flex-wrap:wrap;gap:5px;margin-top:6px;max-height:96px;overflow-y:auto;"></div>
+        </div>
+
         <div class="list mt-8" id="drawer-list" style="padding: 10px;"></div>
       </section>
 
@@ -10586,10 +10600,60 @@ bukaCropTool(file, async (blob) => {
           showTipsNotice('Fakta Drawer');
         });
 
+
         drawerList.appendChild(div);
       });
       faktaTandaSemasa();
+      faktaCariTapis(); // 26 Nov: kekalkan carian bila senarai dilukis semula
     }
+
+    // ── 🔍 CARI LACI (26 Nov, page Isi Laci) — tapis kad laci ikut tajuk; pilihan cari dalam isi baris (ayat, soalan, jawapan) ──
+    //   Beberapa perkataan = semua mesti ada. Jarak diabaikan untuk kod (cth "19dac" jumpa "19DAC25F2100"). Tekan nama di senarai hasil → terus ke laci itu.
+    let _cariLaciTopik = null, _cariLaciTmr = null;
+    function _cariNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim(); }
+    function _cariKe(c) {
+      if (!c) return;
+      c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      c.style.transition = 'box-shadow 0.3s'; c.style.boxShadow = '0 0 0 3px #a78bfa, 0 0 18px rgba(167,139,250,0.7)';
+      setTimeout(() => { c.style.boxShadow = ''; }, 1600);
+    }
+    function faktaCariTapis() {
+      const inp = document.getElementById('cari-laci-fakta'); if (!inp || !drawerList) return;
+      if (_cariLaciTopik !== currentTopicId) { _cariLaciTopik = currentTopicId; inp.value = ''; } // topik lain → carian kosong semula
+      const q = _cariNorm(inp.value), kata = q ? q.split(' ') : [], isi = !!document.getElementById('cari-laci-fakta-isi')?.checked;
+      const kad = Array.from(drawerList.querySelectorAll(':scope > .drawer-card')), jumpa = [];
+      kad.forEach(c => {
+        const tajuk = _cariNorm(c.querySelector('.drawer-title')?.value);
+        let teks = tajuk + ' ' + tajuk.replace(/ /g, '');
+        if (isi) c.querySelectorAll('.fakta-item-card textarea').forEach(t => { const v = _cariNorm(t.value); teks += ' ' + v + ' ' + v.replace(/ /g, ''); });
+        const ok = !kata.length || kata.every(k => teks.includes(k));
+        c.style.display = ok ? '' : 'none';
+        c.style.outline = (ok && kata.length) ? '2px solid #a78bfa' : '';
+        if (ok && kata.length) jumpa.push(c);
+      });
+      document.getElementById('btn-cari-laci-fakta-kosong').style.display = q ? '' : 'none';
+      const info = document.getElementById('cari-laci-fakta-info'), hasil = document.getElementById('cari-laci-fakta-hasil');
+      info.textContent = !q ? kad.length + ' laci' : jumpa.length ? jumpa.length + ' / ' + kad.length + ' laci' : 'Tiada laci sepadan';
+      info.style.color = q && !jumpa.length ? '#f87171' : '#c4b5fd';
+      hasil.innerHTML = '';
+      hasil.style.display = q && jumpa.length ? 'flex' : 'none';
+      jumpa.slice(0, 40).forEach(c => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn btn-secondary btn-sm';
+        b.style.cssText = 'padding:3px 9px;font-size:0.7rem;border-color:#a78bfa;color:#c4b5fd;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        b.textContent = c.querySelector('.drawer-title')?.value || '(tanpa tajuk)';
+        b.addEventListener('click', () => _cariKe(c));
+        hasil.appendChild(b);
+      });
+      return jumpa;
+    }
+    (() => {
+      const inp = document.getElementById('cari-laci-fakta'); if (!inp) return;
+      inp.addEventListener('input', () => { clearTimeout(_cariLaciTmr); _cariLaciTmr = setTimeout(faktaCariTapis, 120); });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const j = faktaCariTapis(); inp.blur(); if (j && j.length) _cariKe(j[0]); } });
+      document.getElementById('cari-laci-fakta-isi').addEventListener('change', () => faktaCariTapis());
+      document.getElementById('btn-cari-laci-fakta-kosong').addEventListener('click', () => { inp.value = ''; faktaCariTapis(); inp.focus(); });
+    })();
 
     // ── 📍 BARIS SEMASA (Fakta) — lencana hijau macam Golongan Bahasa ──
     // Kindle: topics.kindleFid (ID baris yang sedang dipapar di Kindle) · Phone: topics.phoneFaktaPos
