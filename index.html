@@ -3958,9 +3958,9 @@ They immortalized the hero in a statue.
         <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:12px;padding:12px;margin-bottom:10px;flex-shrink:0;">
           <div style="font-size:0.78rem;font-weight:700;color:#34d399;margin-bottom:6px;">📌 Cara Guna</div>
           <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
-            • Tambah tajuk perjalanan (contoh: "Pergi ke Kelas")<br>
-            • Dalam setiap tajuk, tambah kumpulan dan item<br>
-            • Tekan <strong>Biasa</strong> (di sebelah Nama Tajuk, atau pada kumpulan) untuk tanda <strong>🚨 Kecemasan</strong>. Yang bertanda dipaparkan paling atas.<br>
+            • Tambah tajuk perjalanan (contoh: "Pergi ke Kelas"). Tekan nama tajuk di senarai ini untuk tukar nama.<br>
+            • Tekan <strong>Edit</strong> untuk tambah kumpulan dan item<br>
+            • Tekan <strong>Biasa</strong> (pada tajuk di senarai ini, atau pada kumpulan dalam Edit) untuk tanda <strong>🚨 Kecemasan</strong>. Yang bertanda dipaparkan paling atas.<br>
             • Tick dan untick dibuat di Kindle atau app Go-Tick
           </div>
         </div>
@@ -3982,19 +3982,16 @@ They immortalized the hero in a statue.
           </div>
         </div>
 
-        <div style="margin-bottom:10px;flex-shrink:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
-            <div style="font-size:0.75rem;color:var(--subtext);">Nama Tajuk</div>
-            <!-- 27 Nov: 🚨 Kecemasan peringkat tajuk (tajuk dipaparkan paling atas di Kindle dan app Go-Tick) -->
-            <button id="btn-gotick-tajuk-emerg" class="btn btn-secondary btn-sm" style="font-size:0.65rem;padding:3px 8px;border-color:var(--border-mid);color:var(--subtext);flex-shrink:0;">Biasa</button>
-          </div>
-          <input id="gotick-tajuk-input" type="text" placeholder="Contoh: Pergi ke Kelas"
-            style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:10px;font-size:0.95rem;outline:none;">
-        </div>
-
-        <!-- 🔍 CARI PERALATAN (27 Nov) — tapis item dalam tajuk ini ikut nama item atau nama kumpulan -->
+        <!-- 🔍 CARIAN (28 Nov): kotak atas = cari nama kumpulan, kotak bawah = cari nama peralatan.
+             Nama tajuk dan tanda Kecemasan tajuk kini diubah di senarai tajuk (bukan di sini). -->
         <div style="margin-bottom:10px;flex-shrink:0;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.35);border-radius:12px;padding:7px 9px;">
           <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:0.95rem;">🔍</span>
+            <input id="gotick-cari-kumpulan" type="text" inputmode="search" enterkeyhint="search" placeholder="Cari kumpulan..." autocomplete="off"
+              style="flex:1;min-width:0;background:rgba(0,0,0,0.35);border:1px solid var(--border-mid);border-radius:8px;color:var(--text);padding:8px 10px;font-size:0.9rem;outline:none;">
+            <button id="btn-gotick-cari-kumpulan-kosong" type="button" class="btn btn-secondary btn-sm" style="display:none;padding:6px 10px;flex-shrink:0;">✕</button>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:6px;">
             <span style="font-size:0.95rem;">🔍</span>
             <input id="gotick-cari-item" type="text" inputmode="search" enterkeyhint="search" placeholder="Cari peralatan..." autocomplete="off"
               style="flex:1;min-width:0;background:rgba(0,0,0,0.35);border:1px solid var(--border-mid);border-radius:8px;color:var(--text);padding:8px 10px;font-size:0.9rem;outline:none;">
@@ -32154,11 +32151,29 @@ mifRefreshKeyStatus();
       }
 
       // ── Render senarai tajuk ──
+      // 28 Nov: nama tajuk diubah terus di kad senarai (macam topik Laci Fakta). Senarai tidak dilukis semula semasa
+      //   nama sedang ditaip (_gtListTunda); tajuk baru terus dipilih untuk ditaip namanya (_gtFokusBaru).
+      let _gtListTunda = false, _gtFokusBaru = null;
+      function gtListTunda() { if (_gtListTunda) { _gtListTunda = false; gtRenderTajukList(); } }
+      async function gtSimpanNamaTajuk(t, inp) {
+        const baru = inp.value.trim();
+        if (!baru) { inp.value = t.title || ''; showToast('Nama tajuk tidak boleh kosong.'); gtListTunda(); return; }
+        if (baru !== (t.title || '')) {
+          try {
+            await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', t.id), { title: baru, updatedAt: Date.now() });
+            t.title = baru;
+            showToast('✓ Nama tajuk disimpan');
+          } catch (e) { showToast('❌ Gagal simpan nama: ' + e.message); }
+        }
+        gtListTunda();
+      }
       function gtRenderTajukList() {
         const list = document.getElementById('gotick-tajuk-list');
         if (!list) return;
+        const fokus = document.activeElement;
+        if (fokus && fokus.classList && fokus.classList.contains('gt-tajuk-nama') && list.contains(fokus)) { _gtListTunda = true; return; }
         if (!allGoTickTajuk.length) {
-          list.innerHTML = '<div class="empty-state">Belum ada tajuk. Tekan "+ Tambah".</div>';
+          list.innerHTML = '<div class="empty-state">Belum ada tajuk. Tekan "+ Tambah Tajuk".</div>';
           return;
         }
         list.innerHTML = '';
@@ -32171,22 +32186,34 @@ mifRefreshKeyStatus();
             ? 'border:1px solid rgba(239,68,68,0.5);background:rgba(127,29,29,0.15);'
             : 'border:1px solid rgba(52,211,153,0.25);';
           div.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-                ${t.isEmergency ? '<span style="font-size:0.7rem;background:rgba(239,68,68,0.8);color:white;padding:2px 7px;border-radius:999px;flex-shrink:0;">🚨 KECEMASAN</span>' : ''}
-                <span style="font-size:0.95rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.title || '(Tanpa Tajuk)'}</span>
-              </div>
+            <input class="gt-tajuk-nama" type="text" placeholder="Nama tajuk..." enterkeyhint="done" autocomplete="off"
+              style="width:100%;background:transparent;border:none;border-bottom:1px solid ${t.isEmergency ? 'rgba(220,50,50,0.5)' : 'rgba(52,211,153,0.4)'};color:var(--text);outline:none;font-size:0.95rem;font-weight:600;padding:4px 2px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;">
+              <span style="font-size:0.75rem;color:var(--subtext);">${items.length} item · ${ticked} tick</span>
               <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                <span style="font-size:0.75rem;color:var(--subtext);">${items.length} item · ${ticked} tick</span>
+                <button class="btn-emerg-gotick btn btn-secondary btn-sm" style="border-color:${t.isEmergency ? '#f87171' : 'var(--border-mid)'};color:${t.isEmergency ? '#f87171' : 'var(--subtext)'};">${t.isEmergency ? '🚨 Kecemasan' : 'Biasa'}</button>
                 <button class="btn-edit-gotick btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">Edit</button>
                 <button class="btn-del-gotick btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">✕</button>
               </div>
             </div>
           `;
+          const namaIn = div.querySelector('.gt-tajuk-nama');
+          namaIn.value = t.title || '';
+          namaIn.dataset.id = t.id;
+          namaIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); namaIn.blur(); } });
+          namaIn.addEventListener('blur', () => gtSimpanNamaTajuk(t, namaIn));
+          div.querySelector('.btn-emerg-gotick').onclick = async () => { // 28 Nov: Kecemasan tajuk di senarai
+            try { await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', t.id), { isEmergency: !t.isEmergency, updatedAt: Date.now() }); }
+            catch (e) { showToast('❌ Gagal simpan: ' + e.message); }
+          };
           div.querySelector('.btn-edit-gotick').onclick = () => gtOpenEditor(t);
           div.querySelector('.btn-del-gotick').onclick = () => gtDeleteTajuk(t); // 27 Nov
           list.appendChild(div);
         });
+        if (_gtFokusBaru) {
+          const baru = list.querySelector('.gt-tajuk-nama[data-id="' + _gtFokusBaru + '"]');
+          if (baru) { _gtFokusBaru = null; baru.focus(); baru.select(); }
+        }
       }
 
       // ── Buka editor ──
@@ -32195,15 +32222,11 @@ mifRefreshKeyStatus();
         activeGoTickTajuk = t ? { ...t } : null;
         const isNew = !t;
         document.getElementById('gotick-editor-title').textContent = isNew ? 'Tajuk Baru' : 'Edit Tajuk';
-        document.getElementById('gotick-editor-sub').textContent = isNew ? '' : (t.title || '');
-        document.getElementById('gotick-tajuk-input').value = isNew ? '' : (t.title || '');
+        document.getElementById('gotick-editor-sub').textContent = isNew ? '' : ((t.isEmergency ? '🚨 ' : '') + (t.title || ''));
         document.getElementById('gotick-editor-err').textContent = '';
         const indBuka = document.getElementById('gotick-save-indicator');
         if (indBuka) { indBuka.textContent = '✓ Auto-save aktif'; indBuka.style.color = '#34d399'; } // 27 Nov: buang mesej lama
-        gtTajukEmerg = !isNew && !!t.isEmergency; // 27 Nov
-        gtRenderTajukEmerg();
-        const cariItem = document.getElementById('gotick-cari-item');
-        if (cariItem) cariItem.value = ''; // 27 Nov: carian peralatan bermula kosong untuk setiap tajuk
+        ['gotick-cari-kumpulan', 'gotick-cari-item'].forEach(id => { const c = document.getElementById(id); if (c) c.value = ''; }); // 28 Nov: carian bermula kosong
         // Convert flat items → gtGroups
         const rawItems = isNew ? [] : (t.items || []);
         gtGroups = [];
@@ -32371,39 +32394,31 @@ mifRefreshKeyStatus();
         if (!currentUser) return;
         // Tanda tick diambil dari data TERKINI, jadi tick dari Kindle atau app Go-Tick semasa editor terbuka tidak hilang
         const terkini = activeGoTickTajuk && activeGoTickTajuk.id ? allGoTickTajuk.find(x => x.id === activeGoTickTajuk.id) : null;
-        const namaLama = String((terkini || activeGoTickTajuk || {}).title || '').trim();
-        let title = document.getElementById('gotick-tajuk-input').value.trim();
-        const tajukKosong = !title;
-        if (tajukKosong) {
-          if (!namaLama) {
-            if (indicator) { indicator.textContent = '⚠️ Kotak Nama Tajuk (paling atas) kosong. Taip nama tajuk dahulu.'; indicator.style.color = '#f87171'; }
-            return;
-          }
-          title = namaLama;
-        }
         const rawItems = gtGetCurrentItems();
         const oldItems = ((terkini || activeGoTickTajuk || {}).items) || [];
+        // 28 Nov: item yang namanya diubah kekal tanda tick (ikut kedudukan dalam kumpulan yang sama, jika nama lamanya sudah tiada)
+        const adaBaru = new Set(rawItems.map(it => (it.group || '') + '\u0000' + (it.name || '')));
+        const kedudukan = {};
         const items = rawItems.map(it => {
-          const old = oldItems.find(o => o.name === it.name && o.group === it.group);
-          return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false, isEmergency: !!it.isEmergency }; // simpan tanda Kecemasan kumpulan
+          const g = it.group || '', p = kedudukan[g] = (kedudukan[g] || 0) + 1;
+          let old = oldItems.find(o => o.name === it.name && o.group === it.group);
+          if (!old) {
+            const lama = oldItems.filter(o => (o.group || '') === g)[p - 1];
+            if (lama && !adaBaru.has(g + '\u0000' + (lama.name || ''))) old = lama;
+          }
+          return { group: g, name: it.name || '', ticked: old ? !!old.ticked : false, isEmergency: !!it.isEmergency }; // simpan tanda Kecemasan kumpulan
         });
-        const isEmergency = gtTajukEmerg;
-        const order = activeGoTickTajuk
-          ? (activeGoTickTajuk.order || 0)
-          : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
-        const data = { title, isEmergency, items, order, updatedAt: Date.now() };
         try {
           if (activeGoTickTajuk && activeGoTickTajuk.id) {
-            await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id), data);
+            // 28 Nov: editor hanya simpan kumpulan dan item. Nama tajuk dan Kecemasan tajuk diubah di senarai tajuk.
+            await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id), { items, updatedAt: Date.now() });
           } else {
-            data.createdAt = Date.now();
+            const order = allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0;
+            const data = { title: 'Tajuk Baru', isEmergency: false, items, order, createdAt: Date.now(), updatedAt: Date.now() };
             const newRef = await addDoc(collection(db, 'users', currentUser.uid, 'go_tick_tajuk'), data);
             activeGoTickTajuk = { id: newRef.id, ...data };
           }
-          if (indicator) {
-            if (tajukKosong) { indicator.textContent = '⚠️ Kotak Nama Tajuk (paling atas) kosong, jadi nama "' + namaLama + '" dikekalkan. Kumpulan dan item tetap disimpan.'; indicator.style.color = '#fcd34d'; }
-            else { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#34d399'; }
-          }
+          if (indicator) { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#34d399'; }
         } catch(e) {
           if (indicator) { indicator.textContent = '❌ Gagal simpan'; indicator.style.color = '#f87171'; }
         }
@@ -32414,7 +32429,12 @@ mifRefreshKeyStatus();
         clearTimeout(_gtSaveTimer);
         gtSimpanSekarang();
       }
-      document.addEventListener('visibilitychange', () => { if (document.hidden) gtSimpanJikaMenunggu(); });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) return;
+        gtSimpanJikaMenunggu();
+        const a = document.activeElement; // 28 Nov: nama tajuk yang sedang ditaip di senarai juga disimpan
+        if (a && a.classList && a.classList.contains('gt-tajuk-nama')) a.blur();
+      });
       window.addEventListener('pagehide', gtSimpanJikaMenunggu);
 
       // ── Padam tajuk (27 Nov: butang ✕ di senarai tajuk, sebelah Edit) ──
@@ -32456,9 +32476,10 @@ mifRefreshKeyStatus();
             createdAt: Date.now(),
             updatedAt: Date.now()
           });
-          // Terus buka editor untuk tajuk baru yang baru dicipta
-          const newTajuk = { id: newRef.id, title: 'Tajuk Baru', isEmergency: false, items: [], order };
-          gtOpenEditor(newTajuk);
+          // 28 Nov: tajuk baru kekal di senarai dan kotak namanya terus dipilih untuk ditaip. Kumpulan dan item ditambah melalui Edit.
+          _gtFokusBaru = newRef.id;
+          gtRenderTajukList();
+          showToast('Taip nama tajuk baru, kemudian tekan Edit untuk tambah kumpulan dan item.');
         } catch(e) {
           showToast('❌ Gagal tambah tajuk: ' + e.message);
         }
@@ -32478,25 +32499,11 @@ mifRefreshKeyStatus();
         if (e.target.classList.contains('gt-group-name-input') || e.target.classList.contains('gt-item-name-input')) gtAutoSave();
       });
 
-      // 27 Nov: butang 🚨 Kecemasan / Biasa di sebelah Nama Tajuk
-      function gtRenderTajukEmerg() {
-        const b = document.getElementById('btn-gotick-tajuk-emerg');
-        if (!b) return;
-        b.textContent = gtTajukEmerg ? '🚨 Kecemasan' : 'Biasa';
-        b.style.borderColor = gtTajukEmerg ? '#f87171' : 'var(--border-mid)';
-        b.style.color = gtTajukEmerg ? '#f87171' : 'var(--subtext)';
-      }
-      document.getElementById('btn-gotick-tajuk-emerg').addEventListener('click', () => {
-        gtTajukEmerg = !gtTajukEmerg;
-        gtRenderTajukEmerg();
-        gtAutoSave();
-      });
-
-      // ── 🔍 CARI PERALATAN (27 Nov): tapis item dalam tajuk ini ikut nama item atau nama kumpulan ──
-      //   27 Nov (longgar): setiap perkataan dicari dalam NAMA KUMPULAN + NAMA ITEM sekali gus (cth "ubat inhaler", "beg charger"),
-      //   susunan perkataan tidak penting, huruf besar/kecil, jarak dan tanda baca diabaikan ("kadpelajar" = "kad pelajar"),
-      //   dan salah taip satu huruf dimaafkan untuk perkataan 4 huruf ke atas ("charjer" jumpa "charger").
-      //   Item kosong (baru ditambah) sentiasa dipaparkan. Item yang tersorok masih disimpan seperti biasa. Enter = lompat ke peralatan pertama yang dijumpai.
+      // ── 🔍 CARIAN (28 Nov): kotak atas = CARI KUMPULAN (nama kumpulan), kotak bawah = CARI PERALATAN (nama item) ──
+      //   Boleh guna satu atau kedua-duanya sekali. Longgar: susunan perkataan tidak penting, huruf besar/kecil, jarak dan
+      //   tanda baca diabaikan ("kadpelajar" = "kad pelajar"), salah taip satu huruf dimaafkan untuk perkataan 4 huruf ke atas.
+      //   Kumpulan / item kosong (baru ditambah) sentiasa dipaparkan. Yang tersorok masih disimpan seperti biasa.
+      //   Enter = papan kekunci ditutup dan skrin terus ke padanan pertama.
       function gtCariNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
       // Beza paling banyak satu huruf (tambah, buang atau tukar satu huruf)
       function gtCariSatuHuruf(a, b) {
@@ -32518,53 +32525,65 @@ mifRefreshKeyStatus();
           (k.length >= 4 && token.some(t => gtCariSatuHuruf(k, t) || (t.length > k.length && gtCariSatuHuruf(k, t.slice(0, k.length))))));
       }
       function gtCariTapis() {
-        const inp = document.getElementById('gotick-cari-item'), list = document.getElementById('gotick-item-list');
-        const info = document.getElementById('gotick-cari-info'), kosong = document.getElementById('btn-gotick-cari-kosong');
-        if (!inp || !list) return null;
-        const q = gtCariNorm(inp.value), kata = q ? q.split(' ') : [];
-        let jumpa = 0, pertama = null;
+        const inG = document.getElementById('gotick-cari-kumpulan'), inI = document.getElementById('gotick-cari-item');
+        const list = document.getElementById('gotick-item-list'), info = document.getElementById('gotick-cari-info');
+        if (!inG || !inI || !list) return null;
+        const qG = gtCariNorm(inG.value), qI = gtCariNorm(inI.value);
+        const kataG = qG ? qG.split(' ') : [], kataI = qI ? qI.split(' ') : [];
+        let bilG = 0, bilI = 0, pertama = null;
         list.querySelectorAll(':scope > div').forEach(grpDiv => {
           const gIn = grpDiv.querySelector('.gt-group-name-input');
           if (!gIn) return;
           const gNama = gtCariNorm(gIn.value);
-          let nampak = !kata.length || gtCariKena(kata, gNama);
+          const gKena = kataG.length > 0 && !!gNama && gtCariKena(kataG, gNama);
+          const gOk = !kataG.length || !gNama || gKena;
+          let adaItem = false;
           grpDiv.querySelectorAll('.gt-item-name-input').forEach(iIn => {
             const row = iIn.parentElement, nama = gtCariNorm(iIn.value);
-            const kena = kata.length > 0 && !!nama && gtCariKena(kata, (gNama + ' ' + nama).trim());
-            const ok = !kata.length || !nama || kena;
+            const kena = kataI.length > 0 && !!nama && gtCariKena(kataI, nama);
+            const ok = gOk && (!kataI.length || !nama || kena);
             row.style.display = ok ? '' : 'none';
-            row.style.background = kena ? 'rgba(52,211,153,0.12)' : '';
-            if (ok) nampak = true;
-            if (kena) { jumpa++; if (!pertama) pertama = row; }
+            row.style.background = (ok && kena) ? 'rgba(52,211,153,0.12)' : '';
+            if (ok) adaItem = true;
+            if (ok && kena) { bilI++; if (!pertama) pertama = row; }
           });
+          const nampak = gOk && (!kataI.length || adaItem);
           grpDiv.style.display = nampak ? '' : 'none';
+          grpDiv.style.boxShadow = (nampak && gKena) ? '0 0 0 2px rgba(52,211,153,0.55)' : '';
+          if (nampak && gKena) { bilG++; if (!pertama) pertama = grpDiv; }
         });
-        if (kosong) kosong.style.display = q ? '' : 'none';
+        document.getElementById('btn-gotick-cari-kumpulan-kosong').style.display = qG ? '' : 'none';
+        document.getElementById('btn-gotick-cari-kosong').style.display = qI ? '' : 'none';
         if (info) {
-          info.style.display = q ? '' : 'none';
-          info.textContent = jumpa ? jumpa + ' peralatan dijumpai' : 'Tiada peralatan sepadan';
-          info.style.color = jumpa ? '#6ee7b7' : '#f87171';
+          const bahagian = [];
+          if (kataG.length) bahagian.push(bilG + ' kumpulan');
+          if (kataI.length) bahagian.push(bilI + ' peralatan');
+          const tiada = (kataG.length && !bilG) || (kataI.length && !bilI);
+          info.style.display = bahagian.length ? '' : 'none';
+          info.textContent = tiada ? 'Tiada yang sepadan' : bahagian.join(' · ') + ' dijumpai';
+          info.style.color = tiada ? '#f87171' : '#6ee7b7';
         }
         return pertama;
       }
-      document.getElementById('gotick-cari-item').addEventListener('input', gtCariTapis);
-      document.getElementById('gotick-cari-item').addEventListener('keydown', e => {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        const p = gtCariTapis();
-        e.target.blur();
-        if (p) setTimeout(() => p.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+      ['gotick-cari-kumpulan', 'gotick-cari-item'].forEach(id => {
+        const inp = document.getElementById(id);
+        inp.addEventListener('input', gtCariTapis);
+        inp.addEventListener('keydown', e => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          const p = gtCariTapis();
+          e.target.blur();
+          if (p) setTimeout(() => p.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+        });
       });
-      document.getElementById('btn-gotick-cari-kosong').addEventListener('click', () => {
-        const inp = document.getElementById('gotick-cari-item');
-        inp.value = '';
-        gtCariTapis();
-        inp.focus();
+      [['btn-gotick-cari-kumpulan-kosong', 'gotick-cari-kumpulan'], ['btn-gotick-cari-kosong', 'gotick-cari-item']].forEach(([b, i]) => {
+        document.getElementById(b).addEventListener('click', () => {
+          const inp = document.getElementById(i);
+          inp.value = '';
+          gtCariTapis();
+          inp.focus();
+        });
       });
-
-      // Auto-save bila nama tajuk berubah
-      document.getElementById('gotick-tajuk-input').addEventListener('blur', gtAutoSave);
-      document.getElementById('gotick-tajuk-input').addEventListener('input', gtAutoSave);
 
     })();
     // ══════════════════════════════════════════
