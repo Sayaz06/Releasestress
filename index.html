@@ -3960,8 +3960,8 @@ They immortalized the hero in a statue.
           <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
             • Tambah tajuk perjalanan (contoh: "Pergi ke Kelas")<br>
             • Dalam setiap tajuk, tambah kumpulan dan item<br>
-            • Tandakan <strong>🚨 Kecemasan</strong> untuk tajuk yang wajib di atas<br>
-            • Tick/Untick dilakukan di Kindle
+            • Tekan <strong>Biasa</strong> (di sebelah Nama Tajuk, atau pada kumpulan) untuk tanda <strong>🚨 Kecemasan</strong>. Yang bertanda dipaparkan paling atas.<br>
+            • Tick dan untick dibuat di Kindle atau app Go-Tick
           </div>
         </div>
 
@@ -3983,7 +3983,11 @@ They immortalized the hero in a statue.
         </div>
 
         <div style="margin-bottom:10px;flex-shrink:0;">
-          <div style="font-size:0.75rem;color:var(--subtext);margin-bottom:4px;">Nama Tajuk</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+            <div style="font-size:0.75rem;color:var(--subtext);">Nama Tajuk</div>
+            <!-- 27 Nov: 🚨 Kecemasan peringkat tajuk (tajuk dipaparkan paling atas di Kindle dan app Go-Tick) -->
+            <button id="btn-gotick-tajuk-emerg" class="btn btn-secondary btn-sm" style="font-size:0.65rem;padding:3px 8px;border-color:var(--border-mid);color:var(--subtext);flex-shrink:0;">Biasa</button>
+          </div>
           <input id="gotick-tajuk-input" type="text" placeholder="Contoh: Pergi ke Kelas"
             style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:10px;font-size:0.95rem;outline:none;">
         </div>
@@ -32110,6 +32114,7 @@ mifRefreshKeyStatus();
       const sectionGoTickEditor = document.getElementById('section-gotick-editor');
       let allGoTickTajuk = [];
       let activeGoTickTajuk = null; // dokumen semasa diedit
+      let gtTajukEmerg = false; // 27 Nov: 🚨 Kecemasan peringkat tajuk (dahulu sentiasa disimpan false)
 
       // ── Realtime listener ──
       let _gtUnsub = null;
@@ -32175,6 +32180,8 @@ mifRefreshKeyStatus();
         document.getElementById('gotick-editor-sub').textContent = isNew ? '' : (t.title || '');
         document.getElementById('gotick-tajuk-input').value = isNew ? '' : (t.title || '');
         document.getElementById('gotick-editor-err').textContent = '';
+        gtTajukEmerg = !isNew && !!t.isEmergency; // 27 Nov
+        gtRenderTajukEmerg();
         // Convert flat items → gtGroups
         const rawItems = isNew ? [] : (t.items || []);
         gtGroups = [];
@@ -32185,6 +32192,7 @@ mifRefreshKeyStatus();
             groupMap[g] = gtGroups.length;
             gtGroups.push({ name: g, items: [], isEmergency: !!it.isEmergency });
           }
+          if (it.isEmergency) gtGroups[groupMap[g]].isEmergency = true; // 27 Nov: kumpulan kecemasan jika mana-mana item bertanda
           gtGroups[groupMap[g]].items.push(it.name || '');
         });
         gtRenderGroups();
@@ -32216,9 +32224,9 @@ mifRefreshKeyStatus();
           headerRow.innerHTML = `
             <span style="font-size:0.85rem;">${isEmerg ? '🚨' : '📁'}</span>
             <input class="gt-group-name-input" type="text" value="${grp.name || ''}" placeholder="Nama kumpulan..."
-              style="flex:1;background:transparent;border:none;border-bottom:1px solid ${isEmerg ? 'rgba(220,50,50,0.5)' : 'rgba(52,211,153,0.4)'};color:${isEmerg ? '#f87171' : '#34d399'};outline:none;font-size:0.85rem;font-weight:700;padding:2px 0;">
+              style="flex:1;min-width:0;background:transparent;border:none;border-bottom:1px solid ${isEmerg ? 'rgba(220,50,50,0.5)' : 'rgba(52,211,153,0.4)'};color:${isEmerg ? '#f87171' : '#34d399'};outline:none;font-size:0.85rem;font-weight:700;padding:2px 0;">
             <button class="btn-toggle-emerg btn btn-secondary btn-sm" style="font-size:0.6rem;padding:2px 5px;border-color:${isEmerg ? '#f87171' : 'var(--border-mid)'};color:${isEmerg ? '#f87171' : 'var(--subtext)'};flex-shrink:0;">${isEmerg ? '🚨 Kecemasan' : 'Biasa'}</button>
-            <button class="btn-del-grp btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;">✕</button>
+            <button class="btn-del-grp btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;flex-shrink:0;">✕</button>
           `;
           headerRow.querySelector('.gt-group-name-input').addEventListener('blur', gtAutoSave);
           headerRow.querySelector('.btn-toggle-emerg').onclick = () => {
@@ -32333,12 +32341,14 @@ mifRefreshKeyStatus();
             return;
           }
           const rawItems = gtGetCurrentItems();
-          const oldItems = activeGoTickTajuk ? (activeGoTickTajuk.items || []) : [];
+          // 27 Nov: tanda tick diambil dari data TERKINI, jadi tick dari Kindle atau app Go-Tick semasa editor terbuka tidak hilang
+          const terkini = activeGoTickTajuk && activeGoTickTajuk.id ? allGoTickTajuk.find(x => x.id === activeGoTickTajuk.id) : null;
+          const oldItems = ((terkini || activeGoTickTajuk || {}).items) || [];
           const items = rawItems.map(it => {
             const old = oldItems.find(o => o.name === it.name && o.group === it.group);
-            return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false };
+            return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false, isEmergency: !!it.isEmergency }; // 27 Nov: simpan tanda Kecemasan kumpulan
           });
-          const isEmergency = false;
+          const isEmergency = gtTajukEmerg; // 27 Nov: dahulu sentiasa false
           const order = activeGoTickTajuk
             ? (activeGoTickTajuk.order || 0)
             : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
@@ -32412,6 +32422,20 @@ mifRefreshKeyStatus();
         }, 50);
       });
       document.getElementById('btn-del-gotick-tajuk').addEventListener('click', gtDeleteTajuk);
+
+      // 27 Nov: butang 🚨 Kecemasan / Biasa di sebelah Nama Tajuk
+      function gtRenderTajukEmerg() {
+        const b = document.getElementById('btn-gotick-tajuk-emerg');
+        if (!b) return;
+        b.textContent = gtTajukEmerg ? '🚨 Kecemasan' : 'Biasa';
+        b.style.borderColor = gtTajukEmerg ? '#f87171' : 'var(--border-mid)';
+        b.style.color = gtTajukEmerg ? '#f87171' : 'var(--subtext)';
+      }
+      document.getElementById('btn-gotick-tajuk-emerg').addEventListener('click', () => {
+        gtTajukEmerg = !gtTajukEmerg;
+        gtRenderTajukEmerg();
+        gtAutoSave();
+      });
 
       // Auto-save bila nama tajuk berubah
       document.getElementById('gotick-tajuk-input').addEventListener('blur', gtAutoSave);
