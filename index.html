@@ -4010,9 +4010,9 @@ They immortalized the hero in a statue.
 
         <div id="gotick-item-list" style="flex:1;min-height:0;overflow-y:auto;"></div>
 
+        <!-- 27 Nov: butang Padam tajuk dipindah ke senarai tajuk (✕ di sebelah Edit) -->
         <div style="flex-shrink:0;margin-top:8px;display:flex;gap:8px;">
-          <span id="gotick-save-indicator" style="font-size:0.72rem;color:#34d399;align-self:center;flex:1;">✓ Auto-save aktif</span>
-          <button id="btn-del-gotick-tajuk" class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;">Padam</button>
+          <span id="gotick-save-indicator" style="font-size:0.72rem;color:#34d399;align-self:center;flex:1;line-height:1.4;">✓ Auto-save aktif</span>
         </div>
         <div id="gotick-editor-err" class="msg error" style="margin-top:6px;"></div>
       </section>
@@ -32179,22 +32179,27 @@ mifRefreshKeyStatus();
               <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
                 <span style="font-size:0.75rem;color:var(--subtext);">${items.length} item · ${ticked} tick</span>
                 <button class="btn-edit-gotick btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">Edit</button>
+                <button class="btn-del-gotick btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);">✕</button>
               </div>
             </div>
           `;
           div.querySelector('.btn-edit-gotick').onclick = () => gtOpenEditor(t);
+          div.querySelector('.btn-del-gotick').onclick = () => gtDeleteTajuk(t); // 27 Nov
           list.appendChild(div);
         });
       }
 
       // ── Buka editor ──
       function gtOpenEditor(t) {
+        gtSimpanJikaMenunggu(); // 27 Nov: perubahan tajuk sebelumnya disimpan dahulu
         activeGoTickTajuk = t ? { ...t } : null;
         const isNew = !t;
         document.getElementById('gotick-editor-title').textContent = isNew ? 'Tajuk Baru' : 'Edit Tajuk';
         document.getElementById('gotick-editor-sub').textContent = isNew ? '' : (t.title || '');
         document.getElementById('gotick-tajuk-input').value = isNew ? '' : (t.title || '');
         document.getElementById('gotick-editor-err').textContent = '';
+        const indBuka = document.getElementById('gotick-save-indicator');
+        if (indBuka) { indBuka.textContent = '✓ Auto-save aktif'; indBuka.style.color = '#34d399'; } // 27 Nov: buang mesej lama
         gtTajukEmerg = !isNew && !!t.isEmergency; // 27 Nov
         gtRenderTajukEmerg();
         const cariItem = document.getElementById('gotick-cari-item');
@@ -32350,55 +32355,79 @@ mifRefreshKeyStatus();
       }
 
       // ── Auto-save ke Firestore (debounced 800ms) ──
+      //   27 Nov: disimpan juga SEMASA MENAIP (bukan hanya bila kotak dilepaskan), dan disimpan SERTA-MERTA bila app
+      //   ditinggalkan (contoh tukar ke app Go-Tick), jadi kumpulan dan item baru terus sampai ke Go-Tick dan Kindle.
+      //   Kotak Nama Tajuk kosong: nama lama dikekalkan dan perubahan lain tetap disimpan.
       let _gtSaveTimer = null;
       function gtAutoSave() {
         const indicator = document.getElementById('gotick-save-indicator');
         if (indicator) { indicator.textContent = '⏳ Menyimpan...'; indicator.style.color = '#fcd34d'; }
         if (_gtSaveTimer) clearTimeout(_gtSaveTimer);
-        _gtSaveTimer = setTimeout(async () => {
-          if (!currentUser) return;
-          const title = document.getElementById('gotick-tajuk-input').value.trim();
-          if (!title) {
-            if (indicator) { indicator.textContent = '⚠️ Nama tajuk kosong'; indicator.style.color = '#f87171'; }
+        _gtSaveTimer = setTimeout(gtSimpanSekarang, 800);
+      }
+      async function gtSimpanSekarang() {
+        _gtSaveTimer = null;
+        const indicator = document.getElementById('gotick-save-indicator');
+        if (!currentUser) return;
+        // Tanda tick diambil dari data TERKINI, jadi tick dari Kindle atau app Go-Tick semasa editor terbuka tidak hilang
+        const terkini = activeGoTickTajuk && activeGoTickTajuk.id ? allGoTickTajuk.find(x => x.id === activeGoTickTajuk.id) : null;
+        const namaLama = String((terkini || activeGoTickTajuk || {}).title || '').trim();
+        let title = document.getElementById('gotick-tajuk-input').value.trim();
+        const tajukKosong = !title;
+        if (tajukKosong) {
+          if (!namaLama) {
+            if (indicator) { indicator.textContent = '⚠️ Kotak Nama Tajuk (paling atas) kosong. Taip nama tajuk dahulu.'; indicator.style.color = '#f87171'; }
             return;
           }
-          const rawItems = gtGetCurrentItems();
-          // 27 Nov: tanda tick diambil dari data TERKINI, jadi tick dari Kindle atau app Go-Tick semasa editor terbuka tidak hilang
-          const terkini = activeGoTickTajuk && activeGoTickTajuk.id ? allGoTickTajuk.find(x => x.id === activeGoTickTajuk.id) : null;
-          const oldItems = ((terkini || activeGoTickTajuk || {}).items) || [];
-          const items = rawItems.map(it => {
-            const old = oldItems.find(o => o.name === it.name && o.group === it.group);
-            return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false, isEmergency: !!it.isEmergency }; // 27 Nov: simpan tanda Kecemasan kumpulan
-          });
-          const isEmergency = gtTajukEmerg; // 27 Nov: dahulu sentiasa false
-          const order = activeGoTickTajuk
-            ? (activeGoTickTajuk.order || 0)
-            : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
-          const data = { title, isEmergency, items, order, updatedAt: Date.now() };
-          try {
-            if (activeGoTickTajuk && activeGoTickTajuk.id) {
-              await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id), data);
-            } else {
-              data.createdAt = Date.now();
-              const newRef = await addDoc(collection(db, 'users', currentUser.uid, 'go_tick_tajuk'), data);
-              activeGoTickTajuk = { id: newRef.id, ...data };
-            }
-            if (indicator) { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#34d399'; }
-          } catch(e) {
-            if (indicator) { indicator.textContent = '❌ Gagal simpan'; indicator.style.color = '#f87171'; }
-          }
-        }, 800);
-      }
-
-      // ── Padam tajuk ──
-      async function gtDeleteTajuk() {
-        if (!currentUser || !activeGoTickTajuk || !activeGoTickTajuk.id) return;
-        if (!confirm('Padam tajuk "' + (activeGoTickTajuk.title || '') + '"?\nSemua item akan dipadam.')) return;
+          title = namaLama;
+        }
+        const rawItems = gtGetCurrentItems();
+        const oldItems = ((terkini || activeGoTickTajuk || {}).items) || [];
+        const items = rawItems.map(it => {
+          const old = oldItems.find(o => o.name === it.name && o.group === it.group);
+          return { group: it.group || '', name: it.name || '', ticked: old ? !!old.ticked : false, isEmergency: !!it.isEmergency }; // simpan tanda Kecemasan kumpulan
+        });
+        const isEmergency = gtTajukEmerg;
+        const order = activeGoTickTajuk
+          ? (activeGoTickTajuk.order || 0)
+          : (allGoTickTajuk.length > 0 ? Math.max(...allGoTickTajuk.map(t => t.order || 0)) + 1 : 0);
+        const data = { title, isEmergency, items, order, updatedAt: Date.now() };
         try {
-          await deleteDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id));
-          showSection(sectionGoTick);
+          if (activeGoTickTajuk && activeGoTickTajuk.id) {
+            await updateDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', activeGoTickTajuk.id), data);
+          } else {
+            data.createdAt = Date.now();
+            const newRef = await addDoc(collection(db, 'users', currentUser.uid, 'go_tick_tajuk'), data);
+            activeGoTickTajuk = { id: newRef.id, ...data };
+          }
+          if (indicator) {
+            if (tajukKosong) { indicator.textContent = '⚠️ Kotak Nama Tajuk (paling atas) kosong, jadi nama "' + namaLama + '" dikekalkan. Kumpulan dan item tetap disimpan.'; indicator.style.color = '#fcd34d'; }
+            else { indicator.textContent = '✓ Tersimpan'; indicator.style.color = '#34d399'; }
+          }
         } catch(e) {
-          document.getElementById('gotick-editor-err').textContent = 'Gagal padam: ' + e.message;
+          if (indicator) { indicator.textContent = '❌ Gagal simpan'; indicator.style.color = '#f87171'; }
+        }
+      }
+      // Ada perubahan yang belum disimpan → simpan sekarang (app ditinggalkan, atau tajuk lain dibuka)
+      function gtSimpanJikaMenunggu() {
+        if (!_gtSaveTimer) return;
+        clearTimeout(_gtSaveTimer);
+        gtSimpanSekarang();
+      }
+      document.addEventListener('visibilitychange', () => { if (document.hidden) gtSimpanJikaMenunggu(); });
+      window.addEventListener('pagehide', gtSimpanJikaMenunggu);
+
+      // ── Padam tajuk (27 Nov: butang ✕ di senarai tajuk, sebelah Edit) ──
+      async function gtDeleteTajuk(t) {
+        if (!currentUser || !t || !t.id) return;
+        const bil = (t.items || []).length;
+        if (!confirm('Padam tajuk "' + (t.title || '(Tanpa Tajuk)') + '"?' + (bil ? '\n\nSemua ' + bil + ' item dalam tajuk ini juga akan dipadam.' : '') + '\nTidak boleh dipulih.')) return;
+        try {
+          await deleteDoc(doc(db, 'users', currentUser.uid, 'go_tick_tajuk', t.id));
+          if (activeGoTickTajuk && activeGoTickTajuk.id === t.id) activeGoTickTajuk = null;
+          showToast('🗑️ Tajuk "' + (t.title || '') + '" dipadam.');
+        } catch(e) {
+          showToast('❌ Gagal padam: ' + e.message);
         }
       }
 
@@ -32443,7 +32472,11 @@ mifRefreshKeyStatus();
           if (inputs.length) inputs[inputs.length - 1].focus();
         }, 50);
       });
-      document.getElementById('btn-del-gotick-tajuk').addEventListener('click', gtDeleteTajuk);
+      // 27 Nov: butang Padam tajuk kini di senarai tajuk (✕ sebelah Edit)
+      // 27 Nov: simpan semasa menaip nama kumpulan atau item (bukan hanya bila kotak dilepaskan)
+      document.getElementById('gotick-item-list').addEventListener('input', e => {
+        if (e.target.classList.contains('gt-group-name-input') || e.target.classList.contains('gt-item-name-input')) gtAutoSave();
+      });
 
       // 27 Nov: butang 🚨 Kecemasan / Biasa di sebelah Nama Tajuk
       function gtRenderTajukEmerg() {
