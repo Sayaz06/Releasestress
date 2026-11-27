@@ -32493,24 +32493,44 @@ mifRefreshKeyStatus();
       });
 
       // ── 🔍 CARI PERALATAN (27 Nov): tapis item dalam tajuk ini ikut nama item atau nama kumpulan ──
-      //   Beberapa perkataan = semua mesti ada. Huruf besar/kecil diabaikan. Item kosong (baru ditambah) sentiasa dipaparkan.
-      //   Item yang tersorok masih disimpan seperti biasa. Enter = lompat ke peralatan pertama yang dijumpai.
-      function gtCariNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim(); }
+      //   27 Nov (longgar): setiap perkataan dicari dalam NAMA KUMPULAN + NAMA ITEM sekali gus (cth "ubat inhaler", "beg charger"),
+      //   susunan perkataan tidak penting, huruf besar/kecil, jarak dan tanda baca diabaikan ("kadpelajar" = "kad pelajar"),
+      //   dan salah taip satu huruf dimaafkan untuk perkataan 4 huruf ke atas ("charjer" jumpa "charger").
+      //   Item kosong (baru ditambah) sentiasa dipaparkan. Item yang tersorok masih disimpan seperti biasa. Enter = lompat ke peralatan pertama yang dijumpai.
+      function gtCariNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
+      // Beza paling banyak satu huruf (tambah, buang atau tukar satu huruf)
+      function gtCariSatuHuruf(a, b) {
+        if (Math.abs(a.length - b.length) > 1) return false;
+        let i = 0, j = 0, beza = 0;
+        while (i < a.length && j < b.length) {
+          if (a[i] === b[j]) { i++; j++; continue; }
+          if (++beza > 1) return false;
+          if (a.length > b.length) i++;
+          else if (a.length < b.length) j++;
+          else { i++; j++; }
+        }
+        return beza + (a.length - i) + (b.length - j) <= 1;
+      }
+      function gtCariKena(kata, teks) {
+        if (!kata.length || !teks) return false;
+        const rapat = teks.replace(/ /g, ''), token = teks.split(' ');
+        return kata.every(k => teks.includes(k) || rapat.includes(k) ||
+          (k.length >= 4 && token.some(t => gtCariSatuHuruf(k, t) || (t.length > k.length && gtCariSatuHuruf(k, t.slice(0, k.length))))));
+      }
       function gtCariTapis() {
         const inp = document.getElementById('gotick-cari-item'), list = document.getElementById('gotick-item-list');
         const info = document.getElementById('gotick-cari-info'), kosong = document.getElementById('btn-gotick-cari-kosong');
         if (!inp || !list) return null;
         const q = gtCariNorm(inp.value), kata = q ? q.split(' ') : [];
-        const padan = t => kata.every(k => t.includes(k));
         let jumpa = 0, pertama = null;
         list.querySelectorAll(':scope > div').forEach(grpDiv => {
           const gIn = grpDiv.querySelector('.gt-group-name-input');
           if (!gIn) return;
-          const grpPadan = kata.length > 0 && padan(gtCariNorm(gIn.value));
-          let nampak = !kata.length || grpPadan;
+          const gNama = gtCariNorm(gIn.value);
+          let nampak = !kata.length || gtCariKena(kata, gNama);
           grpDiv.querySelectorAll('.gt-item-name-input').forEach(iIn => {
             const row = iIn.parentElement, nama = gtCariNorm(iIn.value);
-            const kena = kata.length > 0 && !!nama && (grpPadan || padan(nama));
+            const kena = kata.length > 0 && !!nama && gtCariKena(kata, (gNama + ' ' + nama).trim());
             const ok = !kata.length || !nama || kena;
             row.style.display = ok ? '' : 'none';
             row.style.background = kena ? 'rgba(52,211,153,0.12)' : '';
