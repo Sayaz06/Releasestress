@@ -3992,6 +3992,17 @@ They immortalized the hero in a statue.
             style="width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border-mid);border-radius:8px;color:white;padding:10px;font-size:0.95rem;outline:none;">
         </div>
 
+        <!-- 🔍 CARI PERALATAN (27 Nov) — tapis item dalam tajuk ini ikut nama item atau nama kumpulan -->
+        <div style="margin-bottom:10px;flex-shrink:0;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.35);border-radius:12px;padding:7px 9px;">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:0.95rem;">🔍</span>
+            <input id="gotick-cari-item" type="text" inputmode="search" enterkeyhint="search" placeholder="Cari peralatan..." autocomplete="off"
+              style="flex:1;min-width:0;background:rgba(0,0,0,0.35);border:1px solid var(--border-mid);border-radius:8px;color:var(--text);padding:8px 10px;font-size:0.9rem;outline:none;">
+            <button id="btn-gotick-cari-kosong" type="button" class="btn btn-secondary btn-sm" style="display:none;padding:6px 10px;flex-shrink:0;">✕</button>
+          </div>
+          <div id="gotick-cari-info" style="display:none;font-size:0.7rem;font-weight:700;margin-top:5px;text-align:right;"></div>
+        </div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
           <div style="font-size:0.8rem;font-weight:700;color:#34d399;">Senarai Kumpulan</div>
           <button id="btn-add-gotick-group" class="btn btn-secondary btn-sm" style="border-color:#34d399;color:#34d399;">+ Kumpulan</button>
@@ -32186,6 +32197,8 @@ mifRefreshKeyStatus();
         document.getElementById('gotick-editor-err').textContent = '';
         gtTajukEmerg = !isNew && !!t.isEmergency; // 27 Nov
         gtRenderTajukEmerg();
+        const cariItem = document.getElementById('gotick-cari-item');
+        if (cariItem) cariItem.value = ''; // 27 Nov: carian peralatan bermula kosong untuk setiap tajuk
         // Convert flat items → gtGroups
         const rawItems = isNew ? [] : (t.items || []);
         gtGroups = [];
@@ -32213,6 +32226,7 @@ mifRefreshKeyStatus();
         list.innerHTML = '';
         if (!gtGroups.length) {
           list.innerHTML = '<div class="empty-state" style="padding:10px;">Tiada kumpulan. Tekan "+ Kumpulan".</div>';
+          gtCariTapis(); // 27 Nov
           return;
         }
         gtGroups.forEach((grp, gi) => {
@@ -32296,6 +32310,7 @@ mifRefreshKeyStatus();
           grpDiv.appendChild(itemsDiv);
           list.appendChild(grpDiv);
         });
+        gtCariTapis(); // 27 Nov: kekalkan carian peralatan bila senarai dilukis semula
       }
 
       // ── Sync DOM → gtGroups (panggil sebelum render semula) ──
@@ -32442,6 +32457,56 @@ mifRefreshKeyStatus();
         gtTajukEmerg = !gtTajukEmerg;
         gtRenderTajukEmerg();
         gtAutoSave();
+      });
+
+      // ── 🔍 CARI PERALATAN (27 Nov): tapis item dalam tajuk ini ikut nama item atau nama kumpulan ──
+      //   Beberapa perkataan = semua mesti ada. Huruf besar/kecil diabaikan. Item kosong (baru ditambah) sentiasa dipaparkan.
+      //   Item yang tersorok masih disimpan seperti biasa. Enter = lompat ke peralatan pertama yang dijumpai.
+      function gtCariNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim(); }
+      function gtCariTapis() {
+        const inp = document.getElementById('gotick-cari-item'), list = document.getElementById('gotick-item-list');
+        const info = document.getElementById('gotick-cari-info'), kosong = document.getElementById('btn-gotick-cari-kosong');
+        if (!inp || !list) return null;
+        const q = gtCariNorm(inp.value), kata = q ? q.split(' ') : [];
+        const padan = t => kata.every(k => t.includes(k));
+        let jumpa = 0, pertama = null;
+        list.querySelectorAll(':scope > div').forEach(grpDiv => {
+          const gIn = grpDiv.querySelector('.gt-group-name-input');
+          if (!gIn) return;
+          const grpPadan = kata.length > 0 && padan(gtCariNorm(gIn.value));
+          let nampak = !kata.length || grpPadan;
+          grpDiv.querySelectorAll('.gt-item-name-input').forEach(iIn => {
+            const row = iIn.parentElement, nama = gtCariNorm(iIn.value);
+            const kena = kata.length > 0 && !!nama && (grpPadan || padan(nama));
+            const ok = !kata.length || !nama || kena;
+            row.style.display = ok ? '' : 'none';
+            row.style.background = kena ? 'rgba(52,211,153,0.12)' : '';
+            if (ok) nampak = true;
+            if (kena) { jumpa++; if (!pertama) pertama = row; }
+          });
+          grpDiv.style.display = nampak ? '' : 'none';
+        });
+        if (kosong) kosong.style.display = q ? '' : 'none';
+        if (info) {
+          info.style.display = q ? '' : 'none';
+          info.textContent = jumpa ? jumpa + ' peralatan dijumpai' : 'Tiada peralatan sepadan';
+          info.style.color = jumpa ? '#6ee7b7' : '#f87171';
+        }
+        return pertama;
+      }
+      document.getElementById('gotick-cari-item').addEventListener('input', gtCariTapis);
+      document.getElementById('gotick-cari-item').addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const p = gtCariTapis();
+        e.target.blur();
+        if (p) setTimeout(() => p.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+      });
+      document.getElementById('btn-gotick-cari-kosong').addEventListener('click', () => {
+        const inp = document.getElementById('gotick-cari-item');
+        inp.value = '';
+        gtCariTapis();
+        inp.focus();
       });
 
       // Auto-save bila nama tajuk berubah
