@@ -10310,6 +10310,10 @@ function renderDrawers() {
           btn.addEventListener("click", async () => {
             const idx = parseInt(btn.getAttribute('data-idx'));
             const currentItems = data.items ? [...data.items] : [];
+            // 27 Nov: tanya dahulu sebelum padam (elak tertekan). Baris kosong tanpa gambar terus dipadam.
+            const barisPadam = currentItems[idx] || {};
+            const teksPadam = (div.querySelector(`.item-ayat[data-idx="${idx}"]`)?.value ?? barisPadam.ayat ?? '').trim();
+            if ((teksPadam || barisPadam.imageUrl) && !confirm(`Padam Baris ${idx + 1}${barisPadam.fid ? ' (ID ' + barisPadam.fid + ')' : ''}?` + (barisPadam.imageUrl ? '\n\nGambar baris ini juga akan dipadam.' : ''))) return;
             if (currentItems[idx]?.imageUrl) {
               try {
                 await deleteObject(ref(storage, `users/${currentUser.uid}/fakta_images/${data.id}_${idx}.jpg`));
@@ -32259,6 +32263,9 @@ mifRefreshKeyStatus();
             `;
             itemRow.querySelector('.btn-del-item').onclick = () => {
               gtSyncDomToGroups();
+              // 27 Nov: tanya dahulu sebelum padam (elak tertekan). Item kosong terus dipadam.
+              const namaPadam = (gtGroups[gi].items[ii] || '').trim();
+              if (namaPadam && !confirm('Padam item "' + namaPadam + '"?')) return;
               gtGroups[gi].items.splice(ii, 1);
               gtRenderGroups();
               gtAutoSave();
